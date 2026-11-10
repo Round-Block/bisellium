@@ -1,0 +1,21 @@
+# opus: W-562
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c370-5edd-7950-bd0a-47133fa85922
+# outcome: passed
+# at: 2026-11-10T04:21:24.720Z
+# tree: tree:d448d9b239958c5e488a717c6c9188502a382025
+# brief: briefs/W-562.md blob:7676d93d11bc4a38c3d733559040f665e21b62f5
+# ticket: {"opus":"W-562","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":"studio","head":"79aa55e9c04fb0466fa1218c8e51605d9dc3f11e","brief":"7676d93d11bc4a38c3d733559040f665e21b62f5","at":"2026-11-10T04:21:24.185Z"}
+
+## Earlier findings
+- ci/W-562-spec-4.log #1: closed — The cut brief no longer promises refusal for malformed harness strings; it states the exception as a limit at brief:33, brief:36, brief:65, brief:72, and brief:78, with follow-on W-568.
+
+## Findings
+No findings
+
+## Verdict
+Prototype head was "3bc8b980 feat(W-562): behaviour 3"; the cut brief’s promises, input row, and rule accurately state the unchanged prototype’s limits.
+VERDICT: PASS

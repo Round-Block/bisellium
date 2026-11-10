@@ -1,0 +1,19 @@
+# opus: W-562
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c370-5edd-7950-bd0a-47133fa85922
+# outcome: failed
+# at: 2026-11-10T03:16:22.375Z
+# tree: tree:5d3ab503f1d3f63193a267db756726112c2ad341
+# brief: briefs/W-562.md blob:e87d7deb530964fb1053a7da9e46642bcfeecff9
+# ticket: {"opus":"W-562","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"33007fd48d74b2c44e8986b687410274f655a077","brief":"e87d7deb530964fb1053a7da9e46642bcfeecff9","at":"2026-11-10T03:16:21.781Z"}
+
+## Findings
+1. blocking — brief:74 [severity: S1] [design: changes] `codexModels` silently maps an absent, non-list, or non-mapping `bisellium.yml#sellae` to no Codex models, so the real sessioned caller `scripts/record-review.sh` can skip `sessionRan` and record a blind PASS; `runVerdict` likewise trusts any truthy `opts.turnRan`, including the type-valid `{ ran: true, commands: 0 }`, and no prototype test rejects either input. Replace brief:74 with: `| 3. Verdict classification and turn judgment: verdict's --model and --session, bisellium.yml#sellae, CODEX_HOME, HOME, and VerdictOptions.turnRan | --session satisfies SESSION_ID; sellae is a list of mappings and each harness: codex row has a nonblank string model; turnRan is absent or exactly { ran: true, commands: <positive integer> } or { ran: false, why: <nonblank string> }; the stated no-session and non-Codex-model limits remain | codexModels returns models or a refusal, validateTurnRan (specified) rejects every other turnRan form, and runVerdict exits 2 before writing on either refusal; codexHome and sessionRan reject the named home/rollout failures |`. [class: spec×input-without-named-rejector] — check: packages/cli/src/w562.test.ts
+2. advisory — brief:68 [severity: S2] The blanket claim that every other input form is refused is false because `execStreamRan` deliberately skips non-JSON lines and line 75 deliberately lets unrecognized “unrun” census wording reach `openPaths`. Replace brief:68 with: `**The rule: a Codex review is recorded only from a turn whose structured record shows a command run to exit 0.** Where rows 1–3 say judgment applies, absence of their required positive signal or a named read/shape failure is refused or held; ignored forms and row 4's lexical limit are exactly those stated in the rows.` [class: spec×prose-contradiction-under-revision] — check: none: brief input-domain wording
+
+## Verdict
+Required shell head was "33007fd4 chore(studio): file W-562..W-567 from the 11-09 meets and retro; handoff after W-558 done (#1119)"; the brief fails because its new manifest and `turnRan` boundary can skip the blind-session refusal.
+VERDICT: FAIL

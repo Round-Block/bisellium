@@ -1,0 +1,24 @@
+# opus: W-562
+# phase: spec
+# round: 1
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-10T03:09:56.149Z
+# tree: tree:5d3ab503f1d3f63193a267db756726112c2ad341
+# brief: briefs/W-562.md blob:e87d7deb530964fb1053a7da9e46642bcfeecff9
+# ticket: {"opus":"W-562","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"33007fd48d74b2c44e8986b687410274f655a077","brief":"e87d7deb530964fb1053a7da9e46642bcfeecff9","at":"2026-11-10T03:09:48.513Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-562-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the closed signal is Codex's own command item, read from real logs: a `command_execution` item completed with exit 0 in the `codex exec --json` stream the performs hold, and a `CommandExecution` item completed with exit 0 in the rollout's last turn for `verdict`; W-558 r4, fix-2 and smokes A and B hold none in the judged turn, every passing round holds some, and no prompt or output text is matched — check: signal.out; judge-real.out; brief Intent "The closed signal"
+2. advisory — the refusal covers the class: every site that runs Codex or turns its review into a pass was listed by a kept census, and the refusal sits in `verdict` (every by-hand and perform verdict) and in the two performs (their own turn and the fix check) — check: census.py; census.out; brief Intent "Every site"
+3. advisory — no existing row flips: the Codex stub's default reports one command run to exit 0, and no existing sessioned verdict row names a codex-harness model; the Codex fixture census was not run (the dispatch forbade any Codex run), and the importers run one at a time stand in for it — check: singles.out; brief Acceptance
+4. advisory — two limits each name a follow-on the producer files: a Codex-model verdict without --session ("Require a session on every Codex-model verdict") and the upgrade admission ("Admit a Codex upgrade only by a kept smoke run"); a reissue turn is refused unless it runs a command (Defaults 1) — check: brief Limits, stated; Defaults for the Patron
+5. advisory — two behaviours, each red failing by ERR_ASSERTION on its test commit and green on its feature commit, every pinned line killed by a one-hunk wrong form — check: reds.out; red-b1.log; red-b2.log; mutants.out; ledger-check.out
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`, the production collegium's spec signer, studio/bisellium.yml) for `studio/briefs/W-562.md` revision 1 at master 33007fd4: the review and fix-check performs and `verdict` refuse a Codex turn that ran no command to exit 0, recording it failed-to-run, and an unrun census is no fix check; two behaviours, four prototype commits (prototype.mbox).

@@ -1,0 +1,24 @@
+# opus: W-562
+# phase: spec
+# round: 3
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-10T04:00:03.853Z
+# tree: tree:5d3ab503f1d3f63193a267db756726112c2ad341
+# brief: briefs/W-562.md blob:8da2fb172f4b5d7d89591f015177bffe0bc62c9c
+# ticket: {"opus":"W-562","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"33007fd48d74b2c44e8986b687410274f655a077","brief":"8da2fb172f4b5d7d89591f015177bffe0bc62c9c","at":"2026-11-10T04:00:03.237Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-562-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review round 2's finding 1 applied in a stronger form: the reviewer's replacement row for brief row 3 names every form it rejects, and Promise boundary adds codexModels (a sellae absent, not a list, a row not a mapping, a harness not a string, a codex row with no model each refused), validTurnRan (exactly one of TurnRan's two forms) and codexHome (an empty or relative CODEX_HOME, a relative or unset HOME refused), each before any write; behaviour 3 pins them test first, red at behaviour 2's feature commit — check: brief Promise boundary; Input domain row 3; red-b3.log; green-b3.log; mutants.out (sellae-open, turnran-truthy, home-any)
+2. advisory — the class, not the instance: every input the new code reads at the verdict boundary and in both performs is censused by a kept script over the prototype's added lines, 29 inputs, 26 closed by a named rejector and pin, 3 stated limits (the stream's skipped non-JSON lines, the census reply's one lexical form and its line split), none unmapped — check: census-inputs.py; census-inputs.out
+3. advisory — spec review round 2's finding 2 applied as worded: the Input domain rule now says absence of the required positive signal or a named read or shape failure is refused or held, and the ignored forms and row 4's lexical limit are exactly those the rows state — check: brief "### Input domain" rule paragraph
+4. advisory — no new flip at revision 2: the boundary's importers, the source scanners, next-review, next-spec and next-branch rerun one at a time at the six-commit tip; revision 1's three flips (next-spec W-215-b3 and W-433-b1, containment W-163-b6) stay repaired in Files owned; check passes with 0 blocking; the wrong forms ran in a second checkout at the same tip; the Codex fixture census was not run (no Codex run is allowed) — check: singles.out; check-tip.out; tsc-tip.out; brief Acceptance
+5. advisory — the two limits each name the follow-on the producer files, unchanged: "Require a session on every Codex-model verdict" and "Admit a Codex upgrade only by a kept smoke run"; the two Defaults for the Patron are kept — check: brief Limits, stated; Defaults for the Patron
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`, the production collegium's spec signer, studio/bisellium.yml) for `studio/briefs/W-562.md` revision 2 at master 33007fd4: the performs and `verdict` refuse a Codex turn that ran no command to exit 0, and every input the verdict boundary reads (sellae, turnRan, the Codex home, the rollout, the stream) has a named rejector or a stated limit; three behaviours, six prototype commits (prototype.mbox), every red accepted and every pinned line killed.

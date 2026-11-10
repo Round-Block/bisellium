@@ -1,0 +1,22 @@
+# opus: W-562
+# phase: spec
+# round: 6
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-10T04:13:38.450Z
+# tree: dirty:5d3ab503f1d3f63193a267db756726112c2ad341
+# brief: briefs/W-562.md blob:7676d93d11bc4a38c3d733559040f665e21b62f5
+# ticket: {"opus":"W-562","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"33007fd48d74b2c44e8986b687410274f655a077","brief":"7676d93d11bc4a38c3d733559040f665e21b62f5","at":"2026-11-10T04:13:37.877Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-562-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the cut under D-061 §4: spec review round 4 closed round 2's findings and found the manifest harness string unjudged; with no third review, the brief keeps what round 4 judged closed and states the gap as a limit whose follow-on is W-568 ("W-562 remainder: verdict refuses unknown manifest harness"), and the other two limits name theirs by id, W-569 and W-570, in Promise verdict-refusal, Promise boundary, Input domain row 3, the rule sentence and Limits; no promise, row or the rule claims the blind-session refusal under a harness string other than exactly codex — check: brief Limits, stated; Input domain row 3; grep -n W-568 studio/briefs/W-562.md
+2. advisory — no code or row changed at the cut: the prototype, its reds, wrong forms, check and the files run one at a time are revision 2's at 3bc8b980; the ledger is regenerated over the cut brief — check: prototype.mbox; reds.out; mutants.out; singles.out; check-tip.out; ledger-check.out
+3. advisory — the harness check against the known harness ids is not added here; it is W-568's — check: brief Out of scope
+
+## Verdict
+
+passed — signed (round 6: the round 5 brief with its other two follow-ons named by id, W-569 and W-570) by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`, the production collegium's spec signer, studio/bisellium.yml) for `studio/briefs/W-562.md` revision 3 (the cut) at master 33007fd4: the performs and `verdict` refuse a Codex turn that ran no command to exit 0, the boundary refuses the malformed inputs it judges, and a harness string other than exactly codex is a stated limit, W-568's; three behaviours, six prototype commits (prototype.mbox).

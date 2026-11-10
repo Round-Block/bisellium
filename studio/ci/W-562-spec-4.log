@@ -1,0 +1,21 @@
+# opus: W-562
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c370-5edd-7950-bd0a-47133fa85922
+# outcome: failed
+# at: 2026-11-10T04:09:30.440Z
+# tree: tree:5d3ab503f1d3f63193a267db756726112c2ad341
+# brief: briefs/W-562.md blob:8da2fb172f4b5d7d89591f015177bffe0bc62c9c
+# ticket: {"opus":"W-562","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"33007fd48d74b2c44e8986b687410274f655a077","brief":"8da2fb172f4b5d7d89591f015177bffe0bc62c9c","at":"2026-11-10T04:09:24.669Z"}
+
+## Earlier findings
+- ci/W-562-spec-2.log #1: closed — `codexModels`, `validTurnRan`, and `codexHome` now reject the originally cited malformed inputs before any write, pinned by W-562-b3.
+
+## Findings
+1. blocking — brief:77 [severity: S1] [design: changes] The revised domain admits every string as a harness, but `codexModels` treats `""`, `"Codex"`, whitespace-padded values, and misspellings as definitively non-Codex; a plausible manifest typo therefore lets a real sessioned `bisellium verdict` from Codex bypass `sessionRan` and record a blind PASS, while W-562-b3 tests only a non-string harness. Replace brief:77’s harness clauses with: `sellae is a list of mappings, each harness absent (meaning claude-code) or an id accepted by resolveHarness/HARNESS_PROFILES, and each harness: codex row has a nonblank string model; codexModels refuses a blank or unknown harness string before classification.` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w562.test.ts
+
+## Verdict
+Required prototype head was "3bc8b980 feat(W-562): behaviour 3"; revision 2 still permits an accepted manifest typo to disable blind-session judgment.
+VERDICT: FAIL
