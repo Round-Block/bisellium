@@ -1,0 +1,48 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-568-b1\s --import tsx packages/cli/src/w568.test.ts
+# exit: 1
+# at: 2026-11-10T16:03:43.632Z
+# sella: builder.W-568
+# tree: tree:c10cd2f2df0ecbbe724dfd83453a876309a55569
+# ticket: {"opus":"W-568","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-568/studio","head":"95961110faef3d73764b4dec8a430ed2823ef5b3","brief":"ffe9c7f1c47c8af6f34199dfa66e404a99bb5a1e","at":"2026-11-10T16:03:35.772Z"}
+
+TAP version 13
+# Subtest: W-568-b1 behaviour 1: a harness string that is not a known harness id refuses a sessioned verdict and writes nothing
+not ok 1 - W-568-b1 behaviour 1: a harness string that is not a known harness id refuses a sessioned verdict and writes nothing
+  ---
+  duration_ms: 16.768888
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-568/packages/cli/src/w568.test.ts:2:980'
+  failureType: 'testCodeFailure'
+  error: |-
+    a wrong-case harness is refused
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-568/packages/cli/src/w568.test.ts:72:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-568-b1 behaviour 1: an absent harness or a known id classifies as before, and the other malformed forms stay refused
+ok 2 - W-568-b1 behaviour 1: an absent harness or a known id classifies as before, and the other malformed forms stay refused
+  ---
+  duration_ms: 64.048762
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 1
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 431.611867

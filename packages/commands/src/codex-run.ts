@@ -6,6 +6,7 @@
  */
 import { readdirSync, readFileSync, lstatSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
+import { HARNESS_PROFILES } from "@bisellium/shim";
 
 export type TurnRan = { ran: true; commands: number } | { ran: false; why: string };
 
@@ -72,8 +73,12 @@ export function codexHome(env: NodeJS.ProcessEnv): { home: string } | { error: s
   return isAbsolute(home) ? { home: join(home, ".codex") } : { error: `HOME ${JSON.stringify(home)} is not an absolute path` };
 }
 
+/** W-568: a harness id a manifest row may name: one of HARNESS_PROFILES' own keys, exactly as written (never an inherited
+ *  property such as `constructor`, never another case or spacing). */
+const knownHarness = (id: string): boolean => Object.hasOwn(HARNESS_PROFILES, id);
+
 /** W-571: the models a manifest seats on the codex harness, or why it cannot say: `sellae` a list of mappings, each `harness`
- *  absent or a string, and each `harness: codex` row's `model` a nonblank string. */
+ *  absent (claude-code) or a known harness id (W-568), and each `harness: codex` row's `model` a nonblank string. */
 export function codexModels(manifest: unknown): { models: Set<string> } | { error: string } {
   const rows = isDict(manifest) ? manifest["sellae"] : undefined;
   if (!Array.isArray(rows)) return { error: "bisellium.yml#sellae is not a list" };
@@ -82,6 +87,9 @@ export function codexModels(manifest: unknown): { models: Set<string> } | { erro
     if (!isDict(row)) return { error: `bisellium.yml#sellae[${i}] is not a mapping` };
     const harness = row["harness"];
     if (harness !== undefined && typeof harness !== "string") return { error: `bisellium.yml#sellae[${i}].harness is not a string` };
+    if (harness !== undefined && !knownHarness(harness)) {
+      return { error: `bisellium.yml#sellae[${i}].harness ${JSON.stringify(harness)} is not a known harness id (${Object.keys(HARNESS_PROFILES).sort().join(", ")})` };
+    }
     if (harness !== "codex") continue;
     const model = row["model"];
     if (typeof model !== "string" || model.trim() === "") return { error: `bisellium.yml#sellae[${i}] is on the codex harness with no model` };

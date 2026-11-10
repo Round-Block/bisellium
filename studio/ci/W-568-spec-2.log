@@ -1,0 +1,18 @@
+# opus: W-568
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c627-c6ce-7a81-ae9d-958fd5be868d
+# outcome: passed
+# at: 2026-11-10T15:55:12.867Z
+# tree: tree:6ea30b15d0db2198a00738938c4620882f428ff1
+# brief: briefs/W-568.md blob:ffe9c7f1c47c8af6f34199dfa66e404a99bb5a1e
+# ticket: {"opus":"W-568","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"91fb2c969d4d2c0b1520dc4d7096a07400be128b","brief":"ffe9c7f1c47c8af6f34199dfa66e404a99bb5a1e","at":"2026-11-10T15:55:12.160Z"}
+
+## Findings
+1. advisory — brief:58 The Input domain omits the added test’s reused `runVerdict` call and direct `ci/` read. Replacement text: `| 3. W-568-b1 reused runVerdict call | the exact per-case exitCode, stderr and ci result; reads inside unchanged runVerdict, including the scratch officina and HOME/.codex/sessions, are covered by this call boundary | assert.equal, assert.match and assert.deepEqual fail the test on mismatch |` and `| 4. W-568-b1 direct scratch ci/ read | absent, or a readable directory containing exactly the expected log names | readdirSync throws when unreadable; assert.deepEqual rejects the wrong entries |` [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: brief.input.reader-coverage
+
+## Verdict
+At "91fb2c96 feat(W-572): guard routes Patron questions to a leads meet (#1130)", the production promises are feasible and the sole test-boundary finding is advisory.
+VERDICT: PASS
