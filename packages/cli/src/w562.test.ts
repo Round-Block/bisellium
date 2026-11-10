@@ -154,7 +154,14 @@ test("W-562-b2 behaviour 2: a missing, duplicated or malformed rollout is refuse
 // Codex one, and how its turn is judged, has a named rejector: the manifest's sellae, the caller's turnRan and Codex's home
 // ---------------------------------------------------------------------------
 const SEATS_OK = [`  - { id: qa-lead, collegium: engineering, kind: agent }`, `  - { id: spec-reviewer, collegium: engineering, kind: agent, model: ${MODEL}, harness: codex }`];
-/** `verdict` in process over an officina whose `sellae` block is `sellae` (raw YAML lines after the key, or undefined for no key). */
+/** A home of the call's own: `<temp>/.codex/sessions` exists and holds no rollout, so no row reads the host's HOME or ~/.codex. */
+function ownHome(): string {
+  const home = temp("home");
+  mkdirSync(join(home, ".codex", "sessions"), { recursive: true });
+  return home;
+}
+/** `verdict` in process over an officina whose `sellae` block is `sellae` (raw YAML lines after the key, or undefined for no key),
+ *  with CODEX_HOME unset and HOME `ownHome()` for the call unless `o.env` names either: hermetic, never the host's home. */
 function boundary(sellae: string[] | undefined, extra: string[], o: { turnRan?: unknown; env?: Record<string, string | undefined> } = {}): { exitCode: number; stderr: string; ci: string[] } {
   const dir = temp("boundary");
   writeFileSync(
@@ -171,7 +178,8 @@ function boundary(sellae: string[] | undefined, extra: string[], o: { turnRan?: 
     stderr += `${args.map(String).join(" ")}\n`;
   };
   console.log = () => {};
-  for (const [k, v] of Object.entries(o.env ?? {})) {
+  const env: Record<string, string | undefined> = { CODEX_HOME: undefined, HOME: ownHome(), ...o.env };
+  for (const [k, v] of Object.entries(env)) {
     if (v === undefined) delete process.env[k];
     else process.env[k] = v;
   }
@@ -182,7 +190,7 @@ function boundary(sellae: string[] | undefined, extra: string[], o: { turnRan?: 
   } finally {
     console.error = keep.error;
     console.log = keep.log;
-    for (const k of Object.keys(o.env ?? {})) {
+    for (const k of Object.keys(env)) {
       if (keep.env[k] === undefined) delete process.env[k];
       else process.env[k] = keep.env[k];
     }
