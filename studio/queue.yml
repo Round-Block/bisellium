@@ -99,6 +99,7 @@ queues:
       - { opus: W-304, says: "seats read live, console MVP" }
       - { opus: W-280, says: "Inbox newItem fail-open" }
       - { opus: W-561, says: "next's gather reads --now for the daily hold and red findings; W-547's stated limit; producer's rank, vetoable" }
+      - { opus: W-575, says: "W-568's stated limit: check refuses a manifest seat whose harness is not a known harness id, so a typo is caught before any reader runs; held by D-178" }
   research:
     lanes: { R1: ~ }
     next:
