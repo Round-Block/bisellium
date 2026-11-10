@@ -1,0 +1,18 @@
+# opus: W-571
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1c4e9-9d14-7c41-9836-2a41aea1072c
+# outcome: passed
+# at: 2026-11-10T10:06:16.169Z
+# tree: tree:44c79f9d56e8e56b79131fa0829ff986024d3423
+# brief: briefs/W-571.md blob:3cd3affef7f5b76ccd82c05845f6996a51df82f2
+# ticket: {"opus":"W-571","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-571/studio","head":"dcb8145a33d3f817efab2e32462857c4bf0abb60","brief":"3cd3affef7f5b76ccd82c05845f6996a51df82f2","at":"2026-11-10T10:03:24.585Z"}
+
+## Findings
+No findings
+
+## Verdict
+The three behaviours match the brief, the source diff stays within Files owned, and all reds fail by assertion on their recorded commits. Gate evidence certifies the reviewed source tree.
+VERDICT: PASS
