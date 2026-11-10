@@ -1063,3 +1063,102 @@ Classes in more than one opus, 2026-10-26..2026-11-08:
 - workflow×idle-wait-unfilled (W-542: ~8 h overnight on the code-owner approval, then the merge-queue wait, nothing run beside either; W-528 730 min with 0 failed rounds): covered by W-547 "next names a meanwhile step beside every wait" (greenlit), which also reports idle-wait minutes per opus in this retro and warns on a wait over 15 min with no other record; the code-owner wait itself is the Patron's by design (W-418 notifies, done); none beyond W-547. Owner: ops-lead. Opus: W-547.
 - tests×security-boundary-cases-uncovered (W-227 review LOOP r1-r3, S1 x3; W-501): two opera, not owed; none, because W-227 passed at r4 and no third opus shows it; if it recurs, file a cause fix. spec×input-domain-missing-or-unenforceable and spec×promise-unattainable-under-accepted-domain (W-227 spec r2, r4): covered by W-393 (greenlit). Owner: eng-lead (tests), design lead (spec). Opus: W-393.
 - UI and design-quality classes: none, because no UI opus ran today.
+
+### 2026-11-09
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-542 | 632 | 2 | S1 3 |
+| W-543 | 740 | 3 | S1 6 |
+| W-547 | 382 | 4 | S1 13 |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-543 | review | 1 | failed | - | security×symlink-parent-write-escape S1, tests×tests-that-agree-with-the-bug S1 |
+| W-543 | review | 2 | passed | 55 |  |
+| W-543 | spec | 2 | failed | 558 | interface×validation-order-masks-errors S1, security×symlink-parent-write-escape S1, spec×promise-unattainable-under-accepted-domain S1 |
+| W-543 | spec | 3 | passed | 32 |  |
+| W-543 | spec | 4 | failed | 7 | security×symlink-parent-write-escape S1 |
+| W-543 | spec | 5 | passed | 47 |  |
+| W-543 | spec | 6 | passed | 11 |  |
+| W-543 | spec | 7 | passed | 3 |  |
+| W-547 | review | 1 | failed | - | tests×ruled-case-uncovered S1, interface×validation-order-masks-errors S1 |
+| W-547 | review | 2 | failed | 43 | tests×ruled-case-uncovered S1 |
+| W-547 | review | 3 | passed | 138 |  |
+| W-547 | spec | 1 | passed | - |  |
+| W-547 | spec | 2 | failed | 65 | spec×promise-unattainable-under-accepted-domain S1, spec×input-domain-missing-or-unenforceable S1, review×fail-open-on-malformed-records-patched-per-site S1, review×fail-open-on-malformed-records-patched-per-site S1, review×fail-open-on-malformed-records-patched-per-site S1, spec×input-domain-missing-or-unenforceable S1 |
+| W-547 | spec | 3 | passed | 50 |  |
+| W-547 | spec | 4 | failed | 5 | review×fail-open-on-malformed-records-patched-per-site S1, spec×promise-unattainable-under-accepted-domain S1, spec×input-domain-missing-or-unenforceable S1, spec×input-domain-missing-or-unenforceable S1 |
+| W-547 | spec | 5 | passed | 4 |  |
+| W-547 | spec | 6 | passed | 119 |  |
+| W-547 | spec | 7 | passed | 3 |  |
+| W-547 | spec | 8 | passed | 46 |  |
+| W-547 | spec | 9 | passed | 5 |  |
+| W-558 | review | 1 | failed | - | review×fail-open-on-malformed-records-patched-per-site S1 |
+| W-558 | review | 2 | failed | 57 | review×fail-open-on-malformed-records-patched-per-site S1 |
+| W-558 | review | 3 | passed | 572 |  |
+| W-558 | spec | 1 | passed | - |  |
+| W-558 | spec | 2 | failed | 7 | spec×input-domain-missing-or-unenforceable S1 |
+| W-558 | spec | 3 | passed | 150 |  |
+| W-558 | spec | 4 | passed | 8 |  |
+| W-558 | spec | 5 | passed | 33 |  |
+| W-558 | spec | 6 | failed | 7 | review×fail-open-on-malformed-records-patched-per-site S1 |
+| W-558 | spec | 7 | passed | 47 |  |
+| W-558 | spec | 8 | failed | 4 | review×fail-open-on-malformed-records-patched-per-site S1 |
+
+- LOOP W-547 review: class tests×ruled-case-uncovered, rounds 1-2 (minutes since previous round: r1 -, r2 43)
+- LOOP W-558 review: class review×fail-open-on-malformed-records-patched-per-site, rounds 1-2 (minutes since previous round: r1 -, r2 57)
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| W-547 | ci/W-547-tests-ca290f55.log | gate×W-530 | W-530-b4 |
+
+Classes in more than one opus, 2026-10-27..2026-11-09:
+- class gate×W-339 seen in 2 opera: W-463, W-487
+- class gate×tests seen in 5 opera: W-364, W-407, W-494, W-502, W-509
+- class interface×validation-order-masks-errors seen in 3 opera: W-474, W-543, W-547
+- class mechanism×replay-environment-not-pristine seen in 2 opera: W-462, W-477
+- class review×evidence-backfilled-or-absent seen in 8 opera: W-300, W-413, W-425, W-430, W-477, W-495, W-502, W-541
+- class review×fail-open-on-malformed-records-patched-per-site seen in 6 opera: W-430, W-444, W-468, W-525, W-547, W-558
+- class review×shared-log-grammar-rejects-valid-records seen in 2 opera: W-459, W-492
+- class security×symlink-parent-write-escape seen in 5 opera: W-423, W-430, W-461, W-542, W-543
+- class spec-gate×self-signed seen in 2 opera: W-442, W-502
+- class spec×input-domain-missing-or-unenforceable seen in 13 opera: W-227, W-298, W-409, W-430, W-433, W-445, W-452, W-459, W-461, W-525, W-530, W-547, W-558
+- class spec×input-without-named-rejector seen in 2 opera: W-489, W-495
+- class spec×promise-unattainable-under-accepted-domain seen in 19 opera: W-227, W-298, W-333, W-407, W-425, W-452, W-459, W-462, W-468, W-472, W-489, W-494, W-495, W-498, W-501, W-509, W-525, W-543, W-547
+- class tests×assertion-satisfied-by-the-wrong-cause seen in 2 opera: W-298, W-473
+- class tests×ruled-case-uncovered seen in 11 opera: W-364, W-444, W-450, W-454, W-463, W-474, W-495, W-496, W-525, W-542, W-547
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-227, W-501
+- class tests×tests-that-agree-with-the-bug seen in 4 opera: W-407, W-409, W-487, W-543
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-487, W-508
+
+#### Owed cause fixes
+
+- OWED class gate×W-339 (W-463, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class gate×tests (W-364, W-407, W-494, W-502, W-509): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class mechanism×replay-environment-not-pristine (W-462, W-477): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class spec-gate×self-signed (W-442, W-502): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- Owed spec-gate×self-signed (W-442, W-502), owed a third day: the 11-07 and 11-08 stamps never landed because the class's one lesson, L-042, names W-080 (halted, so `causeFixes`, packages/cli/src/retro.ts:1354, skips it) and nothing has written studio/lessons/ since #501; a dispatched clerk sets L-042 `addressed_by: "W-506"` (greenlit, "high: cause fix, spec-gate×self-signed"). Owner: design lead. Opus: W-506.
+- Owed mechanism×replay-environment-not-pristine (W-462, W-477), a third day: the same gap, L-058 names W-175 (halted); a dispatched clerk sets L-058 `addressed_by: "W-464"` (greenlit, this class's cause fix). Fold the presign meet's call 3 into W-464: the branch perform and the reds replay run `npm ci --cache ~/.bisellium-evidence/npm-cache` in the new worktree, and the replay refuses a worktree with no node_modules, a module resolving outside the worktree, or a lockfile digest unlike the branch's (evidence: W-558 reds 2-5 held because the worktree had no node_modules and the schema resolved to main's, current-state.md:39; presign-meet-1109/collated.md call 3). Owner: ops-lead. Opus: W-464.
+- Owed gate×W-339 (W-463, W-487) and gate×tests (W-364, W-407, W-494, W-502, W-509), a third day: no lesson of either class exists (no `gate×` in studio/lessons/), so the stamp proposed 11-07 and 11-08 has nothing to land on. Amend W-533 (greenlit, "Retro owes gate failures by row and recurrences"): `causeFixes` also counts a greenlit-or-later opus whose own front matter names the class it fixes, and an OWED line for a class with no lesson says "no lesson of this class" rather than naming addressed_by; W-533 names both gate classes. Reds: a gate class with only an opus naming it, which is not owed; the same opus halted, which is owed. Owner: eng-lead. Opus: W-533.
+- check-rule×pre-sign-gate (presign meet call 1, unanimous): `verdict --phase spec` (every first sign and re-sign, including class loops and amendments) cites a gate log tied to the prototype tree hash that ran `check` and every test file importing a touched module, scripts/*.test.mjs always included, falling back to the full `npm test` when the import walk cannot trace a module; it refuses otherwise. The gate also refuses a prototype diff that touches a path outside the brief's Files owned. Evidence: the W-547 class-loop amendment ran no suite and its unnamed W-530-b4 flip failed ci-opus-4 20 min later (ci/W-547-tests-ca290f55.log, this entry's Gate failures); W-543's r5 re-sign skipped admission (current-state.md:65); W-558's signed prototype failed 7 test.one_sided at ci-opus-1, W-547's 18 (current-state.md:40); the signer skipped plain-node scripts/*.test.mjs (status-slate, current-state.md:41); w547.test.ts held by W-498 stayed outside Files owned until `next` held it after a fix check (current-state.md:22); four unnamed flips (current-state.md:17). W-553 (risk class and budget) does not fit its scope: file its own opus, ranked after W-560. Switch to the full suite if it runs in under ~5-8 min in one slot or the subset misses once in the next two cascades. Owner: eng-lead. Opus: file.
+- check-rule×class-census (presign meet call 2, unanimous; W-558's review×fail-open-on-malformed-records-patched-per-site found one site per round across spec r2, build r1, r2, spec r6, r8: the `.bisellium` parent, `receipts/`, `opera/` with an empty queue, the studio root): (i) a fix or amendment brief answering a repeated class tag names a kept census script and its committed output, each instance a row or a stated limit with a follow-on, and admission refuses the handoff otherwise (shape, not completeness), in the pre-sign gate's opus; (ii) the spec and build reviewer prompts say: name every instance found, not the first. The class itself is covered by W-185 (greenlit, one loader per record type; W-558 its first slice). Owner: eng-lead (i), ops-lead (ii). Opus: with the pre-sign gate (file).
+- script×blind-codex-verdict (Codex sandbox meet call 3, unanimous): `verdict` and the review and fix-check performs refuse a Codex session whose shell failed or that ran no repository command, recorded failed-to-run, never passed (spec r4 PASS ran web search after "os error 30"; fix-2 "Unable to census", codex-sandbox-meet-1109/W-558-fix-2-void/); the fix-check census parser (next.ts, census read, the meet's next.ts:2927) stops counting "Not determined" as an open path; a Codex upgrade is admitted only by a kept smoke run by a dispatched agent (`codex exec -s read-only` lists and reads a worktree file inside the sandbox; codex-smoke-1109/run.sh, A and B failed on 0.167.0, pin OK on 0.153.4). Reading the session's structure replaces the producer's stop-grep on 'os error 30', which matched prompt quotes (current-state.md:21). Its own opus, high, ranked right after W-558; the D-178 freeze exemption is the Patron's call (qa: ask, not assume). Owner: ops-lead (performs, smoke), eng-lead (parser). Opus: file.
+- hook×background-run-stale (W-494 guard kept the finished smoke run b887utfmu live and refused the agent's next run 3 times, then again at ci; current-state.md:20, :24): covered by W-538 "Guard ends runs TaskStop reports not found" (greenlit; `liveBackgroundRuns`, packages/cli/src/guard.ts:970); add the b887utfmu transcript as its red. Owner: ops-lead. Opus: W-538.
+- hook×runner-hands-back-mid-run (3 times on 11-09, and a second hand-back refused; current-state.md:50): covered by W-372 (greenlit, the SubagentStop guard holds the hand-back while the agent's own perform runs); add a row for the refused second hand-back (`handsBack`, guard.ts:997, reads only the last tool call). Owner: ops-lead. Opus: W-372.
+- hook×double-runner-dispatch (review r3 on W-558: a resumed runner was still acting when a second was dispatched; codex exit 1, empty verdict, nothing recorded; current-state.md:24): the rule now lives only in current-state.md:7 prose; the guard refuses an Agent dispatch of a ladder-runner for an opus while another ladder-runner for that opus has not handed back. Reds: the second dispatch refused, a dispatch after the hand-back allowed. Owner: ops-lead. Opus: file.
+- prompt×earlier-findings-when-none-stand (r6b and r9b reissues: the prompt asked for Earlier findings when the previous recorded round, void spec-4, had none standing; current-state.md:7, :22, :34): fold into W-549 "The review perform writes Earlier findings itself" (greenlit): the perform omits the section when the previous recorded round has no standing blocker, and verdict refuses a section that names one when none stand. Owner: ops-lead. Opus: W-549.
+- workflow×runner-land-under-timeout (runners ran `land` under `timeout` or a subshell, twice; current-state.md:50): covered by W-537 "A checked template for ladder-runner briefs" (greenlit), whose template states the foreground call with the 600000 ms tool timeout. Owner: ops-lead. Opus: W-537.
+- workflow×unlanded-record-blocks-done and handoff-check×in-flight-line (W-555's greenlit-unlanded record blocked another opus's done; handoff-check read every id on the In flight line as in flight; current-state.md:50): no opus covers either; file one: done refuses only on its own opus's records, and handoff-check reads the In flight line's opus ids by their named form, not every id. Owner: eng-lead. Opus: file.
+- spec×security-amendment-after-ceiling (W-543 r5: a class-loop security amendment after the two-review ceiling got no spec review, the build review its only judge; current-state.md:63): `next` names a spec review for a re-signed brief whose amendment touches a security row, regardless of the ceiling. Owner: design lead. Opus: file.
+- gate×W-530 (W-547, ci/W-547-tests-ca290f55.log, row W-530-b4): one opus, not owed; its cause, an unnamed flip at a re-sign, is covered by the pre-sign gate above. Owner: eng-lead.
+- review×fail-open-on-malformed-records-patched-per-site (6 opera), interface×validation-order-masks-errors (3), security×symlink-parent-write-escape (5), tests×tests-that-agree-with-the-bug (4), tests×ruled-case-uncovered (W-547 review LOOP r1-r2): none new, because each has a cause fix named by a lesson (none is owed) and W-185, W-414 stand greenlit for the first and last.
+- workflow×session-url-in-commit (runner's commit carried a Claude-Session line, current-state.md:24): none, because the guard already denied it and the retry landed clean.
+- UI and design-quality classes: none, because no UI opus ran on 11-09.
