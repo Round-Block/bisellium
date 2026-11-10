@@ -16,6 +16,7 @@ queues:
       - { opus: W-571, says: "W-562 rebuilt (hermetic b3 rows; certify rejected red 3's replay); high, exempt (the Patron 2026-11-10); leads' meet w562-certify-meet-1110 route 2" }
       - { opus: W-572, says: "guard routes a main-thread Patron question to a leads' meet first; the Patron 2026-11-10, exempt from D-178" }
       - { opus: W-568, says: "W-562's remainder (D-061 §4): verdict refuses a blank or unknown manifest harness, so a typo cannot skip the blind-session check; high, exempt with W-571 (W-562's remainder, now W-571's)" }
+      - { opus: W-574, says: "Stop hook shows the next-session prompt from a checked handoff block (the Patron 11-10; leads' meet endprompt-meet-1110, unanimous); D-178 exemption asked" }
       - { opus: W-538, says: "guard ends a finished background run; exempt from D-178, the Patron 2026-11-10" }
       - { opus: W-573, says: "red replays each red in certify's empty-HOME cell; POISON gains EROFS; high (ops), behind the freeze (D-178)" }
       - { opus: W-560, says: "a failed ci --opus commits its own gate logs, so a class-loop spec perform is never refused for them; high, the Patron's call 2026-11-09 (W-547); producer's rank, vetoable" }
