@@ -1217,12 +1217,12 @@ test("W-326-b2 behaviour 2: a prototype the replay cannot reproduce names the bu
   assert.equal(existsSync(join(passing.w.wtStudio, "ci", "reds", OPUS, "01.log")), false, "no red is recorded");
   builderReds(next(passing.w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: a replay of ${OPUS} was already attempted \\(\\.bisellium/prototype-replay/${OPUS}\\.attempted\\); the replay runs once$`), "after the hold the builder's order");
 
-  // a red that fails by module load is not a red: the perform holds and leaves its log uncommitted for the builder
+  // a red that fails by module load is not a red: red refuses it as certify's classifier does (W-573), so the perform holds with no log
   const load = w326World("w326-b2-load", { stage: { moduleLoad: true } });
   const unusable = performReds(load.w);
   expectStep(unusable, "reds", "held", "a module-load red holds the perform");
-  assert.equal(unusable.kv.get("why"), `behaviour 1's red is not usable (a dirty-tree, module-load or exit-0 red); ci/reds/${OPUS}/01.log is left uncommitted`, ran("the why names the log", unusable));
-  assert.equal(git(load.w.wt, ["status", "--porcelain", "-uall"]), `?? studio/ci/reds/${OPUS}/01.log`, "the log is left uncommitted");
+  assert.equal(unusable.kv.get("why"), "behaviour 1's red was not recorded: red: behaviour 1's command is not a red certify's classifier accepts on this host: the output names an environment failure (ERR_MODULE_NOT_FOUND) — nothing recorded", ran("the why names the red's refusal", unusable));
+  assert.equal(git(load.w.wt, ["status", "--porcelain", "-uall"]), "", "no log is written");
   handoffAt(load.w, "wt", NOW_ISO);
   builderReds(next(load.w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: a replay of ${OPUS} was already attempted `), "after a module-load red the builder's order");
 

@@ -46,6 +46,7 @@ import {
   type OpusModelProblem,
 } from "./opus-model.js";
 import { ensureRealDirectory } from "./ids.js";
+import { cellRefusal, openCell, type Cell } from "./red-cell.js";
 import { claimPending, recordTicket, releaseClaim, requireTicket, ticketsProblem } from "./ticket.js";
 import { countedFailures, readBuildReviewConfig, readBuildRounds, readSourceExcludes, type BuildReviewRound } from "./verdict.js";
 import { webBuild, webBuildFailure } from "./web-build.js";
@@ -926,9 +927,9 @@ function safeRedsDir(studioRoot: string, opusId: string): string | { error: stri
  *  chronological combination, which is why this (unlike ready/done/review)
  *  has to be async. `spawnError` is set when the executable never started
  *  (its `error` event); `exitCode` is then 1, as before. */
-function runCapture(cmd: string[], cwd: string): Promise<{ exitCode: number; output: string; spawnError?: string }> {
+function runCapture(cmd: string[], cwd: string, env?: Record<string, string>): Promise<{ exitCode: number; output: string; spawnError?: string }> {
   return new Promise((done) => {
-    const child = spawn(cmd[0]!, cmd.slice(1), { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(cmd[0]!, cmd.slice(1), { cwd, stdio: ["ignore", "pipe", "pipe"], ...(env === undefined ? {} : { env }) });
     let output = "";
     child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString("utf8")));
     child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString("utf8")));
@@ -1185,6 +1186,27 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     const got = firstFailure(output);
     console.error(`red: behaviour ${behaviour} did not fail at its declared assertion, pinned by \`${pin.row}\` "${pin.assertion}"; its first failure is ${got === undefined ? "no assertion" : JSON.stringify(got)} — nothing recorded`);
     return { exitCode: 1 };
+  }
+
+  // W-573: certify replays this red with an empty HOME and a fresh TMPDIR and accepts only what its classifier accepts; the
+  // command is run once more in that environment, and a red certify would refuse, one failing at other tests there, or one
+  // whose cell cannot be opened (a missing or unwritable TMPDIR) records nothing; the cell's removal is attempted whatever the result
+  if (optIn.optedIn) {
+    let cell: Cell | undefined;
+    let refused: string | undefined;
+    try {
+      cell = openCell();
+      const again = await runCapture(cmd, execCwd, cell.env);
+      refused = again.spawnError !== undefined ? `could not be run in certify's replay cell: ${again.spawnError}` : cellRefusal({ exitCode: cmdExit, output }, again);
+    } catch (e) {
+      refused = `could not be run in certify's replay cell: ${(e as Error).message}`;
+    } finally {
+      cell?.close();
+    }
+    if (refused !== undefined) {
+      console.error(`red: behaviour ${behaviour}'s command ${refused} — nothing recorded`);
+      return { exitCode: 1 };
+    }
   }
 
   if (optIn.optedIn && hashRepo((repository as { root: string }).root) !== treeHeader) {

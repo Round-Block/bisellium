@@ -200,7 +200,7 @@ function optedFixture(tag: string, o: FxOptions = {}): Fx {
   put(
     S,
     "target.cjs",
-    'const fs=require("node:fs");fs.appendFileSync(process.argv[2],"target\\n");const m=process.argv[3];if(m==="tracked")fs.appendFileSync("src/a.txt","x\\n");if(m==="studio")fs.writeFileSync("studio/note.txt","x\\n");process.exit(1);\n',
+    'const fs=require("node:fs");fs.appendFileSync(process.argv[2],"target\\n");const m=process.argv[3];if(m==="tracked")fs.appendFileSync("src/a.txt","x\\n");if(m==="studio")fs.writeFileSync("studio/note.txt","x\\n");console.log("not ok 1 - target");process.exit(1);\n',
   );
   if (o.excludes !== undefined) {
     const yml = join(studio, "bisellium.yml");
@@ -227,7 +227,7 @@ test("W-166-b2 behaviour 2: an opted-in red runs the earlier behaviour first, th
   const fx = optedFixture("b2-ok");
   const r = redIn(fx, 2);
   assert.equal(r.status, 0, `2a: the red records (${r.stderr})`);
-  assert.equal(ranOrder(fx), "b1\ntarget\n", "2a: behaviour 1's recorded command ran, then the target");
+  assert.equal(ranOrder(fx), "b1\ntarget\ntarget\n", "2a: behaviour 1's recorded command ran, then the target, then the target again in certify's empty-HOME cell (W-573)");
   const lines = readFileSync(logOf(fx.studio, ID, 2), "utf8").split("\n");
   assert.deepEqual(lines.slice(0, 5).map((l) => l.split(":")[0]), ["# behaviour", "# command", "# exit", "# at", "# sella"], "2a: the log keeps today's header");
   assert.ok((lines[5] ?? "").startsWith("# tree: tree:"), "2a: the sixth header line is a clean tree identity");
@@ -303,7 +303,7 @@ test("W-166-b2 behaviour 2: a target that writes under the studio still records"
 test("W-166-b2 behaviour 2: behaviour 1, a brief without the line and an opus with no record run the target only", () => {
   const first = optedFixture("b2-first");
   assert.equal(redIn(first, 1).status, 0, "2g: behaviour 1 records");
-  assert.equal(ranOrder(first), "target\n", "2g: behaviour 1 of an opted-in brief runs only the target");
+  assert.equal(ranOrder(first), "target\ntarget\n", "2g: behaviour 1 of an opted-in brief runs only the target, on the host and in certify's empty-HOME cell (W-573)");
   const plain = optedFixture("b2-plain", { lines: [], prereq: null });
   assert.equal(redIn(plain, 2).status, 0, "2h: a brief without the line records with no 01.log");
   assert.equal(ranOrder(plain), "target\n", "2h: and runs only the target");
