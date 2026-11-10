@@ -1,0 +1,54 @@
+certifies: tree:8c72881c32dc2d1dbee9c72a47bf4a35553eb83e
+command: npm run -s lint
+exit code: 0
+
+
+/home/edckt/agents/bisellium/.********.tsx
+  229:9  warning  'focusedId' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.tsx
+  92:9  warning  'focusedPetition' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.spec.ts
+  243:11  warning  'workspace' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.js
+  27:7  warning  'OID_RE' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.js
+  132:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.js
+  251:35  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.js
+  19:7  warning  'str' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.js
+  194:11  warning  'stalledFile' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  14:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  17:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.ts
+  28:7  warning  'OID_RE' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.ts
+  21:7  warning  'str' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  238:9  warning  'stalledFile' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+✖ 16 problems (0 errors, 16 warnings)
+
+
