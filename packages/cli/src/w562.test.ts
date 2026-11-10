@@ -148,3 +148,78 @@ test("W-562-b2 behaviour 2: a missing, duplicated or malformed rollout is refuse
   const unsessioned = verdict(home, ["--model", MODEL]);
   assert.equal(unsessioned.exitCode, 0, `a Codex-model verdict without --session is not judged (a stated limit): ${unsessioned.stderr}`);
 });
+
+// ---------------------------------------------------------------------------
+// W-562 revision 2 (spec review round 2, finding 1): every input the verdict boundary reads to decide whether a verdict is a
+// Codex one, and how its turn is judged, has a named rejector: the manifest's sellae, the caller's turnRan and Codex's home
+// ---------------------------------------------------------------------------
+const SEATS_OK = [`  - { id: qa-lead, collegium: engineering, kind: agent }`, `  - { id: spec-reviewer, collegium: engineering, kind: agent, model: ${MODEL}, harness: codex }`];
+/** `verdict` in process over an officina whose `sellae` block is `sellae` (raw YAML lines after the key, or undefined for no key). */
+function boundary(sellae: string[] | undefined, extra: string[], o: { turnRan?: unknown; env?: Record<string, string | undefined> } = {}): { exitCode: number; stderr: string; ci: string[] } {
+  const dir = temp("boundary");
+  writeFileSync(
+    join(dir, "bisellium.yml"),
+    ["bisellium: 1", "studio: W-562 boundary", "patron: patron", "collegia:", "  - { id: engineering, name: Engineering, magister: eng-lead }", ...(sellae === undefined ? [] : sellae), "probationes:", "  - { id: review, name: Review, kind: agent }", "wip_limit: 10", ""].join("\n"),
+  );
+  mkdirSync(join(dir, "opera"));
+  writeFileSync(join(dir, "opera", "W-300.md"), "---\nid: W-300\ntitle: W-300\nkind: feature\ncollegium: engineering\nstate: building\nprobationes: {}\n---\n");
+  const input = join(dir, "input.md");
+  writeFileSync(input, "## Findings\nNo findings\n");
+  let stderr = "";
+  const keep = { error: console.error, log: console.log, env: { ...process.env } };
+  console.error = (...args: unknown[]) => {
+    stderr += `${args.map(String).join(" ")}\n`;
+  };
+  console.log = () => {};
+  for (const [k, v] of Object.entries(o.env ?? {})) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+  try {
+    const opts = o.turnRan === undefined ? { now: NOW } : ({ now: NOW, turnRan: o.turnRan } as Parameters<typeof runVerdict>[1]);
+    const r = runVerdict(["W-300", "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--phase", "handoff", "--from", input, "--studio", dir, ...extra], opts);
+    return { exitCode: r.exitCode, stderr, ci: existsSync(join(dir, "ci")) ? readdirSync(join(dir, "ci")).sort() : [] };
+  } finally {
+    console.error = keep.error;
+    console.log = keep.log;
+    for (const k of Object.keys(o.env ?? {})) {
+      if (keep.env[k] === undefined) delete process.env[k];
+      else process.env[k] = keep.env[k];
+    }
+  }
+}
+const CODEX = ["--model", MODEL, "--session", "s-562-b3"];
+
+test("W-562-b3 behaviour 3: a manifest whose sellae cannot say which models are Codex's refuses a sessioned verdict", () => {
+  const nonList = boundary(["sellae: 5"], CODEX, { turnRan: { ran: true, commands: 1 } });
+  assert.equal(nonList.exitCode, 2, "a sellae that is not a list is refused");
+  assert.equal(nonList.stderr, "W-300: refusing: a sessioned verdict cannot be classified Codex or not: bisellium.yml#sellae is not a list\n", "the refusal names the sellae");
+  assert.deepEqual(nonList.ci, [], "and writes nothing");
+  assert.equal(boundary(undefined, CODEX, { turnRan: { ran: true, commands: 1 } }).exitCode, 2, "an absent sellae is refused");
+  assert.equal(boundary(["sellae:", "  - just-a-name", ...SEATS_OK.slice(1)], CODEX).exitCode, 2, "a sellae row that is not a mapping is refused");
+  assert.equal(boundary(["sellae:", ...SEATS_OK, "  - { id: other, collegium: engineering, kind: agent, harness: codex }"], CODEX).exitCode, 2, "a codex-harness row with no model is refused");
+  assert.equal(boundary(["sellae:", ...SEATS_OK, "  - { id: other, collegium: engineering, kind: agent, harness: 5 }"], CODEX).exitCode, 2, "a harness that is not a string is refused");
+});
+
+test("W-562-b3 behaviour 3: a caller's turn judgment is exactly one of its two forms, or the verdict is refused", () => {
+  const seats = ["sellae:", ...SEATS_OK];
+  const zero = boundary(seats, CODEX, { turnRan: { ran: true, commands: 0 } });
+  assert.equal(zero.exitCode, 2, "a turn that ran zero commands is refused");
+  assert.equal(zero.stderr, "W-300: refusing: the caller's turn judgment is not { ran: true, commands: <positive integer> } or { ran: false, why: <nonblank> }\n", "the refusal names the judgment");
+  assert.equal(boundary(seats, CODEX, { turnRan: { ran: true, commands: 1, extra: 1 } }).exitCode, 2, "a judgment with another key is refused");
+  assert.equal(boundary(seats, CODEX, { turnRan: { ran: "yes", commands: 1 } }).exitCode, 2, "a judgment whose ran is not a boolean is refused");
+  assert.equal(boundary(seats, CODEX, { turnRan: { ran: false, why: " " } }).exitCode, 2, "a blind judgment with no reason is refused");
+  assert.equal(boundary(seats, CODEX, { turnRan: { ran: false, why: "it ran none" } }).exitCode, 2, "a well-formed blind judgment is refused as failed to run");
+  const ok = boundary(seats, CODEX, { turnRan: { ran: true, commands: 1 } });
+  assert.equal(ok.exitCode, 0, `a well-formed judgment that ran is recorded without a rollout: ${ok.stderr}`);
+});
+
+test("W-562-b3 behaviour 3: a Codex home that is empty or relative is refused, never searched", () => {
+  const seats = ["sellae:", ...SEATS_OK];
+  const empty = boundary(seats, CODEX, { env: { CODEX_HOME: "" } });
+  assert.equal(empty.exitCode, 2, "an empty CODEX_HOME is refused");
+  assert.equal(empty.stderr, "W-300: refusing: Codex session s-562-b3 failed to run: CODEX_HOME \"\" is not an absolute path; a verdict from a blind session is never recorded\n", "an empty CODEX_HOME is named, never read as unset");
+  assert.equal(boundary(seats, CODEX, { env: { CODEX_HOME: "rel/codex" } }).stderr, "W-300: refusing: Codex session s-562-b3 failed to run: CODEX_HOME \"rel/codex\" is not an absolute path; a verdict from a blind session is never recorded\n", "a relative CODEX_HOME is refused");
+  assert.equal(boundary(seats, CODEX, { env: { CODEX_HOME: undefined, HOME: "rel" } }).stderr, "W-300: refusing: Codex session s-562-b3 failed to run: HOME \"rel\" is not an absolute path; a verdict from a blind session is never recorded\n", "a relative HOME is refused");
+  assert.equal(boundary(seats, CODEX, { env: { CODEX_HOME: undefined, HOME: undefined } }).stderr, "W-300: refusing: Codex session s-562-b3 failed to run: neither CODEX_HOME nor HOME is set; a verdict from a blind session is never recorded\n", "no home is refused");
+});
