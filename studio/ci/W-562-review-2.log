@@ -1,0 +1,20 @@
+# opus: W-562
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1c3c5-62b3-7463-9207-dfce706850c0
+# outcome: passed
+# at: 2026-11-10T08:29:26.522Z
+# tree: tree:8c72881c32dc2d1dbee9c72a47bf4a35553eb83e
+# brief: briefs/W-562.md blob:7676d93d11bc4a38c3d733559040f665e21b62f5
+# ticket: {"opus":"W-562","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-562/studio","head":"3177fc11c9f53b883ac2c733e82c9a6904be1e28","brief":"7676d93d11bc4a38c3d733559040f665e21b62f5","at":"2026-11-10T08:28:34.415Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+The delta isolates the boundary tests from the host Codex home, and the refreshed gates certify the changed source tree.
+VERDICT: PASS
