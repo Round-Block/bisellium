@@ -6,6 +6,7 @@ import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
+import type { TurnRan } from "./codex-run.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
@@ -28,6 +29,8 @@ export const VERDICT_USAGE =
 
 export interface VerdictOptions extends WriteOptions {
   stdin?: Buffer;
+  /** W-571: the caller's own judgment of the Codex turn it ran (a perform); without it the session's rollout is read. */
+  turnRan?: TurnRan;
 }
 
 const GIT_TIMEOUT_MS = 30_000;
