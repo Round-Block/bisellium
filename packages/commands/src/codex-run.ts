@@ -5,11 +5,13 @@
  * prompt that quotes an error (or a command event) cannot pass or fail a turn.
  */
 import { readdirSync, readFileSync, lstatSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 
 export type TurnRan = { ran: true; commands: number } | { ran: false; why: string };
 
 const isDict = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+/** A rollout is read whole; one larger than this is not judged (the largest of the host's rollouts on 11-10 is 157 MiB). */
+const ROLLOUT_MAX_BYTES = 256 * 1024 * 1024;
 const NONE = "it ran no command to exit code 0 in this turn (its shell failed or it ran none)";
 
 /** The `codex exec --json` stream of one turn (start or resume): ran when one top-level `item.completed` event holds a
@@ -60,12 +62,42 @@ export function rolloutRan(text: string): TurnRan {
   return commands > 0 ? { ran: true, commands } : { ran: false, why: `${NONE.replace("this turn", `its last turn ${turn}`)}` };
 }
 
-/** Codex's own home: `CODEX_HOME` when set, else `<HOME>/.codex`; undefined with neither. */
-export function codexHome(env: NodeJS.ProcessEnv): string | undefined {
+/** Codex's own home: `CODEX_HOME` when it is set, else `<HOME>/.codex`; each, when it is the one read, an absolute path, else
+ *  an error (set and empty, relative, or neither set). */
+export function codexHome(env: NodeJS.ProcessEnv): { home: string } | { error: string } {
   const own = env["CODEX_HOME"];
-  if (own !== undefined && own !== "") return own;
+  if (own !== undefined) return isAbsolute(own) ? { home: own } : { error: `CODEX_HOME ${JSON.stringify(own)} is not an absolute path` };
   const home = env["HOME"];
-  return home === undefined || home === "" ? undefined : join(home, ".codex");
+  if (home === undefined) return { error: "neither CODEX_HOME nor HOME is set" };
+  return isAbsolute(home) ? { home: join(home, ".codex") } : { error: `HOME ${JSON.stringify(home)} is not an absolute path` };
+}
+
+/** W-571: the models a manifest seats on the codex harness, or why it cannot say: `sellae` a list of mappings, each `harness`
+ *  absent or a string, and each `harness: codex` row's `model` a nonblank string. */
+export function codexModels(manifest: unknown): { models: Set<string> } | { error: string } {
+  const rows = isDict(manifest) ? manifest["sellae"] : undefined;
+  if (!Array.isArray(rows)) return { error: "bisellium.yml#sellae is not a list" };
+  const models = new Set<string>();
+  for (const [i, row] of rows.entries()) {
+    if (!isDict(row)) return { error: `bisellium.yml#sellae[${i}] is not a mapping` };
+    const harness = row["harness"];
+    if (harness !== undefined && typeof harness !== "string") return { error: `bisellium.yml#sellae[${i}].harness is not a string` };
+    if (harness !== "codex") continue;
+    const model = row["model"];
+    if (typeof model !== "string" || model.trim() === "") return { error: `bisellium.yml#sellae[${i}] is on the codex harness with no model` };
+    models.add(model);
+  }
+  return { models };
+}
+
+/** W-571: a caller's own judgment, exactly `{ ran: true, commands: <positive integer> }` or `{ ran: false, why: <nonblank> }`. */
+export function validTurnRan(v: unknown): TurnRan | { error: string } {
+  const bad = { error: "the caller's turn judgment is not { ran: true, commands: <positive integer> } or { ran: false, why: <nonblank> }" };
+  if (!isDict(v)) return bad;
+  const keys = Object.keys(v).sort().join(",");
+  if (v["ran"] === true && keys === "commands,ran" && Number.isSafeInteger(v["commands"]) && (v["commands"] as number) > 0) return { ran: true, commands: v["commands"] as number };
+  if (v["ran"] === false && keys === "ran,why" && typeof v["why"] === "string" && v["why"].trim() !== "") return { ran: false, why: v["why"] };
+  return bad;
 }
 
 /** The one rollout of `session` under `<home>/sessions/YYYY/MM/DD/`, judged; every read failure, none or two is not ran.
@@ -99,7 +131,9 @@ export function sessionRan(home: string, session: string): TurnRan {
   if (found.length !== 1) return { ran: false, why: `${found.length === 0 ? "no" : String(found.length)} rollout file(s) for session ${session} under ${root}` };
   const file = found[0]!;
   try {
-    if (!lstatSync(file).isFile()) return { ran: false, why: `${file} is not a regular file` };
+    const st = lstatSync(file);
+    if (!st.isFile()) return { ran: false, why: `${file} is not a regular file` };
+    if (st.size > ROLLOUT_MAX_BYTES) return { ran: false, why: `${file} is over ${ROLLOUT_MAX_BYTES} bytes` };
     return rolloutRan(readFileSync(file, "utf8"));
   } catch (e) {
     return { ran: false, why: `${file} cannot be read (${(e as NodeJS.ErrnoException).code ?? (e as Error).message})` };
