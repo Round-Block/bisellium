@@ -73,14 +73,14 @@ So `.claude/settings.json` is hand-authored: four hook keys
 (`SessionStart`, `PreToolUse`, `PostToolUse`, `SubagentStop`; W-242's cuts,
 W-310's guard and W-369's sync), every `timeout: 2` but the sync's 60,
 `--studio studio` on every command, no `--sella` anywhere, the guard on
-`Bash|Write|Edit|NotebookEdit` and at `SubagentStop`, the sync at
+`Bash|Write|Edit|NotebookEdit|AskUserQuestion` and at `SubagentStop`, the sync at
 `SessionStart` and, on `Bash`, at `PostToolUse` when a sync is requested, and
 `permissions.allow` including `Workflow`.
 Structurally tested in `instructions.test.ts` (behaviour 9), not compared
 byte-for-byte against the real renderer.
 
 **The guard (W-310).** `hook-event guard` is the one hook target that can
-refuse: wired for `PreToolUse` on `Bash|Write|Edit|NotebookEdit` and for
+refuse: wired for `PreToolUse` on `Bash|Write|Edit|NotebookEdit|AskUserQuestion` and for
 `SubagentStop`, it exits 2 with one stderr line (Claude Code refuses the tool
 call, or keeps the subagent running, and shows the line), and exits 0 on
 anything else, an unreadable input or its own error included (deny-only,
@@ -96,7 +96,11 @@ the main thread's Write, Edit or NotebookEdit outside `studio/` and `docs/`,
 and anyone's write to `studio/decisions/` or `docs/SESSION-HANDOFF.md` but a
 dispatched clerk's (W-290); a dispatched clerk's write in a checkout outside
 `studio/acta/`, `studio/decisions/`, `studio/lessons/`, `studio/queue.yml` and
-`docs/` but the dossier (W-542); and, at `SubagentStop`, an agent whose own shell
+`docs/` but the dossier (W-542); the main thread's AskUserQuestion unless each
+question cites a leads' meet collation by its path
+(`~/.bisellium-evidence/<a folder with meet in its name>/collated*.md`, a
+readable regular file, not a symlink) or opens with a Patron-only tag, `[ui]`,
+`[architecture]`, `[code-owner]`, `[settings]` or `[veto]` (W-572, D-189); and, at `SubagentStop`, an agent whose own shell
 or monitor task, named in its transcript, still runs (once per stop). The
 command classifier is lexical: it recognises the CLI as `bisellium`,
 `npx bisellium`, `npm run bisellium --` and `node …/bisellium.mjs`, behind

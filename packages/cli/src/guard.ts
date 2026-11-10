@@ -1,6 +1,6 @@
 /**
  * packages/cli/src/guard.ts — W-310 (with W-290): the guard `bisellium hook-event guard` runs for
- * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit), SubagentStop, Stop and UserPromptSubmit hooks. Deny-only at a tool call and a
+ * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit, AskUserQuestion), SubagentStop, Stop and UserPromptSubmit hooks. Deny-only at a tool call and a
  * subagent's stop, and fail-open: it returns a refusal or nothing, never an allow, and hooks.ts lets the call run on any
  * error, unknown event or unreadable input. The main thread is a hook input without `agent_id`
  * (Claude Code sets it only inside a subagent, D-073 B).
@@ -1234,7 +1234,7 @@ export function guardRefusal(input: Dict): string | undefined {
 
 /** The hook command the repo's `.claude/settings.json` wires for the guard. */
 export const GUARD_COMMAND = "bisellium hook-event guard --studio studio";
-const GUARDED_TOOLS = ["Bash", "Write", "Edit", "NotebookEdit"];
+const GUARDED_TOOLS = ["Bash", "Write", "Edit", "NotebookEdit", "AskUserQuestion"];
 
 /** What the settings lack for the guard: a PreToolUse group whose matcher covers each of
  *  `GUARDED_TOOLS`, a SubagentStop group whose matcher is `*`, a Stop group (W-444) and a UserPromptSubmit group (W-508; neither
