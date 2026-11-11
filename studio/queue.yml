@@ -4,6 +4,7 @@ queues:
     next:
       - { opus: W-563, says: "pre-sign gate runs check, touched tests and the read-scope check; spec and build reviewers list every site of a flagged class in round 1; exempt from D-178 (the Patron 2026-11-11)" }
       - { opus: W-579, says: "tests gate timeout set from measured times and the full batch split or sized to the runner; exempt from D-178, after W-563 (the Patron 2026-11-11, suite-reuse-meet-1111)" }
+      - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; exempt from D-178 (the Patron 2026-11-11, ladder-time-meet-1111)" }
       - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182; exempt by D-181); after W-563, on the leads meet w512-rank-meet-1111 and the Patron 2026-11-11" }
       - { opus: W-551, says: "a required fix gets a red ticket after a full replay; W-365 and W-421 merged in; high, exempt from D-178, E1 right after W-512 (the Patron 2026-11-11, D-192)", folded: [W-365, W-421] }
       - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), split from W-169; exempt from D-178, first in E3 (the Patron 2026-11-11, D-192)" }
