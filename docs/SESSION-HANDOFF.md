@@ -54,15 +54,15 @@ Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W
 
 D-193 replaces D-178: no per-opus exemptions; queue entries are product (M4 path) or process; after W-512, E1 and E2 take product, E3 is the one process lane (W-595 enforces). D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (W-502's cause fix) waits in the process lane.
 
-In flight: W-451 merged (#1045), done once its master verify runs. W-563 at spec: brief drafted ahead (studio/briefs/W-563.md, untracked in main).
+In flight: W-451 merged (#1045), done once its master verify runs. W-563 signed r1 (ci/W-563-spec-1.log; brief rev 3 untracked in main): Codex spec review r2 next.
 
 Greenlit ahead of build: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home D-175 keeps. Branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep it). No W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
-Filed 11-08/11: W-533 to W-595. Next: studio/queue.yml order (D-192: lanes by file overlap, `next_ts: true` is E1; retags wait for W-593). The next spec may be drafted during a build (spec-ahead-meet-1109/). Meets: ~/.bisellium-evidence/*-meet-11*/ (11-11: m4-path, lanes, magister). Leads-settled calls need no Patron (D-189).
+Filed 11-08/11: W-533 to W-595. Next: studio/queue.yml order (D-192: lanes by file overlap, `next_ts: true` is E1; retags wait for W-593). The next spec may be drafted during a build (spec-ahead-meet-1109/). Meets: ~/.bisellium-evidence/*-meet-11*/ (11-11: lanes, ladder-time, freeze). Leads-settled calls need no Patron (D-189).
 
 Design-collegium questions go to design-lead (design.md:3; CLAUDE.md's Roles line names it as spec signer since W-589).
 
-Next session, in order: W-563 signs (brief drafted, studio/briefs/W-563.md; kits W-589-spec/, W-589-specreview/, W-589-build/), Codex spec review, build; then W-512; after W-512 lands, 3 engineering and 2 design lanes (lanes-meet-1111/collated.md). State: ~/.bisellium-evidence/current-state.md.
+Next session, in order: W-563 Codex spec review (kit W-563-specreview/), branch to review r1 (W-563-build/), PR, merge, done in the same session; then W-579, W-594, W-512 (W-512 spec drafted by split helpers, a trial). State: ~/.bisellium-evidence/current-state.md.
 
 Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it. Meets filed: W-562, W-563, W-564.
 
