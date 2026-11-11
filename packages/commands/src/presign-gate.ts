@@ -65,6 +65,18 @@ interface Tok {
 // a `/` after one of these words starts a regular expression, after any other word or a closer it divides
 const REGEX_AFTER = /^(?:return|typeof|case|in|of|delete|void|throw|new|else|do|yield|await|instanceof)$/;
 
+const SIMPLE_ESCAPES: Record<string, string> = { n: "\n", t: "\t", r: "\r", b: "\b", f: "\f", v: "\v" };
+/** A string literal's cooked value: its `\x`, `\u`, `\u{}`, octal and `\0` escapes decoded, a line continuation dropped, any other escaped character itself. */
+function cooked(raw: string): string {
+  return raw.replace(/\\(?:x([0-9a-fA-F]{2})|u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|([0-7]{1,3})|(\r\n|[\n\r\u2028\u2029])|([^]))/g, (m, x, ub, u, oct, nl, ch) => {
+    if (nl !== undefined) return "";
+    if (oct !== undefined) return String.fromCharCode(parseInt(oct, 8) & 0xff);
+    const hex = x ?? ub ?? u;
+    if (hex !== undefined) return Number.parseInt(hex, 16) <= 0x10ffff ? String.fromCodePoint(Number.parseInt(hex, 16)) : m;
+    return SIMPLE_ESCAPES[ch] ?? ch;
+  });
+}
+
 /** The tokens of a source text with comments, template text and regular expressions left out: only a string literal's body is kept (W-563 review 1). */
 function tokens(text: string): Tok[] {
   const out: Tok[] = [];
@@ -91,8 +103,8 @@ function tokens(text: string): Tok[] {
       i = end < 0 ? n : end + 2;
     } else if (c === '"' || c === "'") {
       let j = i + 1;
-      while (j < n && text[j] !== c && text[j] !== "\n") j += text[j] === "\\" ? 2 : 1;
-      out.push({ k: "str", v: text.slice(i + 1, Math.min(j, n)) });
+      while (j < n && text[j] !== c && text[j] !== "\n") j += text[j] === "\\" ? (text[j + 1] === "\r" && text[j + 2] === "\n" ? 3 : 2) : 1;
+      out.push({ k: "str", v: cooked(text.slice(i + 1, Math.min(j, n))) });
       i = j + 1;
     } else if (c === "`") {
       i++;
@@ -140,7 +152,9 @@ function specifiers(text: string): string[] {
   for (const [i, tok] of t.entries()) {
     if (tok.k !== "id" || (tok.v !== "import" && tok.v !== "export") || at(i - 1, "p", ".")) continue;
     if (tok.v === "import" && at(i + 1, "str")) out.push(t[i + 1]!.v);
-    else if (tok.v === "import" && at(i + 1, "p", "(") && at(i + 2, "str") && at(i + 3, "p", ")")) out.push(t[i + 2]!.v);
+    // `import("…")`, `import("…",)`, `import("…", { with: … })`, and the phase forms `import.defer("…")`, `import.source("…")`
+    else if (tok.v === "import" && at(i + 1, "p", "(") && at(i + 2, "str") && (at(i + 3, "p", ")") || at(i + 3, "p", ","))) out.push(t[i + 2]!.v);
+    else if (tok.v === "import" && at(i + 1, "p", ".") && (at(i + 2, "id", "defer") || at(i + 2, "id", "source")) && at(i + 3, "p", "(") && at(i + 4, "str") && (at(i + 5, "p", ")") || at(i + 5, "p", ","))) out.push(t[i + 4]!.v);
     else if (tok.v === "import" || at(i + 1, "p", "*") || at(i + 1, "p", "{") || at(i + 1, "id", "type")) {
       // a binding list: names, `as`, `*`, commas and braces (a string name inside braces), up to `from "…"`
       for (let j = i + 1, depth = 0; j < t.length; j++) {
@@ -149,7 +163,7 @@ function specifiers(text: string): string[] {
           out.push(t[j + 1]!.v);
           break;
         }
-        if (u.k === "id" || (u.k === "str" && depth > 0) || (u.k === "p" && (u.v === "*" || u.v === ","))) continue;
+        if (u.k === "id" || (u.k === "str" && (depth > 0 || at(j - 1, "id", "as"))) || (u.k === "p" && (u.v === "*" || u.v === ","))) continue;
         if (u.k === "p" && u.v === "{") depth++;
         else if (u.k === "p" && u.v === "}" && depth > 0) depth--;
         else break;
