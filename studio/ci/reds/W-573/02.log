@@ -1,0 +1,220 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-573-b2\s --import tsx packages/cli/src/w573.test.ts
+# exit: 1
+# at: 2026-11-11T01:02:19.635Z
+# sella: ladder-lead
+# tree: tree:c6b0792de5dbfc3cff3a8896868ec673704c71b4
+# ticket: {"opus":"W-573","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-573/studio","head":"e3731e5b0b5a58fb29e95dc7a5961702a821967d","brief":"ba74ac5c7bf30a8afa684dc28836d321e7997cac","at":"2026-11-11T01:02:19.584Z"}
+
+TAP version 13
+# Subtest: W-573-b2 behaviour 2: a red that fails by assertion only with the host's HOME is refused, and nothing is written
+not ok 1 - W-573-b2 behaviour 2: a red that fails by assertion only with the host's HOME is refused, and nothing is written
+  ---
+  duration_ms: 894.114156
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:21:999'
+  failureType: 'testCodeFailure'
+  error: |-
+    a red whose empty-HOME run throws is refused
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:136:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-573-b2 behaviour 2: a red that passes in an empty HOME is refused
+not ok 2 - W-573-b2 behaviour 2: a red that passes in an empty HOME is refused
+  ---
+  duration_ms: 1368.00884
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:21:1665'
+  failureType: 'testCodeFailure'
+  error: |-
+    a red that passes in the cell is refused
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:145:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-573-b2 behaviour 2: a red that fails at another test in an empty HOME is refused
+not ok 3 - W-573-b2 behaviour 2: a red that fails at another test in an empty HOME is refused
+  ---
+  duration_ms: 912.257425
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:21:2155'
+  failureType: 'testCodeFailure'
+  error: |-
+    a red whose failing tests differ is refused
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:153:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-573-b2 behaviour 2: a red whose host run throws as a read-only mount does is refused
+not ok 4 - W-573-b2 behaviour 2: a red whose host run throws as a read-only mount does is refused
+  ---
+  duration_ms: 881.805502
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:21:2701'
+  failureType: 'testCodeFailure'
+  error: |-
+    a host run certify's classifier refuses is refused
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:161:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-573-b2 behaviour 2: a red failing by assertion in both runs records the host's run
+ok 5 - W-573-b2 behaviour 2: a red failing by assertion in both runs records the host's run
+  ---
+  duration_ms: 932.628344
+  type: 'test'
+  ...
+# Subtest: W-573-b2 behaviour 2: a host TMPDIR the cell cannot be opened under is refused, and nothing is written
+not ok 6 - W-573-b2 behaviour 2: a host TMPDIR the cell cannot be opened under is refused, and nothing is written
+  ---
+  duration_ms: 781.973967
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:21:4023'
+  failureType: 'testCodeFailure'
+  error: |-
+    a nonexistent TMPDIR is refused
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:184:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-573-b2 behaviour 2: a cell that cannot be opened leaves the red's ticket unclaimed
+not ok 7 - W-573-b2 behaviour 2: a cell that cannot be opened leaves the red's ticket unclaimed
+  ---
+  duration_ms: 2433.433383
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:21:5167'
+  failureType: 'testCodeFailure'
+  error: |-
+    a cell that cannot be opened is refused with a ticket: 
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:210:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-573-b2 behaviour 2: the reds perform refuses a HOME-dependent red the same way
+not ok 8 - W-573-b2 behaviour 2: the reds perform refuses a HOME-dependent red the same way
+  ---
+  duration_ms: 1364.654473
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:27:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    the perform holds
+    --- exit 0
+    --- stdout
+    next: W-900 reds performed
+    test: behaviour 1 f16f69a
+    red: behaviour 1 ci/reds/W-900/01.log 8f9c0c3
+    feat: behaviour 1 ae3651c
+    next-step: build
+    usage: Claude unread (no status-line file); Codex unread (no session log holds a week rate_limits)
+    cost: Claude week unread, Codex week unread over 11.0 h since the first spec signature
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 reds performed'
+    - 'next: W-900 reds held'
+                        ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 reds held'
+  actual: 'next: W-900 reds performed'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/next-world.test.ts:810:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:235:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 1
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9622.837517
