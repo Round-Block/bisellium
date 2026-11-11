@@ -3,6 +3,7 @@ queues:
     lanes: { E1: W-563 }
     next:
       - { opus: W-563, says: "pre-sign gate runs check, touched tests and the read-scope check; spec and build reviewers list every site of a flagged class in round 1; exempt from D-178 (the Patron 2026-11-11)" }
+      - { opus: W-579, says: "tests gate timeout set from measured times and the full batch split or sized to the runner; exempt from D-178, after W-563 (the Patron 2026-11-11, suite-reuse-meet-1111)" }
       - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182; exempt by D-181); after W-563, on the leads meet w512-rank-meet-1111 and the Patron 2026-11-11" }
       - { opus: W-551, says: "a required fix gets a red ticket after a full replay; W-365 and W-421 merged in; high, exempt from D-178, E1 right after W-512 (the Patron 2026-11-11, D-192)", folded: [W-365, W-421] }
       - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), split from W-169; exempt from D-178, first in E3 (the Patron 2026-11-11, D-192)" }
@@ -93,7 +94,6 @@ queues:
       - { opus: W-575, says: "W-568's stated limit: check refuses a manifest seat whose harness is not a known harness id, so a typo is caught before any reader runs; held by D-178" }
       - { opus: W-577, says: "W-573's stated limit: red runs every red in the empty-HOME cell and certify's classifier, opted in or not; held by D-178" }
       - { opus: W-578, says: "W-573's stated limit: next and check read a recorded red through certify's classifier; held by D-178" }
-      - { opus: W-579, says: "the tests gate's 30-minute limit outlives the 14-wide batch (two lost certify runs 11-10); retro 11-10 cause fix; held by D-178" }
       - { opus: W-580, says: "W-124 behaviour 5 deterministic under a loaded parallel batch (W-572's first certify); retro 11-10 cause fix; held by D-178" }
       - { opus: W-437, says: "W-076-b5 reads a fixture officina, not the live petitiones; qa, before W-391 (D-192); held by D-178" }
       - { opus: W-391, says: "stable 1280 px screenshot baselines; qa; W-576's spec decides whether it goes ahead of W-576 (D-192); held by D-178" }
