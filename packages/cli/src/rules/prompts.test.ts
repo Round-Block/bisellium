@@ -27,9 +27,9 @@ const SELF_REVIEW = [
 ];
 const REVIEW_SLOTS = ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>"];
 const NEEDS: Record<string, string[]> = {
-  "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA],
+  "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA, "presign-gate.ts", "Gate log:"],
   "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA, ...SELF_REVIEW],
-  "prompts/build-review.md": [...REVIEW_SLOTS, "fills the eight slots", DATA],
+  "prompts/build-review.md": [...REVIEW_SLOTS, "fills the eight slots", DATA, "every site of a flagged class in round 1"],
 };
 const PATHS = Object.keys(NEEDS);
 // W-426: the UI judges' sense texts and templates, which the Ops lex clause does not name
@@ -37,7 +37,7 @@ const SENSE = ["for sense, not only conformance", "the Patron ruled it or an age
 const SPEC_REVIEW = "prompts/spec-review.md";
 const UI_INPUT = "prompts/ui-input.md";
 const UI_INPUT_NEEDS = ["<ID>", "<OPUS>", "<READ>", "<SHOTS>", "<QUESTIONS>", DATA, ...SENSE];
-const UI_NEEDS: Record<string, readonly string[]> = { [SPEC_REVIEW]: SENSE, [UI_INPUT]: UI_INPUT_NEEDS };
+const UI_NEEDS: Record<string, readonly string[]> = { [SPEC_REVIEW]: [...SENSE, "every site of a flagged class in round 1"], [UI_INPUT]: UI_INPUT_NEEDS };
 const ALL: Record<string, readonly string[]> = { ...NEEDS, ...UI_NEEDS };
 const MARKER = "(check: process.prompt_templates)";
 const CLAUSE = `- \`ops-lead\` owns ${PATHS.map((p) => `\`studio/${p}\``).join(", ")} ${MARKER}`;
@@ -158,10 +158,10 @@ test("W-426-b1 behaviour 1: the spec review template asks a kind: ui reviewer wh
   put(root, SPEC_REVIEW, ["# Spec review prompt (D-046)"]);
   assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "a spec review without the sense texts blocks");
   for (const s of SENSE) assert.ok(message(root, SPEC_REVIEW).includes(s), `the finding names ${s}`);
-  put(root, SPEC_REVIEW, SENSE);
-  assert.deepEqual(found(root), [], "the sense texts clear it, with the Ops lex clause naming the three templates only");
+  put(root, SPEC_REVIEW, [...SENSE, "every site of a flagged class in round 1"]);
+  assert.deepEqual(found(root), [], "the sense texts and the every-site clause (W-563) clear it, with the Ops lex clause naming the three templates only");
   for (const s of SENSE) {
-    put(root, SPEC_REVIEW, SENSE.filter((x) => x !== s));
+    put(root, SPEC_REVIEW, [...SENSE.filter((x) => x !== s), "every site of a flagged class in round 1"]);
     assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], `a spec review without ${s} blocks`);
   }
   put(root, SPEC_REVIEW, SENSE.map((s) => s.toUpperCase()));
