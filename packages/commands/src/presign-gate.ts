@@ -285,7 +285,9 @@ async function runRow(wt: string, row: GateRow, scratch: string, n: number, time
   const run = await sh(wt, row.command, timeoutMs, env);
   if (run !== 0) return run;
   const check = spawnSync("node", [join("scripts", "ci-scope.mjs"), "--check-reads", log], { cwd: wt, encoding: "utf8", timeout: timeoutMs });
-  const bad = check.error !== undefined || (check.stdout ?? "").split("\n").some((l) => l.startsWith("unlisted:") || l.startsWith("failed:") || l.startsWith("missing:"));
+  if (check.error !== undefined) return (check.error as NodeJS.ErrnoException).code === "ETIMEDOUT" ? 124 : 1;
+  // a reused check's exit is the judge: a non-zero exit with no recognised line (a scalar test:record, a missing script) fails the row
+  const bad = check.status !== 0 || (check.stdout ?? "").split("\n").some((l) => l.startsWith("unlisted:") || l.startsWith("failed:") || l.startsWith("missing:"));
   return bad ? 1 : 0;
 }
 
