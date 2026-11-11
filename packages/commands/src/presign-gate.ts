@@ -15,11 +15,12 @@
  */
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createRequire } from "node:module";
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism, homedir, tmpdir } from "node:os";
 import { isAbsolute, join, posix } from "node:path";
 import { pathToFileURL } from "node:url";
+import { instant } from "@bisellium/schema";
+import ts from "typescript";
 import { loadSeries, readPrototype } from "./prototype-line.js";
 
 export type RowKind = "check" | "typecheck" | "test" | "reads";
@@ -58,11 +59,8 @@ export function suiteCommands(pkg: string | undefined): string[] | { error: stri
   }
 }
 
-// W-563 review 1 (fix 3): the literal-import domain is a language domain, read with the language's own parser. `typescript` is the
-// root devDependency (as `tsx` is), loaded lazily so a verdict on a brief with no prototype never pays for it.
-type TS = typeof import("typescript");
-let tsModule: TS | undefined;
-const loadTs = (): TS => (tsModule ??= createRequire(import.meta.url)("typescript") as TS);
+// W-563 review 1 (fix 3): the literal-import domain is a language domain, read with the language's own parser: `typescript`, the root
+// devDependency (as `tsx` is), a static import (the containment census admits no createRequire).
 
 /**
  * The literal specifiers a source text imports: a static `import`/`export … from` (every form, attributes and phase modifiers
@@ -71,10 +69,9 @@ const loadTs = (): TS => (tsModule ??= createRequire(import.meta.url)("typescrip
  * recovered tree is read.
  */
 function specifiers(file: string, text: string): string[] {
-  const ts = loadTs();
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, false, file.endsWith(".ts") || file.endsWith(".mts") ? ts.ScriptKind.TS : ts.ScriptKind.JS);
   const out: string[] = [];
-  const visit = (node: import("typescript").Node): void => {
+  const visit = (node: ts.Node): void => {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier !== undefined && ts.isStringLiteral(node.moduleSpecifier)) out.push(node.moduleSpecifier.text);
     else if (ts.isCallExpression(node)) {
       const callee = node.expression;
@@ -209,7 +206,7 @@ export function readGateLog(text: string): GateLog | { error: string } {
   }
   // the runner's own `new Date().toISOString()`: the exact form, and a real instant (a day past the month's end rolls over and is refused)
   const started = head[4]!;
-  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(started) || Number.isNaN(Date.parse(started)) || new Date(started).toISOString() !== started) return { error: "the started header is not an ISO instant" };
+  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(started) || instant(started) === undefined) return { error: "the started header is not an ISO instant" };
   if (!/^[0-9a-f]{40,64}$/.test(head[1]!) || !/^sha256:[0-9a-f]{64}$/.test(head[2]!) || !/^[0-9a-f]{40,64}$/.test(head[3]!)) return { error: "the base, series or tree header is out of form" };
   if (!/^# minutes: [0-9]+\.[0-9]$/.test(lines.at(-1) ?? "")) return { error: 'the last line is not "# minutes: <n.n>"' };
   const rows: GateLog["rows"] = [];
