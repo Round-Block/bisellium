@@ -426,3 +426,84 @@ row("W-563-b3 another seat's verdict and a brief with no prototype are not judge
   const plain = w.sign(FINDINGS);
   assert.equal(plain.exitCode, 0, `no prototype (stderr ${JSON.stringify(plain.stderr)})`);
 });
+
+
+/** b4's fixture: an officina (no prototype) whose W-300 failed a spec round on an S1 class; `elsewhere` puts the class in another opus's log. */
+function censusWorld(elsewhere: boolean): { dir: string; side: string; setBrief: (lines: string[]) => void; sign: (sella: string, round: string, body: string, outcome?: string) => { exitCode: number; stderr: string; written: boolean } } {
+  const dir = scratch("b4");
+  const side = scratch("b4-side");
+  put(dir, "bisellium.yml", MANIFEST);
+  put(dir, "opera/W-300.md", "---\nid: W-300\ntitle: W-300\nkind: feature\ncollegium: engineering\nstate: greenlit\nspec: briefs/W-300.md\nprobationes: {}\n---\n");
+  const setBrief = (lines: string[]): void => put(dir, "briefs/W-300.md", ["# W-300 fixture brief", "brief line 2", ...lines, ""].join("\n"));
+  setBrief([]);
+  let n = 0;
+  const sign = (sella: string, round: string, body: string, outcome = "passed"): { exitCode: number; stderr: string; written: boolean } => {
+    const input = join(side, `input-${++n}.md`);
+    writeFileSync(input, body);
+    let stderr = "";
+    const [log0, err0] = [console.log, console.error];
+    console.log = () => undefined;
+    console.error = (...a: unknown[]) => void (stderr += `${a.map(String).join(" ")}\n`);
+    let exitCode: number;
+    try {
+      exitCode = runVerdict(["W-300", "--round", round, "--sella", sella, "--outcome", outcome, "--phase", "spec", "--from", input, "--studio", dir], { now: NOW }).exitCode;
+    } finally {
+      [console.log, console.error] = [log0, err0];
+    }
+    const log = join(dir, "ci", `W-300-spec-${round}.log`);
+    const written = existsSync(log);
+    if (written && sella === "architect") rmSync(log);
+    return { exitCode, stderr, written };
+  };
+  const failed = sign("qa-lead", "1", "## Findings\n1. blocking — the gap at briefs/W-300.md:2 [severity: S1] [design: changes] [class: spec×wide-gap] — check: none: x\n", "failed");
+  assert.equal(failed.exitCode, 0, `the fixture's failed round is written (stderr ${JSON.stringify(failed.stderr)})`);
+  if (elsewhere) put(dir, "ci/W-299-review-1.log", "# opus: W-299\n\n## Findings\n1. blocking — the same gap [class: spec×wide-gap]\n");
+  return { dir, side, setBrief, sign };
+}
+const census = (w: { side: string }, name: string, output: string, digest?: string): string => {
+  const script = join(w.side, `${name}.sh`);
+  const out = join(w.side, `${name}.out`);
+  writeFileSync(script, "#!/bin/sh\ngit grep -n gap\n");
+  writeFileSync(out, output);
+  return `Class census: spec×wide-gap ${script} -> ${out} sha256:${digest ?? createHash("sha256").update(output).digest("hex")}`;
+};
+const SIGNED = "## Findings\n1. advisory — fine — check: none: x\n";
+
+row("W-563-b4 a repeated class without a census is refused", () => {
+  const w = censusWorld(true);
+  const r = w.sign("architect", "2", SIGNED);
+  assert.equal(r.exitCode, 2, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(r.written, false, "no log is written");
+  assert.equal(r.stderr, 'W-300: class census: spec×wide-gap is a repeated class of this opus, and the brief has no "Class census: spec×wide-gap <script> -> <output> sha256:<hex>" line\n');
+});
+
+row("W-563-b4 an output at another digest is refused", () => {
+  const w = censusWorld(true);
+  w.setBrief([census(w, "c1", "site a.ts:1\n", "0".repeat(64))]);
+  const r = w.sign("architect", "2", SIGNED);
+  assert.equal(r.exitCode, 2, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.match(r.stderr, /^W-300: class census: spec×wide-gap's census output \S+c1\.out has sha256 [0-9a-f]{64}, not the 0{64} the brief names\n$/);
+});
+
+row("W-563-b4 a limit without a follow-on is refused", () => {
+  const w = censusWorld(true);
+  w.setBrief([census(w, "c2", "site a.ts:1\nlimit b.ts:2 unchanged\n")]);
+  const r = w.sign("architect", "2", SIGNED);
+  assert.equal(r.exitCode, 2, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(r.stderr, `W-300: class census: spec×wide-gap's census output line 2 is a limit with no "follow-on:"\n`);
+});
+
+row("W-563-b4 a class seen once needs no census", () => {
+  const w = censusWorld(false);
+  const r = w.sign("architect", "2", SIGNED);
+  assert.equal(r.exitCode, 0, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(r.written, true, "the log is written");
+});
+
+row("W-563-b4 a well-shaped census signs", () => {
+  const w = censusWorld(true);
+  w.setBrief([census(w, "c3", "site a.ts:1\nlimit b.ts:2 unchanged follow-on: W-999\n")]);
+  const r = w.sign("architect", "2", SIGNED);
+  assert.equal(r.exitCode, 0, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(r.written, true, "the log is written");
+});
