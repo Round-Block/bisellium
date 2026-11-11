@@ -39,7 +39,6 @@ export const BUDGET_MS = 600_000;
 export const POOL_MAX = 8;
 const GIT_TIMEOUT_MS = 120_000;
 const TEST_FILE = /\.test\.(?:ts|mts|mjs)$/;
-const CODE_FILE = /\.(?:ts|mts|cts|mjs|cjs|js)$/;
 const UNGATED = /^(?:apps|docs)\//;
 // one-sided: `from` and `import(` are ASCII keywords in source text, so an ASCII boundary is the token's own
 const FROM = /(?:^|[\s;}])(?:import|export)\s[^;]*?\bfrom\s*["']([^"'\n]+)["']/g;
@@ -132,7 +131,7 @@ export function gateRows(repo: string, base: string, tree: string): GateRow[] | 
   let at = 0;
   for (const p of wanted) {
     const nl = cat.out.indexOf(10, at);
-    const size = Number(/ blob (\d+)$/.exec(cat.out.subarray(at, nl).toString("utf8"))?.[1] ?? NaN);
+    const size = Number(/ blob (\d{1,15})$/.exec(cat.out.subarray(at, nl).toString("utf8"))?.[1] ?? NaN);
     if (!Number.isInteger(size)) return { error: `git cat-file could not read ${p}` };
     text.set(p, cat.out.subarray(nl + 1, nl + 1 + size).toString("utf8"));
     at = nl + 1 + size + 1;
