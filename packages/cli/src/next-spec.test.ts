@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { test } from "node:test";
 import { readFront, type Manifest } from "@bisellium/adapter-native";
 import { inspectUiDesignInput, type NativeRecord } from "@bisellium/commands/opus-model.js";
@@ -1323,6 +1323,8 @@ test("W-381-b4 behaviour 4: a failed spec review whose S1 blocker names a class 
   architectOrder(specNext(advisory), 3, "a blocker with no class: the architect revises");
 
   // two failed reviews stand without a third (D-061 §4): the newest is held
+  // W-563 behaviour 4: spec×a is in another opus's log, so the architect's re-sign carries its census
+  appendFileSync(briefPath(changes), censusLine(dirname(changes.repo), "spec×a"));
   sign(changes, 3);
   review(changes, 4, "failed", { body: `## Findings\n1. ${blocker("changes")}\n` });
   held(changes, "a second failed review", 4);
@@ -1812,3 +1814,11 @@ ${input.out}`);
     specHeld(specNext(w), `no usable worktree: a committed ${outcome} input holds at spec`, /^the ui-lead's input on the current brief is read only in \.worktrees\/W-900, which is not a usable worktree on opus\/W-900; run: git worktree add \.worktrees\/W-900 opus\/W-900$/);
   }
 });
+
+/** W-563: a well-shaped `Class census:` brief line for `cls`, its script and output written in `dir`. */
+function censusLine(dir: string, cls: string): string {
+  const [script, out, text] = [join(dir, "w563-census.sh"), join(dir, "w563-census.out"), "site fixture.ts:1 the one site\n"];
+  writeFileSync(script, "#!/bin/sh\ngit grep -n fixture\n");
+  writeFileSync(out, text);
+  return `\nClass census: ${cls} ${script} -> ${out} sha256:${createHash("sha256").update(text).digest("hex")}\n`;
+}

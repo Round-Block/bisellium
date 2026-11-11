@@ -2,6 +2,7 @@
  * W-179: one behaviour group of the next.test.ts rows (studio/briefs/W-179.md); the fixture is ./next-world.test.ts.
  * Select one row with --test-name-pattern='^<row id>\s'.
  */
+import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync, appendFileSync, lstatSync, renameSync } from "node:fs";
@@ -9,7 +10,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { deflateSync } from "node:zlib";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceOrigin, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, openList, plain, prArgs, put, ran, record167, reviewHeld, specHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
+import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceOrigin, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, openList, plain, prArgs, put, ran, record167, reviewHeld, specHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec, briefPath, BRIEF_REL } from "./next-world.test.js";
 
 const secure = (t = "fixture defect"): string => `blocking (security): ${t} at brief:1 [severity: S1]. check: none: fixture`;
 const klass = (t = "fixture"): string => `blocking: a class of defects (${t}) at brief:1 [severity: S1]. check: none: fixture`;
@@ -1128,7 +1129,13 @@ test("W-297-b3 behaviour 3: a class loop or three failed build rounds hold the f
     assert.match(o.kv.get("why") ?? "", /a class loop goes to the architect, not a builder \(D-085\)/, ran(`${row}: the architect`, o));
   };
   const SHARED = /^ci\/W-900-review-1\.log and ci\/W-900-review-2\.log failed on class tests×a against one brief: /;
-  const shared = w167("w297-b3-shared", [found(cls("tests×a")), found(cls("tests×b"), cls("tests×a"))]);
+  // W-563 behaviour 4: tests×a repeats across this opus's failed rounds, so the brief the rounds review (and the
+  // architect's re-sign answers) carries its census from the start: w167's world, with the census line committed first
+  const shared = world("w297-b3-shared", "build");
+  appendFileSync(join(shared.wt, BRIEF_REL), censusLine(dirname(shared.wt), "tests×a"));
+  commit(shared.wt, `studio(${OPUS}): the brief names its class census`);
+  record167(shared, [found(cls("tests×a")), found(cls("tests×b"), cls("tests×a"))]);
+  handoffAt(shared, "wt", T.handoffFresh);
   loopHeld(n167(shared), "two rounds sharing a class against one brief", SHARED);
   loopHeld(n167(w167("w297-b3-three", [found(cls("tests×a")), found(cls("tests×b")), found(cls("tests×c"))])), "three failed rounds of three classes", /^ci\/W-900-review-1\.log, ci\/W-900-review-2\.log and ci\/W-900-review-3\.log failed in a row: /);
 
@@ -2545,3 +2552,11 @@ test("W-571-b1 behaviour 1: the fix-check perform refuses a codex turn that ran 
   assert.match(u.kv.get("why") ?? "", /^the census names itself unrun \("Not determined" under ## Open, .*census\.md\); no fix check is recorded$/, ran("unrun census: why", u));
   assert.equal(existsSync(join(fixPacket(f, 1), "check.json")), false, "unrun census: no check.json, so no open path is counted");
 });
+
+/** W-563: a well-shaped `Class census:` brief line for `cls`, its script and output written in `dir`. */
+function censusLine(dir: string, cls: string): string {
+  const [script, out, text] = [join(dir, "w563-census.sh"), join(dir, "w563-census.out"), "site fixture.ts:1 the one site\n"];
+  writeFileSync(script, "#!/bin/sh\ngit grep -n fixture\n");
+  writeFileSync(out, text);
+  return `\nClass census: ${cls} ${script} -> ${out} sha256:${createHash("sha256").update(text).digest("hex")}\n`;
+}
