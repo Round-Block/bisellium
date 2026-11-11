@@ -13,8 +13,12 @@
  * ponytail: the walk is one textual import edge deep. A transitive importer, a test that spawns or names a touched file, a
  * non-literal dynamic import and a playwright or vitest spec under apps/ or docs/ are no rows; `ci --opus` stays the full judge.
  */
-import { spawnSync } from "node:child_process";
-import { posix } from "node:path";
+import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { availableParallelism, tmpdir } from "node:os";
+import { join, posix } from "node:path";
+import { pathToFileURL } from "node:url";
 
 export type RowKind = "check" | "typecheck" | "test" | "reads";
 export interface GateRow {
@@ -135,13 +139,181 @@ export function gateRows(repo: string, base: string, tree: string): GateRow[] | 
   return rowsAt([...blobs.keys()], (p) => text.get(p), z(diff.out), z(add.out));
 }
 
+/** The tree the series makes on `base`, built in a temporary index (never the repo's own), removed after. */
+export function treeOfSeries(repo: string, base: string, series: string): { tree: string } | { error: string } {
+  let dir: string;
+  try {
+    dir = mkdtempSync(join(tmpdir(), "presign-gate-"));
+  } catch (e) {
+    return { error: `a temporary index cannot be made: ${(e as Error).message}` };
+  }
+  try {
+    const env = { ...process.env, GIT_INDEX_FILE: join(dir, "index") };
+    const steps: [string[], string?][] = [[["read-tree", base]], [["apply", "--cached"], series], [["write-tree"]]];
+    let out = "";
+    for (const [args, input] of steps) {
+      const r = git(repo, args, input, env);
+      if ("error" in r) return { error: `the series does not apply to ${base}: ${r.error}` };
+      out = r.out.toString("utf8").trim();
+    }
+    return /^[0-9a-f]{40,64}$/.test(out) ? { tree: out } : { error: "git write-tree printed no tree" };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+export interface GateLog {
+  id: string;
+  base: string;
+  series: string;
+  tree: string;
+  rows: { exit: number | "deferred"; kind: RowKind; file?: string; command: string }[];
+}
+const HEADS = ["presign-gate", "base", "series", "tree", "started"] as const;
+const ROW = /^(0|[1-9][0-9]{0,2}|deferred)\t([0-9]+\.[0-9])\t(check|typecheck|test|reads)\t(-|[^\t]+)\t([^\t]+)$/;
+
+/** The log's grammar (W-563 behaviour 2): the five header lines once each in order, the rows, `# minutes:` last, LF ends. */
+export function readGateLog(text: string): GateLog | { error: string } {
+  if (text.includes("\r")) return { error: "the log holds a CR" };
+  if (!text.endsWith("\n")) return { error: "the log does not end with a newline" };
+  const lines = text.slice(0, -1).split("\n");
+  const head: string[] = [];
+  for (const [i, key] of HEADS.entries()) {
+    const m = new RegExp(`^# ${key}: (\\S+)$`).exec(lines[i] ?? "");
+    if (m === null) return { error: `line ${i + 1} is not "# ${key}: <value>"` };
+    head.push(m[1]!);
+  }
+  if (!/^[0-9a-f]{40,64}$/.test(head[1]!) || !/^sha256:[0-9a-f]{64}$/.test(head[2]!) || !/^[0-9a-f]{40,64}$/.test(head[3]!)) return { error: "the base, series or tree header is out of form" };
+  if (!/^# minutes: [0-9]+\.[0-9]$/.test(lines.at(-1) ?? "")) return { error: 'the last line is not "# minutes: <n.n>"' };
+  const rows: GateLog["rows"] = [];
+  for (const [i, line] of lines.slice(HEADS.length, -1).entries()) {
+    const m = ROW.exec(line);
+    if (m === null) return { error: `line ${i + HEADS.length + 1} is not a row "<exit>\\t<seconds>\\t<kind>\\t<file|->\\t<command>"` };
+    rows.push({ exit: m[1] === "deferred" ? "deferred" : Number(m[1]), kind: m[3] as RowKind, ...(m[4] === "-" ? {} : { file: m[4]! }), command: m[5]! });
+  }
+  return { id: head[0]!, base: head[1]!, series: head[2]!.slice("sha256:".length), tree: head[3]!, rows };
+}
+
 export interface GateOptions {
   now?: () => Date;
+  /** a row still running at this many milliseconds is killed and recorded as failed, exit 124 */
   rowTimeoutMs?: number;
+  /** a row not started this many milliseconds after the first is logged `deferred` (deferred to `ci --opus`) */
   budgetMs?: number;
+  /** rows run at once: the host's cores, at most POOL_MAX */
   pool?: number;
 }
-/** W-563 red stub: the runner runs nothing yet. */
-export async function runGate(_argv: string[], _opts: GateOptions = {}): Promise<number> {
-  return 0;
+
+/** One command in the worktree, its process group killed at the timeout: its exit, 124 when it timed out. */
+function sh(wt: string, command: string, timeoutMs: number, env: NodeJS.ProcessEnv = process.env): Promise<number> {
+  return new Promise((done) => {
+    const child = spawn("sh", ["-c", command], { cwd: wt, stdio: "ignore", env, detached: true });
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try {
+        process.kill(-(child.pid ?? NaN), "SIGKILL");
+      } catch {
+        child.kill("SIGKILL");
+      }
+    }, timeoutMs);
+    child.on("error", () => (clearTimeout(timer), done(1)));
+    child.on("close", (code) => (clearTimeout(timer), done(timedOut ? 124 : (code ?? 1))));
+  });
 }
+
+async function runRow(wt: string, row: GateRow, scratch: string, n: number, timeoutMs: number): Promise<number> {
+  if (row.command === UNNAMED) return 1;
+  if (row.kind !== "reads") return sh(wt, row.command, timeoutMs);
+  const log = join(scratch, `reads-${n}.log`);
+  const env = { ...process.env, NODE_OPTIONS: `--import ${join(wt, "scripts", "record-reads.mjs")}`, BISELLIUM_RECORD_READS: log };
+  const run = await sh(wt, row.command, timeoutMs, env);
+  if (run !== 0) return run;
+  const check = spawnSync("node", [join("scripts", "ci-scope.mjs"), "--check-reads", log], { cwd: wt, encoding: "utf8", timeout: timeoutMs });
+  const bad = check.error !== undefined || (check.stdout ?? "").split("\n").some((l) => l.startsWith("unlisted:") || l.startsWith("failed:") || l.startsWith("missing:"));
+  return bad ? 1 : 0;
+}
+
+/**
+ * W-563 behaviour 2: the runner. Exit 2 (no log) unless the worktree is clean at the series' tree; else the rows run pooled,
+ * each under its timeout, and a row not started within the budget is `deferred`; the log is always written; exit 1 when a
+ * row failed (a timeout included), 0 otherwise (deferred rows do not fail).
+ */
+export async function runGate(argv: string[], opts: GateOptions = {}): Promise<number> {
+  const now = opts.now ?? (() => new Date());
+  const flags = new Map<string, string>();
+  for (let i = 0; i < argv.length; i += 2) {
+    const [k, v] = [argv[i]!, argv[i + 1]];
+    if (!["--opus", "--worktree", "--base", "--series", "--out"].includes(k) || v === undefined || flags.has(k)) {
+      console.error("usage: presign-gate --opus <id> --worktree <dir> --base <sha> --series <mbox> --out <log>");
+      return 2;
+    }
+    flags.set(k, v);
+  }
+  const [id, wt, base, seriesPath, out] = ["--opus", "--worktree", "--base", "--series", "--out"].map((k) => flags.get(k));
+  if (id === undefined || wt === undefined || base === undefined || seriesPath === undefined || out === undefined) {
+    console.error("usage: presign-gate --opus <id> --worktree <dir> --base <sha> --series <mbox> --out <log>");
+    return 2;
+  }
+  const refuse = (why: string): number => (console.error(`presign-gate: ${why}`), 2);
+  let series: Buffer;
+  try {
+    series = readFileSync(seriesPath);
+  } catch {
+    return refuse(`${seriesPath} cannot be read`);
+  }
+  const status = git(wt, ["status", "--porcelain", "--untracked-files=all"]);
+  if ("error" in status) return refuse(status.error);
+  if (status.out.length > 0) return refuse(`${wt} is not clean`);
+  const head = git(wt, ["rev-parse", "HEAD^{tree}"]);
+  const baseSha = git(wt, ["rev-parse", "--verify", `${base}^{commit}`]);
+  if ("error" in head) return refuse(head.error);
+  if ("error" in baseSha) return refuse(baseSha.error);
+  const made = treeOfSeries(wt, base, series.toString("utf8"));
+  if ("error" in made) return refuse(made.error);
+  const tree = head.out.toString("utf8").trim();
+  if (tree !== made.tree) return refuse(`${wt} is at tree ${tree}, and the series makes ${made.tree} on ${base}`);
+  const rows = gateRows(wt, base, tree);
+  if ("error" in rows) return refuse(rows.error);
+  const [timeoutMs, budgetMs] = [opts.rowTimeoutMs ?? ROW_TIMEOUT_MS, opts.budgetMs ?? BUDGET_MS];
+  const pool = Math.max(1, Math.min(opts.pool ?? availableParallelism(), POOL_MAX, rows.length));
+  const started = now();
+  const lines = [
+    `# presign-gate: ${id}`,
+    `# base: ${baseSha.out.toString("utf8").trim()}`,
+    `# series: sha256:${createHash("sha256").update(series).digest("hex")}`,
+    `# tree: ${tree}`,
+    `# started: ${started.toISOString()}`,
+  ];
+  const results = rows.map((r) => `deferred\t0.0\t${r.kind}\t${r.file ?? "-"}\t${r.command}`);
+  const scratch = mkdtempSync(join(tmpdir(), "presign-gate-reads-"));
+  let failed = false;
+  let taken = 0;
+  const shared = new Map<string, Promise<number>>();
+  try {
+    const worker = async (): Promise<void> => {
+      for (let n = taken++; n < rows.length; n = taken++) {
+        // a row not started within the budget stays `deferred`: deferred to `ci --opus`, never a failure
+        if (now().getTime() - started.getTime() >= budgetMs) continue;
+        const row = rows[n]!;
+        const t0 = Date.now();
+        // rows sharing one kind and command (a multi-file test:suite command) run it once and share its exit
+        const key = `${row.kind}	${row.command}`;
+        const run = shared.get(key) ?? runRow(wt, row, scratch, n, timeoutMs);
+        shared.set(key, run);
+        const exit = await run;
+        failed ||= exit !== 0;
+        results[n] = `${Math.min(exit, 999)}\t${((Date.now() - t0) / 1000).toFixed(1)}\t${row.kind}\t${row.file ?? "-"}\t${row.command}`;
+      }
+    };
+    await Promise.all(Array.from({ length: pool }, worker));
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+    lines.push(...results, `# minutes: ${((now().getTime() - started.getTime()) / 60000).toFixed(1)}`);
+    writeFileSync(out, `${lines.join("\n")}\n`);
+  }
+  return failed ? 1 : 0;
+}
+
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) void runGate(process.argv.slice(2)).then((code) => process.exit(code));
+
