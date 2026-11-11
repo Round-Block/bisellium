@@ -1,0 +1,18 @@
+# opus: W-573
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1c862-b6f9-7172-a949-02ffabb0e859
+# outcome: failed
+# at: 2026-11-11T02:20:01.634Z
+# tree: tree:cdb1a734490c9edbb2bde56a6e7c4e7fa089ed33
+# brief: briefs/W-573.md blob:322b90c9a8f602bffd3eeb072d8fd196dba1fca3
+# ticket: {"opus":"W-573","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-573/studio","head":"f2a9131480d8e06092ef43ee4f489c74fb69dc6d","brief":"322b90c9a8f602bffd3eeb072d8fd196dba1fca3","at":"2026-11-11T02:14:32.524Z"}
+
+## Findings
+1. blocking — packages/commands/src/red-cell.ts:49 When `TMPDIR` is relative and `red --cwd` selects another directory, the cell is created relative to the launcher but its relative `HOME` and `TMPDIR` are resolved by the child from `--cwd`; an otherwise valid red using those promised writable directories therefore gets ENOENT and is wrongly refused, contrary to brief:77. [severity: S1] [class: mechanism×replay-environment-not-pristine] — check: packages/cli/src/w573.test.ts: invoke `red` outside `--cwd` with a relative `TMPDIR`, then assert both cell directories are usable and the red records
+
+## Verdict
+The change is otherwise scoped and evidenced, but behavior 2 fails for a valid relative temporary-directory input.
+VERDICT: FAIL
