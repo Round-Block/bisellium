@@ -14,7 +14,7 @@
  */
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { classifyReplay } from "../../../scripts/replay-accept.mjs";
 import { browserCache } from "../../../scripts/host-cells.mjs";
 
@@ -43,10 +43,10 @@ export function cellEnv(host: NodeJS.ProcessEnv, home: string, tmp: string, brow
   };
 }
 
-/** A new cell under the host's temporary directory; throws when it cannot be made (the root's removal attempted first).
+/** A new cell under the host's temporary directory, made absolute here so the child, run from another `--cwd`, reads the same paths; throws when it cannot be made (the root's removal attempted first).
  *  `close` attempts its recursive removal and never throws. */
 export function openCell(): Cell {
-  const root = mkdtempSync(join(tmpdir(), "bisellium-red-cell-"));
+  const root = mkdtempSync(join(resolve(tmpdir()), "bisellium-red-cell-"));
   const close = (): void => {
     try {
       rmSync(root, { recursive: true, force: true });
