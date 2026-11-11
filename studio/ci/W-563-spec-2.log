@@ -1,0 +1,22 @@
+# opus: W-563
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1ca20-6445-7242-82df-164b9f6ccbf7
+# outcome: failed
+# at: 2026-11-11T10:26:47.586Z
+# tree: tree:2e5920099d93406099fdc7df38bb8b8d2f158059
+# brief: briefs/W-563.md blob:8802baf84a30696fd58d0b6412d442f3a9622cf1
+# ticket: {"opus":"W-563","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"8e9aff643ba8c3efd3e188a349fb9797f3c0a60b","brief":"8802baf84a30696fd58d0b6412d442f3a9622cf1","at":"2026-11-11T10:26:46.824Z"}
+
+## Findings
+1. blocking — brief:88 [severity: S1] [design: keeps] The reused reads-check subprocess lacks an input-boundary row and fails open: if `package.json#test:record` is accidentally a scalar, `ci-scope.mjs` exits 1 without a recognized prefix, but `runRow` ignores its status, records exit 0, and lets `runGate` and the signer accept it. Replace brief:88 with two rows: the existing `test:suite` row, plus “The reused test command and `node scripts/ci-scope.mjs --check-reads <log>` must each exit 0; `sh`/`runRow` turns every non-zero exit or timeout into a failed row.” [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: packages/cli/src/w563.test.ts
+2. advisory — brief:18 [severity: S2] The ten-minute “whole run” guarantee exceeds the implementation: ten minutes is only the row-start deadline, and a reads row can consume separate 600-second windows for its test and its synchronous reads check. Replace “within a 10-minute budget for the whole run” with “within a 10-minute row-start budget; rows started before the deadline may continue afterward, and a reads row has separate timeout windows for its test and reads check, so total wall time is not capped at ten minutes.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w563.test.ts
+3. advisory — brief:29 [severity: S2] The clean-tree promise uses `git status`, while row commands read the live filesystem; ignored files and installed dependencies are invisible to the first reader but can affect the second, and the promise names neither disagreement nor a trusted reader. Append: “Cleanliness trusts `git status --porcelain --untracked-files=all` and `HEAD^{tree}` for tracked and non-ignored files; row commands trust the live filesystem, so ignored files and installed dependencies are a stated limit.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: D-070 C promise-reader audit
+4. advisory — brief:89 [severity: S3] `GateOptions` has no valid domain or rejector; `pool: NaN` produces zero workers, leaves every row `deferred`, and returns 0. Append: “Test-only `GateOptions` accepts a finite positive-integer pool, finite non-negative timeout and budget, and a clock returning valid nondecreasing dates; `runGate` rejects other values before rows start.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w563.test.ts
+5. advisory — brief:85 [severity: S4] The referenced grammar promises an ISO `started` value, but `readGateLog` accepts any non-whitespace token. Replace that clause with “`started` is one non-whitespace token and is not interpreted by verification; the runner emits ISO.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w563.test.ts
+
+## Verdict
+The required shell check returned “8e9aff64 chore(studio): handoff after D-193, W-563 signed (#1151)”; the brief fails because the reads-check subprocess can exit non-zero while the gate records success.
+VERDICT: FAIL

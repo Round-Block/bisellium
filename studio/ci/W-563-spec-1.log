@@ -1,0 +1,31 @@
+# opus: W-563
+# phase: spec
+# round: 1
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-11T09:29:15.743Z
+# tree: tree:be9057cd35f00685dcbba3a959d04384bfa7bf42
+# brief: briefs/W-563.md blob:8802baf84a30696fd58d0b6412d442f3a9622cf1
+# ticket: {"opus":"W-563","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"6adad39efc9be6e712d8d4dc08b0f2bc65c419be","brief":"8802baf84a30696fd58d0b6412d442f3a9622cf1","at":"2026-11-11T09:29:11.530Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-563-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-563-spec/gate.log
+
+## Findings
+
+1. advisory — revision 3 applies ladder-time-meet-1111 call 2's default: behaviours 1-3 shrink to check, typecheck, the reads rows of added test files and test rows for added or changed test files and their direct importers, pooled (the host's cores, at most 8), each row under a 600 s timeout (exit 124), within a 10-minute budget whose unstarted rows are logged deferred; the suite row is gone and verdict accepts deferred rows and refuses failed ones; behaviours 4 and 5 stand as in revision 2 — check: brief Intent 1-3; Promises gate-rows, gate-log, gate-verdict; Limits, stated
+2. advisory — every site the opus closes is mapped as in revision 2: the one signer stage (verdict.ts) reached by the first sign, a class-loop and an amendment re-sign and a UI signer, closed by behaviours 3 and 4; the Prototype-line readers agree with the gate's; the class readers share class-census.ts; the round-1 prompts are closed by behaviour 5 — check: sites.sh; sites.out; brief Intent census and Limits, stated
+3. advisory — the read enumeration is the opus's own gateRows over a49191d8 to the tip: check, typecheck, one reads row and 12 test rows (five share the one next-suite command, which the runner runs once), against 114 test rows under revision 2's transitive walk — check: importers.sh; importers.out; gate.log
+4. advisory — each red was replayed as certify replays it (env -i, an empty HOME, a writable TMPDIR under $TMPDIR): b1 to b5 each fail by ERR_ASSERTION only and the tip's classifyReplay accepts each; each green passes in the same cell; the first rebuilt b2 red read a log its stub never wrote (ENOENT, refused), so the budget row now asserts the log exists first — check: reds.sh; red-accept.mjs; tip-replay-accept.mjs; reds.out
+5. advisory — the gate ran over its own prototype (W-563 gated by itself) from a clean worktree at the series' tree; its first run failed its own check row on four findings in its new test code (one test.sleep, three test.one_sided), the class this opus gates, fixed before the cut, and killed the shared next-family command at 300 s and at 600 s, so the timeout became the budget's length and a multi-file command runs only the owed files it names; the next run found five next-family rows the brief had not named as flips — check: gate.log; check-tip.out; tsc-tip.out
+6. advisory — one mutant per behaviour (QA §2), each reused from revision 2, plus three more reused for the Input domain rows the ledger check owes a kill (series and base, test:suite, ci/ logs); none new — check: mutants.py; mutants.out
+7. advisory — the flipped rows are named and updated in their behaviour's commit: W-443-b2 (two rows), W-381-b1, W-381-b2 and W-492-b1 through specSigner's admitted, W-426-b1, and, found by the gate, W-326-b3 (its fixture now cites a gate log), W-297-b3 and W-381-b4 (their re-signs now carry a Class census line) — check: brief Acceptance; Files owned; gate.log
+8. advisory — studio/prompts/spec-review.md, build-review.md and spec-draft.md are code-owned, so the PR waits on the Patron's approval — check: brief Files owned; Defaults 3
+9. advisory — the gate is one import edge deep and accepts deferred rows unrun: transitive importers, spawned or named files, apps/ and docs/ tests and any row past the budget are deferred to ci --opus, which stays the full judge; the check rule that every test file is named by a test:suite command is a follow-on, not in W-563 — check: brief Promises and Limits, stated
+10. advisory — Codex's fixture census was not run (this dispatch runs no Codex) — check: gate.log; importers.out
+11. advisory — producer's r3 ruling: behaviour 4 reads this opus's own logs through findingLines as next's repeatHold does, never stricter (two readers of one record disagreeing is W-558's class), so W-162-b4 and W-338-b2 pass unchanged; revision 2's strict own-log read refused logs next tolerates — check: class-census.ts repeatedClasses; brief behaviour 4 and Input domain row 6; gate.log
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`, studio/bisellium.yml `spec_seats.collegia.engineering`) for `studio/briefs/W-563.md` revision 3 at master 6adad39e (the series rebuilt on a49191d8; #1149 and #1150 moved master by records only, source identical): a prototyped signature cites a passing or deferred pre-sign gate log at the series' own tree, from a pooled, budgeted gate of check, typecheck and the series' own and directly importing test files; a brief answering a repeated class names its census; and the round-1 reviewer prompts ask for every site of a flagged class.
