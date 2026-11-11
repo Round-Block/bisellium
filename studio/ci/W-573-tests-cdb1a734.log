@@ -1,0 +1,13 @@
+certifies: tree:cdb1a734490c9edbb2bde56a6e7c4e7fa089ed33
+command: node scripts/test-reads.mjs
+exit code: 1
+
+vendor-sentinel: lock held at /home/edckt/agents/bisellium/.worktrees/W-573/.bisellium/vendor-sentinel.lock
+  recorded pid: 63
+  started: 2026-11-11T01:39:15.185Z
+A concurrent run is refused rather than taking over (a dead pid does not
+imply a dead suite). If that run crashed, remove the lock and retry:
+  rm /home/edckt/agents/bisellium/.worktrees/W-573/.bisellium/vendor-sentinel.lock
+--- npm test failed (exit 1): its last 0 of 0 failing lines on stdout ---
+--- npm test: its last 0 lines of stdout ---
+
