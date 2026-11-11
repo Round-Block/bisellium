@@ -77,11 +77,11 @@ commit with a `Co-Authored-By:` trailer naming the sella that wrote it.
 
 ## Roles
 
-- production (magister: producer)
-- design (magister: architect)
-- engineering (magister: eng-lead)
-- qa (magister: qa-lead)
-- ops (magister: ops-lead)
+- production (magister: producer; spec signer: ladder-lead)
+- design (magister: architect; spec signer: design-lead)
+- engineering (magister: eng-lead; spec signer: architect)
+- qa (magister: qa-lead; spec signer: qa-lead)
+- ops (magister: ops-lead; spec signer: ops-lead)
 
 ## Claude Code
 
