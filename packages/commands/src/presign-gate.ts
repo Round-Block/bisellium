@@ -20,7 +20,6 @@ import { availableParallelism, homedir, tmpdir } from "node:os";
 import { isAbsolute, join, posix } from "node:path";
 import { pathToFileURL } from "node:url";
 import { instant } from "@bisellium/schema";
-import ts from "typescript";
 import { loadSeries, readPrototype } from "./prototype-line.js";
 
 export type RowKind = "check" | "typecheck" | "test" | "reads";
@@ -60,18 +59,25 @@ export function suiteCommands(pkg: string | undefined): string[] | { error: stri
 }
 
 // W-563 review 1 (fix 3): the literal-import domain is a language domain, read with the language's own parser: `typescript`, the root
-// devDependency (as `tsx` is), a static import (the containment census admits no createRequire).
+// devDependency (as `tsx` is). It is loaded only here, in a child node process the gate spawns when it reads import edges, so every
+// verb that imports this module without gating (verdict.ts is imported by almost every CLI verb) does not pay its ~0.4 s load (ci
+// rounds 5 and 6 timed out on that cost); the containment census admits no createRequire, and the gate's callers are synchronous.
 
 /**
- * The literal specifiers a source text imports: a static `import`/`export … from` (every form, attributes and phase modifiers
- * included), a side-effect `import "…"`, and a literal `import("…")`, `import.defer("…")` or `import.source("…")`. A type-only
- * `import("…")`, `import x = require()`, `#import()` and `o.import()` are no edges. A parse error never drops a file: the parser's
- * recovered tree is read.
+ * The reader the child runs: the literal specifiers a source text imports: a static `import`/`export … from` (every form,
+ * attributes and phase modifiers included), a side-effect `import "…"`, and a literal `import("…")`, `import.defer("…")` or
+ * `import.source("…")`. A type-only `import("…")`, `import x = require()`, `#import()` and `o.import()` are no edges. A parse
+ * error never drops a file: the parser's recovered tree is read. Stdin is a JSON object of file to text; stdout one of file to
+ * specifiers.
  */
-function specifiers(file: string, text: string): string[] {
+const READER = `
+import ts from "typescript";
+const files = JSON.parse(await new Promise((res) => { let s = ""; process.stdin.setEncoding("utf8"); process.stdin.on("data", (d) => { s += d; }); process.stdin.on("end", () => res(s)); }));
+const result = {};
+for (const [file, text] of Object.entries(files)) {
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, false, file.endsWith(".ts") || file.endsWith(".mts") ? ts.ScriptKind.TS : ts.ScriptKind.JS);
-  const out: string[] = [];
-  const visit = (node: ts.Node): void => {
+  const out = [];
+  const visit = (node) => {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier !== undefined && ts.isStringLiteral(node.moduleSpecifier)) out.push(node.moduleSpecifier.text);
     else if (ts.isCallExpression(node)) {
       const callee = node.expression;
@@ -82,13 +88,27 @@ function specifiers(file: string, text: string): string[] {
     ts.forEachChild(node, visit);
   };
   visit(sf);
-  return out;
+  result[file] = out;
+}
+process.stdout.write(JSON.stringify(result));
+`;
+
+/** The literal specifiers each file imports, read by one child node process; a failed child (any non-zero exit, signal or unreadable output) is an error, never an empty read. */
+function specifiersOf(files: Map<string, string>): Map<string, string[]> | { error: string } {
+  const run = spawnSync(process.execPath, ["--input-type=module", "-e", READER], { cwd: import.meta.dirname, input: JSON.stringify(Object.fromEntries(files)), encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 120_000 });
+  if (run.error !== undefined || run.status !== 0) return { error: `the import reader failed (${run.error?.message ?? `exit ${run.status ?? run.signal}`})` };
+  try {
+    const parsed = JSON.parse(run.stdout) as Record<string, string[]>;
+    return new Map(Object.entries(parsed));
+  } catch {
+    return { error: "the import reader's output does not parse" };
+  }
 }
 
 /** The repo files a file imports directly (W-563 behaviour 1's forms), resolved against `present`. */
-function edges(file: string, text: string, present: Set<string>): string[] {
+function edges(file: string, specs: string[], present: Set<string>): string[] {
   const out = new Set<string>();
-  for (const spec of specifiers(file, text)) {
+  for (const spec of specs) {
     let base: string | undefined;
     if (spec.startsWith("./") || spec.startsWith("../")) base = posix.normalize(posix.join(posix.dirname(file), spec));
     else {
@@ -109,7 +129,9 @@ export function rowsAt(files: string[], read: (path: string) => string | undefin
   const suite = suiteCommands(read("package.json"));
   if ("error" in suite) return suite;
   const tests = files.filter((f) => TEST_FILE.test(f) && !UNGATED.test(f)).sort();
-  const direct = new Map(tests.map((t) => [t, edges(t, read(t) ?? "", present)] as const));
+  const specs = specifiersOf(new Map(tests.map((t) => [t, read(t) ?? ""] as const)));
+  if ("error" in specs) return specs;
+  const direct = new Map(tests.map((t) => [t, edges(t, specs.get(t) ?? [], present)] as const));
   const imports = (t: string): string[] => direct.get(t) ?? [];
   const named = (f: string): string | undefined => suite.find((c) => c.split(/\s+/).includes(f));
   const touchedSet = new Set(touched);
