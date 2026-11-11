@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { runGate, type GateOptions } from "@bisellium/commands/presign-gate.js";
 import { createHash } from "node:crypto";
 import { runVerdict } from "./verdict.js";
+import { PROMPT_TEMPLATES, checkPromptTemplates } from "./rules/prompts.js";
 import { gateRows } from "@bisellium/commands/presign-gate.js";
 
 /** A row whose failing assertion's message opens with the row's title (`<title>: <message>`), the pin the brief names. */
@@ -506,4 +507,33 @@ row("W-563-b4 a well-shaped census signs", () => {
   const r = w.sign("architect", "2", SIGNED);
   assert.equal(r.exitCode, 0, `exit (stderr ${JSON.stringify(r.stderr)})`);
   assert.equal(r.written, true, "the log is written");
+});
+
+
+const EVERY = "every site of a flagged class in round 1";
+const SENSE_TEXTS = ["for sense, not only conformance", "the Patron ruled it or an agent wrote it", "what the screen should do instead"];
+/** b5's fixture: an officina root whose manifest declares the ops collegium and whose one prompt holds `texts`; findings for that prompt only. */
+function promptFindings(path: string, texts: readonly string[]): string[] {
+  const root = scratch("b5");
+  put(root, path, `# t\n\n---\n\n${texts.join("\n")}\n`);
+  const manifest = { collegia: [{ id: "ops" }] };
+  return checkPromptTemplates(root, { manifest } as unknown as Parameters<typeof checkPromptTemplates>[1]).filter((f) => f.where === path).map((f) => f.message);
+}
+
+row("W-563-b5 a spec prompt without the clause is blocked", () => {
+  assert.deepEqual(promptFindings("prompts/spec-review.md", [...SENSE_TEXTS, EVERY]), [], "with the clause it passes");
+  assert.deepEqual(promptFindings("prompts/spec-review.md", SENSE_TEXTS), [`lacks ${EVERY}`], "without it the template is blocked");
+});
+
+row("W-563-b5 a build prompt without the clause is blocked", () => {
+  const needs = (PROMPT_TEMPLATES["prompts/build-review.md"] ?? []).filter((n) => n !== EVERY);
+  assert.deepEqual(promptFindings("prompts/build-review.md", [...needs, EVERY]), [], "with the clause it passes");
+  assert.deepEqual(promptFindings("prompts/build-review.md", needs), [`lacks ${EVERY}`], "without it the template is blocked");
+});
+
+row("W-563-b5 a draft prompt without the gate is blocked", () => {
+  const needs = (PROMPT_TEMPLATES["prompts/spec-draft.md"] ?? []).filter((n) => n !== "Gate log:" && n !== "presign-gate.ts");
+  assert.deepEqual(promptFindings("prompts/spec-draft.md", [...needs, "Gate log:", "presign-gate.ts"]), [], "with the gate it passes");
+  assert.deepEqual(promptFindings("prompts/spec-draft.md", [...needs, "presign-gate.ts"]), ["lacks Gate log:"], "without the citation it is blocked");
+  assert.deepEqual(promptFindings("prompts/spec-draft.md", [...needs, "Gate log:"]), ["lacks presign-gate.ts"], "without the runner it is blocked");
 });
