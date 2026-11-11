@@ -645,6 +645,8 @@ test("W-319-b1 behaviour 1: an architect spec signature's ledger covers every In
 
 // W-322: every ruled case names the test row and assertion that pin it; the design magister's signature is refused otherwise
 /** The W-319-b1 sign, ledger, refused and admitted steps for one brief, on a fresh officina with no design row. */
+/** W-563: the pre-sign gate's refusal of a prototyped brief's signature that cites no gate log. */
+const UNGATED = 'W-300: pre-sign gate: 0 "Gate log:" lines; cite the runner\'s log on one line: "Gate log: <absolute or ~/ path>" (node --import tsx packages/commands/src/presign-gate.ts)\n';
 function specSigner(brief: string): {
   refused: (name: string, body: string, stderr: string) => void;
   admitted: (name: string, body: string, sella?: string) => void;
@@ -682,6 +684,11 @@ function specSigner(brief: string): {
   };
   const admitted = (name: string, body: string, sella = "architect"): void => {
     const r = sign(body, sella);
+    // W-563: the pre-sign gate runs only once every earlier stage passed, so its refusal on a prototyped brief is this row's admission
+    if (r.stderr === UNGATED) {
+      assert.equal(r.written, false, `${name}: the gate writes nothing`);
+      return;
+    }
     assert.equal(r.exitCode, 0, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
     assert.equal(r.written, true, `${name}: the log is written`);
   };
@@ -1527,6 +1534,7 @@ test("W-443-b2 behaviour 2: an architect spec signature is refused when a protot
     assert.equal(r.written, true, `${name}: the log is written`);
   };
   const R = "W-300: red command: behaviour";
+  const NO_GATE = 'W-300: pre-sign gate: 0 "Gate log:" lines; cite the runner\'s log on one line: "Gate log: <absolute or ~/ path>" (node --import tsx packages/commands/src/presign-gate.ts)\n';
   const uncopyable = (why: string, k = 1): string => `${R} ${k}'s genuine red command cannot be copied as written (${why}): write it as words a shell passes unchanged, single-quoting any other\n`;
   const differs = (written: string, file: string, ran: string, k = 1): string =>
     `${R} ${k}'s genuine red command is \`${written}\`, and ${file} records \`${ran}\`: write the command the evidence ran, or run the red again with the written command\n`;
@@ -1534,7 +1542,8 @@ test("W-443-b2 behaviour 2: an architect spec signature is refused when a protot
 
   // W-442 spec r2: the copied command's unquoted backslash is consumed by the shell, so it selects no test
   refused("an unquoted backslash", brief(RAN), uncopyable('the red command holds "\\\\" outside single quotes'));
-  admitted("the written command is the one its evidence ran", brief(WRITTEN, "`red.out`, `stage.out`, accepted `plain.out`"));
+  // W-563: past the red command check, a prototyped brief's signature owes the pre-sign gate's log
+  refused("the written command is the one its evidence ran", brief(WRITTEN, "`red.out`, `stage.out`, accepted `plain.out`"), NO_GATE);
   refused("a double-quoted word", brief(RAN.replace("^W-300-b1\\s", '"^W-300-b1\\s"')), uncopyable('the red command holds "\\"" outside single quotes'));
   refused("a command that differs from the one its evidence ran", brief(WRITTEN.replace("\\s'", "'")), differs("node --test-name-pattern=^W-300-b1 x.test.ts", join(ev, "red.out"), RAN));
   // W-360 spec r5: the cited output was a stub's run, not the written command's
@@ -1550,7 +1559,7 @@ test("W-443-b2 behaviour 2: an architect spec signature is refused when a protot
     `${R} 1's genuine red cites \`none.out\`, and it names no regular file under the evidence roots (${ev}/): cite it by its absolute path, or correct the name or the root\n`,
   );
   refused("an absolute citation of no file", brief(WRITTEN, `\`red.out\`, \`${ev}/none.log\``), `${R} 1's genuine red cites \`${ev}/none.log\`, and ${ev}/none.log is not a readable regular file\n`);
-  admitted("an absolute citation with a line", brief(WRITTEN, `\`${ev}/red.out:2\``));
+  refused("an absolute citation with a line", brief(WRITTEN, `\`${ev}/red.out:2\``), NO_GATE);
   refused(
     "the second behaviour is read too",
     brief(WRITTEN, "`red.out`", { more: ["2. **Two.** The row.", red(2, "npx playwright test --grep W-300-b2\\s", "`red.out`")] }),

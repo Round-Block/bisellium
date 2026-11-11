@@ -15,10 +15,11 @@
  */
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { availableParallelism, tmpdir } from "node:os";
-import { join, posix } from "node:path";
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { availableParallelism, homedir, tmpdir } from "node:os";
+import { isAbsolute, join, posix } from "node:path";
 import { pathToFileURL } from "node:url";
+import { loadSeries, readPrototype } from "./prototype-line.js";
 
 export type RowKind = "check" | "typecheck" | "test" | "reads";
 export interface GateRow {
@@ -192,6 +193,60 @@ export function readGateLog(text: string): GateLog | { error: string } {
     rows.push({ exit: m[1] === "deferred" ? "deferred" : Number(m[1]), kind: m[3] as RowKind, ...(m[4] === "-" ? {} : { file: m[4]! }), command: m[5]! });
   }
   return { id: head[0]!, base: head[1]!, series: head[2]!.slice("sha256:".length), tree: head[3]!, rows };
+}
+
+// W-563 r3: a deferred row (not started within the runner's budget) is deferred to `ci --opus`, not a failure
+const failedRow = (r: { exit: number | "deferred" }): boolean => r.exit !== 0 && r.exit !== "deferred";
+const rowName = (r: { kind: string; file?: string }): string => (r.file === undefined ? r.kind : `${r.kind} ${r.file}`);
+
+/**
+ * W-563 behaviour 3: why the signer's spec verdict on a prototyped brief cannot be written. Nothing when the brief names no
+ * prototype; else the transcript cites one `Gate log:`, the log parses, its series is the brief's digest and the series file
+ * holds it, its tree is the one the series makes on the log's base, and its rows cover `gateRows` there, each exit 0 or deferred.
+ */
+export function gateLogProblems(brief: string, transcript: string, root: string, id: string): string[] {
+  const proto = readPrototype(brief);
+  if (proto === undefined) return [];
+  if ("error" in proto) return [proto.error];
+  const cites = transcript.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith("Gate log:"));
+  if (cites.length !== 1) return [`${cites.length} "Gate log:" lines; cite the runner's log on one line: "Gate log: <absolute or ~/ path>" (node --import tsx packages/commands/src/presign-gate.ts)`];
+  const named = cites[0]!.slice("Gate log:".length).trim();
+  let path = named;
+  try {
+    if (named.startsWith("~/")) path = join(homedir(), named.slice(2));
+  } catch {
+    path = "";
+  }
+  if (!isAbsolute(path)) return [`"${named}" is not an absolute or ~/ path`];
+  let text: string;
+  try {
+    const st = statSync(path);
+    if (!st.isFile() || st.size > LOG_MAX_BYTES) throw new Error("cap");
+    text = readFileSync(path, "utf8");
+  } catch {
+    return [`${named} is not a readable regular file of at most ${LOG_MAX_BYTES} bytes`];
+  }
+  const log = readGateLog(text);
+  if ("error" in log) return [`${named}: ${log.error}`];
+  if (log.id !== id) return [`${named} gates ${log.id}, not ${id}`];
+  if (log.series !== proto.digest) return [`${named} gates series sha256:${log.series}, not the brief's sha256:${proto.digest}: run the gate again on the signed series`];
+  const series = loadSeries(proto);
+  if ("error" in series) return [series.error];
+  const top = git(root, ["rev-parse", "--show-toplevel"]);
+  if ("error" in top) return [`the officina is in no git repository: ${top.error}`];
+  const repo = top.out.toString("utf8").trim();
+  const made = treeOfSeries(repo, log.base, series.text);
+  if ("error" in made) return [made.error];
+  if (made.tree !== log.tree) return [`${named} gates tree ${log.tree}, and the series makes ${made.tree} on ${log.base}: run the gate again at the series' tree`];
+  const want = gateRows(repo, log.base, made.tree);
+  if ("error" in want) return [want.error];
+  const problems: string[] = [];
+  for (const w of want) {
+    const got = log.rows.filter((r) => r.kind === w.kind && r.file === w.file && r.command === w.command);
+    if (got.length === 0) problems.push(`${named} has no row ${rowName(w)} (\`${w.command}\`)`);
+    else if (got.some(failedRow)) problems.push(`${named}'s row ${rowName(w)} exited ${got.find(failedRow)!.exit}`);
+  }
+  return problems;
 }
 
 export interface GateOptions {

@@ -6,6 +6,7 @@ import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
+import { gateLogProblems } from "./presign-gate.js";
 import { codexHome, codexModels, sessionRan, validTurnRan, type TurnRan } from "./codex-run.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
@@ -1187,6 +1188,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
         // W-443: a prototyped brief's written genuine red command is the one its red evidence ran
         ...redReplayProblems(read.bytes.toString("utf8"), opusId).map((p) => `red command: ${p}`),
       ];
+      // W-563 (D-189): a prototyped brief's signature cites the pre-sign gate's log at the series' own tree, every owed row passed
+      if (problems.length === 0) problems.push(...gateLogProblems(read.bytes.toString("utf8"), transcript.toString("utf8"), root, opusId).map((p) => `pre-sign gate: ${p}`));
       if (problems.length > 0) {
         console.error(problems.map((p) => `${opusId}: ${p}`).join("\n"));
         return { exitCode: 2 };

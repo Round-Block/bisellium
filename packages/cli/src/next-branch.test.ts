@@ -11,8 +11,9 @@ import { fileURLToPath } from "node:url";
 import { parseFrontMatter } from "@bisellium/adapter-native";
 import { parseVerdictLog } from "@bisellium/commands/verdict.js";
 import { webBuild } from "@bisellium/commands/web-build.js";
+import { gateRows, treeOfSeries } from "@bisellium/commands/presign-gate.js";
 import { sourceTreeHash } from "@bisellium/shim";
-import { BRANCH, BRIEF_REL, BUDGET, Json, NOW_ISO, OPUS, Out, PROC_ENV, SR, SR_MODEL, T, WT_BRIEF, WT_STUDIO_REL, World, addReview, amend, architectOrder, branchExists, briefPath, briefText, calls, commit, deadPid, direct, editRecord, excludesHeld, expectHeld, expectStep, failingGit, fakeProc, ghCalls, git, gitCalls, handoffAt, landed, liveChild, markerPath, mergedList, mutating, next, put, putBrief, putMarker, putOutput, ran, recordOf, review, reviewHeld, reviewerOrder, scenario, scratch, sign, snap, sourceTree, specHeld, specLog, specNext, srWorld, stagedPaths, stepsDir, tickOf, ticketed, tipOf, touchHandoff, verb, w206World, walk, world, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
+import { BRANCH, BRIEF_REL, BUDGET, Json, NOW_ISO, OPUS, Out, PROC_ENV, SR, SR_MODEL, T, WT_BRIEF, WT_STUDIO_REL, World, addReview, amend, architectOrder, branchExists, briefPath, briefText, calls, commit, deadPid, direct, editRecord, excludesHeld, expectHeld, expectStep, failingGit, fakeProc, ghCalls, git, gitCalls, handoffAt, landed, liveChild, markerPath, mergedList, mutating, next, put, putBrief, putMarker, putOutput, ran, recordOf, review, reviewHeld, reviewerOrder, scenario, scratch, sign, snap, sourceTree, specHeld, specLog, specNext, srWorld, stagedPaths, stepsDir, tickOf, ticketed, tipOf, touchHandoff, verb, w206World, walk, world, writeReds, writeTranscript, wtSpec, NO_FINDINGS } from "./next-world.test.js";
 
 
 test("W-166-b4 behaviour 4: next orders one behaviour's test, red, log commit and implementation at a time", { timeout: 1_800_000 }, () => {
@@ -1060,6 +1061,18 @@ interface Staged {
   line: string;
   /** the source tree of the architect's last staged commit */
   tree: string;
+  /** W-563: the commit the series applies to */
+  base: string;
+}
+/** W-563 behaviour 3: a passing gate log for the staged series, every row `gateRows` owes at the series' tree, written at `at`. */
+function gateLogFor(repo: string, s: Staged, at: string): string {
+  const made = treeOfSeries(repo, s.base, readFileSync(s.path, "utf8"));
+  assert.ok("tree" in made, `the fixture's series applies: ${JSON.stringify(made)}`);
+  const rows = gateRows(repo, s.base, made.tree);
+  assert.ok(Array.isArray(rows), `the fixture's rows: ${JSON.stringify(rows)}`);
+  const head = [`# presign-gate: ${OPUS}`, `# base: ${s.base}`, `# series: sha256:${s.digest}`, `# tree: ${made.tree}`, "# started: 2026-10-02T00:00:00.000Z"];
+  writeFileSync(at, [...head, ...rows.map((r) => `0\t0.0\t${r.kind}\t${r.file ?? "-"}\t${r.command}`), "# minutes: 0.0", ""].join("\n"));
+  return at;
 }
 /** Stage the prototype as commits in `dir` (a test patch, then one implementation per behaviour), cut the series, take them off again. */
 function stageSeries(w: World, dir: string, o: { name?: string; passing?: boolean; only?: number; moduleLoad?: boolean; noTest?: boolean } = {}): Staged {
@@ -1077,7 +1090,7 @@ function stageSeries(w: World, dir: string, o: { name?: string; passing?: boolea
   writeFileSync(path, `${git(dir, ["format-patch", "--stdout", `${base}..HEAD`])}\n`);
   git(dir, ["reset", "-q", "--hard", base]);
   const digest = createHash("sha256").update(readFileSync(path)).digest("hex");
-  return { path, digest, line: `${path} sha256:${digest}`, tree };
+  return { path, digest, line: `${path} sha256:${digest}`, tree, base };
 }
 /** A ready, automated world whose committed brief on opus/<id> names the staged series. */
 function w326World(tag: string, o: { tickets?: boolean; lines?: (s: Staged) => string[]; quote?: string; stage?: { passing?: boolean; only?: number; moduleLoad?: boolean; noTest?: boolean } } = {}): { w: World; s: Staged } {
@@ -1265,6 +1278,8 @@ test("W-326-b3 behaviour 3: after a replay the gates are the producer's; a build
   const k = srWorld("w326-b3-keeps");
   const manifest = join(k.studio, "bisellium.yml");
   writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes:", '  - { id: tests, name: Tests, kind: automated, command: "node -e 0" }\nsource_excludes:'));
+  // W-563 behaviour 3: the gate reads the series' package.json (absent, it refuses), so the fixture repo carries one
+  writeFileSync(join(k.repo, "package.json"), "{}\n");
   commit(k.repo, "studio: an automated gate");
   const ks = stageSeries(k, k.repo);
   // W-443: the signer's spec verdict compares each genuine red's command with the one its cited evidence records
@@ -1272,7 +1287,8 @@ test("W-326-b3 behaviour 3: after a replay the gates are the producer's; a build
   mkdirSync(kEvidence, { recursive: true });
   for (const b of [1, 2]) writeFileSync(join(kEvidence, `red-b${b}.out`), `# command: node --test-reporter=tap --test-name-pattern=^W-900-b${b}\\s w326.test.mjs\n\nTAP version 13\n`);
   put(k.repo, BRIEF_REL, w326Brief([`Prototype: ${ks.line}`]).replace(/(\^W-900-b([12])\\s' w326\.test\.mjs`)/g, (span: string, _all: string, b: string) => `${span} (\`${join(kEvidence, `red-b${b}.out`)}\`)`));
-  sign(k, 1);
+  // W-563 behaviour 3: a prototyped brief's signature cites a current passing gate log
+  sign(k, 1, `Gate log: ${gateLogFor(k.repo, ks, join(dirname(k.repo), "w563-gate.log"))}\n\n${NO_FINDINGS}`);
   review(k, 2, "failed", { body: `## Findings\n${KEEPS}\n` });
   landed(k);
   git(k.repo, ["branch", BRANCH]);
