@@ -1,0 +1,27 @@
+# opus: W-573
+# phase: spec
+# round: 2
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-11T00:02:05.324Z
+# tree: tree:e276382bd20f7857c70bc608d3094c2316757915
+# brief: briefs/W-573.md blob:1edeb554af9e32070ce5da74df3e8143884f9133
+# ticket: {"opus":"W-573","step":"spec","action":"verdict-spec","round":2,"actor":"architect","studio":"studio","head":"36b26545678144bab7152f695ce7b6a82d98c632","brief":"1edeb554af9e32070ce5da74df3e8143884f9133","at":"2026-11-11T00:02:00.887Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-573-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — every path that records or replays a red is mapped: red, the reds perform and a builder's red are closed through runRed; certify's replay already runs the cell and the classifier and gains EROFS; the pr rung's rewrite replay and the kept spec scripts are stated limits, the rewrite one with a proposed follow-on — check: importers.sh; importers.out; brief Intent census and Limits, stated
+2. advisory — red's cell is an environment (an empty HOME, a fresh TMPDIR, the named variables only), not certify's bubblewrap cell, though bubblewrap runs inside this session's sandbox; reusing certify's mounts is a host-runner change, so it is a stated limit with a proposed follow-on — check: bwrap.sh; bwrap.out; brief Limits, stated
+3. advisory — each red was replayed as certify replays it (env -i, an empty HOME, a writable TMPDIR under $TMPDIR): it fails by ERR_ASSERTION only, with no EROFS, ENOENT, EACCES, EPERM, read-only file system or sandbox text, is accepted by the tip's classifyReplay and leaves the HOME empty; each green passes in the same conditions — check: reds.sh; red-accept.mjs; tip-replay-accept.mjs; reds.out; red-b1.log; red-b2.log; green-b1.log; green-b2.log
+4. advisory — every pinned check is killed by a one-hunk wrong form, ten killed, none survived — check: mutants.py; mutants.out
+5. advisory — five existing rows flip and are updated in behaviour 2's commit (three W-166-b2 rows, W-326-b2, and the W-163-b6 and W-423-b5 containment census) — check: singles.out; brief Acceptance
+6. advisory — w573.test.ts reads no studio record, so it is listed in test:suite only, and ci-scope --check-reads on its record-reads log prints no unlisted line — check: reads.sh; reads-check.out
+7. advisory — revision 2 adds the four census lines a Codex read-only pre-pass named (prepass-answer.md): red without the opt-in line, usableRed and opus.red_evidence each a stated limit with a proposed follow-on title, and W-096's own invalid-output list a stated limit (it judges only W-096's seven logs, an opus done); the prototype is unchanged and its gates were rerun — check: prepass-answer.md; brief Limits, stated; reds-r2.out; check-main-r2.out
+8. advisory — Codex's fixture census was not run (the dispatch forbade any Codex run); the 32 files run one at a time at the tip stand in for it — check: files.list; singles.out
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`, the production collegium's spec signer, studio/bisellium.yml) for `studio/briefs/W-573.md` revision 2 at master 2b9d0a5b (revision 1's prototype, unchanged): certify's classifier refuses a read-only mount's throw, and red runs each opted-in red again with an empty HOME and a fresh TMPDIR and records nothing certify would refuse; two behaviours, four prototype commits (prototype.mbox), each red accepted under certify's empty-HOME conditions.

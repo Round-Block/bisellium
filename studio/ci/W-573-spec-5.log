@@ -1,0 +1,21 @@
+# opus: W-573
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c7fa-e14d-7463-ac0d-7d1769150e57
+# outcome: passed
+# at: 2026-11-11T01:01:10.201Z
+# tree: tree:b318a7c61d3c4d4bd19beb26cfbef63679dd1a41
+# brief: briefs/W-573.md blob:ba74ac5c7bf30a8afa684dc28836d321e7997cac
+# ticket: {"opus":"W-573","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"579771d47e952d05721358f7e6c328b9f8c51d3f","brief":"ba74ac5c7bf30a8afa684dc28836d321e7997cac","at":"2026-11-11T01:01:09.564Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-573-spec-3.log #1: closed — `runRed` now catches every changed cell-path throw (`openCell`, synchronous spawn/run failure, and `cellRefusal`) before the tree check, claim, or write; partial setup attempts cleanup, `close` cannot throw, and W-573-b2 covers nonexistent and unwritable TMPDIR cases with exit 1, no log, and no claim.
+
+## Verdict
+Main output: `579771d4 chore(studio): file W-576 to W-588, M4 exit test and retro 11-10 cause fixes (#1140)`; prototype output: `55620766 feat(W-573): behaviour 2`. Revision 3 closes the prior blocker and states cleanup failure as a limit.
+VERDICT: PASS

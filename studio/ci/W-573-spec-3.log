@@ -1,0 +1,19 @@
+# opus: W-573
+# phase: spec
+# round: 3
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c7fa-e14d-7463-ac0d-7d1769150e57
+# outcome: failed
+# at: 2026-11-11T00:26:24.570Z
+# tree: tree:4883863ee4f238f27f5ad4a8bf5ae899c050bb36
+# brief: briefs/W-573.md blob:1edeb554af9e32070ce5da74df3e8143884f9133
+# ticket: {"opus":"W-573","step":"spec","action":"verdict-spec","round":3,"actor":"spec-reviewer","studio":"studio","head":"c3a1146e182bd97538a720de100e1a8388a234c3","brief":"1edeb554af9e32070ce5da74df3e8143884f9133","at":"2026-11-11T00:26:23.765Z"}
+
+## Findings
+1. blocking — brief:72 `openCell` newly reads ambient temporary-directory state and synchronously creates directories before `runRed`’s `try`; an ordinary nonexistent or unwritable `TMPDIR` makes the real `bisellium red` caller throw instead of issuing a refusal, and no existing row catches it. Replace brief:72 with: `| 2. An opted-in red's command; the ambient PATH, HOME, TMPDIR and PLAYWRIGHT_BROWSERS_PATH used to open its cell; and both runs' outputs | argv obeys the reused no-whitespace rule; PATH is a string or absent (fixed fallback); browserCache supplies an existing absolute real directory or undefined; the temporary root exists and permits mkdtemp plus both mkdir calls; both runs exit non-zero, classifyReplay accepts them, and their failedTitles sets match; the stated environment-cell gaps remain limits | runRed catches openCell setup failures and reports “could not be run in certify's replay cell” with exit 1 before any claim or write; runCapture and cellRefusal reject spawn, classifier, exit and title failures |`. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w573.test.ts W-573-b2 must cover a nonexistent or unwritable TMPDIR and prove exit 1, no log and no claim
+2. advisory — brief:18 The absolute removal claim, repeated at brief:28, exceeds `close: () => rmSync(...)`: cleanup can fail after a command changes permissions or upon a host-filesystem error, leaving the cell directory. Replace both removal clauses with: `runRed attempts recursive removal after every cell result before any claim or write; failure to remove is a host-filesystem limit and may leave the cell directory.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: prose-only cleanup-failure limit
+
+## Verdict
+`git log -1 --oneline` returned `c3a1146e chore(studio): M4 path ranked behind W-512, W-573 exempt, handoff refresh (#1139)`; the uncaught cell-setup boundary requires a design-changing correction before build.
+VERDICT: FAIL
