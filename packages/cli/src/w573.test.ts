@@ -11,7 +11,7 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { classifyReplay } from "../../../scripts/replay-accept.mjs";
@@ -235,4 +235,49 @@ test("W-573-b2 behaviour 2: the reds perform refuses a HOME-dependent red the sa
   expectStep(p, "reds", "held", "the perform holds");
   assert.match(p.out, /behaviour 1's red was not recorded: red: behaviour 1's command run again in certify's replay cell/, ran("the hold names the cell", p));
   assert.equal(existsSync(join(w.wtStudio, "ci", "reds", OPUS, "01.log")), false, "no red is recorded");
+});
+
+// review round 1, S1: the launcher makes the cell relative to its own directory, the child resolves it from `--cwd`
+/** `red` as above, run from `from` (not the repository) with `--cwd` naming the repository and a relative TMPDIR. */
+function redFrom(fx: Fx, from: string, file: string, relTmp: string): { status: number | null; stderr: string } {
+  const env: NodeJS.ProcessEnv = { ...process.env, HOME: fx.home, TMPDIR: relTmp, TSX_DISABLE_CACHE: "1", GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" };
+  delete env["NODE_TEST_CONTEXT"];
+  delete env["BISELLIUM_SELLA"];
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, "red", ID, "--behaviour", "1", "--sella", "eng-lead", "--now", "2026-11-11T00:00:00Z", "--studio", fx.studio, "--repo", fx.M, "--cwd", fx.M, "--", process.execPath, "--test-reporter=tap", file], { cwd: from, encoding: "utf8", timeout: 120_000, env });
+  if (r.error) throw r.error;
+  return { status: r.status, stderr: r.stderr };
+}
+
+test("W-573-b2 behaviour 2: a relative TMPDIR with --cwd elsewhere still gives the command usable cell directories", () => {
+  const fx = fixture("b2-rel");
+  const from = scratchDir("b2-rel-from");
+  mkdirSync(join(from, "t"));
+  mkdirSync(join(fx.M, "t")); // the host run resolves the same relative TMPDIR from --cwd
+  const r = redFrom(fx, from, "assert.test.mjs", "t");
+  assert.equal(r.status, 0, "a valid red records under a relative TMPDIR");
+  assert.match(readFileSync(logOf(fx), "utf8"), /^not ok 1 - W-900-b1 an assertion$/m, "the host's failing test");
+  assert.deepEqual(readdirSync(join(from, "t")), [], "the cell, made under the launcher's TMPDIR, is removed");
+});
+
+test("W-573-b2 behaviour 2: the cell's directories and environment paths are absolute under a relative TMPDIR", async () => {
+  const from = scratchDir("b2-abs");
+  mkdirSync(join(from, "t"));
+  const was = { cwd: process.cwd(), tmp: process.env["TMPDIR"] };
+  process.chdir(from);
+  process.env["TMPDIR"] = "t";
+  try {
+    const { openCell } = await import("../../commands/src/red-cell.js");
+    const cell = openCell();
+    try {
+      for (const p of [cell.home, cell.tmp, cell.env["HOME"], cell.env["TMPDIR"], cell.env["PLAYWRIGHT_BROWSERS_PATH"]])
+        if (p !== undefined) assert.equal(isAbsolute(p), true, `${p} is absolute`);
+      assert.equal(existsSync(cell.home) && existsSync(cell.tmp), true, "both directories exist");
+    } finally {
+      cell.close();
+    }
+  } finally {
+    process.chdir(was.cwd);
+    if (was.tmp === undefined) delete process.env["TMPDIR"];
+    else process.env["TMPDIR"] = was.tmp;
+  }
 });
