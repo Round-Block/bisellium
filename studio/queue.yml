@@ -19,6 +19,7 @@ queues:
       - { opus: W-574, says: "Stop hook shows the next-session prompt from a checked handoff block (the Patron 11-10; leads' meet endprompt-meet-1110, unanimous); D-178 exemption asked" }
       - { opus: W-538, says: "guard ends a finished background run; exempt from D-178, the Patron 2026-11-10" }
       - { opus: W-573, says: "red replays each red in certify's empty-HOME cell; POISON gains EROFS; high (ops), exempt from D-178 (the Patron 2026-11-11)" }
+      - { opus: W-589, says: "instructions renders each collegium's spec signer, so CLAUDE.md's Roles line names design-lead; exempt from D-178 on the Patron's 11-11 yes, Roles render only (magister-meet-1111)" }
       - { opus: W-563, says: "pre-sign gate runs check, touched tests and the read-scope check; spec and build reviewers list every site of a flagged class in round 1; exempt from D-178 (the Patron 2026-11-11)" }
       - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182; exempt by D-181); after W-563, on the leads meet w512-rank-meet-1111 and the Patron 2026-11-11" }
       - { opus: W-511, says: "guard refuses raw landing, warns when the Patron's clone is behind master (D-181)" }
@@ -113,6 +114,8 @@ queues:
       - { opus: W-586, says: "busy worktree admin dirs are listed at done and retried in a later session; retro 11-10 cause fix; held by D-178" }
       - { opus: W-587, says: "the guard refuses a backgrounded subshell group; retro 11-10 cause fix (or fold into W-537); held by D-178" }
       - { opus: W-588, says: "the guard refuses a dispatch naming a brief whose Write failed; retro 11-10 cause fix; held by D-178" }
+      - { opus: W-590, says: "explicit spec_seats legacy signer, each magister reader moved to the seat it means, then magister: design-lead (magister-meet-1111); held by D-178" }
+      - { opus: W-591, says: "retro resolves spec signers through spec_seats, so ladder-lead and ops-lead signatures stop counting as review rounds; a measurement defect (magister-meet-1111); held by D-178" }
   research:
     lanes: { R1: ~ }
     next:
