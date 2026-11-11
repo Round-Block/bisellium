@@ -52,15 +52,15 @@ Greenlit on master, named here until `process.handoff.queue` reads studio/queue.
 
 Greenlit on master, continued: W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-547 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-563 W-564 W-565 W-566 W-567 W-568 W-569 W-570 W-572 W-573 W-574 W-575.
 
-D-178: no new process opus starts until M4's exit passes (D-177); product opera exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (W-502's cause fix) is filed greenlit and starts when the freeze ends.
+D-178: no new process opus starts until M4's exit passes (D-177); product opera exempt. W-573 exempt (the Patron 2026-11-11). D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (W-502's cause fix) is filed greenlit and starts when the freeze ends.
 
-In flight: W-451 work links: merged (#1045), next done, once its master verify runs. W-572 (guard routes Patron questions to a leads' meet) merged #1130 and W-568 (verdict refuses an unknown manifest harness) merged #1132: both owe cleanup and done in a fresh session, W-572 first.
+In flight: W-451 work links: merged (#1045), next done, once its master verify runs. W-573 (red replay in certify's empty-HOME cell): spec signed r2, Codex spec review next.
 
 Greenlit ahead of build: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home D-175 keeps. Branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep it). No W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
-Filed 11-08/10: W-533 to W-575. Next: W-574, W-573, W-560, W-563, W-564, W-569, W-570, W-554, W-553, W-555, W-512, W-556, W-372, W-545, W-546, W-544, W-532, W-561. The next entry's spec may be drafted during the build (spec-ahead-meet-1109/). Meets: overnight-meet-1108/, cli-approval-meet-1108/, simplify-meet-1109/, rank-meet-1109/, presign-meet-1109/, codex-sandbox-meet-1109/. Leads-settled calls need no Patron (D-189).
+Filed 11-08/10: W-533 to W-575. Next: W-573, W-563, W-512, W-511, W-301, W-308, W-074, W-513, W-157, then the rest of studio/queue.yml. The next entry's spec may be drafted during the build (spec-ahead-meet-1109/). Meets: overnight-meet-1108/, cli-approval-meet-1108/, simplify-meet-1109/, rank-meet-1109/, presign-meet-1109/, codex-sandbox-meet-1109/, 11-11 meets: m4-path-meet-1111/, lanes-meet-1111/. Leads-settled calls need no Patron (D-189).
 
-Next session, in order: W-572 done, then W-568 done (briefs W-572-build/, W-568-build/ladder-brief-done.md); daily retro for 11-10 after 00:00Z (D-188, kit retro-1110/; feed current-state.md RETRO lines NOW and endprompt-meet-1110/collated.md); then W-574 if the Patron exempts it, else W-573. W-562 retired (halted; recovery refs/pull/1121/head).
+Next session, in order: W-573 Codex spec review r3 (kit W-568-specreview/), spec perform, branch, build; W-563 spec signs after W-573 merges (brief drafted ahead, studio/briefs/W-563.md); file the M4 exit browser test opus (qa-lead) and the retro 11-10 cause fixes; after W-512 lands, 3 engineering and 2 design lanes (lanes-meet-1111/collated.md). State: ~/.bisellium-evidence/current-state.md.
 
 Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it. Meets filed: W-562, W-563, W-564.
 
