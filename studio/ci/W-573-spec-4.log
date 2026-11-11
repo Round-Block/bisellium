@@ -1,0 +1,32 @@
+# opus: W-573
+# phase: spec
+# round: 4
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-11T00:59:19.833Z
+# tree: tree:b318a7c61d3c4d4bd19beb26cfbef63679dd1a41
+# brief: briefs/W-573.md blob:ba74ac5c7bf30a8afa684dc28836d321e7997cac
+# ticket: {"opus":"W-573","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"579771d47e952d05721358f7e6c328b9f8c51d3f","brief":"ba74ac5c7bf30a8afa684dc28836d321e7997cac","at":"2026-11-11T00:59:15.741Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-573-spec/revise-r4/promise-ledger.md
+
+## Findings
+
+1. advisory — census of round 3's first class (a throw before the refusal path) over runRed's cell block, red-cell.ts and the reds perform: mkdtempSync under the host TMPDIR, both mkdirSync, homedir() for browserCache, a synchronous spawn throw and cellRefusal are now inside runRed's try and refused as "could not be run in certify's replay cell" with exit 1 before the tree check, the claim and any write; close's rmSync no longer throws (it was in the finally and would have escaped); an openCell that fails after mkdtemp attempts the removal before it throws; performReds reaches the cell only through runRed; browserCache catches its own stat errors and the throws before W-573's block (realpathSync(execCwd), webBuild, the host runCapture) are reused code, a stated limit — check: brief Limits "Throw sites before the cell (census)"; packages/commands/src/lifecycle.ts and red-cell.ts at spec-scratch/W-573-r4
+2. advisory — census of round 3's second class (a removal promised absolutely): Intent item 2, Promise cell-rerun, behaviour 2's text, red-cell.ts's header and openCell's comment and the three containment.test.ts reasons now say the removal is attempted; the row assertion "the cell's directories are removed" stays, read as the attempt under a filesystem that allows it; a cell the host filesystem keeps is a stated limit — check: brief Intent item 2, Promise cell-rerun, Limits "The cell's removal is an attempt"
+3. advisory — two new W-573-b2 rows: a nonexistent and an unwritable host TMPDIR each exit 1 with "could not be run in certify's replay cell", no 01.log and the fixture's tree unchanged; in a studio requiring step tickets the red's ticket stays pending with no .claimed file; TSX_DISABLE_CACHE keeps tsx from making or failing on the bad TMPDIR first — check: packages/cli/src/w573.test.ts at spec-scratch/W-573-r4; revise-r4/green-b2.log
+4. advisory — the series is four commits on master 2b9d0a5b (origin/master is at c3a1146e, three studio-only commits later; the series was not rebased): behaviour 1's pair unchanged, behaviour 2's red and feat commits rewritten on branch spec-scratch/W-573-r4 (the round-3 tip c9cf9f52 kept on spec-scratch/W-573) — check: prototype.mbox sha256 5c3236af…; git -C .worktrees/W-573-spec log 2b9d0a5b..spec-scratch/W-573-r4
+5. advisory — each red replayed as certify replays it (env -i, an empty HOME, a writable TMPDIR, both fresh): it fails by ERR_ASSERTION only, with no EROFS, ENOENT, EACCES, EPERM, read-only file system or sandbox text, is accepted by the tip's classifyReplay and leaves the HOME empty; each green passes in the same conditions — check: revise-r4/reds.sh; revise-r4/reds.out; revise-r4/red-b1.log; revise-r4/red-b2.log; revise-r4/green-b1.log; revise-r4/green-b2.log
+6. advisory — every pinned check is killed by a one-hunk wrong form, eleven killed, none survived, among them the new no-setup-catch (the catch dropped: both new rows fail); run at 14c0e28a, whose one difference from the tip 55620766 is the order of one inventory D line in containment.test.ts (scan order: close is now defined before the two mkdirSync), a file no mutant touches or runs — check: revise-r4/mutants.py; revise-r4/mutants.out
+7. advisory — at the tip: each importer run one at a time, typecheck, the officina check and the read scope (w573.test.ts reads no studio record, so it stays in test:suite only) — check: revise-r4/gates.sh; revise-r4/gates.log; revise-r4/singles.out; revise-r4/tsc-tip.out; revise-r4/check-tip.out; revise-r4/reads-check.out
+8. advisory — Codex's fixture census was not run (the dispatch forbade any Codex run); the files run one at a time at the tip stand in for it — check: revise-r4/files.list; revise-r4/singles.out
+
+## Earlier findings
+
+- ci/W-573-spec-3.log #1: closed — fixed: runRed catches openCell and cell-run throws and refuses "could not be run in certify's replay cell" with exit 1 before any claim or write (packages/commands/src/lifecycle.ts, red-cell.ts at spec-scratch/W-573-r4); brief Input domain row 2 names the ambient PATH, HOME, TMPDIR and PLAYWRIGHT_BROWSERS_PATH; W-573-b2 rows cover a nonexistent and an unwritable TMPDIR, no log and no claim
+- ci/W-573-spec-3.log #2: closed — stated: the removal is an attempt after every cell result before any claim or write, a failure to remove a host-filesystem limit (brief Intent item 2, Promise cell-rerun, Limits "The cell's removal is an attempt"); close never throws (red-cell.ts)
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`, the production collegium's spec signer, studio/bisellium.yml) for `studio/briefs/W-573.md` revision 3 at master 2b9d0a5b, spec round 4: red refuses, rather than throws, when its empty-HOME cell cannot be opened under the host's TMPDIR, and the cell's removal is stated as an attempt; two behaviours, four prototype commits (prototype.mbox), each red accepted under certify's empty-HOME conditions.

@@ -7,8 +7,9 @@
  * stderr concatenated.
  */
 const ASSERTION = /(?:not ok|AssertionError|ERR_ASSERTION)/;
+// W-573: a read-only mount's throw (EROFS, or its message in any case) is the environment's, as ENOENT is.
 const POISON =
-  /ERR_MODULE_NOT_FOUND|SyntaxError:|Cannot find module|command not found|ENOENT|not permitted|permission denied|sandbox|browserType\.launch|Executable doesn't exist|No tests found/i;
+  /ERR_MODULE_NOT_FOUND|SyntaxError:|Cannot find module|command not found|ENOENT|EROFS|read-only file system|not permitted|permission denied|sandbox|browserType\.launch|Executable doesn't exist|No tests found/i;
 const PW_BANNER = /^[ \t]*Running \d+ tests? using \d+ workers?\b/m;
 // Global: read only through matchAll, which does not mutate it (no lastIndex leak). W-334: any digit run is a summary,
 // and its count is compared as written, never through a double.

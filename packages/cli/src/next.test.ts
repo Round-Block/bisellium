@@ -571,8 +571,8 @@ test("W-311-b1 behaviour 1: one CLI start leaves tsx's compile cache entries wri
 // ---------------------------------------------------------------------------
 test("W-179-b1 behaviour 1: test:suite runs every next row file once, side by side, in one node --test call", () => {
   const suite = (JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as { scripts: Record<string, string> }).scripts["test:suite"]!;
-  // the declared row files (studio/briefs/W-179.md; W-298 adds w298, W-300 adds w300, W-430 adds w430, W-495 adds w495, W-509 adds w509, W-547 adds w547 and W-558 adds w558, which import the shared fixture): a next*.test.ts beside this one, or a test file importing the shared fixture, is one of them
-  const declared = ["next-branch", "next-done", "next-ladder", "next-queue", "next-review", "next-spec", "next", "w298", "w300", "w430", "w495", "w509", "w547", "w558"].map((f) => `packages/cli/src/${f}.test.ts`);
+  // the declared row files (studio/briefs/W-179.md; W-298 adds w298, W-300 adds w300, W-430 adds w430, W-495 adds w495, W-509 adds w509, W-547 adds w547, W-558 adds w558 and W-573 adds w573, which import the shared fixture): a next*.test.ts beside this one, or a test file importing the shared fixture, is one of them
+  const declared = ["next-branch", "next-done", "next-ladder", "next-queue", "next-review", "next-spec", "next", "w298", "w300", "w430", "w495", "w509", "w547", "w558", "w573"].map((f) => `packages/cli/src/${f}.test.ts`);
   const found = readdirSync(HERE)
     .filter((f) => f.endsWith(".test.ts") && f !== "next-world.test.ts" && (f.startsWith("next") || readFileSync(join(HERE, f), "utf8").includes('from "./next-world.test.js"')))
     .sort()

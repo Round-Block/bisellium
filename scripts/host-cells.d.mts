@@ -2,3 +2,5 @@
 export const WEB_BUILD: readonly string[];
 export const WEB_BUNDLE: readonly string[];
 export function prepFailure(behaviour: number, kind: "exit" | "spawn" | "bundle", status?: number | null): string;
+/** W-573: certify's own browser-cache resolver, which `red`'s cell names as PLAYWRIGHT_BROWSERS_PATH. */
+export function browserCache(env: Record<string, string | undefined>, home: string): string | undefined;

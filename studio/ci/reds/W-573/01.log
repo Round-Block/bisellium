@@ -1,0 +1,74 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-573-b1\s --import tsx packages/cli/src/w573.test.ts
+# exit: 1
+# at: 2026-11-11T01:02:17.642Z
+# sella: ladder-lead
+# tree: tree:420af070c3fa1a388cf86de29b05d577e3260e75
+# ticket: {"opus":"W-573","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-573/studio","head":"5c05d52ca1377974811fcc994eb0563d1bffbdf4","brief":"ba74ac5c7bf30a8afa684dc28836d321e7997cac","at":"2026-11-11T01:02:17.599Z"}
+
+TAP version 13
+# Subtest: W-573-b1 behaviour 1: a throw from a read-only mount is an environment failure, not an assertion red
+not ok 1 - W-573-b1 behaviour 1: a throw from a read-only mount is an environment failure, not an assertion red
+  ---
+  duration_ms: 3.312355
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:1:573'
+  failureType: 'testCodeFailure'
+  error: |-
+    a read-only mount's throw is refused
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:32:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-573-b1 behaviour 1: the message alone, in any case, is an environment failure
+not ok 2 - W-573-b1 behaviour 1: the message alone, in any case, is an environment failure
+  ---
+  duration_ms: 0.498487
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:1:997'
+  failureType: 'testCodeFailure'
+  error: |-
+    the message without its code is refused
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-573/packages/cli/src/w573.test.ts:38:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-573-b1 behaviour 1: an assertion red is still accepted, its own message included
+ok 3 - W-573-b1 behaviour 1: an assertion red is still accepted, its own message included
+  ---
+  duration_ms: 0.293725
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 1
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 549.48868
