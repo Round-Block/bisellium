@@ -1,0 +1,19 @@
+# opus: W-563
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1ca7b-5c61-7c53-a048-024386769635
+# outcome: failed
+# at: 2026-11-11T12:06:50.928Z
+# tree: tree:6b00a41525ed110341b93791c45fdf7eb4a705ef
+# brief: briefs/W-563.md blob:8802baf84a30696fd58d0b6412d442f3a9622cf1
+# ticket: {"opus":"W-563","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-563/studio","head":"1f6d272440e279928026b6048a831df25017b065","brief":"8802baf84a30696fd58d0b6412d442f3a9622cf1","at":"2026-11-11T12:00:41.948Z"}
+
+## Findings
+1. blocking — packages/commands/src/presign-gate.ts:182 [severity: S1] `readGateLog` accepts any non-whitespace `started` value, so a malformed proof such as `# started: not-an-iso-instant` passes despite brief:85 requiring an ISO value and refusing every other form. [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w563.test.ts
+2. blocking — packages/commands/src/presign-gate.ts:44 [severity: S1] The raw-text `FROM`, `BARE`, and `DYNAMIC` scanners at lines 44–47 do not implement the literal-import domain at brief:17: an ordinary commented form such as `import/* stray */ "./a.js"` owes no row, while import-looking text inside a line comment can create one. [class: review×census-misses-ordinary-direct-binding-forms] — check: packages/cli/src/w563.test.ts
+
+## Verdict
+The gate remains fail-open for a malformed proof and can omit a directly importing test from the required rows.
+VERDICT: FAIL
