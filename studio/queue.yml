@@ -2,24 +2,29 @@ queues:
   engineering:
     lanes: { E1: W-563 }
     next:
-      - { opus: W-563, says: "pre-sign gate runs check, touched tests and the read-scope check; spec and build reviewers list every site of a flagged class in round 1; exempt from D-178 (the Patron 2026-11-11)" }
-      - { opus: W-579, says: "tests gate timeout set from measured times and the full batch split or sized to the runner; exempt from D-178, after W-563 (the Patron 2026-11-11, suite-reuse-meet-1111)" }
-      - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; exempt from D-178 (the Patron 2026-11-11, ladder-time-meet-1111)" }
-      - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182; exempt by D-181); after W-563, on the leads meet w512-rank-meet-1111 and the Patron 2026-11-11" }
-      - { opus: W-551, says: "a required fix gets a red ticket after a full replay; W-365 and W-421 merged in; high, exempt from D-178, E1 right after W-512 (the Patron 2026-11-11, D-192)", folded: [W-365, W-421] }
-      - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), split from W-169; exempt from D-178, first in E3 (the Patron 2026-11-11, D-192)" }
-      - { opus: W-593, says: "amend gains --collegium, so the leads' agreed retags run by the verb; exempt from D-178, then retags per D-192 (the Patron 2026-11-11)" }
-      - { opus: W-538, says: "guard ends a finished background run; exempt from D-178, the Patron 2026-11-10; ranked below W-512 so rank and lane agree (D-192)" }
-      - { opus: W-574, says: "Stop hook shows the next-session prompt from a checked handoff block (leads' meet endprompt-meet-1110); exempt from D-178, E2 (the Patron 2026-11-11, D-192)" }
-      - { opus: W-511, says: "guard refuses raw landing, warns when the Patron's clone is behind master (D-181)" }
+      - { opus: W-563, says: "pre-sign gate runs check, touched tests and the read-scope check; spec and build reviewers list every site of a flagged class in round 1; process (D-193)" }
+      - { opus: W-579, says: "tests gate timeout set from measured times and the full batch split or sized to the runner; process (D-193)" }
+      - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; process (D-193)" }
+      - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182; D-181); after W-563, on the leads meet w512-rank-meet-1111 and the Patron 2026-11-11" }
       - { opus: W-301, says: "console writes via auto-merge PR" }
       - { opus: W-308, says: "opus timeline; E1 (next.ts), after W-551 (D-192)", next_ts: true }
       - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
-      - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not held by D-178; after W-074 (the Patron 11-11, call C)" }
-      - { opus: W-513, says: "settings verbs: rank, seat models, lane count (D-181)" }
+      - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not M4 path (D-193); after W-074 (the Patron 11-11, call C)" }
       - { opus: W-157, says: "decide: the Patron records a ruling (D-181)" }
+      - { opus: W-283, says: "Status page served" }
+      - { opus: W-332, says: "step tickets", next_ts: true }
+      - { opus: W-304, says: "seats read live, console MVP" }
+      - { opus: W-280, says: "Inbox newItem fail-open" }
+      - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; first in the process lane (D-193)" }
+      - { opus: W-551, says: "a required fix gets a red ticket after a full replay; W-365 and W-421 merged in; high, process (D-193)", folded: [W-365, W-421] }
+      - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), split from W-169; process (D-193)" }
+      - { opus: W-593, says: "amend gains --collegium, so the leads' agreed retags run by the verb; process (D-193)" }
+      - { opus: W-538, says: "guard ends a finished background run; process (D-193); ranked below W-512 so rank and lane agree (D-192)" }
+      - { opus: W-574, says: "Stop hook shows the next-session prompt from a checked handoff block (leads' meet endprompt-meet-1110); process (D-193)" }
+      - { opus: W-511, says: "guard refuses raw landing, warns when the Patron's clone is behind master (D-181)" }
+      - { opus: W-513, says: "settings verbs: rank, seat models, lane count (D-181)" }
       - { opus: W-439, says: "budget records every period, so Home's Budget pies draw real data; product, not frozen; before W-504, which needs it (D-192)" }
-      - { opus: W-560, says: "a failed ci --opus commits its own gate logs, so a class-loop spec perform is never refused for them; held by D-178, not exempt (the Patron 2026-11-11, D-192)" }
+      - { opus: W-560, says: "a failed ci --opus commits its own gate logs, so a class-loop spec perform is never refused for them; process (D-193), not exempt (the Patron 2026-11-11, D-192)" }
       - { opus: W-564, says: "the branch perform and the reds replay npm ci the worktree; on the leads' pre-sign meet (D-189)" }
       - { opus: W-569, says: "verdict refuses a Codex-model verdict with no --session; W-562's stated limit" }
       - { opus: W-570, says: "a Codex upgrade is admitted only by a kept smoke log for that version; W-562's stated limit (codex-sandbox meet call 1)" }
@@ -38,9 +43,9 @@ queues:
       - { opus: W-520, says: "evidence storage and one safe-to-clear test; takes over W-380; exempt from the freeze (D-184)", folded: [W-380] }
       - { opus: W-521, says: "check flags git differing from the queue runner's; exempt from the freeze (D-185)" }
       - { opus: W-522, says: "refuse process.exit after bulk output in fixtures; exempt from the freeze (D-185)" }
-      - { opus: W-510, says: "repair talk when its session is gone; then the leads' PR-approval debate (D-182); ordered, not exempt from D-178 (D-192)" }
-      - { opus: W-514, says: "next enforces the UI revision cap (D-182); ordered, not exempt from D-178 (D-192)" }
-      - { opus: W-516, says: "Files owned check covers docs/SESSION-HANDOFF.md (D-182); ordered, not exempt from D-178 (D-192)" }
+      - { opus: W-510, says: "repair talk when its session is gone; then the leads' PR-approval debate (D-182); ordered, not process (D-193)" }
+      - { opus: W-514, says: "next enforces the UI revision cap (D-182); ordered, not process (D-193)" }
+      - { opus: W-516, says: "Files owned check covers docs/SESSION-HANDOFF.md (D-182); ordered, not process (D-193)" }
       - { opus: W-507, says: "W-298's remainder: two manifest input cases and the cause fix for spec×fix-opens-new-surface; parked until after M4 (D-181)" }
       - { opus: W-506, says: "cause fix, a build review running on a failed spec verdict; starts after the process freeze ends, when M4 passes (D-178)" }
       - { opus: W-534, says: "land honours notice.ok, reports a remote arm, polls pending checks; behind the freeze" }
@@ -52,8 +57,8 @@ queues:
       - { opus: W-540, says: "warn and refuse when the session's cwd is under .worktrees/; low (speed meet 1108); behind the freeze" }
       - { opus: W-548, says: "admission and the prototype check enforce brief pins; daily retro 11-08; behind the freeze" }
       - { opus: W-549, says: "the review perform writes Earlier findings itself; daily retro 11-08; behind the freeze" }
-      - { opus: W-378, says: "next sees an evidence-only fix under studio/ci/; E1, ranked above W-550, which refuses the empty marker commit (D-192); held by D-178" }
-      - { opus: W-356, says: "the reds replay accepts a zero-padded patch series of ten or more; E1, after W-551 (D-192); held by D-178" }
+      - { opus: W-378, says: "next sees an evidence-only fix under studio/ci/; E1, ranked above W-550, which refuses the empty marker commit (D-192); process (D-193)" }
+      - { opus: W-356, says: "the reds replay accepts a zero-padded patch series of ten or more; E1, after W-551 (D-192); process (D-193)" }
       - { opus: W-550, says: "the guard refuses an empty commit; daily retro 11-08; behind the freeze" }
       - { opus: W-565, says: "the guard refuses a second ladder-runner while one acts; daily retro 11-09; behind the freeze" }
       - { opus: W-566, says: "handoff check takes an in-flight id's state from its record; daily retro 11-09; behind the freeze" }
@@ -75,42 +80,38 @@ queues:
       - { opus: W-429, says: "petitio length limits" }
       - { opus: W-261, says: "woken orchestration" }
       - { opus: W-434, says: "dispatch prompts as artifacts" }
-      - { opus: W-254, says: "delete the dailies; talk and harness profiles stay (D-182); ordered, not exempt from D-178 (D-192)" }
+      - { opus: W-254, says: "delete the dailies; talk and harness profiles stay (D-182); ordered, not process (D-193)" }
       - { opus: W-349, says: "flaky row W-279-b3" }
       - { opus: W-399, says: "record verb sella check" }
       - { opus: W-242, says: "hook-set code" }
       - { opus: W-400, says: "CLAUDE.md, AGENTS.md code-owned" }
       - { opus: W-401, says: "sessions receipt provider" }
       - { opus: W-245, says: "provider-agnostic closing step" }
-      - { opus: W-283, says: "Status page served" }
       - { opus: W-374, says: "next --all in-flight only", next_ts: true }
       - { opus: W-375, says: "context serves lex without §9, §12" }
       - { opus: W-331, says: "next.ts split", next_ts: true }
       - { opus: W-183, says: "heavy-job slots", next_ts: true }
       - { opus: W-169, says: "lane claims; the Files owned overlap refusal split to W-592 (D-192)", next_ts: true }
-      - { opus: W-332, says: "step tickets", next_ts: true }
-      - { opus: W-304, says: "seats read live, console MVP" }
-      - { opus: W-280, says: "Inbox newItem fail-open" }
       - { opus: W-561, says: "next's gather reads --now for the daily hold and red findings; W-547's stated limit; producer's rank, vetoable" }
-      - { opus: W-575, says: "W-568's stated limit: check refuses a manifest seat whose harness is not a known harness id, so a typo is caught before any reader runs; held by D-178" }
-      - { opus: W-577, says: "W-573's stated limit: red runs every red in the empty-HOME cell and certify's classifier, opted in or not; held by D-178" }
-      - { opus: W-578, says: "W-573's stated limit: next and check read a recorded red through certify's classifier; held by D-178" }
-      - { opus: W-580, says: "W-124 behaviour 5 deterministic under a loaded parallel batch (W-572's first certify); retro 11-10 cause fix; held by D-178" }
-      - { opus: W-437, says: "W-076-b5 reads a fixture officina, not the live petitiones; qa, before W-391 (D-192); held by D-178" }
-      - { opus: W-391, says: "stable 1280 px screenshot baselines; qa; W-576's spec decides whether it goes ahead of W-576 (D-192); held by D-178" }
-      - { opus: W-581, says: "the gate summary prints TAP not ok lines first and certify uploads the tests log; retro 11-10 cause fix; held by D-178" }
-      - { opus: W-582, says: "land retries a GitHub 5xx and says unknown, never held; retro 11-10 cause fix; held by D-178" }
-      - { opus: W-583, says: "next skips a branch whose tip record is halted or done (W-562); retro 11-10 cause fix; held by D-178" }
-      - { opus: W-584, says: "red re-records a void red with a reason, keeping the old log; retro 11-10 cause fix; held by D-178" }
-      - { opus: W-585, says: "next's split hint passes new's validation; new gains --dry-run; retro 11-10 cause fix; held by D-178" }
-      - { opus: W-586, says: "busy worktree admin dirs are listed at done and retried in a later session; retro 11-10 cause fix; held by D-178" }
-      - { opus: W-587, says: "the guard refuses a backgrounded subshell group; retro 11-10 cause fix (or fold into W-537); held by D-178" }
-      - { opus: W-588, says: "the guard refuses a dispatch naming a brief whose Write failed; retro 11-10 cause fix; held by D-178" }
-      - { opus: W-590, says: "explicit spec_seats legacy signer, each magister reader moved to the seat it means, then magister: design-lead (magister-meet-1111); held by D-178" }
-      - { opus: W-591, says: "retro resolves spec signers through spec_seats, so ladder-lead and ops-lead signatures stop counting as review rounds; a measurement defect (magister-meet-1111); held by D-178" }
-      - { opus: W-324, says: "a spec round counts signature plus review; qa, E1, after W-591 (same retro.ts) (D-192); held by D-178" }
-      - { opus: W-291, says: "commit trailers name a declared sella; after W-591 (D-192); held by D-178" }
-      - { opus: W-286, says: "a decision's kill clause is evaluated; after W-291 (D-192); held by D-178" }
+      - { opus: W-575, says: "W-568's stated limit: check refuses a manifest seat whose harness is not a known harness id, so a typo is caught before any reader runs; process (D-193)" }
+      - { opus: W-577, says: "W-573's stated limit: red runs every red in the empty-HOME cell and certify's classifier, opted in or not; process (D-193)" }
+      - { opus: W-578, says: "W-573's stated limit: next and check read a recorded red through certify's classifier; process (D-193)" }
+      - { opus: W-580, says: "W-124 behaviour 5 deterministic under a loaded parallel batch (W-572's first certify); retro 11-10 cause fix; process (D-193)" }
+      - { opus: W-437, says: "W-076-b5 reads a fixture officina, not the live petitiones; qa, before W-391 (D-192); process (D-193)" }
+      - { opus: W-391, says: "stable 1280 px screenshot baselines; qa; W-576's spec decides whether it goes ahead of W-576 (D-192); process (D-193)" }
+      - { opus: W-581, says: "the gate summary prints TAP not ok lines first and certify uploads the tests log; retro 11-10 cause fix; process (D-193)" }
+      - { opus: W-582, says: "land retries a GitHub 5xx and says unknown, never held; retro 11-10 cause fix; process (D-193)" }
+      - { opus: W-583, says: "next skips a branch whose tip record is halted or done (W-562); retro 11-10 cause fix; process (D-193)" }
+      - { opus: W-584, says: "red re-records a void red with a reason, keeping the old log; retro 11-10 cause fix; process (D-193)" }
+      - { opus: W-585, says: "next's split hint passes new's validation; new gains --dry-run; retro 11-10 cause fix; process (D-193)" }
+      - { opus: W-586, says: "busy worktree admin dirs are listed at done and retried in a later session; retro 11-10 cause fix; process (D-193)" }
+      - { opus: W-587, says: "the guard refuses a backgrounded subshell group; retro 11-10 cause fix (or fold into W-537); process (D-193)" }
+      - { opus: W-588, says: "the guard refuses a dispatch naming a brief whose Write failed; retro 11-10 cause fix; process (D-193)" }
+      - { opus: W-590, says: "explicit spec_seats legacy signer, each magister reader moved to the seat it means, then magister: design-lead (magister-meet-1111); process (D-193)" }
+      - { opus: W-591, says: "retro resolves spec signers through spec_seats, so ladder-lead and ops-lead signatures stop counting as review rounds; a measurement defect (magister-meet-1111); process (D-193)" }
+      - { opus: W-324, says: "a spec round counts signature plus review; qa, E1, after W-591 (same retro.ts) (D-192); process (D-193)" }
+      - { opus: W-291, says: "commit trailers name a declared sella; after W-591 (D-192); process (D-193)" }
+      - { opus: W-286, says: "a decision's kill clause is evaluated; after W-291 (D-192); process (D-193)" }
   research:
     lanes: { R1: ~ }
     next: []
