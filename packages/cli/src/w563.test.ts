@@ -178,8 +178,7 @@ function gateWorld(o: { failing?: boolean; listed?: boolean; slow?: boolean; sca
     copyFileSync(join(HOST_SCRIPTS, s), join(repo, "scripts", s));
   }
   const base = commitAll(repo, "base");
-  // sleep-waiver: fixture -- the fixture module hangs so the runner's row timeout has a row to kill; no assertion waits on it
-  const hang = o.slow === true ? "await new Promise((r) => setTimeout(r, 120_000));\n" : "";
+  const hang = o.slow === true ? "for (;;) {} // hangs until the row timeout kills it\n" : "";
   put(repo, "src/a.mjs", `${hang}export const ok = ${o.failing === true ? "false" : "true"}; // the series\n`);
   put(repo, "src/r.test.mjs", 'import { readFileSync } from "node:fs";\nreadFileSync("studio/bisellium.yml", "utf8");\n');
   if (o.listed === true) put(repo, "package.json", pkg("node src/r.test.mjs"));
