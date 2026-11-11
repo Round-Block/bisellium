@@ -25,6 +25,7 @@ queues:
       - { opus: W-301, says: "console writes via auto-merge PR" }
       - { opus: W-308, says: "opus timeline", next_ts: true }
       - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
+      - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not held by D-178; after W-074 (the Patron 11-11, call C)" }
       - { opus: W-513, says: "settings verbs: rank, seat models, lane count (D-181)" }
       - { opus: W-157, says: "decide: the Patron records a ruling (D-181)" }
       - { opus: W-560, says: "a failed ci --opus commits its own gate logs, so a class-loop spec perform is never refused for them; high, the Patron's call 2026-11-09 (W-547); producer's rank, vetoable" }
@@ -100,6 +101,18 @@ queues:
       - { opus: W-280, says: "Inbox newItem fail-open" }
       - { opus: W-561, says: "next's gather reads --now for the daily hold and red findings; W-547's stated limit; producer's rank, vetoable" }
       - { opus: W-575, says: "W-568's stated limit: check refuses a manifest seat whose harness is not a known harness id, so a typo is caught before any reader runs; held by D-178" }
+      - { opus: W-577, says: "W-573's stated limit: red runs every red in the empty-HOME cell and certify's classifier, opted in or not; held by D-178" }
+      - { opus: W-578, says: "W-573's stated limit: next and check read a recorded red through certify's classifier; held by D-178" }
+      - { opus: W-579, says: "the tests gate's 30-minute limit outlives the 14-wide batch (two lost certify runs 11-10); retro 11-10 cause fix; held by D-178" }
+      - { opus: W-580, says: "W-124 behaviour 5 deterministic under a loaded parallel batch (W-572's first certify); retro 11-10 cause fix; held by D-178" }
+      - { opus: W-581, says: "the gate summary prints TAP not ok lines first and certify uploads the tests log; retro 11-10 cause fix; held by D-178" }
+      - { opus: W-582, says: "land retries a GitHub 5xx and says unknown, never held; retro 11-10 cause fix; held by D-178" }
+      - { opus: W-583, says: "next skips a branch whose tip record is halted or done (W-562); retro 11-10 cause fix; held by D-178" }
+      - { opus: W-584, says: "red re-records a void red with a reason, keeping the old log; retro 11-10 cause fix; held by D-178" }
+      - { opus: W-585, says: "next's split hint passes new's validation; new gains --dry-run; retro 11-10 cause fix; held by D-178" }
+      - { opus: W-586, says: "busy worktree admin dirs are listed at done and retried in a later session; retro 11-10 cause fix; held by D-178" }
+      - { opus: W-587, says: "the guard refuses a backgrounded subshell group; retro 11-10 cause fix (or fold into W-537); held by D-178" }
+      - { opus: W-588, says: "the guard refuses a dispatch naming a brief whose Write failed; retro 11-10 cause fix; held by D-178" }
   research:
     lanes: { R1: ~ }
     next:
