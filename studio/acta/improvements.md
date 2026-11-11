@@ -1162,3 +1162,91 @@ Classes in more than one opus, 2026-10-27..2026-11-09:
 - review×fail-open-on-malformed-records-patched-per-site (6 opera), interface×validation-order-masks-errors (3), security×symlink-parent-write-escape (5), tests×tests-that-agree-with-the-bug (4), tests×ruled-case-uncovered (W-547 review LOOP r1-r2): none new, because each has a cause fix named by a lesson (none is owed) and W-185, W-414 stand greenlit for the first and last.
 - workflow×session-url-in-commit (runner's commit carried a Claude-Session line, current-state.md:24): none, because the guard already denied it and the retry landed clean.
 - UI and design-quality classes: none, because no UI opus ran on 11-09.
+
+### 2026-11-10
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-558 | 823 | 5 | S1 5 |
+| W-568 | 408 | 0 |  |
+| W-571 | 114 | 0 |  |
+| W-572 | 496 | 0 |  |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-568 | review | 1 | passed | - |  |
+| W-568 | spec | 1 | passed | - |  |
+| W-568 | spec | 2 | passed | 24 |  |
+| W-571 | review | 1 | passed | - |  |
+| W-571 | spec | 1 | passed | - |  |
+| W-571 | spec | 2 | passed | 5 |  |
+| W-572 | review | 1 | passed | - |  |
+| W-572 | spec | 1 | passed | - |  |
+| W-572 | spec | 2 | passed | 7 |  |
+| W-573 | spec | 1 | passed | - |  |
+
+- no loop
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| W-558 | ci/W-558-tests-76c99972.log | gate×tests |  |
+| W-572 | ci/W-572-tests-8a4f90ae.log | gate×tests |  |
+
+Classes in more than one opus, 2026-10-28..2026-11-10:
+- class gate×W-339 seen in 2 opera: W-463, W-487
+- class gate×tests seen in 7 opera: W-364, W-407, W-494, W-502, W-509, W-558, W-572
+- class interface×validation-order-masks-errors seen in 3 opera: W-474, W-543, W-547
+- class mechanism×replay-environment-not-pristine seen in 2 opera: W-462, W-477
+- class review×evidence-backfilled-or-absent seen in 7 opera: W-300, W-413, W-430, W-477, W-495, W-502, W-541
+- class review×fail-open-on-malformed-records-patched-per-site seen in 6 opera: W-430, W-444, W-468, W-525, W-547, W-558
+- class review×shared-log-grammar-rejects-valid-records seen in 2 opera: W-459, W-492
+- class security×symlink-parent-write-escape seen in 4 opera: W-430, W-461, W-542, W-543
+- class spec-gate×self-signed seen in 2 opera: W-442, W-502
+- class spec×input-domain-missing-or-unenforceable seen in 13 opera: W-227, W-298, W-409, W-430, W-433, W-445, W-452, W-459, W-461, W-525, W-530, W-547, W-558
+- class spec×input-without-named-rejector seen in 2 opera: W-489, W-495
+- class spec×promise-unattainable-under-accepted-domain seen in 18 opera: W-227, W-298, W-333, W-407, W-452, W-459, W-462, W-468, W-472, W-489, W-494, W-495, W-498, W-501, W-509, W-525, W-543, W-547
+- class tests×assertion-satisfied-by-the-wrong-cause seen in 2 opera: W-298, W-473
+- class tests×ruled-case-uncovered seen in 11 opera: W-364, W-444, W-450, W-454, W-463, W-474, W-495, W-496, W-525, W-542, W-547
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-227, W-501
+- class tests×tests-that-agree-with-the-bug seen in 4 opera: W-407, W-409, W-487, W-543
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-487, W-508
+
+#### Owed cause fixes
+
+- OWED class gate×W-339 (W-463, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class gate×tests (W-364, W-407, W-494, W-502, W-509, W-558, W-572): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class mechanism×replay-environment-not-pristine (W-462, W-477): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class spec-gate×self-signed (W-442, W-502): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- Owed spec-gate×self-signed (W-442, W-502) and mechanism×replay-environment-not-pristine (W-462, W-477), a fourth day: the clerk stamps proposed 11-07 to 11-09 never landed (studio/lessons/L-042.md:7 still `addressed_by: "W-080"`, L-058.md:7 still `"W-175"`, both halted, so `causeFixes` skips them); a dispatched clerk sets L-042 to W-506 and L-058 to W-464 (W-564, the npm ci half, is now filed and queued). Because a stamp proposed three days running never landed, it goes in the producer's next records PR as its own named line. Owner: design lead (L-042), ops-lead (L-058). Opus: W-506, W-464.
+- Owed gate×tests (now 7 opera: W-558 ci/W-558-tests-76c99972.log, W-572 ci/W-572-tests-8a4f90ae.log, where `node scripts/test-reads.mjs` failed on a new test file) and gate×W-339: still no lesson of either class (no `gate×` lesson in studio/lessons/), so covered by W-533 as amended 11-09 (an opus's own front matter can name the class it fixes). W-563 is gate×tests' cause fix (pre-sign gate; brief behaviour 2's row "a new file that reads studio/ without a test:record entry" covers W-572's miss): W-533 names W-563 for gate×tests. Owner: eng-lead. Opus: W-533, W-563.
+- test×certify-gate-timeout (not a flake; current-state.md:8): W-571's and W-568's merge-group certify hit `GATE_TIMEOUT_MS = 30 * 60_000` (packages/pipeline/src/index.ts:56, :224) with no failing assertion; the 14-wide `node --test` batch at package.json:17 took 1279-1376 s and the same tree passed in 21m32s on retry (certify-flake-1111/failures.md). Two lost runs of ~35 min each. File a high cause-fix opus: raise the limit to 60 min, or split the batch so the gate stays under 30, and have the gate log print the slowest files when it times out. Red: a gate command that outlives the limit is reported "timed out", the same command under the new limit passes. Owner: eng-lead. Opus: file (not covered: nothing in studio/opera/ names GATE_TIMEOUT).
+- test×W-124-b5-live-process-race (W-572's first certify, run 42838829657: `not ok 77 - W-124 behaviour 5`, packages/cli/src/next-ladder.test.ts:449; fixtures liveChild/zombiePid/deadPid and output mtimes at next-world.test.ts:827-841, run beside 13 other files): file a cause fix that makes b5 deterministic (an injected /proc and pid reader, or the row moved out of the parallel batch). Red: b5 run 20 times under `--test-concurrency=14` with CPU load passes every time. Owner: eng-lead. Opus: file.
+- gate×failing-lines-summary-wrong (W-466): the gate summary printed `its last 0 of 0 failing lines` for W-558 (ci/W-558-tests-76c99972.log) and picked the fixture string `existing candidate regression` (packages/commands/src/run.test.ts:569) instead of W-572's `not ok 77` line; the full log stayed in the bwrap cell. File: the summary takes TAP `not ok` lines first, and certify uploads the tests log. Owner: eng-lead. Opus: file.
+- check-rule×test-reads-at-sign (W-572 ci-opus-1; current-state.md:28) and the review meet's recommendation (class census at round 1 of spec and build review, pre-sign test-reads gate on the prototype tree; review-article-meet-1111/collated.md §3): covered by W-563 (exempt from D-178, the Patron 11-11; brief behaviours 2, 4 and 5). Owner: eng-lead.
+- red×empty-HOME-replay and POISON lacking EROFS (W-562 red 3, W-571's first empty-HOME proof void; current-state.md:36, :51): covered by W-573. Owner: ops-lead.
+- hook×end-of-session prompt (endprompt-meet-1110, unanimous route B + C): covered by W-574. Owner: ops-lead.
+- hook×Patron-route-question (asked the Patron a question the leads' fallback covered; current-state.md:36): covered by W-572 (done 11-10). Owner: ops-lead.
+- script×merge-QUEUE_TIMEOUT-on-failed-check and the long merge variant polling a never-enqueued PR (W-562 PR #1121, 2 h and 50 min lost; current-state.md:51, :68, :69): W-219 states exactly this (stop at the first merge-group rejection naming the failing step; a timeout names the queue state) but is halted. Lift W-219 into W-557's chain or fold its two clauses into W-557 (greenlit), with reds: a removed-for-check PR reports the check name, a WAITING PR is enqueued once checks pass. Owner: ops-lead. Opus: W-557 (fold W-219).
+- script×land-502-held (daily retro 11-09's land printed "held" on a GitHub 502 after the merge request and merged anyway; current-state.md:55; `say(... "held" ...)`, packages/cli/src/land.ts:277): file: a gh 5xx on the PR read is retried with a bounded backoff and, if still failing, reported "unknown: re-run land", never "held". Owner: ops-lead. Opus: file.
+- eng×superseded-opus-with-branch (W-562 superseded by W-571: `furtherAlongBranches`, packages/cli/src/next.ts:716-727, reads master's record through `laneRecord` and ignores a halt on the branch; D-021 blocks the master halt; the Patron deleted opus/W-562 by hand; current-state.md:36, :40): file: furtherAlongBranches skips a branch whose own tip record is halted or done. That removes the need for an agent branch delete, which the classifier refuses (none further on the classifier, because that is the Patron's settings call). Owner: eng-lead. Opus: file.
+- eng×red-re-record-without-failed-review (a void red, here the EROFS-on-/tmp proof, has no verb path to record again outside a fix round; W-468 issues a ticket only in phase fix; current-state.md:36, :40): file: `red` re-records a behaviour whose previous log is void when given a reason, keeping the earlier log and naming it in the new one. Owner: eng-lead. Opus: file.
+- eng×split-hint-dead-end (`next` prints `bisellium new --kind <kind> ... --parent <id>`, packages/cli/src/next.ts:1632, pinned by next-spec.test.ts:491, and `new` refuses `--parent` for any kind but subtask; dead end on W-559 and W-562; current-state.md:63): file: the hint drops `--parent` (or names `--kind subtask`) and a test runs the printed command through `new`'s own validation. The filing script that tripped the 8-word title limit (current-state.md:36) is the same class: `new` gains a `--dry-run` that checks title, kind and parent and writes nothing, and filing kits run it first. Owner: eng-lead. Opus: file.
+- ops×worktree-admin-held-busy (the sandbox mount pin keeps a worktree's .git/worktrees admin directory busy for the whole session that touched it; the 11-11 dones left 3 "held busy"; current-state.md:16): W-489 (done) clears stale admin dirs only when they are not busy. File: the done perform lists each busy admin dir in a kept file, and `run --reclaim` (or tick) in the next session retries and empties the list; a red row: a listed dir is removed in a later process. Owner: ops-lead. Opus: file.
+- hook×backgrounded-subshell (a runner used `( … ) &` once, so no exit file was written; current-state.md:16): guard.test.ts has no row for a subshell group followed by `&`. Add rows: `( cmd ) &` refused in a foreground call, and in a run_in_background call too, since the harness already detaches it and an inner `&` loses the exit code. Owner: ops-lead. Opus: file (or fold into W-537 if its template already pins the background form).
+- hook×brief-Write-batched-with-dispatch (twice on 11-10: the r4 brief's Write failed in the same batch as its dispatch, so the runner got a sed-copied branch brief; current-state.md:51, :61): the rule lives only in current-state.md prose. File: the guard refuses an Agent dispatch whose prompt names a brief path that a Write or Edit in this session failed on and has not since succeeded. Red: the failed-then-dispatched case refused, the written-then-dispatched case allowed. Owner: ops-lead. Opus: file.
+- prompt×runner-hand-back-after-interim (runner final reports refused twice after an interim report, recovered by SendMessage; current-state.md:28, :51, :65): fold into W-537 (greenlit, checked ladder-runner brief template): the template says one SubagentHandback, last, with no interim report. Owner: ops-lead. Opus: W-537.
+- prompt×Earlier-findings-for-advisories (W-562 r4 record refused; current-state.md:62): covered by W-549 (as proposed 11-09). Owner: ops-lead.
+- hook×W-494-stale-run (fired 3x on 11-10; current-state.md:51, :67): covered by W-538 (now exempt from D-178). Owner: ops-lead.
+- hook×double-runner-dispatch: covered by W-565. Owner: ops-lead.
+- prompt×CLAUDE.md-design-magister (the architect seat was asked for the design lead at the review-article meet; current-state.md:9; collated.md first paragraph): CLAUDE.md:81 is generated by `instructions` (packages/cli/src/instructions.ts:53) from studio/bisellium.yml:9, which still says `magister: architect` while studio/leges/design.md:3 names the design lead (D-150 C). File: the design collegium's magister becomes design-lead and `instructions --write` regenerates CLAUDE.md; check that W-452's legacy rule (bisellium.yml:17, "still the design magister for opera started before spec_seats.since") still reads the old signer. Code-owned: Patron approval at land. Owner: design lead. Opus: file.
+- workflow×queue-says-length (the producer's `says` text broke queue.shape's 200-char limit; current-state.md:9): none, because queue.shape already refuses it before land and it cost one clerk redo.
+- review-system practices from the review-article meet (eval set of past misses, Pre-existing tag, noise by outcome, which layer should have caught it): none now, because the meet put them all after M4 as one study opus (collated.md §1, §3); the producer files that study opus behind M4 so the daily retro's tags have a place to go. Owner: ops-lead (prompts), eng-lead (eval runner).
+- review×, spec×, security×, tests× classes in the 14-day list: none new, because no review or spec round failed on 11-10 (the round table has passes only and no loop) and each standing class has a cause fix named by a lesson (none is owed).
+- UI and design-quality classes: none, because no UI opus ran on 11-10.
