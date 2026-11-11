@@ -714,3 +714,24 @@ const OWES_NOT: [string, string][] = [
   ["a non-literal dynamic import over a comment", 'await import(/* "./a.js" */ spec);\n'],
 ];
 for (const [what, src] of OWES_NOT) row(`W-563-b1 ${what} owes no row`, () => assert.ok(!owes(src), "no direct import, no row"));
+
+// W-563 ci7 (architect ruling Gap A, Gap B): the import reader's every failure is a refusal, never an empty read.
+const BAD_READERS: [string, string, number | undefined][] = [
+  ["exits 3", "process.exit(3);", undefined],
+  ["kills itself with SIGKILL", "process.kill(process.pid, 'SIGKILL');", undefined],
+  ["writes non-JSON", "process.stdout.write('not json');", undefined],
+  ["writes {}", "process.stdout.write('{}');", undefined],
+  ["writes a non-array value", "process.stdout.write(JSON.stringify({ 'pkg/a.test.ts': 'ab' }));", undefined],
+  ["writes an array of non-strings", "process.stdout.write(JSON.stringify({ 'pkg/a.test.ts': [1] }));", undefined],
+  ["writes an array", "process.stdout.write('[]');", undefined],
+  ["outlives its timeout", "setTimeout(() => {}, 60000);", 200],
+];
+row("W-563-b1 a failed import reader refuses", () => {
+  const files = ["package.json", "pkg/a.ts", "pkg/a.test.ts"];
+  const read = (p: string): string | undefined => (p === "package.json" ? JSON.stringify({ scripts: { "test:suite": "node --import tsx pkg/a.test.ts" } }) : p === "pkg/a.test.ts" ? 'import "./a.js";\n' : undefined);
+  const call = rowsAt as unknown as (f: string[], r: typeof read, t: string[], a: string[], reader: string, timeoutMs?: number) => unknown;
+  for (const [what, reader, timeoutMs] of BAD_READERS) {
+    const rows = call(files, read, ["pkg/a.ts"], [], reader, timeoutMs);
+    assert.ok(typeof rows === "object" && rows !== null && !Array.isArray(rows) && "error" in rows, `a reader that ${what} returns an error`);
+  }
+});
