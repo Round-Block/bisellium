@@ -165,11 +165,11 @@ row("W-563-b1 a required test no test:suite command names is a failing row", () 
 const HOST_SCRIPTS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "scripts");
 
 /** b2's fixture: a repo whose check and typecheck are `true`, a base, and a series that touches a module and adds a test reading studio/. */
-function gateWorld(o: { failing?: boolean; listed?: boolean; slow?: boolean } = {}): { repo: string; base: string; mbox: string; out: string; run: (opts?: GateOptions) => Promise<{ exit: number; stderr: string }> } {
+function gateWorld(o: { failing?: boolean; listed?: boolean; slow?: boolean; scalar?: boolean } = {}): { repo: string; base: string; mbox: string; out: string; run: (opts?: GateOptions) => Promise<{ exit: number; stderr: string }> } {
   const repo = initRepo("b2");
-  const pkg = (record: string): string =>
+  const pkg = (record: string | number): string =>
     JSON.stringify({ scripts: { test: "true", check: "true", typecheck: "true", "test:suite": "node src/a.test.mjs && node src/r.test.mjs", "test:record": record } });
-  put(repo, "package.json", pkg(""));
+  put(repo, "package.json", pkg(o.scalar === true ? 5 : ""));
   put(repo, "studio/bisellium.yml", "bisellium: 1\n");
   put(repo, "src/a.mjs", "export const ok = true;\n");
   put(repo, "src/a.test.mjs", 'import { ok } from "./a.mjs";\nprocess.exit(ok ? 0 : 1);\n');
@@ -230,6 +230,14 @@ row("W-563-b2 a failing row is recorded and the runner exits 1", async () => {
 
 row("W-563-b2 a new file reading studio unlisted fails its reads row", async () => {
   const w = gateWorld();
+  const r = await w.run();
+  assert.equal(r.exit, 1, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.ok(rowLines(w.out).includes("1 reads src/r.test.mjs node src/r.test.mjs"), `the reads row fails: ${rowLines(w.out).join(" | ")}`);
+});
+
+row("W-563-b2 a reads check that exits non-zero fails its reads row", async () => {
+  // a scalar test:record makes `ci-scope.mjs --check-reads` throw: exit 1 and no unlisted:/failed:/missing: line
+  const w = gateWorld({ scalar: true });
   const r = await w.run();
   assert.equal(r.exit, 1, `exit (stderr ${JSON.stringify(r.stderr)})`);
   assert.ok(rowLines(w.out).includes("1 reads src/r.test.mjs node src/r.test.mjs"), `the reads row fails: ${rowLines(w.out).join(" | ")}`);
@@ -536,4 +544,11 @@ row("W-563-b5 a draft prompt without the gate is blocked", () => {
   assert.deepEqual(promptFindings("prompts/spec-draft.md", [...needs, "Gate log:", "presign-gate.ts"]), [], "with the gate it passes");
   assert.deepEqual(promptFindings("prompts/spec-draft.md", [...needs, "presign-gate.ts"]), ["lacks Gate log:"], "without the citation it is blocked");
   assert.deepEqual(promptFindings("prompts/spec-draft.md", [...needs, "Gate log:"]), ["lacks presign-gate.ts"], "without the runner it is blocked");
+});
+
+row("W-563-b5 a draft prompt without the exit-boundary clause is blocked", () => {
+  const clause = "Each reused command, script or subprocess the opus runs gets one Input row naming the call and the function that turns its non-zero exit or timeout into a refusal.";
+  const needs = (PROMPT_TEMPLATES["prompts/spec-draft.md"] ?? []).filter((n) => n !== clause);
+  assert.deepEqual(promptFindings("prompts/spec-draft.md", [...needs, clause]), [], "with the clause it passes");
+  assert.deepEqual(promptFindings("prompts/spec-draft.md", needs), [`lacks ${clause}`], "without it the template is blocked");
 });
