@@ -16,7 +16,7 @@ import { runGate, type GateOptions } from "@bisellium/commands/presign-gate.js";
 import { createHash } from "node:crypto";
 import { runVerdict } from "./verdict.js";
 import { PROMPT_TEMPLATES, checkPromptTemplates } from "./rules/prompts.js";
-import { gateRows } from "@bisellium/commands/presign-gate.js";
+import { gateRows, readGateLog, rowsAt } from "@bisellium/commands/presign-gate.js";
 
 /** A row whose failing assertion's message opens with the row's title (`<title>: <message>`), the pin the brief names. */
 function row(name: string, body: () => void | Promise<void>): void {
@@ -568,3 +568,108 @@ row("W-563-b5 a draft prompt without the exit-boundary clause is blocked", () =>
   assert.deepEqual(promptFindings("prompts/spec-draft.md", [...needs, clause]), [], "with the clause it passes");
   assert.deepEqual(promptFindings("prompts/spec-draft.md", needs), [`lacks ${clause}`], "without it the template is blocked");
 });
+
+// ---- round-1 review fixes (build review 1): the log's `started` is the runner's ISO instant; the import scan is comment- and string-aware ----
+const HEX40 = "a".repeat(40);
+const logWith = (over: Record<string, string> = {}, rows: string[] = ["0\t0.1\tcheck\t-\tnpm run -s check -- studio --repo ."]): string =>
+  [`# presign-gate: ${over.id ?? "W-1"}`, `# base: ${over.base ?? HEX40}`, `# series: ${over.series ?? `sha256:${"b".repeat(64)}`}`, `# tree: ${over.tree ?? HEX40}`, `# started: ${over.started ?? "2026-11-11T12:00:00.000Z"}`, ...rows, `# minutes: ${over.minutes ?? "0.1"}`].join("\n") + "\n";
+
+row("W-563-b3 a log with a valid ISO instant for started reads", () => {
+  assert.ok(!("error" in readGateLog(logWith())), "the runner's own form reads");
+});
+for (const bad of ["not-an-iso-instant", "2026-11-11", "2026-11-11T12:00:00Z", "2026-11-11T12:00:00.000+00:00", "2026-02-30T00:00:00.000Z", "2026-13-01T00:00:00.000Z", "2026-11-11 12:00:00.000Z", "2026-11-11T25:00:00.000Z", "2026-11-11t12:00:00.000z", "+012026-11-11T12:00:00.000Z", "2026-11-11T12:00:00.0000Z"])
+  row(`W-563-b3 a started of ${JSON.stringify(bad)} is refused`, () => {
+    assert.ok("error" in readGateLog(logWith({ started: bad })), "a started that is not the runner's ISO instant is refused");
+  });
+// the census of every other field: each already exact, pinned so a loosening fails here
+for (const [what, over] of [
+  ["base in uppercase hex", { base: "A".repeat(40) }],
+  ["base of 39 hex", { base: "a".repeat(39) }],
+  ["tree of 65 hex", { tree: "a".repeat(65) }],
+  ["tree with a non-hex digit", { tree: `${"a".repeat(39)}g` }],
+  ["series without sha256:", { series: "b".repeat(64) }],
+  ["series of 63 hex", { series: `sha256:${"b".repeat(63)}` }],
+  ["minutes without a decimal", { minutes: "1" }],
+  ["minutes of two decimals", { minutes: "1.25" }],
+  ["minutes negative", { minutes: "-1.0" }],
+] as [string, Record<string, string>][])
+  row(`W-563-b3 a log with ${what} is refused`, () => {
+    assert.ok("error" in readGateLog(logWith(over)), `${what} is refused`);
+  });
+for (const [what, line] of [
+  ["an exit of 1000", "1000\t0.1\tcheck\t-\tx"],
+  ["an exit of 01", "01\t0.1\tcheck\t-\tx"],
+  ["seconds without a decimal", "0\t1\tcheck\t-\tx"],
+  ["an unknown kind", "0\t0.1\tlint\t-\tx"],
+  ["an empty command", "0\t0.1\tcheck\t-\t"],
+  ["an empty file field", "0\t0.1\ttest\t\tx"],
+  ["a fifth tab", "0\t0.1\ttest\ta\tb\tc"],
+] as [string, string][])
+  row(`W-563-b3 a row with ${what} is refused`, () => {
+    assert.ok("error" in readGateLog(logWith({}, [line])), `${what} is refused`);
+  });
+
+/** One test file `pkg/a.test.ts` (named by test:suite) holding `src`, and a touched `pkg/a.ts`: does the scan owe the test a row? */
+function owes(src: string): boolean {
+  const files = ["package.json", "pkg/a.ts", "pkg/a.test.ts"];
+  const rows = rowsAt(files, (p) => (p === "package.json" ? JSON.stringify({ scripts: { "test:suite": "node --import tsx pkg/a.test.ts" } }) : p === "pkg/a.test.ts" ? src : undefined), ["pkg/a.ts"], []);
+  assert.ok(!("error" in rows), "rows are computed");
+  return (rows as { kind: string }[]).some((r) => r.kind === "test");
+}
+const OWES: [string, string][] = [
+  ["static default import", 'import x from "./a.js";\n'],
+  ["static named import", 'import { a } from "./a.js";\n'],
+  ["static namespace import", 'import * as a from "./a.js";\n'],
+  ["default and named import", 'import x, { a } from "./a.js";\n'],
+  ["type import", 'import type { A } from "./a.js";\n'],
+  ["side-effect import", 'import "./a.js";\n'],
+  ["export star from", 'export * from "./a.js";\n'],
+  ["export star as from", 'export * as n from "./a.js";\n'],
+  ["export named from", 'export { a } from "./a.js";\n'],
+  ["export type from", 'export type { A } from "./a.js";\n'],
+  ["literal dynamic import", 'await import("./a.js");\n'],
+  ["side-effect import with a block comment before the specifier", 'import/* stray */ "./a.js";\n'],
+  ["side-effect import with a block comment between", 'import /* a */ "./a.js";\n'],
+  ["side-effect import with a newline between", 'import\n"./a.js";\n'],
+  ["side-effect import with a line comment and newline between", 'import // c\n"./a.js";\n'],
+  ["static import with comments between every token", 'import /* a */ x /* b */ from /* c */ "./a.js";\n'],
+  ["static import with a line comment before the specifier", 'import x from // c\n "./a.js";\n'],
+  ["static import with a multi-line brace list and comments", 'import {\n  a, // one\n  b, /* two */\n} from "./a.js";\n'],
+  ["export from with a newline before from", 'export {a}\nfrom "./a.js";\n'],
+  ["export star with comments", 'export /* a */ * /* b */ from /* c */ "./a.js";\n'],
+  ["dynamic import with comments inside the parentheses", 'await import(/* c */ "./a.js" /* d */);\n'],
+  ["dynamic import with a newline in the parentheses", 'await import(\n  "./a.js"\n);\n'],
+  ["import after a comment holding a semicolon and a quote", '/* it\'s ; */ import "./a.js";\n'],
+  ["import after a line comment holding a quote", "// don't\nimport \"./a.js\";\n"],
+  ["import after a string holding two slashes", 'const u = "http://x"; import "./a.js";\n'],
+  ["import after a string holding a block-comment opener", 'const u = "/*"; import "./a.js";\n'],
+  ["import after a template holding a comment opener", "const u = `//`;\nimport \"./a.js\";\n"],
+  ["dynamic import inside a template expression", "const u = `${await import(\"./a.js\")}`;\n"],
+  ["dynamic import after a regular-expression literal", 'const r = /"/; await import("./a.js");\n'],
+  ["single-quoted specifier", "import './a.js';\n"],
+  ["import after import.meta", 'const u = import.meta.url;\nimport "./a.js";\n'],
+];
+for (const [what, src] of OWES) row(`W-563-b1 ${what} owes a row`, () => assert.ok(owes(src), "the direct import is a row"));
+const OWES_NOT: [string, string][] = [
+  ["a line comment holding a side-effect import", '// import "./a.js"\n'],
+  ["a line comment holding a static import", '// import x from "./a.js"\n'],
+  ["a block comment holding a side-effect import", '/* import "./a.js" */\n'],
+  ["a block comment holding a static import", '/* import x from "./a.js" */\n'],
+  ["a multi-line block comment holding an import", '/*\n import { a } from "./a.js";\n*/\n'],
+  ["a block comment holding a dynamic import", '/* import("./a.js") */\n'],
+  ["a block comment holding an export from", '/* export * from "./a.js" */\n'],
+  ["a trailing line comment holding an import", 'const x = 1; // import "./a.js"\n'],
+  ["a single-quoted string holding an import", "const s = 'import \"./a.js\"';\n"],
+  ["a double-quoted string holding a static import", 'const s = "import x from \'./a.js\'";\n'],
+  ["a double-quoted string holding a dynamic import", 'const s = "import(\'./a.js\')";\n'],
+  ["a template holding a side-effect import", "const s = `import \"./a.js\"`;\n"],
+  ["a template holding a static import", "const s = `\nimport x from \"./a.js\";\n`;\n"],
+  ["import.meta alone", "const u = import.meta.url;\n"],
+  ["a member named import", 'const m = o.import("./a.js");\n'],
+  ["a regular-expression literal holding an import", 'const r = /import "\\.\\/a.js"/;\n'],
+  ["a string holding a comment closer after a comment opener", 'const s = "/*"; const t = "*/ import \\"./a.js\\"";\n'],
+  ["a variable named from", 'export const from = "./a.js";\n'],
+  ["a non-literal dynamic import", "await import(spec);\n"],
+  ["a non-literal dynamic import over a comment", 'await import(/* "./a.js" */ spec);\n'],
+];
+for (const [what, src] of OWES_NOT) row(`W-563-b1 ${what} owes no row`, () => assert.ok(!owes(src), "no direct import, no row"));
