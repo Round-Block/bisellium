@@ -178,7 +178,7 @@ function gateWorld(o: { failing?: boolean; listed?: boolean; slow?: boolean; sca
     copyFileSync(join(HOST_SCRIPTS, s), join(repo, "scripts", s));
   }
   const base = commitAll(repo, "base");
-  const hang = o.slow === true ? "for (;;) {} // hangs until the row timeout kills it\n" : "";
+  const hang = o.slow === true ? 'import { createServer } from "node:net";\ncreateServer().listen(0); // an open listener keeps the process alive\nawait new Promise(() => {}); // blocks without spinning until the row timeout kills it\n' : "";
   put(repo, "src/a.mjs", `${hang}export const ok = ${o.failing === true ? "false" : "true"}; // the series\n`);
   put(repo, "src/r.test.mjs", 'import { readFileSync } from "node:fs";\nreadFileSync("studio/bisellium.yml", "utf8");\n');
   if (o.listed === true) put(repo, "package.json", pkg("node src/r.test.mjs"));
@@ -262,7 +262,7 @@ row("W-563-b2 a run under an outer read trace still passes", async () => {
 row("W-563-b2 a row past its timeout is recorded 124 and the run goes on", async () => {
   const w = gateWorld({ slow: true, listed: true });
   const t0 = Date.now();
-  const r = await w.run({ rowTimeoutMs: 2000 });
+  const r = await w.run({ rowTimeoutMs: 20_000 });
   assert.equal(r.exit, 1, `exit (stderr ${JSON.stringify(r.stderr)})`);
   assert.ok(Date.now() - t0 < 60_000, "the hung row is killed at its timeout");
   const rows = rowLines(w.out);

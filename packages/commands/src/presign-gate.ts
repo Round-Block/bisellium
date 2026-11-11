@@ -258,8 +258,16 @@ export interface GateOptions {
   pool?: number;
 }
 
+/** The gate's own environment for every row: an outer read trace (`bisellium ci` runs the suite under one) reaches no row, as test-reads.mjs starts its trace afresh. */
+function rowEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  delete env.NODE_OPTIONS;
+  for (const k of Object.keys(env)) if (k.startsWith("BISELLIUM_RECORD_")) delete env[k];
+  return env;
+}
+
 /** One command in the worktree, its process group killed at the timeout: its exit, 124 when it timed out. */
-function sh(wt: string, command: string, timeoutMs: number, env: NodeJS.ProcessEnv = process.env): Promise<number> {
+function sh(wt: string, command: string, timeoutMs: number, env: NodeJS.ProcessEnv = rowEnv()): Promise<number> {
   return new Promise((done) => {
     const child = spawn("sh", ["-c", command], { cwd: wt, stdio: "ignore", env, detached: true });
     let timedOut = false;
@@ -280,10 +288,10 @@ async function runRow(wt: string, row: GateRow, scratch: string, n: number, time
   if (row.command === UNNAMED) return 1;
   if (row.kind !== "reads") return sh(wt, row.command, timeoutMs);
   const log = join(scratch, `reads-${n}.log`);
-  const env = { ...process.env, NODE_OPTIONS: `--import ${join(wt, "scripts", "record-reads.mjs")}`, BISELLIUM_RECORD_READS: log };
+  const env = { ...rowEnv(), NODE_OPTIONS: `--import ${join(wt, "scripts", "record-reads.mjs")}`, BISELLIUM_RECORD_READS: log };
   const run = await sh(wt, row.command, timeoutMs, env);
   if (run !== 0) return run;
-  const check = spawnSync("node", [join("scripts", "ci-scope.mjs"), "--check-reads", log], { cwd: wt, encoding: "utf8", timeout: timeoutMs });
+  const check = spawnSync("node", [join("scripts", "ci-scope.mjs"), "--check-reads", log], { cwd: wt, encoding: "utf8", timeout: timeoutMs, env: rowEnv() });
   if (check.error !== undefined) return (check.error as NodeJS.ErrnoException).code === "ETIMEDOUT" ? 124 : 1;
   // a reused check's exit is the judge: a non-zero exit with no recognised line (a scalar test:record, a missing script) fails the row
   const bad = check.status !== 0 || (check.stdout ?? "").split("\n").some((l) => l.startsWith("unlisted:") || l.startsWith("failed:") || l.startsWith("missing:"));
