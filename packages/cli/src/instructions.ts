@@ -18,6 +18,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { instant } from "@bisellium/schema";
+import { readSpecSeats } from "@bisellium/commands/spec-seats.js";
 
 export interface RenderedInstructions {
   claude: string;
@@ -43,6 +44,14 @@ function readManifestLoosely(studioRoot: string): Dict {
   }
 }
 
+/** W-589: the seat `bisellium.yml#spec_seats` routes a new, non-UI spec of this collegium to, read through `readSpecSeats`
+ *  (the one reader `next` and `verdict --phase spec` share), so the Roles line never names a signer the routing refuses.
+ *  None when spec_seats is absent, names no row for the collegium, or the routing refuses the setting or the row. */
+function specSigner(manifest: Dict, collegium: string): string | undefined {
+  const route = readSpecSeats(manifest, collegium, { collegium }, undefined);
+  return "route" in route && route.route === "collegium" ? route.signer : undefined;
+}
+
 function rolesSection(manifest: Dict): string {
   const collegia = Array.isArray(manifest["collegia"]) ? (manifest["collegia"] as unknown[]) : [];
   const rows = collegia
@@ -50,7 +59,8 @@ function rolesSection(manifest: Dict): string {
     .map((c) => {
       const id = typeof c["id"] === "string" ? c["id"] : "?";
       const magister = typeof c["magister"] === "string" ? c["magister"] : "?";
-      return `- ${id} (magister: ${magister})`;
+      const signer = typeof c["id"] === "string" ? specSigner(manifest, c["id"]) : undefined;
+      return `- ${id} (magister: ${magister}${signer === undefined ? "" : `; spec signer: ${signer}`})`;
     });
   return rows.length > 0 ? rows.join("\n") : "- (no collegia declared)";
 }
