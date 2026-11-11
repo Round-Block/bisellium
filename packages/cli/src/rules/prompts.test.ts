@@ -27,7 +27,7 @@ const SELF_REVIEW = [
 ];
 const REVIEW_SLOTS = ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>"];
 const NEEDS: Record<string, string[]> = {
-  "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA, "presign-gate.ts", "Gate log:"],
+  "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA, "presign-gate.ts", "Gate log:", "Each reused command, script or subprocess the opus runs gets one Input row naming the call and the function that turns its non-zero exit or timeout into a refusal."],
   "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA, ...SELF_REVIEW],
   "prompts/build-review.md": [...REVIEW_SLOTS, "fills the eight slots", DATA, "every site of a flagged class in round 1"],
 };

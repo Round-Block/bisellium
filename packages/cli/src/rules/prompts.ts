@@ -32,9 +32,11 @@ const BUILDER_SELF_REVIEW = [
 export const EVERY_SITE = "every site of a flagged class in round 1";
 /** W-563: the draft prompt names the pre-sign gate's runner and the signature's citation of its log. */
 const GATE = ["presign-gate.ts", "Gate log:"];
+/** W-563: a reused call's non-zero exit or timeout must be named as a refusal. */
+export const EXIT_BOUNDARY = "Each reused command, script or subprocess the opus runs gets one Input row naming the call and the function that turns its non-zero exit or timeout into a refusal.";
 const SENSE = ["for sense, not only conformance", "the Patron ruled it or an agent wrote it", "what the screen should do instead"];
 export const PROMPT_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
-  "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA, ...GATE],
+  "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA, ...GATE, EXIT_BOUNDARY],
   "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA, ...BUILDER_SELF_REVIEW],
   "prompts/build-review.md": ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>", "fills the eight slots", DATA, EVERY_SITE],
 };
