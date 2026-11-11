@@ -50,19 +50,19 @@ Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by c
 
 Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480.
 
-Greenlit on master, continued: W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-547 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-563 W-564 W-565 W-566 W-567 W-568 W-569 W-570 W-572 W-573 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-589 W-590 W-591.
+Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-563 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-589 W-590 W-591 W-592 W-593.
 
-D-178: no new process opus starts until M4's exit passes (D-177); product opera exempt. W-573 exempt (the Patron 2026-11-11). D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (W-502's cause fix) is filed greenlit and starts when the freeze ends.
+D-178: no new process opus starts until M4's exit passes (D-177); product opera exempt; exemptions are in studio/queue.yml lines and D-192. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (W-502's cause fix) is filed greenlit and starts when the freeze ends.
 
-In flight: W-451 merged (#1045), done once its master verify runs. W-573 (red replay in the empty-HOME cell): building on opus/W-573; brief amendment after ci-opus-1.
+In flight: W-451 merged (#1045), done once its master verify runs. W-589 spec drafted ahead, unsigned (~/.bisellium-evidence/W-589-spec/).
 
 Greenlit ahead of build: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home D-175 keeps. Branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep it). No W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
-Filed 11-08/11: W-533 to W-591. Next: W-573, W-589, W-563, W-512, W-511, W-301, W-308, W-074, W-576, W-513, W-157, then the rest of studio/queue.yml. The next spec may be drafted during a build (spec-ahead-meet-1109/). Meets: ~/.bisellium-evidence/*-meet-11*/ (11-11: m4-path, lanes, magister). Leads-settled calls need no Patron (D-189).
+Filed 11-08/11: W-533 to W-593. Next: studio/queue.yml order (D-192: lanes by file overlap, `next_ts: true` is E1; retags wait for W-593). The next spec may be drafted during a build (spec-ahead-meet-1109/). Meets: ~/.bisellium-evidence/*-meet-11*/ (11-11: m4-path, lanes, magister). Leads-settled calls need no Patron (D-189).
 
 Design-collegium questions go to design-lead (design.md:3); CLAUDE.md's Roles line says architect until W-589 lands (magister-meet-1111/collated.md, the Patron 11-11).
 
-Next session, in order: W-573 Codex spec review r3 (kit W-568-specreview/), spec perform, branch, build; W-563 spec signs after W-573 merges (brief drafted ahead, studio/briefs/W-563.md); after W-512 lands, 3 engineering and 2 design lanes (lanes-meet-1111/collated.md). State: ~/.bisellium-evidence/current-state.md.
+Next session, in order: W-589 signs (draft ~/.bisellium-evidence/W-589-spec/), Codex spec review, build; then W-563 (brief drafted, studio/briefs/W-563.md); after W-512 lands, 3 engineering and 2 design lanes (lanes-meet-1111/collated.md). State: ~/.bisellium-evidence/current-state.md.
 
 Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it. Meets filed: W-562, W-563, W-564.
 
@@ -87,3 +87,4 @@ Off-ladder work and recommendations reaching the Patron ungated get the relevant
 W-073, W-438 and W-136 stay halted until the freeze ends (D-178).
 
 W-467 has not started: it follows W-503 in the Queue and takes W-451's Home palette. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01).
+</content>
