@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { copyFileSync, existsSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { runGate, type GateOptions } from "@bisellium/commands/presign-gate.js";
 import { createHash } from "node:crypto";
 import { runVerdict } from "./verdict.js";
@@ -240,6 +240,23 @@ row("W-563-b2 a reads check that exits non-zero fails its reads row", async () =
   const r = await w.run();
   assert.equal(r.exit, 1, `exit (stderr ${JSON.stringify(r.stderr)})`);
   assert.ok(rowLines(w.out).includes("1 reads src/r.test.mjs node src/r.test.mjs"), `the reads row fails: ${rowLines(w.out).join(" | ")}`);
+});
+
+row("W-563-b2 a run under an outer read trace still passes", async () => {
+  // `bisellium ci` runs the suite with NODE_OPTIONS preloading record-reads and a trace root in the environment: the gate's rows must not inherit it
+  const w = gateWorld({ listed: true });
+  const keep = ["NODE_OPTIONS", "BISELLIUM_RECORD_READS", "BISELLIUM_RECORD_ROOT", "BISELLIUM_RECORD_OWNER"].map((k) => [k, process.env[k]] as const);
+  process.env.NODE_OPTIONS = `--import ${pathToFileURL(join(HOST_SCRIPTS, "record-reads.mjs")).href}`;
+  process.env.BISELLIUM_RECORD_READS = join(scratch("b2-trace"), "outer.log");
+  process.env.BISELLIUM_RECORD_ROOT = "outer-root";
+  process.env.BISELLIUM_RECORD_OWNER = "outer.test.ts";
+  try {
+    const r = await w.run();
+    assert.equal(r.exit, 0, `exit (stderr ${JSON.stringify(r.stderr)}; rows ${rowLines(w.out).join(" | ")})`);
+  } finally {
+    for (const [k, v] of keep) if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
 });
 
 row("W-563-b2 a row past its timeout is recorded 124 and the run goes on", async () => {
