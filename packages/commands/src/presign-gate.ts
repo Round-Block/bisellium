@@ -183,6 +183,9 @@ export function readGateLog(text: string): GateLog | { error: string } {
     if (m === null) return { error: `line ${i + 1} is not "# ${key}: <value>"` };
     head.push(m[1]!);
   }
+  // the runner's own `new Date().toISOString()`: the exact form, and a real instant (a day past the month's end rolls over and is refused)
+  const started = head[4]!;
+  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(started) || Number.isNaN(Date.parse(started)) || new Date(started).toISOString() !== started) return { error: "the started header is not an ISO instant" };
   if (!/^[0-9a-f]{40,64}$/.test(head[1]!) || !/^sha256:[0-9a-f]{64}$/.test(head[2]!) || !/^[0-9a-f]{40,64}$/.test(head[3]!)) return { error: "the base, series or tree header is out of form" };
   if (!/^# minutes: [0-9]+\.[0-9]$/.test(lines.at(-1) ?? "")) return { error: 'the last line is not "# minutes: <n.n>"' };
   const rows: GateLog["rows"] = [];
