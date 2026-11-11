@@ -76,3 +76,30 @@ test("W-589-b1 a spec_seats row the routing refuses renders as today", () => {
   const r = roles(HEAD + SEATS("architect"));
   for (const lines of [r.claude, r.agents]) assert.equal(lines[0], "- design (magister: architect)", "a spec_seats row the routing refuses renders as today");
 });
+
+test("W-589-b2 the real officina's Roles lines name each spec signer", () => {
+  const { claude } = renderInstructions("studio", { now: NOW });
+  assert.ok(claude.includes("- design (magister: architect; spec signer: design-lead)\n"), "the real officina's Roles lines name each spec signer: design");
+  assert.ok(claude.includes("- engineering (magister: eng-lead; spec signer: architect)\n"), "the real officina's Roles lines name each spec signer: engineering");
+});
+
+test("W-589-b2 the committed CLAUDE.md and AGENTS.md are instructions --write output", () => {
+  const dir = mkdtempSync(join(tmpdir(), "w589-repo-"));
+  try {
+    const origLog = console.log;
+    let code: number;
+    try {
+      console.log = () => {};
+      code = runInstructions(["--studio", "studio", "--repo", dir, "--write"], { now: NOW }).exitCode;
+    } finally {
+      console.log = origLog;
+    }
+    assert.equal(code, 0);
+    for (const name of ["CLAUDE.md", "AGENTS.md"]) {
+      const committed = readFileSync(name, "utf8");
+      assert.ok(committed.includes("- design (magister: architect; spec signer: design-lead)\n") && committed === readFileSync(join(dir, name), "utf8"), `the committed CLAUDE.md and AGENTS.md are instructions --write output: ${name}`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
