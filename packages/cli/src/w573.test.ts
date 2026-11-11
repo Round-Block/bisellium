@@ -266,7 +266,7 @@ test("W-573-b2 behaviour 2: the cell's directories and environment paths are abs
   process.chdir(from);
   process.env["TMPDIR"] = "t";
   try {
-    const { openCell } = await import("../../commands/src/red-cell.js");
+    const { openCell } = await import("@bisellium/commands/red-cell.js");
     const cell = openCell();
     try {
       for (const p of [cell.home, cell.tmp, cell.env["HOME"], cell.env["TMPDIR"], cell.env["PLAYWRIGHT_BROWSERS_PATH"]])
