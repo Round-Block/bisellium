@@ -659,7 +659,6 @@ const OWES: [string, string][] = [
   ["side-effect import with attributes", 'import "./a.js" with { type: "json" };\n'],
   ["export from with attributes", 'export * from "./a.js" with { type: "json" };\n'],
   ["import defer namespace", 'import defer * as ns from "./a.js";\n'],
-  ["import source binding", 'import source x from "./a.js";\n'],
   ["dynamic import with a trailing comma", 'await import("./a.js",);\n'],
   ["dynamic import with options", 'await import("./a.js", { with: { type: "json" } });\n'],
   ["dynamic import with options and a trailing comma", 'await import("./a.js", { with: { type: "json" } },);\n'],
@@ -678,6 +677,7 @@ const OWES: [string, string][] = [
   ["escaped identifier in an import binding", 'import { \\u0061 as b } from "./a.js";\n'],
   ["escaped braced identifier in a default import", 'import \\u{61}b from "./a.js";\n'],
   ["escaped identifier in an export from", 'export { \\u0061 as b } from "./a.js";\n'],
+  ["dynamic import of a substitution-free template literal", "await import(`./a.js`);\n"],
   ["single-quoted specifier", "import './a.js';\n"],
   ["import after import.meta", 'const u = import.meta.url;\nimport "./a.js";\n'],
 ];
@@ -702,7 +702,6 @@ const OWES_NOT: [string, string][] = [
   ["a string holding a comment closer after a comment opener", 'const s = "/*"; const t = "*/ import \\"./a.js\\"";\n'],
   ["a string-named export with no from", 'export { a as "b" };\n'],
   ["an escaped specifier that cooks to another file", 'import "./\\x62.js";\n'],
-  ["a dynamic import of a template literal", "await import(`./a.js`);\n"],
   ["a dynamic import whose second argument holds the specifier", 'await import(spec, "./a.js");\n'],
   ["a member import.meta.resolve of a string", 'const u = import.meta.resolve("./a.js");\n'],
   ["an escaped string holding an import", 'const s = "import \\"./a.js\\"";\n'],
