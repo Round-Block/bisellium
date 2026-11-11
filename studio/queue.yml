@@ -1,8 +1,7 @@
 queues:
   engineering:
-    lanes: { E1: W-589 }
+    lanes: { E1: W-563 }
     next:
-      - { opus: W-589, says: "instructions renders each collegium's spec signer, so CLAUDE.md's Roles line names design-lead; exempt from D-178 on the Patron's 11-11 yes, Roles render only (magister-meet-1111)" }
       - { opus: W-563, says: "pre-sign gate runs check, touched tests and the read-scope check; spec and build reviewers list every site of a flagged class in round 1; exempt from D-178 (the Patron 2026-11-11)" }
       - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182; exempt by D-181); after W-563, on the leads meet w512-rank-meet-1111 and the Patron 2026-11-11" }
       - { opus: W-551, says: "a required fix gets a red ticket after a full replay; W-365 and W-421 merged in; high, exempt from D-178, E1 right after W-512 (the Patron 2026-11-11, D-192)", folded: [W-365, W-421] }
