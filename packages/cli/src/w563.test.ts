@@ -10,6 +10,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
+import { copyFileSync, existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { runGate, type GateOptions } from "@bisellium/commands/presign-gate.js";
 import { gateRows } from "@bisellium/commands/presign-gate.js";
 
 /** A row whose failing assertion's message opens with the row's title (`<title>: <message>`), the pin the brief names. */
@@ -153,4 +156,127 @@ row("W-563-b1 a required test no test:suite command names is a failing row", () 
   const { repo, base } = b1World();
   const t = treeWith(repo, base, { "pkg/src/a.ts": "export const a = 9;\n", "package.json": JSON.stringify({ scripts: { "test:suite": "node --import tsx pkg/src/u.test.ts" } }) });
   assert.ok(rowsOf(repo, base, t).includes("test pkg/src/a.test.ts (no test:suite command names it)"));
+});
+
+
+const HOST_SCRIPTS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "scripts");
+
+/** b2's fixture: a repo whose check and typecheck are `true`, a base, and a series that touches a module and adds a test reading studio/. */
+function gateWorld(o: { failing?: boolean; listed?: boolean; slow?: boolean } = {}): { repo: string; base: string; mbox: string; out: string; run: (opts?: GateOptions) => Promise<{ exit: number; stderr: string }> } {
+  const repo = initRepo("b2");
+  const pkg = (record: string): string =>
+    JSON.stringify({ scripts: { test: "true", check: "true", typecheck: "true", "test:suite": "node src/a.test.mjs && node src/r.test.mjs", "test:record": record } });
+  put(repo, "package.json", pkg(""));
+  put(repo, "studio/bisellium.yml", "bisellium: 1\n");
+  put(repo, "src/a.mjs", "export const ok = true;\n");
+  put(repo, "src/a.test.mjs", 'import { ok } from "./a.mjs";\nprocess.exit(ok ? 0 : 1);\n');
+  for (const s of ["record-reads.mjs", "ci-scope.mjs"]) {
+    mkdirSync(join(repo, "scripts"), { recursive: true });
+    copyFileSync(join(HOST_SCRIPTS, s), join(repo, "scripts", s));
+  }
+  const base = commitAll(repo, "base");
+  // sleep-waiver: fixture -- the fixture module hangs so the runner's row timeout has a row to kill; no assertion waits on it
+  const hang = o.slow === true ? "await new Promise((r) => setTimeout(r, 120_000));\n" : "";
+  put(repo, "src/a.mjs", `${hang}export const ok = ${o.failing === true ? "false" : "true"}; // the series\n`);
+  put(repo, "src/r.test.mjs", 'import { readFileSync } from "node:fs";\nreadFileSync("studio/bisellium.yml", "utf8");\n');
+  if (o.listed === true) put(repo, "package.json", pkg("node src/r.test.mjs"));
+  commitAll(repo, "series");
+  const side = scratch("b2-side");
+  const mbox = join(side, "series.mbox");
+  writeFileSync(mbox, execFileSync("git", ["-C", repo, "format-patch", "--no-numbered", "--stdout", `${base}..HEAD`], { encoding: "utf8" }));
+  const out = join(side, "gate.log");
+  const run = async (opts: GateOptions = {}): Promise<{ exit: number; stderr: string }> => {
+    let stderr = "";
+    const error = console.error;
+    console.error = (...a: unknown[]) => void (stderr += `${a.map(String).join(" ")}\n`);
+    try {
+      return { exit: await runGate(["--opus", "W-1", "--worktree", repo, "--base", base, "--series", mbox, "--out", out], opts), stderr };
+    } finally {
+      console.error = error;
+    }
+  };
+  return { repo, base, mbox, out, run };
+}
+const rowLines = (out: string): string[] =>
+  readFileSync(out, "utf8").split("\n").filter((l) => l !== "" && !l.startsWith("# ")).map((l) => l.split("\t")).map(([exit, , kind, file, command]) => `${exit} ${kind} ${file} ${command}`);
+
+row("W-563-b2 a dirty worktree is refused", async () => {
+  const w = gateWorld();
+  writeFileSync(join(w.repo, "stray.txt"), "x\n");
+  const r = await w.run();
+  assert.equal(r.exit, 2, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(existsSync(w.out), false, "no log is written");
+  assert.match(r.stderr, /is not clean/);
+});
+
+row("W-563-b2 a worktree at another tree is refused", async () => {
+  const w = gateWorld();
+  git(w.repo, "checkout", "-q", "--detach", w.base);
+  const r = await w.run();
+  assert.equal(r.exit, 2, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(existsSync(w.out), false, "no log is written");
+  assert.match(r.stderr, /is at tree [0-9a-f]+, and the series makes [0-9a-f]+/);
+});
+
+row("W-563-b2 a failing row is recorded and the runner exits 1", async () => {
+  const w = gateWorld({ failing: true, listed: true });
+  const r = await w.run();
+  assert.equal(r.exit, 1, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.ok(rowLines(w.out).includes("1 test src/a.test.mjs node src/a.test.mjs"), `the failed row is recorded: ${rowLines(w.out).join(" | ")}`);
+});
+
+row("W-563-b2 a new file reading studio unlisted fails its reads row", async () => {
+  const w = gateWorld();
+  const r = await w.run();
+  assert.equal(r.exit, 1, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.ok(rowLines(w.out).includes("1 reads src/r.test.mjs node src/r.test.mjs"), `the reads row fails: ${rowLines(w.out).join(" | ")}`);
+});
+
+row("W-563-b2 a row past its timeout is recorded 124 and the run goes on", async () => {
+  const w = gateWorld({ slow: true, listed: true });
+  const t0 = Date.now();
+  const r = await w.run({ rowTimeoutMs: 2000 });
+  assert.equal(r.exit, 1, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.ok(Date.now() - t0 < 60_000, "the hung row is killed at its timeout");
+  const rows = rowLines(w.out);
+  assert.ok(rows.includes("124 test src/a.test.mjs node src/a.test.mjs"), `the timed-out row is recorded 124: ${rows.join(" | ")}`);
+  assert.ok(rows.includes("0 test src/r.test.mjs node src/r.test.mjs"), `the other rows still run: ${rows.join(" | ")}`);
+});
+
+row("W-563-b2 rows past the budget are deferred and do not fail", async () => {
+  const w = gateWorld({ listed: true });
+  const r = await w.run({ budgetMs: 0 });
+  assert.equal(r.exit, 0, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.ok(existsSync(w.out), "the log is written");
+  const rows = rowLines(w.out);
+  assert.deepEqual(rows, [
+    "deferred check - npm run -s check -- studio --repo .",
+    "deferred typecheck - npm run -s typecheck",
+    "deferred reads src/r.test.mjs node src/r.test.mjs",
+    "deferred test src/a.test.mjs node src/a.test.mjs",
+    "deferred test src/r.test.mjs node src/r.test.mjs",
+  ], "each row not started is deferred");
+  assert.match(readFileSync(w.out, "utf8").slice(0, -1).split("\n").at(-1)!, /^# minutes: \d+\.\d$/, "the log is written whole");
+});
+
+row("W-563-b2 a passing run writes the whole log and exits 0", async () => {
+  const w = gateWorld({ listed: true });
+  const r = await w.run();
+  assert.equal(r.exit, 0, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.ok(existsSync(w.out), "the log is written");
+  const text = readFileSync(w.out, "utf8");
+  const lines = text.slice(0, -1).split("\n");
+  assert.equal(lines[0], "# presign-gate: W-1");
+  assert.equal(lines[1], `# base: ${w.base}`);
+  assert.match(lines[2]!, /^# series: sha256:[0-9a-f]{64}$/);
+  assert.equal(lines[3], `# tree: ${git(w.repo, "rev-parse", "HEAD^{tree}")}`);
+  assert.match(lines[4]!, /^# started: \d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
+  assert.match(lines.at(-1)!, /^# minutes: \d+\.\d$/);
+  assert.deepEqual(rowLines(w.out), [
+    "0 check - npm run -s check -- studio --repo .",
+    "0 typecheck - npm run -s typecheck",
+    "0 reads src/r.test.mjs node src/r.test.mjs",
+    "0 test src/a.test.mjs node src/a.test.mjs",
+    "0 test src/r.test.mjs node src/r.test.mjs",
+  ]);
 });

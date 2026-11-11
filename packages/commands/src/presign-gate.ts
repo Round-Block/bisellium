@@ -134,3 +134,14 @@ export function gateRows(repo: string, base: string, tree: string): GateRow[] | 
   }
   return rowsAt([...blobs.keys()], (p) => text.get(p), z(diff.out), z(add.out));
 }
+
+export interface GateOptions {
+  now?: () => Date;
+  rowTimeoutMs?: number;
+  budgetMs?: number;
+  pool?: number;
+}
+/** W-563 red stub: the runner runs nothing yet. */
+export async function runGate(_argv: string[], _opts: GateOptions = {}): Promise<number> {
+  return 0;
+}
