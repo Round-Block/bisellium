@@ -1,0 +1,46 @@
+certifies: tree:5c9f24b2395b44658936d0692254a2e919b35942
+command: npm run -s lint
+exit code: 1
+
+
+/home/edckt/agents/bisellium/.********.tsx
+  229:9  warning  'focusedId' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.tsx
+  92:9  warning  'focusedPetition' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.spec.ts
+  243:11  warning  'workspace' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  14:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  17:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.ts
+  28:7  warning  'OID_RE' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  13:580  warning  'briefPath' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.ts
+  21:7  warning  'str' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  238:9  warning  'stalledFile' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.ts
+   42:7   warning  'CODE_FILE' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                    @********
+  135:18  error    capture 1 of / blob (\d+)$/ can hold unboundedly many digits, and a double is exact only to 15: bound the grammar to at most 15 digits or compare the capture exactly (BigInt, or as a string) (W-334)  local/exact-digits
+
+✖ 14 problems (1 error, 13 warnings)
+
+
