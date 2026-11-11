@@ -724,7 +724,7 @@ const BAD_READERS: [string, string, number | undefined][] = [
   ["writes a non-array value", "process.stdout.write(JSON.stringify({ 'pkg/a.test.ts': 'ab' }));", undefined],
   ["writes an array of non-strings", "process.stdout.write(JSON.stringify({ 'pkg/a.test.ts': [1] }));", undefined],
   ["writes an array", "process.stdout.write('[]');", undefined],
-  ["outlives its timeout", "setTimeout(() => {}, 60000);", 200],
+  ["outlives its timeout", "for (;;) {}", 200],
 ];
 row("W-563-b1 a failed import reader refuses", () => {
   const files = ["package.json", "pkg/a.ts", "pkg/a.test.ts"];

@@ -39,6 +39,7 @@ export const ROW_TIMEOUT_MS = 600_000;
 export const BUDGET_MS = 600_000;
 export const POOL_MAX = 8;
 const GIT_TIMEOUT_MS = 120_000;
+const READER_TIMEOUT_MS = 120_000;
 const TEST_FILE = /\.test\.(?:ts|mts|mjs)$/;
 const UNGATED = /^(?:apps|docs)\//;
 function git(repo: string, args: string[], input?: string, env?: NodeJS.ProcessEnv): { out: Buffer } | { error: string } {
@@ -93,16 +94,24 @@ for (const [file, text] of Object.entries(files)) {
 process.stdout.write(JSON.stringify(result));
 `;
 
-/** The literal specifiers each file imports, read by one child node process; a failed child (any non-zero exit, signal or unreadable output) is an error, never an empty read. */
-function specifiersOf(files: Map<string, string>): Map<string, string[]> | { error: string } {
-  const run = spawnSync(process.execPath, ["--input-type=module", "-e", READER], { cwd: import.meta.dirname, input: JSON.stringify(Object.fromEntries(files)), encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 120_000 });
+/** The literal specifiers each file imports, read by one child node process (its env scrubbed as the rows' is); a failed child (any non-zero exit, signal, timeout, unparseable output, or output not holding every input file as an array of strings) is an error, never an empty read. */
+function specifiersOf(files: Map<string, string>, reader: string = READER, timeoutMs: number = READER_TIMEOUT_MS): Map<string, string[]> | { error: string } {
+  const run = spawnSync(process.execPath, ["--input-type=module", "-e", reader], { cwd: import.meta.dirname, input: JSON.stringify(Object.fromEntries(files)), encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: timeoutMs, env: rowEnv() });
   if (run.error !== undefined || run.status !== 0) return { error: `the import reader failed (${run.error?.message ?? `exit ${run.status ?? run.signal}`})` };
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(run.stdout) as Record<string, string[]>;
-    return new Map(Object.entries(parsed));
+    parsed = JSON.parse(run.stdout);
   } catch {
     return { error: "the import reader's output does not parse" };
   }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return { error: "the import reader's output is not an object" };
+  const out = new Map<string, string[]>();
+  for (const file of files.keys()) {
+    const v = (parsed as Record<string, unknown>)[file];
+    if (!Object.hasOwn(parsed, file) || !Array.isArray(v) || !v.every((x) => typeof x === "string")) return { error: `the import reader's output does not cover ${file}` };
+    out.set(file, v as string[]);
+  }
+  return out;
 }
 
 /** The repo files a file imports directly (W-563 behaviour 1's forms), resolved against `present`. */
@@ -124,14 +133,14 @@ function edges(file: string, specs: string[], present: Set<string>): string[] {
 }
 
 /** The rows owed at a tree, from its file list, a reader of its test files and package.json, and the touched and added paths. */
-export function rowsAt(files: string[], read: (path: string) => string | undefined, touched: string[], added: string[]): GateRow[] | { error: string } {
+export function rowsAt(files: string[], read: (path: string) => string | undefined, touched: string[], added: string[], reader?: string, readerTimeoutMs?: number): GateRow[] | { error: string } {
   const present = new Set(files);
   const suite = suiteCommands(read("package.json"));
   if ("error" in suite) return suite;
   const tests = files.filter((f) => TEST_FILE.test(f) && !UNGATED.test(f)).sort();
-  const specs = specifiersOf(new Map(tests.map((t) => [t, read(t) ?? ""] as const)));
+  const specs = specifiersOf(new Map(tests.map((t) => [t, read(t) ?? ""] as const)), reader, readerTimeoutMs);
   if ("error" in specs) return specs;
-  const direct = new Map(tests.map((t) => [t, edges(t, specs.get(t) ?? [], present)] as const));
+  const direct = new Map(tests.map((t) => [t, edges(t, specs.get(t)!, present)] as const));
   const imports = (t: string): string[] => direct.get(t) ?? [];
   const named = (f: string): string | undefined => suite.find((c) => c.split(/\s+/).includes(f));
   const touchedSet = new Set(touched);
