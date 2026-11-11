@@ -646,6 +646,8 @@ const OWES: [string, string][] = [
   ["import after a template holding a comment opener", "const u = `//`;\nimport \"./a.js\";\n"],
   ["dynamic import inside a template expression", "const u = `${await import(\"./a.js\")}`;\n"],
   ["dynamic import after a regular-expression literal", 'const r = /"/; await import("./a.js");\n'],
+  ["import after an object literal inside a template expression and a block", "const u = `${ {a: 1}.a }`; { const v = 1; }\nimport \"./a.js\";\n"],
+  ["import after a block that closes", 'if (x) { y(); }\nimport "./a.js";\n'],
   ["single-quoted specifier", "import './a.js';\n"],
   ["import after import.meta", 'const u = import.meta.url;\nimport "./a.js";\n'],
 ];

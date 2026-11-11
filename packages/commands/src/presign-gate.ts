@@ -40,12 +40,6 @@ export const POOL_MAX = 8;
 const GIT_TIMEOUT_MS = 120_000;
 const TEST_FILE = /\.test\.(?:ts|mts|mjs)$/;
 const UNGATED = /^(?:apps|docs)\//;
-// one-sided: `from` and `import(` are ASCII keywords in source text, so an ASCII boundary is the token's own
-const FROM = /(?:^|[\s;}])(?:import|export)\s[^;]*?\bfrom\s*["']([^"'\n]+)["']/g;
-const BARE = /(?:^|[\s;}])import\s*["']([^"'\n]+)["']/g;
-// one-sided: as FROM, an ASCII keyword
-const DYNAMIC = /\bimport\(\s*["']([^"'\n]+)["']\s*\)/g;
-
 function git(repo: string, args: string[], input?: string, env?: NodeJS.ProcessEnv): { out: Buffer } | { error: string } {
   const r = spawnSync("git", ["-C", repo, ...args], { input, env: env ?? process.env, maxBuffer: 256 * 1024 * 1024, timeout: GIT_TIMEOUT_MS });
   if (r.error !== undefined || r.status !== 0) return { error: `git ${args[0]} failed: ${(r.stderr?.toString("utf8") ?? r.error?.message ?? "").trim().split("\n")[0] ?? ""}` };
@@ -63,11 +57,112 @@ export function suiteCommands(pkg: string | undefined): string[] | { error: stri
   }
 }
 
+/** A token of a source text: an identifier or number, a string literal (its raw body), or one punctuation mark. */
+interface Tok {
+  k: "id" | "str" | "p";
+  v: string;
+}
+// a `/` after one of these words starts a regular expression, after any other word or a closer it divides
+const REGEX_AFTER = /^(?:return|typeof|case|in|of|delete|void|throw|new|else|do|yield|await|instanceof)$/;
+
+/** The tokens of a source text with comments, template text and regular expressions left out: only a string literal's body is kept (W-563 review 1). */
+function tokens(text: string): Tok[] {
+  const out: Tok[] = [];
+  const open: boolean[] = [];
+  const n = text.length;
+  let i = 0;
+  // template text up to its closing backtick or a `${`, which opens an expression the main loop tokenises
+  const template = (): void => {
+    while (i < n) {
+      const c = text[i]!;
+      if (c === "\\") i += 2;
+      else if (c === "`") return void i++;
+      else if (c === "$" && text[i + 1] === "{") return void (i += 2, open.push(true));
+      else i++;
+    }
+  };
+  while (i < n) {
+    const c = text[i]!;
+    if (/\s/.test(c)) i++;
+    else if (c === "/" && text[i + 1] === "/") {
+      while (i < n && text[i] !== "\n") i++;
+    } else if (c === "/" && text[i + 1] === "*") {
+      const end = text.indexOf("*/", i + 2);
+      i = end < 0 ? n : end + 2;
+    } else if (c === '"' || c === "'") {
+      let j = i + 1;
+      while (j < n && text[j] !== c && text[j] !== "\n") j += text[j] === "\\" ? 2 : 1;
+      out.push({ k: "str", v: text.slice(i + 1, Math.min(j, n)) });
+      i = j + 1;
+    } else if (c === "`") {
+      i++;
+      template();
+    } else if (c === "}" && open.at(-1) === true) {
+      open.pop();
+      i++;
+      template();
+    } else if (c === "/") {
+      const prev = out.at(-1);
+      const regex = prev === undefined || (prev.k === "p" && ![")", "]", "}"].includes(prev.v)) || (prev.k === "id" && REGEX_AFTER.test(prev.v));
+      if (!regex) {
+        out.push({ k: "p", v: c });
+        i++;
+        continue;
+      }
+      let j = i + 1;
+      for (let cls = false; j < n && text[j] !== "\n" && (cls || text[j] !== "/"); j++) {
+        if (text[j] === "\\") j++;
+        else if (text[j] === "[") cls = true;
+        else if (text[j] === "]") cls = false;
+      }
+      out.push({ k: "p", v: "/re/" });
+      i = j + 1;
+    } else if (/[\w$\u0080-\uffff]/.test(c)) {
+      let j = i + 1;
+      while (j < n && /[\w$\u0080-\uffff]/.test(text[j]!)) j++;
+      out.push({ k: "id", v: text.slice(i, j) });
+      i = j;
+    } else {
+      if (c === "{") open.push(false);
+      else if (c === "}") open.pop();
+      out.push({ k: "p", v: c });
+      i++;
+    }
+  }
+  return out;
+}
+
+/** The literal specifiers a source text imports: static `import`/`export … from`, a side-effect `import "…"`, a literal `import("…")`. */
+function specifiers(text: string): string[] {
+  const t = tokens(text);
+  const out: string[] = [];
+  const at = (j: number, k: Tok["k"], v?: string): boolean => t[j]?.k === k && (v === undefined || t[j]!.v === v);
+  for (const [i, tok] of t.entries()) {
+    if (tok.k !== "id" || (tok.v !== "import" && tok.v !== "export") || at(i - 1, "p", ".")) continue;
+    if (tok.v === "import" && at(i + 1, "str")) out.push(t[i + 1]!.v);
+    else if (tok.v === "import" && at(i + 1, "p", "(") && at(i + 2, "str") && at(i + 3, "p", ")")) out.push(t[i + 2]!.v);
+    else if (tok.v === "import" || at(i + 1, "p", "*") || at(i + 1, "p", "{") || at(i + 1, "id", "type")) {
+      // a binding list: names, `as`, `*`, commas and braces (a string name inside braces), up to `from "…"`
+      for (let j = i + 1, depth = 0; j < t.length; j++) {
+        const u = t[j]!;
+        if (u.k === "id" && u.v === "from" && at(j + 1, "str")) {
+          out.push(t[j + 1]!.v);
+          break;
+        }
+        if (u.k === "id" || (u.k === "str" && depth > 0) || (u.k === "p" && (u.v === "*" || u.v === ","))) continue;
+        if (u.k === "p" && u.v === "{") depth++;
+        else if (u.k === "p" && u.v === "}" && depth > 0) depth--;
+        else break;
+      }
+    }
+  }
+  return out;
+}
+
 /** The repo files a file imports directly (W-563 behaviour 1's forms), resolved against `present`. */
 function edges(file: string, text: string, present: Set<string>): string[] {
   const out = new Set<string>();
-  const specs = [...text.matchAll(FROM), ...text.matchAll(BARE), ...text.matchAll(DYNAMIC)].map((m) => m[1]!);
-  for (const spec of specs) {
+  for (const spec of specifiers(text)) {
     let base: string | undefined;
     if (spec.startsWith("./") || spec.startsWith("../")) base = posix.normalize(posix.join(posix.dirname(file), spec));
     else {
