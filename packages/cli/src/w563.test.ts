@@ -13,6 +13,8 @@ import { after, test } from "node:test";
 import { copyFileSync, existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { runGate, type GateOptions } from "@bisellium/commands/presign-gate.js";
+import { createHash } from "node:crypto";
+import { runVerdict } from "./verdict.js";
 import { gateRows } from "@bisellium/commands/presign-gate.js";
 
 /** A row whose failing assertion's message opens with the row's title (`<title>: <message>`), the pin the brief names. */
@@ -279,4 +281,148 @@ row("W-563-b2 a passing run writes the whole log and exits 0", async () => {
     "0 test src/a.test.mjs node src/a.test.mjs",
     "0 test src/r.test.mjs node src/r.test.mjs",
   ]);
+});
+
+
+const MANIFEST = [
+  "bisellium: 1",
+  "studio: W-563 gate",
+  "patron: patron",
+  "collegia:",
+  "  - { id: engineering, name: Engineering, magister: eng-lead }",
+  "sellae:",
+  "  - { id: qa-lead, collegium: engineering, kind: agent }",
+  "probationes:",
+  "  - { id: review, name: Review, kind: agent }",
+  "wip_limit: 10",
+  "",
+].join("\n");
+const NOW = new Date("2026-11-11T12:00:00.000Z");
+const FINDINGS = "## Findings\n1. advisory — fine — check: none: x\n";
+const sha256 = (path: string): string => createHash("sha256").update(readFileSync(path)).digest("hex");
+
+/** b3's fixture: an officina in a git repo (briefs/ and ci/ excluded, so the runner sees it clean), a base, a signed series, and its gate log. */
+async function signWorld(): Promise<{
+  repo: string;
+  dir: string;
+  side: string;
+  log: string;
+  brief: (mbox?: string) => void;
+  series: (body: string) => string;
+  sign: (body: string, sella?: string) => { exitCode: number; stderr: string; written: boolean };
+}> {
+  const repo = initRepo("b3");
+  const dir = join(repo, "studio");
+  put(repo, ".git/info/exclude", "studio/briefs/\nstudio/ci/\nstudio/.bisellium/\n");
+  put(repo, "package.json", JSON.stringify({ scripts: { test: "true", check: "true", typecheck: "true", "test:suite": "node src/a.test.mjs" } }));
+  put(repo, "src/a.mjs", "export const ok = true;\n");
+  put(repo, "src/a.test.mjs", 'import { ok } from "./a.mjs";\nprocess.exit(ok ? 0 : 1);\n');
+  put(repo, "studio/bisellium.yml", MANIFEST);
+  put(repo, "studio/opera/W-300.md", "---\nid: W-300\ntitle: W-300\nkind: feature\ncollegium: engineering\nstate: greenlit\nspec: briefs/W-300.md\nprobationes: {}\n---\n");
+  const base = commitAll(repo, "base");
+  const side = scratch("b3-side");
+  let n = 0;
+  const series = (body: string): string => {
+    put(repo, "src/a.mjs", body);
+    commitAll(repo, `series ${++n}`);
+    const mbox = join(side, `series-${n}.mbox`);
+    writeFileSync(mbox, execFileSync("git", ["-C", repo, "format-patch", "--no-numbered", "--stdout", `${base}..HEAD`], { encoding: "utf8" }));
+    return mbox;
+  };
+  const first = series("export const ok = true; // the series\n");
+  const log = join(side, "gate.log");
+  assert.equal(await runGate(["--opus", "W-300", "--worktree", repo, "--base", base, "--series", first, "--out", log]), 0, "the fixture's gate passes");
+  const brief = (mbox?: string): void =>
+    put(repo, "studio/briefs/W-300.md", ["# W-300 fixture brief", ...(mbox === undefined ? [] : [`Prototype: ${mbox} sha256:${sha256(mbox)}`]), ""].join("\n"));
+  brief(first);
+  const sign = (body: string, sella = "architect"): { exitCode: number; stderr: string; written: boolean } => {
+    const input = join(side, `input-${++n}.md`);
+    writeFileSync(input, body);
+    let stderr = "";
+    const [log0, err0] = [console.log, console.error];
+    console.log = () => undefined;
+    console.error = (...a: unknown[]) => void (stderr += `${a.map(String).join(" ")}\n`);
+    let exitCode: number;
+    try {
+      exitCode = runVerdict(["W-300", "--round", "1", "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", input, "--studio", dir], { now: NOW }).exitCode;
+    } finally {
+      [console.log, console.error] = [log0, err0];
+    }
+    const written = existsSync(join(dir, "ci", "W-300-spec-1.log"));
+    if (written) rmSync(join(dir, "ci", "W-300-spec-1.log"));
+    return { exitCode, stderr, written };
+  };
+  return { repo, dir, side, log, brief, series, sign };
+}
+const cited = (log: string): string => `Gate log: ${log}\n\n${FINDINGS}`;
+const variant = (w: { side: string; log: string }, name: string, edit: (text: string) => string): string => {
+  const p = join(w.side, name);
+  writeFileSync(p, edit(readFileSync(w.log, "utf8")));
+  return p;
+};
+const refusedB3 = (r: { exitCode: number; stderr: string; written: boolean }, want: RegExp): void => {
+  assert.equal(r.exitCode, 2, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(r.written, false, "no log is written");
+  assert.match(r.stderr, want);
+};
+
+row("W-563-b3 no gate log is refused", async () => {
+  const w = await signWorld();
+  refusedB3(w.sign(FINDINGS), /^W-300: pre-sign gate: 0 "Gate log:" lines; cite the runner's log/);
+});
+
+row("W-563-b3 a log of another series is refused", async () => {
+  const w = await signWorld();
+  const other = variant(w, "series.log", (t) => t.replace(/^# series: sha256:[0-9a-f]{64}$/m, `# series: sha256:${"1".repeat(64)}`));
+  refusedB3(w.sign(cited(other)), /^W-300: pre-sign gate: \S+ gates series sha256:1{64}, not the brief's sha256:[0-9a-f]{64}/);
+});
+
+row("W-563-b3 a log of another tree is refused", async () => {
+  const w = await signWorld();
+  const base = git(w.repo, "rev-parse", "HEAD~1^{tree}");
+  const other = variant(w, "tree.log", (t) => t.replace(/^# tree: [0-9a-f]+$/m, `# tree: ${base}`));
+  refusedB3(w.sign(cited(other)), /^W-300: pre-sign gate: \S+ gates tree [0-9a-f]+, and the series makes [0-9a-f]+ on [0-9a-f]+/);
+});
+
+row("W-563-b3 a missing row is refused", async () => {
+  const w = await signWorld();
+  const other = variant(w, "missing.log", (t) => t.split("\n").filter((l) => !/\ttest\tsrc\/a\.test\.mjs\t/.test(l)).join("\n"));
+  refusedB3(w.sign(cited(other)), /^W-300: pre-sign gate: \S+ has no row test src\/a\.test\.mjs \(`node src\/a\.test\.mjs`\)/);
+});
+
+row("W-563-b3 a failed row is refused", async () => {
+  const w = await signWorld();
+  const other = variant(w, "failed.log", (t) => t.replace(/^0(\t[0-9.]+\ttest\tsrc\/a\.test\.mjs\t)/m, "1$1"));
+  refusedB3(w.sign(cited(other)), /^W-300: pre-sign gate: \S+'s row test src\/a\.test\.mjs exited 1/);
+});
+
+row("W-563-b3 a deferred row signs", async () => {
+  const w = await signWorld();
+  const other = variant(w, "deferred.log", (t) => t.replace(/^0\t[0-9.]+(\ttest\tsrc\/a\.test\.mjs\t)/m, "deferred\t0.0$1"));
+  assert.ok(readFileSync(other, "utf8").split("\n").includes("deferred\t0.0\ttest\tsrc/a.test.mjs\tnode src/a.test.mjs"), "the fixture defers the test row");
+  const r = w.sign(cited(other));
+  assert.equal(r.exitCode, 0, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(r.written, true, "the log is written");
+});
+
+row("W-563-b3 a re-sign with a stale log is refused", async () => {
+  const w = await signWorld();
+  w.brief(w.series("export const ok = true; // round 2\n"));
+  refusedB3(w.sign(cited(w.log)), /^W-300: pre-sign gate: \S+ gates series sha256:[0-9a-f]{64}, not the brief's/);
+});
+
+row("W-563-b3 a current passing log signs", async () => {
+  const w = await signWorld();
+  const r = w.sign(cited(w.log));
+  assert.equal(r.exitCode, 0, `exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(r.written, true, "the log is written");
+});
+
+row("W-563-b3 another seat's verdict and a brief with no prototype are not judged", async () => {
+  const w = await signWorld();
+  const seat = w.sign(FINDINGS, "qa-lead");
+  assert.equal(seat.exitCode, 0, `another seat (stderr ${JSON.stringify(seat.stderr)})`);
+  w.brief();
+  const plain = w.sign(FINDINGS);
+  assert.equal(plain.exitCode, 0, `no prototype (stderr ${JSON.stringify(plain.stderr)})`);
 });
