@@ -9,6 +9,7 @@
  */
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -252,4 +253,97 @@ row("W-610-b5 a source change after a pass orders the light gates and a delta re
   const r = next(w, [OPUS, ...BUDGET]);
   expectStep(r, "review", "named", "a delta review");
   assert.equal(r.kv.get("delta"), `since round 1 passed at ${reviewed}`, ran("the review order names the delta's base", r));
+});
+
+// ---------------------------------------------------------------------------
+// fix round 1 (build review r1): the officina path is data, never shell text or pathspec syntax, and the light gates
+// read source_excludes from the main manifest
+// ---------------------------------------------------------------------------
+const SAFE_ENV = { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.invalid", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.invalid" };
+const sh = (cwd: string, cmd: string, args: string[]): string => {
+  const r = spawnSync(cmd, args, { cwd, env: SAFE_ENV, encoding: "utf8" });
+  if (r.status !== 0) throw new Error(`${cmd} ${args.join(" ")}: ${r.stderr}`);
+  return r.stdout;
+};
+/** A scratch repository whose officina is at `officina` ("" = the repository root); returns the repo and the officina directory. */
+function officinaRepo(officina: string): { repo: string; studio: string } {
+  const repo = mkdtempSync(join(tmpdir(), "w610-fix1-"));
+  sh(repo, "git", ["init", "-q", "-b", "master"]);
+  const studio = officina === "" ? repo : join(repo, officina);
+  mkdirSync(join(studio, "briefs"), { recursive: true });
+  writeFileSync(join(studio, "bisellium.yml"), 'light_gates:\n  - "test -f {studio}/bisellium.yml"\nsource_excludes: [ci]\n');
+  writeFileSync(join(studio, "briefs", `${OPUS}.md`), "## Files owned\n\n- `x.txt`\n");
+  writeFileSync(join(repo, "x.txt"), "source\n");
+  sh(repo, "git", ["add", "-A"]);
+  sh(repo, "git", ["commit", "-q", "-m", "init"]);
+  return { repo, studio };
+}
+/** One officina path through the light gates: the list's `{studio}` is one literal path, the run exits 0, the log is admitted. */
+async function officinaRow(officina: string, extraSibling?: string): Promise<void> {
+  const { repo, studio } = officinaRepo(officina);
+  const lg = await import("@bisellium/commands/light-gates.js");
+  const cmds = lg.currentLightCommands(studio, OPUS);
+  assert.ok(!("error" in cmds), `the commands are read for officina ${JSON.stringify(officina)}: ${JSON.stringify(cmds)}`);
+  const run = lg.runLightGates(studio, OPUS, cmds as string[]);
+  assert.ok(!("error" in run), `the light gates run: ${JSON.stringify(run)}`);
+  assert.equal((run as { exitCode: number }).exitCode, 0, `{studio} is the one literal officina path for ${JSON.stringify(officina)}: ${cmds}`);
+  for (const gone of ["pwned.txt", "pwned"]) assert.equal(existsSync(join(repo, gone)), false, `no shell metacharacter of the officina path executes (${gone})`);
+  void extraSibling;
+  sh(repo, "git", ["add", "-A"]);
+  sh(repo, "git", ["commit", "-q", "-m", "log"]);
+  const admitted = lg.admitLightGates(studio, OPUS);
+  assert.ok(admitted.ok, `the log is admitted for ${JSON.stringify(officina)}: ${JSON.stringify(admitted)}`);
+}
+row("W-610-b1 fix1: a repository-root officina keeps {studio} a relative path", () => officinaRow(""));
+row("W-610-b1 fix1: an officina path with whitespace is one argument", () => officinaRow("my studio"));
+row("W-610-b1 fix1: an officina path with a quote is one argument", () => officinaRow("it's studio"));
+row("W-610-b1 fix1: an officina path with a shell metacharacter never executes", () => officinaRow("o;touch pwned.txt;x"));
+row("W-610-b1 fix1: an officina path with a glob character is a literal path", async () => {
+  await officinaRow("a*b");
+  const lg = await import("@bisellium/commands/light-gates.js");
+  assert.equal(typeof lg.fullGateRuns, "function", "the full-gate run counter is one exported reader, literal pathspecs");
+  const { repo } = officinaRepo("a*b");
+  const tree = "tree:0123456789abcdef";
+  for (const d of ["a*b", "axb", "a[b]"]) {
+    mkdirSync(join(repo, d, "ci"), { recursive: true });
+    writeFileSync(join(repo, d, "ci", `${OPUS}-tests-01234567.log`), "log\n");
+  }
+  sh(repo, "git", ["add", "-A"]);
+  sh(repo, "git", ["commit", "-q", "-m", "logs"]);
+  for (const d of ["a*b", "a[b]"]) {
+    const got = (lg.fullGateRuns as (r: string, s: string, o: string, t: string) => { runs: number; logs: string[] })(repo, d, OPUS, tree);
+    assert.deepEqual(got, { runs: 1, logs: [`${OPUS}-tests-01234567.log`] }, `only ${d}'s own log counts, no sibling by glob`);
+  }
+  assert.equal(typeof lg.officinaRel, "function", "one path join keeps a root officina relative");
+  assert.equal((lg.officinaRel as (s: string, r: string) => string)("", "ci/x.log"), "ci/x.log", "a root officina joins to a relative path");
+});
+
+/** An officina whose worktree manifest has a well-formed `source_excludes` that differs from main's, past the light gates. */
+function driftWorld(tag: string): { w: World; reviewArgs: string[]; verdictArgs: string[] } {
+  const w = handed(tag);
+  assert.equal(performLight(w).status, 0, "the light gates pass at the tree");
+  const manifest = join(w.wtStudio, "bisellium.yml");
+  writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", "source_excludes: [hidden]"));
+  mkdirSync(join(w.wt, "hidden"));
+  writeFileSync(join(w.wt, "hidden", "x.txt"), "a source change the extra exclusion hides\n");
+  git(w.wt, ["add", "--", "hidden/x.txt"]);
+  git(w.wt, ["commit", "-q", "-m", "a source change under the extra exclusion"]);
+  const reviewArgs = ["review", OPUS, "--pass", "--evidence", `ci/${OPUS}-review-1.log`, "--round", "1", "--sella", "qa-lead", "--studio", w.wtStudio, "--now", T.review1];
+  const verdictArgs = ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "review-1.md"), "--studio", w.wtStudio, "--now", T.review1];
+  return { w, reviewArgs, verdictArgs };
+}
+row("W-610-b2 fix1: a worktree source_excludes that differs from main's holds next", () => {
+  const { w } = driftWorld("w610-b2-drift-next");
+  const o = next(w, [OPUS, ...BUDGET]);
+  assert.notEqual(o.first, `next: ${OPUS} review named`, ran("next does not name review on a drifted exclusion", o));
+});
+row("W-610-b2 fix1: a worktree source_excludes that differs from main's refuses a direct verdict", () => {
+  const { w, verdictArgs } = driftWorld("w610-b2-drift-verdict");
+  const v = direct(w, w.wt, verdictArgs);
+  assert.notEqual(v.status, 0, ran("the verdict verb refuses a drifted exclusion", v));
+});
+row("W-610-b2 fix1: a worktree source_excludes that differs from main's refuses a direct review", () => {
+  const { w, reviewArgs } = driftWorld("w610-b2-drift-review");
+  const r = direct(w, w.wt, reviewArgs);
+  assert.notEqual(r.status, 0, ran("the review verb refuses a drifted exclusion", r));
 });
