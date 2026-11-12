@@ -78,6 +78,11 @@ brief_behaviour_limit: 6
 doc_caps:
   default: 450
   docs/ADOPTION.md: 1032
+# W-610: the light gates a build review is ordered on (each a shell command; {studio} is this officina's path); the
+# opus's own test files (its brief's Files owned) run after them. The full suite is ci --opus, after a passed review.
+light_gates:
+  - "npm run -s typecheck"
+  - "npm run -s check -- {studio} --repo ."
 # W-209: the dossier's HTML pages are checkpoint records; a new page joins this list in a records PR.
 source_excludes:
   - examples/
