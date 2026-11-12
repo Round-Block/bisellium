@@ -1,0 +1,51 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-512-b4\s --import tsx packages/cli/src/w512.test.ts
+# exit: 1
+# at: 2026-11-12T19:16:43.815Z
+# sella: builder.W-512
+# tree: tree:2e592bfe677ce7b7717d83c6f0dd92a7393702d3
+# ticket: {"opus":"W-512","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-512/studio","head":"4bcea2cf4607c9ef4fecb9afaa477704eb0cd309","brief":"bef53aa3e4a41311799def4158c6b643b56e3326","at":"2026-11-12T19:16:42.689Z"}
+
+TAP version 13
+# Subtest: W-512-b4 behaviour 4: next --all prints an order hold as queued and does not fail the run on it
+not ok 1 - W-512-b4 behaviour 4: next --all prints an order hold as queued and does not fail the run on it
+  ---
+  duration_ms: 390.002276
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:29:3303'
+  failureType: 'testCodeFailure'
+  error: |-
+    the out-of-order opus is queued, not held
+    next: W-900 spec held · actor: producer · why: W-900 is #3 in queue engineering and no lane takes it: E1 holds W-901 (greenlit), ahead W-902 (#2); to start it now, rank it higher in queue.yml and land that edit · traditio: none
+    next: W-901 spec named · actor: architect · why: briefs/W-901.md is missing or lacks the six design-lex sections · traditio: none
+    next: W-902 spec named · actor: architect · why: briefs/W-902.md is missing or lacks the six design-lex sections · traditio: none
+    lane: engineering E1 · W-901 greenlit
+    codex: unread (no session log holds a week rate_limits)
+    open: 3
+    
+    + actual - expected
+    
+    + 'next: W-900 spec held · actor: producer · why: W-900 is #3 in queue engineering and no lane takes it: E1 holds W-901 (greenlit), ahead W-902 (#2); to start it now, rank it higher in queue.yml and land that edit · traditio: none'
+    - 'next: W-900 spec queued · actor: producer · why: W-900 is #3 in queue engineering and no lane takes it: E1 holds W-901 (greenlit), ahead W-902 (#2); to start it now, rank it higher in queue.yml and land that edit · traditio: none'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 spec queued · actor: producer · why: W-900 is #3 in queue engineering and no lane takes it: E1 holds W-901 (greenlit), ahead W-902 (#2); to start it now, rank it higher in queue.yml and land that edit · traditio: none'
+  actual: 'next: W-900 spec held · actor: producer · why: W-900 is #3 in queue engineering and no lane takes it: E1 holds W-901 (greenlit), ahead W-902 (#2); to start it now, rank it higher in queue.yml and land that edit · traditio: none'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:156:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 404.378665
