@@ -9,6 +9,7 @@ import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { aheadIn } from "./meanwhile.js";
+import { startOrder } from "./queue.js";
 import { BUDGET, MAIN, OPUS, TSX, type World, commit, next, put, ran, world } from "./next-world.test.js";
 
 const rec = (id: string, state: string): string => `---\nid: "${id}"\ntitle: "queued ${id}"\nkind: "feature"\ncollegium: "engineering"\nstate: ${state}\nprobationes: {}\n---\nqueued\n`;
@@ -175,7 +176,7 @@ test("W-512-b1 fix round: two idle lanes, the first take is named in next, in --
   const performed = next(w, [OPUS, "--perform", ...BUDGET]);
   assert.equal(performed.first, `next: ${OPUS} branch performed`, ran("--perform decides the take the same way", performed));
   const all = ALL_LINE(w);
-  assert.ok(all.line.startsWith(`next: ${OPUS} branch named`), `next --all names branch for the first take, never a refusal for W-901's record\n${all.out}`);
+  assert.match(all.line, new RegExp(`^next: ${OPUS} \\w+ named `), `next --all names a step for the first take (the branch is already performed), never a refusal for W-901's record\n${all.out}`);
 });
 
 test("W-512-b1 fix round: lanePlan reads a lane's ahead only up to the target's lane, so a later lane's unreadable entry never refuses the spec ahead", () => {
@@ -185,8 +186,11 @@ test("W-512-b1 fix round: lanePlan reads a lane's ahead only up to the target's 
   const ahead = next(w, [OPUS, ...BUDGET]);
   assert.equal(ahead.first, `next: ${OPUS} spec named`, ran("this entry is E1's spec ahead; E2's walk past it reaches W-904 only after the target", ahead));
   assert.equal(ahead.kv.get("role"), "architect", ran("the architect is ordered", ahead));
-  const lower = next(w, ["W-904", ...BUDGET]);
-  assert.match(lower.kv.get("why") ?? "", /^the queue order cannot be read: /, ran("the unreadable entry itself still refuses, loudly (fail closed)", lower));
+  const file = { queues: [{ id: "e", lanes: [["E1", undefined], ["E2", undefined]] as [string, string | undefined][], next: ["W-902", "W-903", OPUS, "W-904"].map((opus) => ({ opus, says: "", folded: [], nextTs: false })) }], halted: [], cut: [], deferred: [] };
+  const stateOf = (o: string): string => { if (o === "W-904") throw new Error("the queued record opera/W-904.md cannot be read (ENOENT)"); return "greenlit"; };
+  assert.equal(startOrder({ kind: "ok", file }, OPUS, stateOf).kind, "ahead", "startOrder: the spec ahead is decided before E2's walk reaches W-904");
+  const bad = startOrder({ kind: "ok", file }, "W-904", stateOf);
+  assert.equal(bad.kind === "refused" ? bad.why : "", "the queue order cannot be read: the queued record opera/W-904.md cannot be read (ENOENT)", "the unreadable entry itself still refuses, loudly (fail closed)");
 });
 
 test("W-512-b1 fix round: the lane lines and the spec ahead (aheadOf) never read past what they name", () => {
