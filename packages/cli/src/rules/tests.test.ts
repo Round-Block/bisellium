@@ -1421,6 +1421,34 @@ const NUMBER_GRAMMAR: [string, string, string | undefined][] = [
   ["a comparison outside an assertion", "if (s >= 1.2) seen++;", undefined],
 ];
 
+// W-608 fix round 1: every literal form the grammar admits (digit runs with `_`, one `.`, an exponent with or without `_`,
+// a sign) as the bound; a bound of value 0, 1 or -1 is presence, anything else one-sided. Hex, octal, binary and bigint
+// are outside the grammar: a limit, no site.
+const LITERAL_FORMS: [string, string | undefined][] = [
+  ["5", NUMBER_FORM], ["1_000", NUMBER_FORM], ["1_0.5", NUMBER_FORM], ["1.5_5", NUMBER_FORM], [".5_5", NUMBER_FORM], ["5.", NUMBER_FORM],
+  ["5e9", NUMBER_FORM], ["5E9", NUMBER_FORM], ["5e-9", NUMBER_FORM], ["5e+9", NUMBER_FORM],
+  ["1e1_0", NUMBER_FORM], ["1e-1_0", NUMBER_FORM], ["1E+1_0", NUMBER_FORM], ["5.5e1_0", NUMBER_FORM], ["5e0_0", NUMBER_FORM], ["1_0e1_0", NUMBER_FORM],
+  ["-5", NUMBER_FORM], ["+5", NUMBER_FORM], ["-1e1_0", NUMBER_FORM], ["-1.5_5", NUMBER_FORM], ["1.0_5", NUMBER_FORM],
+  ["0", undefined], ["1", undefined], ["-1", undefined], ["+1", undefined], ["-0", undefined],
+  ["0.0", undefined], ["1.0", undefined], ["-1.0", undefined], ["0.00", undefined],
+  ["0.0_0", undefined], ["1.0_0", undefined], ["-1.0_0", undefined], ["+1.0_0", undefined], ["0.0_00", undefined], ["1.0_0_0", undefined],
+  ["1e0", undefined], ["0e1_0", undefined], ["1.0e0_0", undefined], ["-1e0", undefined],
+  ["0x1F", undefined], ["0o17", undefined], ["0b101", undefined], ["10n", undefined], ["0x1_0", undefined],
+];
+// two assertion sites on one line, in each order: the pattern and ends forms are named before the numeric form
+const SITE_ORDERS: [string, string, string | undefined][] = [
+  ["numeric then pattern", "assert.ok(ms > 250); assert.ok(/^x/.test(name));", START_ONLY],
+  ["pattern then numeric", "assert.ok(/^x/.test(name)); assert.ok(ms > 250);", START_ONLY],
+  ["numeric then endsWith", "assert.ok(ms > 250); assert.ok(name.endsWith('x'));", "endsWith in an assertion"],
+  ["endsWith then numeric", "assert.ok(name.endsWith('x')); assert.ok(ms > 250);", "endsWith in an assertion"],
+  ["numeric then numeric", "assert.ok(ms > 250); assert.ok(ms2 > 9);", NUMBER_FORM],
+  ["numeric then plain", "assert.ok(ms > 250); assert.ok(done);", NUMBER_FORM],
+  ["plain then numeric", "assert.ok(done); assert.ok(ms > 250);", NUMBER_FORM],
+  ["both bounds then numeric", "assert.ok(ms > 250 && ms < 900); assert.ok(ms2 > 9);", NUMBER_FORM],
+  ["numeric then both bounds", "assert.ok(ms2 > 9); assert.ok(ms > 250 && ms < 900);", NUMBER_FORM],
+  ["plain then plain", "assert.ok(done); assert.ok(ready);", undefined],
+];
+
 test("W-608-b1 behaviour 1: an added assert.ok or assert whose first argument bounds a number on one side only is a test.one_sided block, unless annotated", { timeout: 600_000 }, async () => {
   const base = { "a.test.ts": code(SIDED_BASE) };
   const added = (r: string): void => put(r, "a.test.ts", code([...SIDED_BASE, 'assert.ok(seconds >= 1.2, "a new lower bound");']));
@@ -1429,6 +1457,10 @@ test("W-608-b1 behaviour 1: an added assert.ok or assert whose first argument bo
   assert.deepEqual(sidedOf(branched("w608-b1-waived", base, waived)), [], "an annotated bound: no block");
 
   for (const [label, line, form] of NUMBER_GRAMMAR) assert.deepEqual(await formsOn([line]), form === undefined ? [] : [{ line: 1, form }], label);
+  for (const [lit, form] of LITERAL_FORMS) {
+    for (const line of [`assert.ok(x > ${lit});`, `assert.ok(${lit} <= x);`]) assert.deepEqual(await formsOn([line]), form === undefined ? [] : [{ line: 1, form }], `the literal ${lit}: ${line}`);
+  }
+  for (const [label, line, form] of SITE_ORDERS) assert.deepEqual(await formsOn([line]), form === undefined ? [] : [{ line: 1, form }], `site order: ${label}`);
   assert.deepEqual(await formsOn(["assert.ok(ratio >= 4.5); // one-sided: a contrast floor has no ceiling"]), [], "annotated on the line");
   assert.deepEqual(await formsOn(["// one-sided: short", "assert.ok(ratio >= 4.5);"], [2]), [{ line: 2, form: NUMBER_FORM }], "a reason under 15 characters is no annotation");
   // a line holding a pattern form and a numeric form is one site, its first form named
