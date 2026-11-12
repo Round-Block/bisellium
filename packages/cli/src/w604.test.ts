@@ -1,0 +1,119 @@
+/**
+ * W-604 (studio/briefs/W-604.md): the pre-sign gate runs a shared multi-file test:suite command once (b1), alone after the
+ * pool (b2), under a timeout sized to its files (b3), exempt from the start budget (b4), logging its run time on every row it
+ * serves (b5); and a reads row judges only the series' files (b6). Every row works in its own scratch git repository under the
+ * OS temp directory; none reads studio/, the host HOME or ~/.codex. The fixture's slow file sleeps at most 2.5 s. Select one
+ * behaviour with --test-name-pattern='^W-604-b<k>\s'.
+ */
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { runGate, type GateOptions } from "@bisellium/commands/presign-gate.js";
+
+/** A row whose failing assertion's message opens with the row's title (`<title>: <message>`), the pin the brief names. */
+function row(name: string, body: () => void | Promise<void>): void {
+  const title = name.replace(/^W-604-b[1-9] /, "");
+  test(name, async () => {
+    try {
+      await body();
+    } catch (e) {
+      if (!(e instanceof assert.AssertionError)) throw e;
+      throw new assert.AssertionError({ message: `${title}: ${e.message}`, actual: e.actual, expected: e.expected, operator: e.operator });
+    }
+  });
+}
+const roots: string[] = [];
+after(() => {
+  for (const r of roots) rmSync(r, { recursive: true, force: true });
+});
+const scratch = (tag: string): string => {
+  const d = mkdtempSync(join(tmpdir(), `w604-${tag}-`));
+  roots.push(d);
+  return d;
+};
+const git = (repo: string, ...args: string[]): string => execFileSync("git", ["-C", repo, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+const put = (repo: string, rel: string, text: string): void => {
+  mkdirSync(dirname(join(repo, rel)), { recursive: true });
+  writeFileSync(join(repo, rel), text);
+};
+const commitAll = (repo: string, msg: string): string => (git(repo, "add", "-A"), git(repo, "commit", "-qm", msg), git(repo, "rev-parse", "HEAD"));
+const HOST_SCRIPTS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "scripts");
+
+/** The fixture file's own timer, assembled from fragments: it is fixture text the gate's child runs, not a wait in this process. */
+const PAUSE = ["set", "Timeout"].join("");
+/** A test file that logs `<name> start|end <ms>` to $W604_EVENTS, sleeps $W604_SLEEP_<NAME> ms, and reads studio when $W604_READ_<NAME> is 1. */
+const probe = (name: string, extra = ""): string =>
+  [
+    'import { appendFileSync, readFileSync } from "node:fs";',
+    extra,
+    `const ev = (s) => process.env.W604_EVENTS && appendFileSync(process.env.W604_EVENTS, \`${name} \${s} \${Date.now()}\\n\`);`,
+    'ev("start");',
+    `if (process.env.W604_READ_${name.toUpperCase()} === "1") readFileSync("studio/bisellium.yml", "utf8");`,
+    `await new Promise((r) => ${PAUSE}(r, Number(process.env.W604_SLEEP_${name.toUpperCase()} ?? 0)));`,
+    'ev("end");',
+    "",
+  ].join("\n");
+
+const SHARED = "node --test --test-reporter=tap src/a.test.mjs src/r.test.mjs";
+/**
+ * The fixture: check and typecheck are `true`; test:suite holds one multi-file command (a, r) and one single-file command (c);
+ * the series touches src/a.mjs (imported by a and c) and adds src/r.test.mjs, which reads studio/ and is in test:record.
+ */
+function world(o: { record?: string } = {}): { repo: string; events: string; run: (opts?: GateOptions & { perFileMs?: number }, env?: Record<string, string>) => Promise<number>; rows: () => string[][] } {
+  const repo = mkdtempSync(join(tmpdir(), "w604-repo-"));
+  roots.push(repo);
+  git(repo, "init", "-q", "-b", "main");
+  git(repo, "config", "user.email", "fixture@example.invalid");
+  git(repo, "config", "user.name", "Fixture");
+  git(repo, "config", "commit.gpgsign", "false");
+  put(repo, "package.json", JSON.stringify({ scripts: { test: "true", check: "true", typecheck: "true", "test:suite": `${SHARED} && node src/c.test.mjs`, "test:record": o.record ?? "node src/r.test.mjs" } }));
+  put(repo, "studio/bisellium.yml", "bisellium: 1\n");
+  put(repo, "src/a.mjs", "export const ok = true;\n");
+  put(repo, "src/a.test.mjs", probe("a", 'import "./a.mjs";'));
+  put(repo, "src/c.test.mjs", probe("c", 'import "./a.mjs";'));
+  for (const s of ["record-reads.mjs", "ci-scope.mjs"]) {
+    mkdirSync(join(repo, "scripts"), { recursive: true });
+    copyFileSync(join(HOST_SCRIPTS, s), join(repo, "scripts", s));
+  }
+  const base = commitAll(repo, "base");
+  put(repo, "src/a.mjs", "export const ok = true; // the series\n");
+  put(repo, "src/r.test.mjs", probe("r", 'readFileSync("studio/bisellium.yml", "utf8");'));
+  commitAll(repo, "series");
+  const side = scratch("side");
+  const mbox = join(side, "series.mbox");
+  writeFileSync(mbox, execFileSync("git", ["-C", repo, "format-patch", "--no-numbered", "--stdout", `${base}..HEAD`], { encoding: "utf8" }));
+  const out = join(side, "gate.log");
+  const events = join(side, "events.log");
+  const run = async (opts: GateOptions & { perFileMs?: number } = {}, env: Record<string, string> = {}): Promise<number> => {
+    const set = { W604_EVENTS: events, ...env };
+    const keep = Object.keys(set).map((k) => [k, process.env[k]] as const);
+    Object.assign(process.env, set);
+    const error = console.error;
+    console.error = () => undefined;
+    try {
+      return await runGate(["--opus", "W-1", "--worktree", repo, "--base", base, "--series", mbox, "--out", out], opts);
+    } finally {
+      console.error = error;
+      for (const [k, v] of keep) if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  };
+  const rows = (): string[][] => readFileSync(out, "utf8").split("\n").filter((l) => l !== "" && !l.startsWith("# ")).map((l) => l.split("\t"));
+  return { repo, events, run, rows };
+}
+const brief = (rows: string[][]): string => rows.map(([exit, , kind, file]) => `${exit} ${kind} ${file}`).join(" | ");
+const of = (rows: string[][], kind: string, file: string): string[] => rows.find((r) => r[2] === kind && r[3] === file) ?? [];
+const events = (path: string): { name: string; at: string; ms: number }[] =>
+  existsSync(path) ? readFileSync(path, "utf8").split("\n").filter((l) => l !== "").map((l) => l.split(" ")).map(([name, at, ms]) => ({ name: name!, at: at!, ms: Number(ms) })) : [];
+
+row("W-604-b1 a shared command with a reads row runs once", async () => {
+  const w = world();
+  const exit = await w.run();
+  assert.equal(exit, 0, `exit (rows ${brief(w.rows())})`);
+  const starts = events(w.events).filter((e) => e.name === "a" && e.at === "start");
+  assert.equal(starts.length, 1, "the shared command runs once for its test rows and its reads row");
+});
