@@ -1,0 +1,45 @@
+# behaviour: 6
+# command: node --test-reporter=tap --test-name-pattern=^W-604-b6\s --import tsx packages/cli/src/w604.test.ts
+# exit: 1
+# at: 2026-11-12T03:14:27.458Z
+# sella: architect
+# tree: tree:4db4688e525d494c9b3783dc6aaf5df9ec5654a5
+# ticket: {"opus":"W-604","step":"reds","action":"red","round":6,"actor":"producer","studio":".worktrees/W-604/studio","head":"ed740d91f6cddf30ccdff5c8b78927493f7748b6","brief":"cd7fd44f153bd304a1f971376198a949f73dfea0","at":"2026-11-12T03:14:27.418Z"}
+
+TAP version 13
+# Subtest: W-604-b6 a reads row judges only the series' files
+not ok 1 - W-604-b6 a reads row judges only the series' files
+  ---
+  duration_ms: 687.671948
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-604/packages/cli/src/w604.test.ts:1:561'
+  failureType: 'testCodeFailure'
+  error: |-
+    a reads row judges only the series' files: another file's test:record entry or unlisted read does not fail the series' reads row (rows 0 check - | 0 typecheck - | 1 reads src/r.test.mjs | 0 test src/a.test.mjs | 0 test src/c.test.mjs | 0 test src/r.test.mjs)
+    
+    '1' !== '0'
+    
+    
+    '1' !== '0'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '0'
+  actual: '1'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-604/packages/cli/src/w604.test.ts:25:13)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 694.072417

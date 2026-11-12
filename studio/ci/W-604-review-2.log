@@ -1,0 +1,22 @@
+# opus: W-604
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1cdd3-ff59-7661-b2c4-2e12ddeec232
+# outcome: passed
+# at: 2026-11-12T06:02:07.994Z
+# tree: tree:63b609cca0dbb105f62b8e486103cec6b5fb209c
+# brief: briefs/W-604.md blob:da616e5941743ddc51a69b5a358a53b65a2476ee
+# ticket: {"opus":"W-604","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-604/studio","head":"f94e2ee169be791785fa8f41073c40d88d77785f","brief":"da616e5941743ddc51a69b5a358a53b65a2476ee","at":"2026-11-12T06:00:34.868Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-604-review-1.log #1: closed — `sharedTimeoutMs` now clamps the derived timeout to `SHARED_MAX_MS` at packages/commands/src/presign-gate.ts:54, with the over-ceiling case pinned at packages/cli/src/w604.test.ts:149.
+- ci/W-604-review-1.log #2: closed — `runShared` captures `t1` immediately after the command at packages/commands/src/presign-gate.ts:415, before `judgeReads`, and packages/cli/src/w604.test.ts:174 distinguishes command time from a delayed reads check.
+
+## Verdict
+Both earlier blockers are closed, and the round-2 delta introduces no new finding.
+VERDICT: PASS

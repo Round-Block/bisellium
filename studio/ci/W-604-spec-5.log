@@ -1,0 +1,19 @@
+# opus: W-604
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1cdb8-5577-7800-a398-46965e839e06
+# outcome: passed
+# at: 2026-11-12T04:48:45.919Z
+# tree: dirty:2fcedf8471694b5ed9978da74ed7f45b7fd90ba6
+# brief: briefs/W-604.md blob:f94ade02e8dcb42c04751dbf2af842bc76d81e55
+# ticket: {"opus":"W-604","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":".worktrees/W-604/studio","head":"4b010ea042df946674d50cabec141d4cd940ef52","brief":"f94ade02e8dcb42c04751dbf2af842bc76d81e55","at":"2026-11-12T04:48:41.355Z"}
+
+## Findings
+1. advisory — brief:156 The Default still says the gate may exceed `BUDGET_MS` only by the shared command’s at-most-30-minute timeout, but revised brief:67 and brief:93 correctly admit an additional `SHARED_MAX_MS` for every reads check in its group; the promise-domain census missed this dependent promise. Replace with: “A shared command runs once after the other rows with a timeout of at most 30 minutes; afterward, each reads row’s check may take up to another 30 minutes, and all of that time is outside the 10-minute start budget.” [severity: S2] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: amend `census-promise-domain.mts` to include every bound-stating Default
+2. advisory — brief:100 The two b5 thresholds are 1.8 seconds apart, but they do not guarantee “at least 1.8 s of host slack”: process and test-runner overhead is already included above the 1.2-second fixture pause, so the available slack is smaller. Replace with: “the assertions have a 1.8-second-wide window; process and test-runner overhead consume part of that margin, so a sufficiently loaded host can fail the row.” [severity: S2] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: /home/edckt/.bisellium-evidence/W-604-build/amend-r4/red-prefix-b5.log; /home/edckt/.bisellium-evidence/W-604-build/amend-r4/single-packages_cli_src_w604.test.ts.log
+
+## Verdict
+The required shell check returned “4b010ea0 docs(W-604): brief revision 3, class census lines”; both findings are S2 wording overclaims and therefore advisory under D-086 C.
+VERDICT: PASS

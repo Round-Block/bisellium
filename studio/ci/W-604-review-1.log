@@ -1,0 +1,19 @@
+# opus: W-604
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1cdd3-ff59-7661-b2c4-2e12ddeec232
+# outcome: failed
+# at: 2026-11-12T03:44:02.571Z
+# tree: tree:061e85c57cb2a3c7cc694175d06d00b71faec281
+# brief: briefs/W-604.md blob:cd7fd44f153bd304a1f971376198a949f73dfea0
+# ticket: {"opus":"W-604","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-604/studio","head":"dcd6842a82b5ccc7c51b648f3cf1657a33b1037e","brief":"cd7fd44f153bd304a1f971376198a949f73dfea0","at":"2026-11-12T03:44:01.192Z"}
+
+## Findings
+1. blocking — packages/commands/src/presign-gate.ts:54 `sharedTimeoutMs` returns `rowTimeoutMs` when it exceeds `SHARED_MAX_MS`, so a brief-valid positive input can exceed the promised 1800-second ceiling at brief:23. Every site is covered: defaults/writers in `runGate`, W-563, and W-604-b3; reader `sharedTimeoutMs`; consumers `runGate` → `runShared` → `sh`/`traced`/`judgeReads`. [severity: S1] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w604.test.ts W-604-b3 plus a direct over-ceiling `sharedTimeoutMs` case
+2. blocking — packages/commands/src/presign-gate.ts:495 The interval starts before `runShared` and ends after its synchronous `judgeReads` calls, so traced groups log command time plus reads-check time instead of the run’s own seconds required by brief:25. Every site is covered: `traced` produces the command run; `runShared`/`judgeReads` consume it; `runGate`/`record` write timing and results; `readGateLog`/`gateLogProblems` read them; W-604-b5 checks only equality and a lower bound, which cannot distinguish this defect. [severity: S1] [class: tests×one-sided-bound-assertion] — check: packages/cli/src/w604.test.ts W-604-b5 with a delayed reads checker and an upper/tolerance assertion around command time
+
+## Verdict
+Shell output: “dcd6842a chore(studio): W-604 gates”. Two in-domain timing contracts are violated, so the round fails.
+VERDICT: FAIL

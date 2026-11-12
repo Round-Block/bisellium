@@ -1,0 +1,29 @@
+# opus: W-604
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-12T03:06:05.517Z
+# tree: tree:74ed7161b491e58c6db0397dff18ae83b7086d12
+# brief: briefs/W-604.md blob:cd7fd44f153bd304a1f971376198a949f73dfea0
+# ticket: {"opus":"W-604","step":"spec","action":"verdict-spec","round":2,"actor":"architect","studio":"studio","head":"18749133f043afc210e3006a37fd0f5fd1da678a","brief":"cd7fd44f153bd304a1f971376198a949f73dfea0","at":"2026-11-12T03:06:01.150Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-604-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-604-spec/gate.log
+
+## Findings
+
+1. advisory — the meet's 3-1 fix is applied in the runner only: a shared multi-file command runs once, alone after the pool, budget-exempt, under a timeout sized to its files (120 s a file, 600 s floor, 1800 s ceiling, from the 582 s ci7 measure), traced when it has a reads row; its exit serves its test rows and its reads row; each shared row logs the run's time — check: brief Intent 1-5; W-604-b1..b5
+2. advisory — two faults found tracing one run, both closed, neither forcing the (c) fallback: node's --test runner runs no --import preload, so each file logged its own root and no node --test reads row could pass (a node -e root wrapper now runs every traced command); and every reads row on the real repo failed on unread: lines for the other test:record commands (readsProblems judges only the row's file) — check: brief Intent; W-604-b1, W-604-b6; read-scope.log
+3. advisory — every caller and reader of the rows and log is closed or a stated limit (14 sites); the log grammar and row set are unchanged, so verdict's want-vs-log.rows matcher matches as before — check: brief census table; importers.out; W-563-b3 rows green
+4. advisory — each red replayed as certify replays it (env -i, an empty HOME, a writable TMPDIR): b1-b6 each fail by ERR_ASSERTION only and are accepted by the tip's replay classifier, each red log headed by the command it ran; each green passes; one one-hunk mutant of presign-gate.ts per behaviour fails its row at the pinned title — check: reds.sh; reds.out; red-b1..b6.log; mutants.py; mutants.out; ledger-check.out
+5. advisory — BUDGET_MS bounds starts, not minutes: a gate with a shared command can run past 10 min by its shared runs (W-551: about 16-17 min); a deferred row stays not-a-failure for verdict, as W-563 signed — check: brief Limits
+6. advisory — no existing row flips; no code-owned path is touched — check: brief Acceptance, Files owned; singles.out
+7. advisory — self-application: the gate from the prototype tip on its own series passes every row in 4.3 min (check, typecheck, the w604 reads row on the real repo's test:record, which master's judgement would fail on unread: lines, and the test rows w604, w563, next-branch); its series owes no shared command (next-branch.test.ts narrows to one file, pooled, 255 s under the flat 600 s cap), so behaviours 1-5 are pinned by the fixture rows, not by this gate run — check: gate.log
+8. advisory — round 2 re-sign: each of the six Promise lines (brief:58-68) now ends with its `— limit:` clause, as brief admission requires; no other brief line, no code, series or gate changed; master's brief admission reads the brief clean — check: admission-check.mts; admission.out
+9. advisory — Codex's fixture census was not run (this dispatch runs no Codex) — check: brief Acceptance
+
+## Verdict
+
+passed — drafted for signing by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-604.md` revision 1 at master a0f84c1c: six behaviours, each with a recorded red replayed under certify's conditions; round 2 re-signs after each Promise line gained its stated limit.

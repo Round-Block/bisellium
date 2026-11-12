@@ -1,0 +1,24 @@
+# opus: W-604
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-12T05:32:12.918Z
+# tree: tree:63b609cca0dbb105f62b8e486103cec6b5fb209c
+# brief: briefs/W-604.md blob:da616e5941743ddc51a69b5a358a53b65a2476ee
+# ticket: {"opus":"W-604","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-604/studio","head":"3bd765a6ab88db5f427acffe3e1d8f825ac9c85d","brief":"da616e5941743ddc51a69b5a358a53b65a2476ee","at":"2026-11-12T05:32:08.198Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-604-build/amend-r6/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-604-spec/gate.log
+
+## Findings
+
+1. advisory — spec review r5 advisory 1 applied at brief:156 (Default 1): the gate's minutes past the 10-minute start budget are the shared run's timeout (at most 30 minutes) plus up to another 30 minutes for each reads row's check in its group, as brief:67 and brief:93 already state and the runner does (`judgeReads` once per reads row, presign-gate.ts:416, each under the shared timeout passed at :497 and applied at :398); the Default no longer says "by that much" — check: /home/edckt/.bisellium-evidence/W-604-specreview/r5b/verdict.md; /home/edckt/.bisellium-evidence/W-604-build/amend-r6/brief-r4.diff; /home/edckt/.bisellium-evidence/W-604-build/amend-r6/apply-brief-r4.py
+2. advisory — spec review r5 advisory 2 applied at brief:100 (the fixtures' Limit): `W-604-b5`'s bounds (at least 1.2 s, under 3 s; w604.test.ts:180-181) are a 1.8-second-wide window that process and test-runner overhead consume part of, not 1.8 s of host slack; a sufficiently loaded host can fail the row — check: /home/edckt/.bisellium-evidence/W-604-specreview/r5b/verdict.md; /home/edckt/.bisellium-evidence/W-604-build/amend-r6/brief-r4.diff
+3. advisory — revision 4 replaces those two whole lines and the Status line (brief:3, now naming revision 4 and what it applies, the way it named revision 3) and nothing else (`git diff --stat`: studio/briefs/W-604.md, 3 insertions, 3 deletions); no code or test changes; brief line numbers do not move, presign-gate.ts at 6e363131 is identical to 93f5f861 and w604.test.ts at 6e363131 is byte-identical to amend-r4's w604.test.fixed.ts, so the ledger's lines carry over with its header restated — check: /home/edckt/.bisellium-evidence/W-604-build/amend-r6/brief-r4.diff; /home/edckt/.bisellium-evidence/W-604-build/amend-r6/apply-brief-r4-status.py; /home/edckt/.bisellium-evidence/W-604-build/amend-r6/ledger-r4.py; /home/edckt/.bisellium-evidence/W-604-build/amend-r6/promise-ledger.md
+4. advisory — the gate log cited is revision 1's, on the prototype series; revisions 2 to 4 change no runner code — check: /home/edckt/.bisellium-evidence/W-604-spec/gate.log
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-604.md` revision 4 over opus/W-604 6e363131 with `brief-r4.diff`: an amendment after Codex spec review round 5 passed with advisory findings only, so no earlier blocking finding stands to account for; r5's two S2 advisories are applied as worded (brief:156 Default 1 counts each reads check's up-to-30-minute timeout outside the start budget; brief:100 calls b5's bounds a 1.8-second-wide window that overhead partly consumes), with no code or test change.
