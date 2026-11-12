@@ -42,7 +42,7 @@ import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisell
 import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
-import { laneLines, QUEUE_FILE, readQueue, startOrder, type StartOrder } from "./queue.js";
+import { laneLines, QUEUE_FILE, readQueue, startOrder, type LaneHeld, type StartOrder } from "./queue.js";
 import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
 import { STEPS, checkCollection, loadMarker, loadOpusRecord, walkReal, walkStudio, type Marker, type Step } from "./inputs.js";
 import { ID_RE } from "./check.js";
@@ -1239,6 +1239,9 @@ export function deriveNext(f: Facts): Derived {
       if (owing !== undefined) return hold("branch", owing);
       // W-512 (D-181): branch starts a lane: only a lane's own opus or its take, never the spec ahead (a later entry held at spec, above)
       if (order?.kind === "ahead") return hold("branch", order.why);
+      // W-512 (W-592's lane-start half, D-192): branch refuses while its Files owned overlap with an opus another lane holds in flight
+      const overlap = order?.kind === "now" ? laneOverlap(f, order.held) : undefined;
+      if (overlap !== undefined) return hold("branch", overlap);
       return { ...named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`, fixes), ticket: { action: "branch", round: 0 } };
     }
   }
@@ -2574,6 +2577,40 @@ function queueOrder(repo: string, studioAbs: string, studioRel: string, id: stri
     states.set(o, s);
     return s;
   });
+}
+
+/**
+ * W-512 (W-592's lane-start half, D-192): why `f.id` may not branch while an opus in flight has Files owned that overlap its
+ * own, or undefined. Its own Files owned are the main checkout's signed brief (`branch` commits it). An opus is in flight
+ * once refs/heads/opus/<it> exists and its main record is open (greenlit up to review), whatever queue.yml's lane field
+ * says (spec r2 S1): every one is read, and `lanes` (every other lane's now, held or taken) only names its lane. Its Files
+ * owned are that branch's committed brief (the blob its spec gate judged). Two spans overlap when equal, or when one ends
+ * in `/` and the other opens with it; a glob is not expanded. Each read fails closed; a ref with no record is not an opus.
+ */
+function laneOverlap(f: Facts, lanes: LaneHeld[]): string | undefined {
+  const own = f.work.read(briefRel(f.id));
+  if (own === undefined) return `${briefRel(f.id)} cannot be read in the main checkout, so its Files owned cannot be checked against the opera in flight (W-592)`;
+  const mine = ownedFiles(own);
+  const meets = (a: string, b: string): boolean => a === b || (a.endsWith("/") && b.startsWith(a)) || (b.endsWith("/") && a.startsWith(b));
+  const listed = git(f.repo, ["for-each-ref", "--format=%(refname)", "refs/heads/opus/"]);
+  if (listed.error !== undefined || listed.status !== 0) return `the opus branches cannot be listed (git for-each-ref exited ${listed.status ?? "without status"}), so ${f.id}'s Files owned cannot be checked against the opera in flight (W-592)`;
+  const hits: string[] = [];
+  for (const ref of listed.stdout.split("\n").filter(Boolean).sort((a, b) => a.localeCompare(b, "en", { numeric: true }))) {
+    const x = ref.startsWith("refs/heads/opus/") ? ref.slice("refs/heads/opus/".length) : "";
+    if (!ID_RE.test(x)) return `git listed an opus branch whose id is outside the opus grammar, so ${f.id}'s Files owned cannot be checked against the opera in flight (W-592)`;
+    if (x === f.id) continue;
+    const main = laneRecord(f.studioAbs, x, "allowed", f.repo);
+    if ("error" in main) return `${recordRel(x)} cannot be read (${main.error}), so ${x}'s Files owned cannot be checked against ${f.id}'s (W-592)`;
+    if (main.record === undefined || !CONFLICT_OPEN_STATES.has(main.record["state"] as string)) continue;
+    const theirs = git(f.repo, ["cat-file", "blob", `${ref}:${join(f.studioRel, briefRel(x))}`]);
+    if (theirs.error !== undefined || theirs.status !== 0) return `${briefRel(x)} is not a readable blob on ${ref}, so its Files owned cannot be checked against ${f.id}'s (W-592)`;
+    const owned = ownedFiles(theirs.stdout);
+    const paths = mine.filter((m) => owned.some((t) => meets(m, t)));
+    const lane = lanes.find((h) => h.opus === x)?.lane;
+    if (paths.length > 0) hits.push(`${x} ${lane === undefined ? "in no lane" : `in lane ${lane}`}: ${paths.map((p) => `\`${clean(p)}\``).join(", ")}`);
+  }
+  if (hits.length === 0) return undefined;
+  return `${f.id}'s Files owned overlap with an opus in flight: ${hits.join("; ")}; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`;
 }
 
 /** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */

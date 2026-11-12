@@ -301,7 +301,7 @@ export function lanePlan(file: QueueFile, stateOf: (opus: string) => string | un
 }
 
 /** W-512: where an opus stands in the start order: a lane's `now` (it may branch), a lane's `ahead` (its spec only), or refused (why). */
-/** W-512 (W-592's lane-start half): an opus another lane holds (busy), whose Files owned a lane's branch is checked against. */
+/** W-512 (W-592's lane-start half): another lane's now, held or taken: the lane an opus in flight is named by in an overlap hold. */
 export interface LaneHeld {
   opus: string;
   lane: string;
@@ -330,8 +330,9 @@ export function startOrder(read: QueueRead, id: string, stateOf: (opus: string) 
   try {
     const takes = laneTakes(read.file, stateOf);
     const now = takes.find((t) => (t.busy ?? t.take?.opus) === id);
-    // the opera every other lane holds (busy), in every queue: the branch rung checks their Files owned against this one's
-    if (now !== undefined) return { kind: "now", lane: now.lane, held: takes.flatMap((t) => (t !== now && t.busy !== undefined ? [{ opus: t.busy, lane: t.lane }] : [])) };
+    // every other lane's now, held or taken, in every queue (spec r2 S1: a take branched while its lane is still ~ is that lane's):
+    // the branch rung names their lanes when it reads the Files owned of every opus in flight
+    if (now !== undefined) return { kind: "now", lane: now.lane, held: takes.flatMap((t) => { const o = t.busy ?? t.take?.opus; return t !== now && o !== undefined ? [{ opus: o, lane: t.lane }] : []; }) };
     plan = lanePlan(read.file, stateOf);
   } catch (e) {
     return { kind: "refused", why: `the queue order cannot be read: ${(e as Error).message.split("\n")[0]}` };
