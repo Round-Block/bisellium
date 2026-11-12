@@ -19,6 +19,7 @@ queues:
       - { opus: W-304, says: "seats read live, console MVP" }
       - { opus: W-280, says: "Inbox newItem fail-open" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; first in the process lane (D-193)" }
+      - { opus: W-603, says: "land carries studio/lessons/, so the stashed L-042, L-058 and L-198 stamps land; process (daily retro 2026-11-11)" }
       - { opus: W-597, says: "while a lane builds, next orders the next entry's spec-ahead draft; check warns when none exists; W-547's follow-on, process (misses-meet-1111)" }
       - { opus: W-602, says: "a census test refuses a static import of a heavy package on the CLI start path (W-563 cost 0.4 s per process); process (daily retro 2026-11-11)" }
       - { opus: W-599, says: "one parser-backed import scanner, eslint ban on import regexes, parser-or-limits prompt lines; misses-meet fix 4; process" }
