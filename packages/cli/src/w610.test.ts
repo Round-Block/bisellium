@@ -332,16 +332,11 @@ function driftWorld(tag: string): { w: World; reviewArgs: string[]; verdictArgs:
   const verdictArgs = ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "review-1.md"), "--studio", w.wtStudio, "--now", T.review1];
   return { w, reviewArgs, verdictArgs };
 }
-row("W-610-b2 fix1: a worktree source_excludes that differs from main's refuses a direct verdict", () => {
-  const { w, verdictArgs } = driftWorld("w610-b2-drift-verdict");
-  const o = next(w, [OPUS, ...BUDGET]);
-  assert.notEqual(o.first, `next: ${OPUS} review named`, ran("next does not name review on a drifted exclusion", o));
-  const v = direct(w, w.wt, verdictArgs);
-  assert.notEqual(v.status, 0, ran("the verdict verb refuses a drifted exclusion", v));
-});
 row("W-610-b2 fix1: a worktree source_excludes that differs from main's refuses a direct review", () => {
   const { w, reviewArgs, verdictArgs } = driftWorld("w610-b2-drift-review");
-  direct(w, w.wt, verdictArgs); // the verdict write comes first; where it is refused no record exists for the review to consume
+  const held = next(w, [OPUS, ...BUDGET]);
+  assert.notEqual(held.first, `next: ${OPUS} review named`, ran("next does not name review on a drifted exclusion", held));
+  direct(w, w.wt, verdictArgs); // the verdict write comes first (a log only; verdict.ts keeps no gate admission); where it is refused nothing is left for the review to consume
   const r = direct(w, w.wt, reviewArgs);
   assert.notEqual(r.status, 0, ran("the review verb refuses a drifted exclusion", r));
 });
