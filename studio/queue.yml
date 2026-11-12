@@ -3,11 +3,13 @@ queues:
     lanes: { E1: W-610 }
     next:
       - { opus: W-610, says: "build review before the full ci: light gates run by a ladder-runner, review, then one ci --opus at the reviewed tree; high, after W-608, ahead of W-551 (review-order-meet-1112)" }
+      - { opus: W-617, says: "guard and check refuse claude.ai session links in commits, PR bodies and briefs; forward-only; high, right after W-610 (memory-enforce-meet-1112)" }
       - { opus: W-615, says: "cause fix, gate logs bind a digest of their exact commands; every admitter refuses a mismatch; high, right after W-610 (w610-class-meet-1112)" }
       - { opus: W-551, says: "required fixes, build-review fix rounds and fix-check rounds get a red ticket tied to the pre-fix commit; reviewer and certify read it; high, process (w551-rank-meet-1111)", folded: [W-365, W-421] }
       - { opus: W-616, says: "process opera name their switch (pinned on in the real studio, loud if missing) and owed proof; done marks unproven; check rule, not memory (w610-proof-meet-1112)" }
+      - { opus: W-618, says: "process.checkpoint reads the newest row: cycle minutes first, a spend cell, both from records; after W-616 (memory-enforce-meet-1112)" }
       - { opus: W-613, says: "ci --opus alongside the build review in a scratch checkout, killed on a failed review; follow-up of W-610, right after W-551 (review-order-meet-1112 round 2)" }
-      - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182); right after W-551 (balance-meet-1112)" }
+      - { opus: W-512, says: "next refuses out-of-order starts and research in a work lane; queue refuses lane ids outside E/UI; one lane until it lands (D-182); after W-551 (memory-enforce-meet-1112)" }
       - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead; qa-lead to gpt-6); right after W-512; W-451, W-503 by one-off exceptions (w590-rank-meet-1112)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; first in the process lane (D-193)" }
       - { opus: W-609, says: "no new lane opens while first-run ci fails over 30% or 2+ of the last 5 round-1 reviews have an S1; process, right after W-595 (balance-meet-1112)" }
@@ -82,7 +84,7 @@ queues:
       - { opus: W-565, says: "the guard refuses a second ladder-runner while one acts; daily retro 11-09; behind the freeze" }
       - { opus: W-566, says: "handoff check takes an in-flight id's state from its record; daily retro 11-09; behind the freeze" }
       - { opus: W-567, says: "a post-ceiling security amendment gets one spec review; daily retro 11-09; behind the freeze" }
-      - { opus: W-518, says: "start the handoff refresh earlier, enforced; behind the process freeze, not exempt; W-532's measured boot sets its number (leads 2026-11-07)" }
+      - { opus: W-518, says: "start the handoff refresh earlier, enforced; process.handoff needs a fresh reviewer record naming the handoff digest; W-532 sets its number (memory-enforce-meet-1112)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
       - { opus: W-363, says: "one stage executor: spec review, fix round, build-before-review as performs", folded: [W-480, W-482, W-470], next_ts: true }
