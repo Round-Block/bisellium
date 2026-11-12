@@ -3,6 +3,7 @@ queues:
     lanes: { E1: W-604 }
     next:
       - { opus: W-604, says: "pre-sign gate runs a shared multi-file command once, alone after the pool, timeout sized to the row; high, ahead of W-551 (w551-gate-meet-1112)" }
+      - { opus: W-608, says: "cause fix, tests×one-sided-bound-assertion: oneSidedSites reads a number bounded on one side; spec-draft line for measured values; high, after W-604 (w604-class-meet-1112)" }
       - { opus: W-551, says: "required fixes, build-review fix rounds and fix-check rounds get a red ticket tied to the pre-fix commit; reviewer and certify read it; high, process (w551-rank-meet-1111)", folded: [W-365, W-421] }
       - { opus: W-605, says: "certify's replay and the pr rung's rewrite check read fix-round reds; split-first (W-323); high, after W-551 (w551-gate-meet-1112)" }
       - { opus: W-596, says: "handoff refuses without a passing pre-handoff gate (ci env, census tests, importers, per-file timeout); replaces test:preflight; high, process (misses-meet-1111)" }
