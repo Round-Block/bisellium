@@ -54,7 +54,7 @@ Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W
 
 D-193 replaces D-178: no per-opus exemptions; queue entries are product (M4 path) or process; after W-512, E1 and E2 take product, E3 is the one process lane (W-595 enforces). D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (W-502's cause fix) waits in the process lane.
 
-In flight: W-451 merged (#1045), done once its master verify runs. W-610, capped (lanes-meet-1112): build review r1 failed 2 S1; brief r3 (W-610-spec/brief-r3.md) in pre-sign checks, then Codex census, re-sign, fix round 2, fix check, ci, review r2; a failed r2 parks it. PR waits on the Patron.
+In flight: W-451 merged (#1045), done once its master verify runs. W-610 PARKED (cap, lanes-meet-1112): build review r2 failed 2 S1 (ci/W-610-review-2.log, repeat class review×name-prefix-containment-misclassifies-valid-paths); opus/W-610 pushed at 9b886d5a. W-512 built, ci passed (opus/W-512 a33c54c6); its review is HELD by next: it conflicts with opus/W-610 further along. Leads' meet first next session (current-state.md NOW).
 
 Greenlit ahead of build: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home D-175 keeps. Branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 (brief, spec-7/8 logs): keep). No W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
@@ -62,7 +62,7 @@ Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Spec drafts durin
 
 Design-collegium questions go to design-lead (design.md:3; CLAUDE.md's Roles line names it as spec signer since W-589).
 
-Next session: studio/queue.yml order: W-610, W-512 (drafted, sign when main is free), W-595, W-609, W-617 (drafted), W-615, W-551 (drafted). No new process opus above W-512 without a Patron high. Until W-609, E2 opens on the qa-lead's retro reading. State: ~/.bisellium-evidence/current-state.md.
+Next session: leads' meet on the W-610/W-512 hold first (options in current-state.md NOW), then the 11-12 daily retro (due after 00:00Z 11-13), then studio/queue.yml order: W-512, W-595, W-609, W-617 (drafted), W-615, W-551 (drafted). No new process opus above W-512 without a Patron high. State: ~/.bisellium-evidence/current-state.md.
 
 Unruled notes, read first: top NOW of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it.
 D-189: a Patron-waiting call goes to the relevant leads' meet; their recommendation is the default, vetoable at the next summary, never the producer's alone. Lex: W-525 (#1079, production.md §7).
