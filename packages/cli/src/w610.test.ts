@@ -86,7 +86,7 @@ row("W-610-b1 after the builder's handoff next orders the light gates and its pe
   const text = readFileSync(join(w.wtStudio, rel), "utf8").split("\n");
   const { commandDigest, commandLine } = await import("@bisellium/shim");
   assert.deepEqual(text.slice(0, 3), [`certifies: ${sourceTree(w.wt)}`, commandLine(LIGHT_CMDS), "exit code: 0"], "the log opens as a gate log does, line 2 binding the exact commands");
-  // the binding is the shared helper's: injective over the list (a boundary inside a command differs), one line for a multiline command
+  // the binding is the shared helper's: collision-resistant over the list (a boundary inside a command differs), one line for a multiline command
   assert.match(commandLine(LIGHT_CMDS), /^command: sha256:[0-9a-f]{64}$/, "line 2 is the command digest");
   assert.notEqual(commandDigest(["a ; b"]), commandDigest(["a", "b"]), "a list boundary is part of the binding");
   assert.notEqual(commandDigest(["a", "b"]), commandDigest(["b", "a"]), "the order is part of the binding");
