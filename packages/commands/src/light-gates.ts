@@ -15,7 +15,7 @@ import { bindsCommands, commandLine, isDirtyOutside, sourceTreeHash } from "@bis
 import { ownedFiles } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readContainedRegularFile } from "./opus-model.js";
-import { buildReviewDrift, readSourceExcludes, readWorktreeManifest } from "./verdict.js";
+import { trustedSource } from "./verdict.js";
 
 const GIT_TIMEOUT_MS = 30_000;
 /** One light-gate command's ceiling; a timeout is a non-zero exit (124). */
@@ -50,30 +50,10 @@ export function lightGateCommands(manifest: Record<string, unknown>, studioRel: 
 type RepoOf = { repo: string; studioRel: string; exclusions: string[]; main: Record<string, unknown> };
 const gitIn = (cwd: string, args: string[]): SpawnSyncReturns<string> => spawnSync("git", args, { cwd, encoding: "utf8", timeout: GIT_TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024 });
 
-/**
- * The worktree's repository, its officina path, the main checkout's manifest and the source exclusions. The exclusions come
- * from the trusted main manifest, and a worktree manifest that cannot be read, is malformed or drifts from main's on any
- * build-review key (`buildReviewDrift`, `source_excludes` among them, as next's hold does) is refused, so an uncommitted
- * exclusion never changes the tree a light log certifies.
- */
+/** The trusted source (`trustedSource`, verdict.ts: main's exclusions, any worktree drift refused), as the light gates read it. */
 function repoOf(studioRoot: string): RepoOf | { error: string } {
-  const root = gitIn(studioRoot, ["rev-parse", "--show-toplevel"]);
-  if (root.status !== 0) return { error: "the current source tree is unavailable" };
-  const repo = resolve(root.stdout.trim());
-  const studioRel = relative(repo, studioRoot).split(sep).join("/");
-  const read = readWorktreeManifest(studioRoot);
-  if ("error" in read) return { error: `the worktree manifest cannot be read: ${read.error}` };
-  const own = readSourceExcludes(read.manifest);
-  if ("error" in own) return { error: `the worktree manifest is malformed: ${own.error}` };
-  const common = gitIn(repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
-  if (common.status !== 0) return { error: "the main checkout is unavailable" };
-  const main = readWorktreeManifest(join(dirname(resolve(common.stdout.trim())), studioRel));
-  if ("error" in main) return { error: `the main checkout's manifest cannot be read: ${main.error}` };
-  const drift = buildReviewDrift(main.manifest, read.manifest);
-  if (drift !== undefined) return { error: drift };
-  const excludes = readSourceExcludes(main.manifest);
-  if ("error" in excludes) return { error: `the main checkout's manifest is malformed: ${excludes.error}` };
-  return { repo, studioRel, exclusions: [studioRel, ".bisellium", ...excludes.excludes], main: main.manifest as unknown as Record<string, unknown> };
+  const r = trustedSource(studioRoot);
+  return "error" in r ? r : { ...r, main: r.main as unknown as Record<string, unknown> };
 }
 
 /** The light-gate commands at the worktree's HEAD: the main checkout's `light_gates` (the trusted list, read once by `repoOf`) and the test files of the brief committed at HEAD; or why not. */

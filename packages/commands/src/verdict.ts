@@ -61,13 +61,43 @@ function officinaInRepo(studioRoot: string): { repo: string; rel: string } | und
   return { repo, rel: rel.split(sep).join("/") };
 }
 
-function treeAtCapture(studioRoot: string, sourceExcludes: string[]): string {
+export type TrustedSource = { repo: string; studioRel: string; exclusions: string[]; main: Manifest };
+
+/**
+ * W-610 (fix round 2): the worktree's repository, its officina path, the main checkout's manifest and the source exclusions,
+ * for every reader that hashes a source tree to admit or record a review: the exclusions come from the trusted main
+ * manifest, and a worktree manifest that cannot be read, is malformed or drifts from main's on any build-review key
+ * (`buildReviewDrift`, `source_excludes` among them) is refused, so an uncommitted exclusion never changes a tree.
+ */
+export function trustedSource(studioRoot: string): TrustedSource | { error: string } {
   const where = officinaInRepo(studioRoot);
-  if (where === undefined) return "unknown";
+  if (where === undefined) return { error: "the current source tree is unavailable" };
+  const read = readWorktreeManifest(studioRoot);
+  if ("error" in read) return { error: `the worktree manifest cannot be read: ${read.error}` };
+  const own = readSourceExcludes(read.manifest);
+  if ("error" in own) return { error: `the worktree manifest is malformed: ${own.error}` };
+  let common: string;
   try {
-    const exclusions = [where.rel, ".bisellium", ...sourceExcludes];
-    const hash = sourceTreeHash(where.repo, exclusions, "HEAD");
-    return `${isDirtyOutside(where.repo, exclusions) ? "dirty" : "tree"}:${hash}`;
+    common = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd: where.repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS, stdio: ["ignore", "pipe", "ignore"] }).trim();
+  } catch {
+    return { error: "the main checkout is unavailable" };
+  }
+  const main = readWorktreeManifest(join(resolve(common, ".."), where.rel));
+  if ("error" in main) return { error: `the main checkout's manifest cannot be read: ${main.error}` };
+  const drift = buildReviewDrift(main.manifest, read.manifest);
+  if (drift !== undefined) return { error: drift };
+  const excludes = readSourceExcludes(main.manifest);
+  if ("error" in excludes) return { error: `the main checkout's manifest is malformed: ${excludes.error}` };
+  return { repo: resolve(where.repo), studioRel: where.rel, exclusions: [where.rel, ".bisellium", ...excludes.excludes], main: main.manifest };
+}
+
+/** The verdict log's `# tree:` header: the trusted source tree, `dirty:` when changed, `unknown` when it cannot be read or the worktree manifest drifts (so no round is current on it). */
+function treeAtCapture(studioRoot: string): string {
+  const r = trustedSource(studioRoot);
+  if ("error" in r) return "unknown";
+  try {
+    const hash = sourceTreeHash(r.repo, r.exclusions, "HEAD");
+    return `${isDirtyOutside(r.repo, r.exclusions) ? "dirty" : "tree"}:${hash}`;
   } catch {
     return "unknown";
   }
@@ -1287,7 +1317,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       headerLine("outcome", recorded),
       ...(submitted === undefined ? [] : [headerLine("submitted_outcome", submitted)]),
       headerLine("at", now.toISOString()),
-      headerLine("tree", treeAtCapture(root, manifest.source_excludes ?? [])),
+      headerLine("tree", treeAtCapture(root)),
       ...(briefHeader === undefined ? [] : [headerLine("brief", briefHeader)]),
       ...(convertedHeader === undefined ? [] : [headerLine("converted", convertedHeader)]),
       ...(promptHeader === undefined ? [] : [headerLine("dispatch_prompt", promptHeader)]),

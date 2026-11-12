@@ -11,6 +11,8 @@ import {
   type WorktreeProvider,
 } from "@bisellium/shim";
 import { countBehaviours } from "./brief-admission.js";
+import { literal, officinaRel } from "./light-gates.js";
+import { trustedSource } from "./verdict.js";
 import { builderRuntimeObligation, editOpusFrontMatter, markIsolatedBuilderRuntime } from "./frontmatter.js";
 import { PROBATIO_KINDS } from "@bisellium/schema";
 import { effectiveProbationes, isNativeOpusKind, readContainedRegularFile, type EffectiveProbatio } from "./opus-model.js";
@@ -316,11 +318,10 @@ export function admitCurrentGates(studioRoot: string, opus: string): GateAdmissi
     if (obligation.kind === "legacy") return { ok: true };
     const selectors = gateSelectors(readFront<Record<string, unknown>>(opusPath).data, readManifest(studioRoot));
     if ("error" in selectors) return { ok: false, error: `${opus}: the gate configuration is malformed: ${selectors.error}` };
-    const rootResult = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: studioRoot, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
-    if (rootResult.status !== 0) return { ok: false, error: `${opus}: current source tree is unavailable` };
-    const repo = resolve(rootResult.stdout.trim());
-    const studioRel = relative(repo, studioRoot).split(sep).join("/");
-    const exclusions = [studioRel, ".bisellium", ...selectors.excludes];
+    // W-610 fix round 2: main's exclusions, a drifted worktree manifest refused (`trustedSource`), as the light gates read them
+    const source = trustedSource(studioRoot);
+    if ("error" in source) return { ok: false, error: `${opus}: ${source.error}` };
+    const { repo, studioRel, exclusions } = source;
     if (isDirtyOutside(repo, exclusions)) return { ok: false, error: `${opus}: current source tree is dirty` };
     const tree = `tree:${sourceTreeHash(repo, exclusions, "HEAD")}`;
     const paths: string[] = [];
@@ -335,13 +336,13 @@ export function admitCurrentGates(studioRoot: string, opus: string): GateAdmissi
       if ("error" in log) return { ok: false, error: `${opus}: ${gate}'s log ${evidence} is not a contained regular file (${log.error})` };
       const [first, , third] = log.bytes.toString("utf8").split("\n");
       if (first !== `certifies: ${tree}` || third !== "exit code: 0") return { ok: false, error: `${opus}: ${gate}'s log ${evidence} does not open with certifies: ${tree} and exit code: 0` };
-      paths.push(`${studioRel}/${evidence}`);
+      paths.push(officinaRel(studioRel, evidence)); // the plain path, for the messages; git takes `literal(...)` of it
     }
     if (paths.length === 0) return { ok: true };
     // tracked (an ignored or untracked log is not in the branch) and unchanged from HEAD; a failed git call refuses either way
-    const untracked = paths.filter((p) => spawnSync("git", ["ls-files", "--error-unmatch", "--", p], { cwd: repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS }).status !== 0);
+    const untracked = paths.filter((p) => spawnSync("git", ["ls-files", "--error-unmatch", "--", literal(p)], { cwd: repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS }).status !== 0);
     if (untracked.length > 0) return { ok: false, error: `${opus}: a gate log is not committed (${untracked.sort().join(", ")})` };
-    const status = spawnSync("git", ["status", "--porcelain", "--untracked-files=all", "--", ...paths], { cwd: repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
+    const status = spawnSync("git", ["status", "--porcelain", "--untracked-files=all", "--", ...paths.map(literal)], { cwd: repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
     if (status.status !== 0) return { ok: false, error: `${opus}: git status of the gate logs failed` };
     if (status.stdout !== "") return { ok: false, error: `${opus}: a gate log is not committed (${status.stdout.split("\n").filter(Boolean).map((l) => l.slice(3)).sort().join(", ")})` };
     return { ok: true };
