@@ -176,7 +176,7 @@ test("W-512-b1 fix round: two idle lanes, the first take is named in next, in --
   const performed = next(w, [OPUS, "--perform", ...BUDGET]);
   assert.equal(performed.first, `next: ${OPUS} branch performed`, ran("--perform decides the take the same way", performed));
   const all = ALL_LINE(w);
-  assert.match(all.line, new RegExp(`^next: ${OPUS} \\w+ named `), `next --all names a step for the first take (the branch is already performed), never a refusal for W-901's record\n${all.out}`);
+  assert.match(all.line, new RegExp(`^next: ${OPUS} \\w+ named .*$`), `next --all names a step for the first take (the branch is already performed), never a refusal for W-901's record\n${all.out}`);
 });
 
 test("W-512-b1 fix round: lanePlan reads a lane's ahead only up to the target's lane, so a later lane's unreadable entry never refuses the spec ahead", () => {
