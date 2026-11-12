@@ -54,7 +54,7 @@ Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W
 
 D-193 replaces D-178: no per-opus exemptions; queue entries are product (M4 path) or process; after W-512, E1 and E2 take product, E3 is the one process lane (W-595 enforces). D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (W-502's cause fix) waits in the process lane.
 
-In flight: W-451 merged (#1045), done once its master verify runs. W-563 done (#1157). W-604: spec (re-sign r4 inside fix round 1, W-604-build/amend-r4/).
+In flight: W-451 merged (#1045), done once its master verify runs. W-563 done (#1157). W-604: review (fix check of r1 at 6e363131, then ci round 2, review r2).
 
 Greenlit ahead of build: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home D-175 keeps. Branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep it). No W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
@@ -62,7 +62,7 @@ Filed 11-08/12: W-533 to W-603. Next: studio/queue.yml order (D-192: lanes by fi
 
 Design-collegium questions go to design-lead (design.md:3; CLAUDE.md's Roles line names it as spec signer since W-589).
 
-Next session, in order (D-194: one ranked list): W-604, W-608 (draft W-608-spec/), W-551 (draft W-551-spec/; regate), W-512, then studio/queue.yml. State: ~/.bisellium-evidence/current-state.md.
+Next session, in order (D-194: one ranked list): W-604 (never review before the fix check), W-608 (draft W-608-spec/, sign in main), W-551 (draft W-551-spec/; regate), W-512, then studio/queue.yml. State: ~/.bisellium-evidence/current-state.md.
 
 Unruled notes, read first: top NOW of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it. Meets filed: W-562, W-563, W-564.
 
