@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { runGate, type GateOptions } from "@bisellium/commands/presign-gate.js";
+import { runGate, sharedTimeoutMs, SHARED_MAX_MS, type GateOptions } from "@bisellium/commands/presign-gate.js";
 
 /** A row whose failing assertion's message opens with the row's title (`<title>: <message>`), the pin the brief names. */
 function row(name: string, body: () => void | Promise<void>): void {
@@ -63,7 +63,7 @@ const SHARED = "node --test --test-reporter=tap src/a.test.mjs src/r.test.mjs";
  * The fixture: check and typecheck are `true`; test:suite holds one multi-file command (a, r) and one single-file command (c);
  * the series touches src/a.mjs (imported by a and c) and adds src/r.test.mjs, which reads studio/ and is in test:record.
  */
-function world(o: { record?: string } = {}): { repo: string; events: string; run: (opts?: GateOptions & { perFileMs?: number }, env?: Record<string, string>) => Promise<number>; rows: () => string[][] } {
+function world(o: { record?: string; checkMs?: number } = {}): { repo: string; events: string; run: (opts?: GateOptions & { perFileMs?: number }, env?: Record<string, string>) => Promise<number>; rows: () => string[][] } {
   const repo = mkdtempSync(join(tmpdir(), "w604-repo-"));
   roots.push(repo);
   git(repo, "init", "-q", "-b", "main");
@@ -78,6 +78,11 @@ function world(o: { record?: string } = {}): { repo: string; events: string; run
   for (const s of ["record-reads.mjs", "ci-scope.mjs"]) {
     mkdirSync(join(repo, "scripts"), { recursive: true });
     copyFileSync(join(HOST_SCRIPTS, s), join(repo, "scripts", s));
+  }
+  // a reads check made slow by the fixture: the copied checker waits o.checkMs before it judges a trace
+  if (o.checkMs !== undefined) {
+    const f = join(repo, "scripts", "ci-scope.mjs");
+    writeFileSync(f, `if (process.argv.includes("--check-reads")) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ${o.checkMs});\n${readFileSync(f, "utf8")}`);
   }
   const base = commitAll(repo, "base");
   put(repo, "src/a.mjs", "export const ok = true; // the series\n");
@@ -140,6 +145,13 @@ row("W-604-b3 a shared command's timeout is its files times the per-file cap", a
   assert.equal(of(short.rows(), "test", "src/a.test.mjs")[0], "124", `a run past its sized timeout is recorded 124 (rows ${brief(short.rows())})`);
 });
 
+row("W-604-b3 a shared command's timeout never exceeds the ceiling", () => {
+  const two = "node --test src/a.test.mjs src/r.test.mjs";
+  assert.equal(sharedTimeoutMs(two, SHARED_MAX_MS * 2, 120_000), SHARED_MAX_MS, "a row timeout past the ceiling is clamped to it");
+  assert.equal(sharedTimeoutMs(two, 600_000, SHARED_MAX_MS), SHARED_MAX_MS, "files x per-file past the ceiling is clamped to it");
+  assert.equal(sharedTimeoutMs(two, 600_000, 120_000), 600_000, "a small command keeps the row timeout");
+});
+
 row("W-604-b4 a shared command is exempt from the start budget", async () => {
   const w = world();
   const exit = await w.run({ budgetMs: 0 });
@@ -156,6 +168,15 @@ row("W-604-b5 every row of a shared command logs its run time", async () => {
   const secs = [of(rows, "reads", "src/r.test.mjs"), of(rows, "test", "src/a.test.mjs"), of(rows, "test", "src/r.test.mjs")].map((r) => Number(r[1]));
   for (const s of secs) assert.ok(s >= 1.2, `each shared row logs the run's own seconds, at least the 1.2 s pause (got ${secs.join(", ")})`);
   assert.equal(new Set(secs).size, 1, `the shared rows log one run time (got ${secs.join(", ")})`);
+});
+
+row("W-604-b5 the shared row's seconds exclude the reads check", async () => {
+  const w = world({ checkMs: 3000 });
+  const exit = await w.run({ pool: 1 }, { W604_SLEEP_A: "1200" });
+  const rows = w.rows();
+  assert.equal(exit, 0, `exit (rows ${brief(rows)})`);
+  for (const r of [of(rows, "reads", "src/r.test.mjs"), of(rows, "test", "src/a.test.mjs")])
+    assert.ok(Number(r[1]) < 3, `the run's seconds do not include the 3 s reads check (got ${r[1]})`);
 });
 
 row("W-604-b6 a reads row judges only the series' files", async () => {
