@@ -1371,3 +1371,68 @@ test("W-392-b2 behaviour 2: an added assert.ok or assert whose first argument te
   // the assertion forms stay a test path's: a source file's assertion line is not judged
   assert.deepEqual(await sourceFormsOn(["assert.ok(/^held/.test(why));"]), [], "outside a test path");
 });
+
+// ---------------------------------------------------------------------------
+// W-608: `test.one_sided` reads a number bounded on one side. W-604-b5 asserted a measured seconds value only from
+// below (`assert.ok(s >= 1.2, …)`), a form W-376's and W-392's grammars never read. Row W-608-b1 pins the numeric form
+// on an added assert.ok or assert line. Every fixture assertion below is a string, so this file's own lines hold no site.
+// ---------------------------------------------------------------------------
+const NUMBER_FORM = "a number bounded on one side in an assertion";
+const NUMBER_HOW = 'assert the exact value (assert.equal) or both bounds in one assertion (lo <= x && x <= hi), or annotate "// one-sided: <reason>"';
+const numberBlock = (where: string): Finding => ({ rule: "test.one_sided", level: "block", where, message: `${NUMBER_FORM}: ${NUMBER_HOW}` });
+const W604_B5 = "for (const s of secs) assert.ok(s >= 1.2, `each shared row logs the run's own seconds (got ${secs.join(\", \")})`);";
+
+// one line each, in a test file: the form the rule names on it, or undefined
+const NUMBER_GRAMMAR: [string, string, string | undefined][] = [
+  ["W-604-b5: a measured value bounded from below", W604_B5, NUMBER_FORM],
+  ["greater than a literal", "assert.ok(ms > 250);", NUMBER_FORM],
+  ["at most a literal", 'assert.ok(tokens <= 4000, "the carry stays small");', NUMBER_FORM],
+  ["less than a separated literal", 'assert.ok(Date.now() - t0 < 14_000, "returns in time");', NUMBER_FORM],
+  ["the literal on the left", "assert.ok(2 <= repo.metrics.omitted);", NUMBER_FORM],
+  ["the literal on the left, greater", "assert.ok(3 > ratio);", NUMBER_FORM],
+  ["bare assert", "assert(ratio >= 4.5);", NUMBER_FORM],
+  ["a call operand", 'assert.ok(contrast(token(fg), token(bg)) >= 3, "contrast");', NUMBER_FORM],
+  ["an exponent literal", "assert.ok(drift < 1e-9);", NUMBER_FORM],
+  ["a negative literal", "assert.ok(delta > -5);", NUMBER_FORM],
+  ["a template message holding a comparison", "assert.ok(s >= 1.2, `got ${s} < ${max}`);", NUMBER_FORM],
+  ["a keyword before assert is no member", "return assert.ok(s >= 1.2);", NUMBER_FORM],
+  ["one bound beside another condition", "assert.ok(ready && ms > 250);", NUMBER_FORM],
+  ["both bounds in one assertion", "assert.ok(s >= 1.2 && s < 3);", undefined],
+  ["both bounds, the literals on the outside", "assert.ok(1.2 <= s && s <= 3);", undefined],
+  ["an alternative", "assert.ok(s < 1 || s > 9);", undefined],
+  ["a conditional", "assert.ok(fast ? s < 1 : s < 9);", undefined],
+  ["a tolerance around a value is two-sided", "assert.ok(Math.abs(meter.overall - meter.rows[0].pct) < 1e-9);", undefined],
+  ["a count is no measured value", 'assert.ok(lines.length > 2, "some lines");', undefined],
+  ["a size is no measured value", "assert.ok(seen.size >= 3);", undefined],
+  ["a found index", 'assert.ok(at >= 0, "the row is listed");', undefined],
+  ["at least one", "assert.ok(occurrences(runner, re) >= 1);", undefined],
+  ["not minus one", "assert.ok(i > -1);", undefined],
+  ["a bound held in a name is not read, a limit", "assert.ok(ms >= 2 * SLOWEST_SUITE_MS);", undefined],
+  ["two operands with no literal, an order", "assert.ok(guard < reader);", undefined],
+  ["an exact value", "assert.equal(s, 1.2);", undefined],
+  ["a comparison in the message only", 'assert.ok(done, "s >= 1.2");', undefined],
+  ["a comparison inside a nested call", "assert.ok(rows.every((r) => r.s >= 1.2));", undefined],
+  ["an arrow is no comparison", "assert.ok(rows.some((r) => r.ok));", undefined],
+  ["a shift is no comparison", "assert.ok(flags >> 2);", undefined],
+  ["a Playwright helper is not read, a limit", "expect(box.width).toBeGreaterThan(0);", undefined],
+  ["a member assert is not read, a limit", "t.assert.ok(s >= 1.2);", undefined],
+  ["inside a string", "const s = 'assert.ok(s >= 1.2)';", undefined],
+  ["inside a comment", "// assert.ok(s >= 1.2);", undefined],
+  ["a comparison outside an assertion", "if (s >= 1.2) seen++;", undefined],
+];
+
+test("W-608-b1 behaviour 1: an added assert.ok or assert whose first argument bounds a number on one side only is a test.one_sided block, unless annotated", { timeout: 600_000 }, async () => {
+  const base = { "a.test.ts": code(SIDED_BASE) };
+  const added = (r: string): void => put(r, "a.test.ts", code([...SIDED_BASE, 'assert.ok(seconds >= 1.2, "a new lower bound");']));
+  assert.deepEqual(sidedOf(branched("w608-b1-added", base, added)), [numberBlock("a.test.ts:3")], "an added lower bound: one block at its line");
+  const waived = (r: string): void => put(r, "a.test.ts", code([...SIDED_BASE, "// one-sided: a contrast floor has no ceiling", 'assert.ok(ratio >= 4.5, "AA contrast");']));
+  assert.deepEqual(sidedOf(branched("w608-b1-waived", base, waived)), [], "an annotated bound: no block");
+
+  for (const [label, line, form] of NUMBER_GRAMMAR) assert.deepEqual(await formsOn([line]), form === undefined ? [] : [{ line: 1, form }], label);
+  assert.deepEqual(await formsOn(["assert.ok(ratio >= 4.5); // one-sided: a contrast floor has no ceiling"]), [], "annotated on the line");
+  assert.deepEqual(await formsOn(["// one-sided: short", "assert.ok(ratio >= 4.5);"], [2]), [{ line: 2, form: NUMBER_FORM }], "a reason under 15 characters is no annotation");
+  // a line holding a pattern form and a numeric form is one site, its first form named
+  assert.deepEqual(await formsOn(["assert.match(why, /^a/); assert.ok(s >= 1.2);"]), [{ line: 1, form: START_ONLY }], "one site per line");
+  // the assertion forms stay a test path's: a source file's assertion line is not judged
+  assert.deepEqual(await sourceFormsOn(["assert.ok(s >= 1.2);"]), [], "outside a test path");
+});
