@@ -4,7 +4,8 @@
  * stub gh, a temp HOME); no row reads `studio/` or the host HOME.
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { BUDGET, OPUS, type World, commit, next, put, ran, world } from "./next-world.test.js";
@@ -96,4 +97,52 @@ test("W-512-b2 behaviour 2: the spec rung starts only for a lane's opus or the o
   queue(w, "E1: W-901", ["W-901", "W-902", OPUS]);
   const after = next(w, [OPUS, ...BUDGET]);
   assert.equal(after.first, `next: ${OPUS} spec named`, ran("with the lane's opus halted, the lane takes W-902 and this entry is its spec ahead", after));
+});
+
+/** W-901's brief, owning `spans`, committed on master and pointed at by opus/W-901 (or, with `spans` undefined, no brief on it). */
+function inFlight(w: World, spans: string[] | undefined): void {
+  if (spans === undefined) rmSync(join(w.studio, "briefs", "W-901.md"), { force: true });
+  else put(w.studio, "briefs/W-901.md", `# W-901\n\n## Files owned\n\n${spans.map((x) => `- \`${x}\`\n`).join("")}\n## Interfaces\n\nNone.\n`);
+  commit(w.repo, "studio: W-901 brief");
+  const r = spawnSync("git", ["branch", "-f", "opus/W-901"], { cwd: w.repo, encoding: "utf8" });
+  assert.equal(r.status, 0, `git branch opus/W-901\n${r.stderr}`);
+}
+
+test("W-512-b3 behaviour 3: branch holds while its Files owned overlap with an opus in flight in another lane, naming both and the paths", () => {
+  const w = world("w512-b3a", "spec");
+  records(w, { "W-901": "building" });
+  queue(w, "E1: W-901, E2: ~", ["W-901", OPUS]);
+  inFlight(w, ["docs/", "other.txt"]);
+  const held = next(w, [OPUS, ...BUDGET]);
+  assert.equal(held.first, `next: ${OPUS} branch held`, ran("E2's take overlaps W-901, in flight in E1, so it does not branch", held));
+  assert.equal(held.kv.get("why"), `${OPUS}'s Files owned overlap with an opus in flight: W-901 in lane E1: \`docs/ADOPTION.md\`; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`, ran("the why names both opera, the lane and the overlapping path (a folder span meets a file in it)", held));
+  records(w, { "W-901": "done" });
+  assert.equal(next(w, [OPUS, ...BUDGET]).first, `next: ${OPUS} branch named`, "once W-901 is done, the lane's opus branches");
+});
+
+test("W-512-b3 behaviour 3: only an opus with an opus branch is in flight; its brief is read fail closed; no shared path branches", () => {
+  const w = world("w512-b3b", "spec");
+  records(w, { "W-901": "greenlit" });
+  queue(w, "E1: W-901, E2: ~", ["W-901", OPUS]);
+  assert.equal(next(w, [OPUS, ...BUDGET]).first, `next: ${OPUS} branch named`, "W-901 has no opus branch: not yet in flight, so nothing is read (it is checked when it branches)");
+  inFlight(w, undefined);
+  const blind = next(w, [OPUS, ...BUDGET]);
+  assert.equal(blind.first, `next: ${OPUS} branch held`, ran("opus/W-901 holds no brief: the overlap cannot be read, so the branch holds", blind));
+  assert.equal(blind.kv.get("why"), `briefs/W-901.md is not a readable blob on refs/heads/opus/W-901, so its Files owned cannot be checked against ${OPUS}'s (W-592)`, ran("the why names the unreadable brief", blind));
+  inFlight(w, ["other.txt"]);
+  assert.equal(next(w, [OPUS, ...BUDGET]).first, `next: ${OPUS} branch named`, "no shared path: the lane's opus branches beside W-901");
+});
+
+test("W-512-b3 behaviour 3: an opus is in flight by its opus branch, whatever queue.yml's lane field says", () => {
+  const w = world("w512-b3c", "spec");
+  records(w, { "W-901": "greenlit" });
+  queue(w, "E1: ~, E2: ~", ["W-901", OPUS]);
+  inFlight(w, ["docs/"]);
+  const taken = next(w, [OPUS, ...BUDGET]);
+  assert.equal(taken.first, `next: ${OPUS} branch held`, ran("E1 takes W-901, branched while its lane is still ~: E2's take does not branch", taken));
+  assert.equal(taken.kv.get("why"), `${OPUS}'s Files owned overlap with an opus in flight: W-901 in lane E1: \`docs/ADOPTION.md\`; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`, ran("the why names E1, the lane that takes W-901", taken));
+  queue(w, "E1: ~", [OPUS, "W-901"]);
+  const unnamed = next(w, [OPUS, ...BUDGET]);
+  assert.equal(unnamed.first, `next: ${OPUS} branch held`, ran("W-901, in flight but ranked below E1's take, is no lane's now and is still read", unnamed));
+  assert.equal(unnamed.kv.get("why"), `${OPUS}'s Files owned overlap with an opus in flight: W-901 in no lane: \`docs/ADOPTION.md\`; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`, ran("the why says W-901 is in no lane", unnamed));
 });
