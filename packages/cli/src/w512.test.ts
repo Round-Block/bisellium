@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { aheadIn } from "./meanwhile.js";
 import { BUDGET, MAIN, OPUS, TSX, type World, commit, next, put, ran, world } from "./next-world.test.js";
 
 const rec = (id: string, state: string): string => `---\nid: "${id}"\ntitle: "queued ${id}"\nkind: "feature"\ncollegium: "engineering"\nstate: ${state}\nprobationes: {}\n---\nqueued\n`;
@@ -156,4 +157,46 @@ test("W-512-b4 behaviour 4: next --all prints an order hold as queued and does n
   assert.equal(line, `next: ${OPUS} spec queued · actor: producer · why: ${OPUS} is #3 in queue engineering and no lane takes it: E1 holds W-901 (greenlit), ahead W-902 (#2); to start it now, rank it higher in queue.yml and land that edit · traditio: none`, `the out-of-order opus is queued, not held\n${r.stdout}${r.stderr}`);
   assert.equal((r.stdout ?? "").split("\n").find((l) => l.startsWith("next: W-902 ")), "next: W-902 spec named · actor: architect · why: briefs/W-902.md is missing or lacks the six design-lex sections · traditio: none", `the spec ahead is still named\n${r.stdout}`);
   assert.equal(r.status, 0, `an order hold alone does not fail next --all\n${r.stdout}${r.stderr}`);
+});
+
+/** The fix-round rows (build review round 1, S1): a lane's take is decided in rank order and stops at the target, so a lower entry's bad state never refuses a higher take. W-901 below has no record at all (queuedState throws). */
+const ALL_LINE = (w: World): { out: string; line: string } => {
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, "next", "--all", "--studio", w.studio, "--repo", w.repo], { cwd: w.repo, encoding: "utf8", timeout: 300_000, env: { ...process.env, BISELLIUM_SELLA: "", HOME: w.home } });
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+  return { out, line: (r.stdout ?? "").split("\n").find((l) => l.startsWith(`next: ${OPUS} `)) ?? "" };
+};
+
+test("W-512-b1 fix round: two idle lanes, the first take is named in next, in --perform and in next --all while a lower entry has no record", () => {
+  const w = world("w512-fix-take", "spec");
+  queue(w, "E1: ~, E2: ~", [OPUS, "W-901"]);
+  const direct = next(w, [OPUS, ...BUDGET]);
+  assert.equal(direct.first, `next: ${OPUS} branch named`, ran("E1 takes this entry; E2's read of the unreadable W-901 never refuses it", direct));
+  const performed = next(w, [OPUS, "--perform", ...BUDGET]);
+  assert.equal(performed.first, `next: ${OPUS} branch performed`, ran("--perform decides the take the same way", performed));
+  const all = ALL_LINE(w);
+  assert.ok(all.line.startsWith(`next: ${OPUS} branch named`), `next --all names branch for the first take, never a refusal for W-901's record\n${all.out}`);
+});
+
+test("W-512-b1 fix round: lanePlan reads a lane's ahead only up to the target's lane, so a later lane's unreadable entry never refuses the spec ahead", () => {
+  const w = world("w512-fix-plan", "greenlight");
+  records(w, { "W-902": "greenlit", "W-903": "greenlit" });
+  queue(w, "E1: ~, E2: ~", ["W-902", "W-903", OPUS, "W-904"]);
+  const ahead = next(w, [OPUS, ...BUDGET]);
+  assert.equal(ahead.first, `next: ${OPUS} spec named`, ran("this entry is E1's spec ahead; E2's walk past it reaches W-904 only after the target", ahead));
+  assert.equal(ahead.kv.get("role"), "architect", ran("the architect is ordered", ahead));
+  const lower = next(w, ["W-904", ...BUDGET]);
+  assert.match(lower.kv.get("why") ?? "", /^the queue order cannot be read: /, ran("the unreadable entry itself still refuses, loudly (fail closed)", lower));
+});
+
+test("W-512-b1 fix round: the lane lines and the spec ahead (aheadOf) never read past what they name", () => {
+  const w = world("w512-fix-lines", "spec");
+  queue(w, "E1: ~, E2: ~", [OPUS, "W-901"]);
+  const all = ALL_LINE(w);
+  assert.match(all.out, /lane: engineering E1 · idle · takes /, `the lane lines name E1's take with W-901's record missing\n${all.out}`);
+  assert.match(all.out, /lane: engineering E2 · idle · nothing to take · skipped W-901 \(#2\): no state/, `E2's line names the entry with no state, never a failure\n${all.out}`);
+  const file = { queues: [{ id: "e", lanes: [["E1", "W-1"]] as [string, string | undefined][], next: ["W-1", "W-2", "W-3"].map((opus) => ({ opus, says: "", folded: [], nextTs: false })) }], halted: [], cut: [], deferred: [] };
+  const read: string[] = [];
+  const found = aheadIn({ kind: "ok" as const, file }, "W-1", (o) => { read.push(o); if (o === "W-3") throw new Error("the queued record opera/W-3.md cannot be read (ENOENT)"); return "greenlit"; }, () => ({ step: "spec", status: "named", actor: "architect", why: "", extra: [], order: { role: "architect" } }) as never);
+  assert.deepEqual(found, { ahead: { opus: "W-2", spec: "draft" } }, "the spec ahead is the first takeable entry; a lower entry's state is never needed");
+  assert.equal(read.includes("W-3"), false, "W-3's state is not read once W-2 is the ahead");
 });
