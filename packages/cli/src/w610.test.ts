@@ -194,3 +194,47 @@ row("W-610-b3 after a pass next orders one ci --opus at the reviewed tree", () =
   assert.doesNotMatch(capped.kv.get("command") ?? "", /ci --opus/, ran("no third ci at the tree", capped));
 });
 
+row("W-610-b4 pr names reviewed tree = gate tree = tip tree and bookkeeping commits keep the pass", () => {
+  const w = passed("w610-b4");
+  const before = next(w, [OPUS, "--perform", "--expect", "pr", ...BUDGET]);
+  assert.notEqual(before.status, 0, ran("pr refuses with no gate log at the reviewed tree", before));
+  writeGates(w);
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "pr", "named", "pr after the gates at the reviewed tree");
+  const t = sourceTree(w.wt);
+  assert.equal(o.kv.get("trees"), `reviewed ${t} = gates ${t} = tip ${t}`, ran("the order names the three trees", o));
+  // the end-to-end loop in an officina declaring light_gates (w610-proof-meet-1112): handoff, light gates, round 1 failed, the
+  // fix, light gates again, round 2 passed, one ci, pr; a stub reviewer (verdict and review verbs) and a stub ci (writeGates)
+  const e = handed("w610-b4-loop");
+  const step = (at: string, expected: string): ReturnType<typeof next> => {
+    const s = next(e, [OPUS, ...BUDGET]);
+    expectStep(s, expected, "named", `the loop at ${at}`);
+    return s;
+  };
+  const noCi = (s: ReturnType<typeof next>, at: string): void => {
+    // a ci order runs the verb (`bisellium ci --opus` or `bisellium -- ci --opus`); a builder's text may name it as forbidden
+    assert.doesNotMatch(s.kv.get("command") ?? "", /bisellium (?:-- )?ci --opus/, ran(`no ci order before a pass (${at})`, s));
+    assert.equal(s.kv.has("reviewed"), false, ran(`no reviewed ci order before a pass (${at})`, s));
+  };
+  noCi(step("the handoff", "build"), "the handoff");
+  assert.equal(performLight(e).status, 0, "the loop's first light gates pass");
+  noCi(step("round 1", "review"), "round 1");
+  addReview(e, "failed", 1, T.review1);
+  noCi(step("the failed round", "build"), "the failed round");
+  advanceSource(e);
+  builderHandoff(e, "2026-10-02T09:30:00.000Z");
+  const light2 = step("the fix", "build");
+  noCi(light2, "the fix");
+  assert.equal(light2.kv.has("light-gates"), true, ran("the fix goes back to the light gates", light2));
+  assert.equal(performLight(e).status, 0, "the loop's second light gates pass");
+  noCi(step("round 2", "review"), "round 2");
+  addReview(e, "passed", 2, T.review2);
+  editRecord(e, "wt", (doc) => doc.setIn(["probationes", "sec"], { status: "passed", sella: "qa-lead", evidence: `ci/${OPUS}-review-2.log`, at: T.review2 }));
+  commit(e.wt, `studio(${OPUS}): sec gate`);
+  const ci = step("the pass", "build");
+  assert.equal(ci.kv.get("reviewed"), `round 2 at ${sourceTree(e.wt)}`, ran("one ci at the reviewed tree after the pass", ci));
+  writeGates(e);
+  const et = sourceTree(e.wt);
+  assert.equal(step("the gates", "pr").kv.get("trees"), `reviewed ${et} = gates ${et} = tip ${et}`, "the loop ends at pr on one tree");
+});
+
