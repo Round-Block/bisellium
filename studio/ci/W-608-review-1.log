@@ -1,0 +1,20 @@
+# opus: W-608
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1cecf-7add-7380-96dc-c5f00779c4df
+# outcome: failed
+# at: 2026-11-12T08:14:56.827Z
+# tree: tree:a6b2f8cfd02366e9b5d38abb74f101b9db3c5f5f
+# brief: briefs/W-608.md blob:5418221c3e07d8e8e99e42ee49aba352cad202bc
+# ticket: {"opus":"W-608","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-608/studio","head":"48c37cda4d126160e2c2eeacd60cacc54af00e93","brief":"5418221c3e07d8e8e99e42ee49aba352cad202bc","at":"2026-11-12T08:11:04.157Z"}
+
+## Findings
+1. blocking — packages/cli/src/rules/tests.ts:585 [severity: S1] `NUMBER_LITERAL` rejects valid separator-bearing exponents such as `1e1_0`, while `PRESENCE_LITERAL` misclassifies equivalent presence values `0.0_0`, `1.0_0`, and `-1.0_0`; this violates brief:56’s admitted digits/`_`/exponent grammar, both missing required blocks and inventing excluded ones. All sites: no production source writer; readers are `numberSided` → `sidedForm` → `oneSidedSites`, `oneSidedFindings`/`checkTests` through `checkStudio`, and its repo-enabled callers in `main.ts`, `tick.ts`, `exits.ts`, and `land.ts`; tests reach the direct path through `formsOn` and repository path through `put`/`branched`/`sidedOf`, but W-608-b1 covers neither case. [class: tests×ruled-case-uncovered] — check: packages/cli/src/rules/tests.test.ts W-608-b1
+2. blocking — packages/cli/src/rules/tests.ts:662 [severity: S1] `sidedForm` returns the numeric form from the first `OK_SITE` before inspecting later sites, so `assert.ok(ms > 250); assert.ok(/^x/.test(name));` names the numeric form rather than the pre-existing pattern form, contrary to brief:41 and brief:66. All sites are the same reader and caller chain listed above; W-608-b1 tests only an `assert.match` preceding the numeric assertion and omits the reversed `assert.ok` ordering. [class: tests×ruled-case-uncovered] — check: packages/cli/src/rules/tests.test.ts W-608-b1
+
+## Verdict
+The implementation is incorrect for two forms expressly inside the brief’s declared behavior and input domain.
+
+VERDICT: FAIL
