@@ -1,0 +1,38 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-604-b2\s --import tsx packages/cli/src/w604.test.ts
+# exit: 1
+# at: 2026-11-12T03:13:55.811Z
+# sella: architect
+# tree: tree:26ebbfe3c40a93777c2327ca7524a6fd02df4c97
+# ticket: {"opus":"W-604","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-604/studio","head":"a1b98876d1e5a676fe9ac1428fb962a0e67730bf","brief":"cd7fd44f153bd304a1f971376198a949f73dfea0","at":"2026-11-12T03:13:55.772Z"}
+
+TAP version 13
+# Subtest: W-604-b2 a shared command runs after the pool
+not ok 1 - W-604-b2 a shared command runs after the pool
+  ---
+  duration_ms: 1144.301444
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-604/packages/cli/src/w604.test.ts:1:561'
+  failureType: 'testCodeFailure'
+  error: 'a shared command runs after the pool: the shared command starts after every pooled row ended (shared start 1794453237636, pooled end 1794453238291)'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-604/packages/cli/src/w604.test.ts:25:13)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1150.648784
