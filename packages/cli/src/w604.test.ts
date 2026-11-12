@@ -117,3 +117,13 @@ row("W-604-b1 a shared command with a reads row runs once", async () => {
   const starts = events(w.events).filter((e) => e.name === "a" && e.at === "start");
   assert.equal(starts.length, 1, "the shared command runs once for its test rows and its reads row");
 });
+
+row("W-604-b2 a shared command runs after the pool", async () => {
+  const w = world();
+  const exit = await w.run({}, { W604_SLEEP_C: "800" });
+  assert.equal(exit, 0, `exit (rows ${brief(w.rows())})`);
+  const ev = events(w.events);
+  const cEnd = ev.find((e) => e.name === "c" && e.at === "end")?.ms ?? NaN;
+  const sharedStart = Math.min(...ev.filter((e) => (e.name === "a" || e.name === "r") && e.at === "start").map((e) => e.ms));
+  assert.ok(sharedStart >= cEnd, `the shared command starts after every pooled row ended (shared start ${sharedStart}, pooled end ${cEnd})`);
+});
