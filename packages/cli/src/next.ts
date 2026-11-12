@@ -42,7 +42,7 @@ import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisell
 import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
-import { laneLines, readQueue } from "./queue.js";
+import { laneLines, QUEUE_FILE, readQueue, startOrder, type StartOrder } from "./queue.js";
 import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
 import { STEPS, checkCollection, loadMarker, loadOpusRecord, walkReal, walkStudio, type Marker, type Step } from "./inputs.js";
 import { ID_RE } from "./check.js";
@@ -558,6 +558,9 @@ export interface Facts {
   wtCiProblem(): string | undefined;
   /** W-206: the worktree's changed paths (porcelain, untracked included), split into the brief and spec logs, and the rest */
   wtChanges(): Changes;
+  /** W-512: where the opus stands in the queue's start order (`startOrder`), read from the main checkout's committed queue.yml;
+   *  `gather` always sets it; a hand-built Facts (a unit fixture) without it orders nothing */
+  order?(): StartOrder;
   /** W-293: the same split of the main checkout's changes */
   mainChanges(): Changes;
 }
@@ -798,7 +801,7 @@ const mergeOf = (f: Pick<Facts, "pr">): string | undefined => {
   return p.kind === "settled" ? p.pr.mergeOid : undefined;
 };
 
-export function gather(repo: string, studioAbs: string, id: string): Facts {
+export function gather(repo: string, studioAbs: string, id: string, states: Map<string, string> = new Map()): Facts {
   const manifest = readManifest(studioAbs);
   const realRepo = realpathSync(repo);
   const studioRel = relative(realRepo, realpathSync(studioAbs)).split("\\").join("/");
@@ -896,6 +899,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     }),
     wtChanges: memo(() => specChanges(wt.dir, studioRel, id)),
     mainChanges: memo(() => specChanges(repo, studioRel, id)),
+    order: memo(() => queueOrder(repo, studioAbs, studioRel, id, states)),
     replay: memo(() => {
       const brief = branch?.read(briefRel(id));
       return brief === undefined ? undefined : readReplay(brief, id, wt, repo);
@@ -1227,6 +1231,9 @@ export function deriveNext(f: Facts): Derived {
       // D-039 §1: no new opus starts while a retro is owed
       const owing = retroHold(f);
       if (owing !== undefined) return hold("branch", owing);
+      // W-512 (D-181): branch starts a lane: only a lane's own opus or its take, never the spec ahead or a later entry
+      const order = state === "greenlit" ? f.order?.() : undefined;
+      if (order !== undefined && (order.kind === "refused" || order.kind === "ahead")) return hold("branch", order.why);
       return { ...named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`, fixes), ticket: { action: "branch", round: 0 } };
     }
   }
@@ -2543,6 +2550,25 @@ function inputErrorOf(f: Facts): string | undefined {
   if ("error" in f.specOwner) return f.specOwner.error;
   if (f.branch !== undefined && f.branchRecord === undefined) return `${recordRel(f.id)} on opus/${f.id} is absent, unreadable or malformed`;
   return undefined;
+}
+
+/**
+ * W-512: the start order of `id` (`startOrder`) over the main checkout's queue.yml, which must be committed: an edit not
+ * committed (or an untracked file) refuses every start, so the order a start obeys is the landed one (D-181 item 8).
+ * Each queued state is read once per process through `states` (`queuedState`, which throws on an unreadable record).
+ */
+function queueOrder(repo: string, studioAbs: string, studioRel: string, id: string, states: Map<string, string>): StartOrder {
+  const rel = `${studioRel}/${QUEUE_FILE}`;
+  const st = git(repo, ["status", "--porcelain", "--untracked-files=all", "--", rel]);
+  if (st.error !== undefined || st.status !== 0) return { kind: "refused", why: `the queue order cannot be read: git status ${rel} exited ${st.status ?? "without status"}` };
+  if (st.stdout.trim() !== "") return { kind: "refused", why: `${rel} has an edit that is not committed; a start obeys the landed order: land it first` };
+  return startOrder(readQueue(studioAbs, repo), id, (o) => {
+    const known = states.get(o);
+    if (known !== undefined) return known;
+    const s = queuedState(studioAbs, o, repo);
+    states.set(o, s);
+    return s;
+  });
 }
 
 /** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */
