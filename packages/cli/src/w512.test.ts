@@ -159,15 +159,16 @@ test("W-512-b4 behaviour 4: next --all prints an order hold as queued and does n
   assert.equal(r.status, 0, `an order hold alone does not fail next --all\n${r.stdout}${r.stderr}`);
 });
 
-/** The fix-round rows (build review round 1, S1): a lane's take is decided in rank order and stops at the target, so a lower entry's bad state never refuses a higher take. W-901 below has no record at all (queuedState throws). */
+/** The fix-round rows (build review round 1, S1): a lane's take is decided in rank order and stops at the target, so a lower entry's bad state never refuses a higher take. W-901 below has a record whose state is outside the lifecycle (queuedState throws; the queue still loads). */
 const ALL_LINE = (w: World): { out: string; line: string } => {
   const r = spawnSync(process.execPath, ["--import", TSX, MAIN, "next", "--all", "--studio", w.studio, "--repo", w.repo], { cwd: w.repo, encoding: "utf8", timeout: 300_000, env: { ...process.env, BISELLIUM_SELLA: "", HOME: w.home } });
   const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
   return { out, line: (r.stdout ?? "").split("\n").find((l) => l.startsWith(`next: ${OPUS} `)) ?? "" };
 };
 
-test("W-512-b1 fix round: two idle lanes, the first take is named in next, in --perform and in next --all while a lower entry has no record", () => {
+test("W-512-b1 fix round: two idle lanes, the first take is named in next, in --perform and in next --all while a lower entry has an invalid state", () => {
   const w = world("w512-fix-take", "spec");
+  records(w, { "W-901": "sideways" });
   queue(w, "E1: ~, E2: ~", [OPUS, "W-901"]);
   const direct = next(w, [OPUS, ...BUDGET]);
   assert.equal(direct.first, `next: ${OPUS} branch named`, ran("E1 takes this entry; E2's read of the unreadable W-901 never refuses it", direct));
@@ -179,7 +180,7 @@ test("W-512-b1 fix round: two idle lanes, the first take is named in next, in --
 
 test("W-512-b1 fix round: lanePlan reads a lane's ahead only up to the target's lane, so a later lane's unreadable entry never refuses the spec ahead", () => {
   const w = world("w512-fix-plan", "greenlight");
-  records(w, { "W-902": "greenlit", "W-903": "greenlit" });
+  records(w, { "W-902": "greenlit", "W-903": "greenlit", "W-904": "sideways" });
   queue(w, "E1: ~, E2: ~", ["W-902", "W-903", OPUS, "W-904"]);
   const ahead = next(w, [OPUS, ...BUDGET]);
   assert.equal(ahead.first, `next: ${OPUS} spec named`, ran("this entry is E1's spec ahead; E2's walk past it reaches W-904 only after the target", ahead));
@@ -190,10 +191,11 @@ test("W-512-b1 fix round: lanePlan reads a lane's ahead only up to the target's 
 
 test("W-512-b1 fix round: the lane lines and the spec ahead (aheadOf) never read past what they name", () => {
   const w = world("w512-fix-lines", "spec");
+  records(w, { "W-901": "sideways" });
   queue(w, "E1: ~, E2: ~", [OPUS, "W-901"]);
   const all = ALL_LINE(w);
-  assert.match(all.out, /lane: engineering E1 · idle · takes /, `the lane lines name E1's take with W-901's record missing\n${all.out}`);
-  assert.match(all.out, /lane: engineering E2 · idle · nothing to take · skipped W-901 \(#2\): no state/, `E2's line names the entry with no state, never a failure\n${all.out}`);
+  assert.match(all.out, /lane: engineering E1 · idle · takes /, `the lane lines name E1's take with W-901's state invalid\n${all.out}`);
+  assert.match(all.out, /lane: engineering E2 · idle · nothing to take · skipped W-900 \(#1\): taken by E1, W-901 \(#2\): sideways/, `E2's line names the entry with an invalid state, never a failure\n${all.out}`);
   const file = { queues: [{ id: "e", lanes: [["E1", "W-1"]] as [string, string | undefined][], next: ["W-1", "W-2", "W-3"].map((opus) => ({ opus, says: "", folded: [], nextTs: false })) }], halted: [], cut: [], deferred: [] };
   const read: string[] = [];
   const found = aheadIn({ kind: "ok" as const, file }, "W-1", (o) => { read.push(o); if (o === "W-3") throw new Error("the queued record opera/W-3.md cannot be read (ENOENT)"); return "greenlit"; }, () => ({ step: "spec", status: "named", actor: "architect", why: "", extra: [], order: { role: "architect" } }) as never);
