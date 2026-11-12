@@ -582,9 +582,10 @@ const NUMBER_FORM = "a number bounded on one side in an assertion";
 const NUMBER_HOW = 'assert the exact value (assert.equal) or both bounds in one assertion (lo <= x && x <= hi), or annotate "// one-sided: <reason>"';
 // one relational operator: not part of `=>`, `>>`, `<<`, `<=>` or an equality
 const RELATION = /(?<![<>=!])(?:<=?|>=?)(?![=>])/g;
-const NUMBER_LITERAL = /^[-+]?(?:\d[\d_]*(?:\.[\d_]*)?|\.\d[\d_]*)(?:[eE][-+]?\d+)?$/;
-// a bound that asserts presence or a count, not a measured value: 0, 1 and -1, a `.length` or `.size`, a `Math.abs` tolerance
-const PRESENCE_LITERAL = /^(?:[-+]?0|\+?1|-1)(?:\.0*)?$/;
+const NUMBER_LITERAL = /^[-+]?(?:\d[\d_]*(?:\.[\d_]*)?|\.\d[\d_]*)(?:[eE][-+]?\d[\d_]*)?$/;
+// a bound that asserts presence or a count, not a measured value: a literal of value 0, 1 or -1 (separators dropped), a
+// `.length` or `.size`, a `Math.abs` tolerance
+const isPresence = (literal: string): boolean => [0, 1, -1].includes(Number(literal.replaceAll("_", "")));
 const NOT_MEASURED = /(?:\.\s*(?:length|size)\s*$)|^Math\s*\.\s*abs\s*\(/;
 
 /** In string-blanked code, `arg` with every bracketed span's contents (brackets included) blanked: its top level. */
@@ -609,7 +610,7 @@ function numberSided(arg: string): boolean {
   const left = arg.slice(0, op.index).trim();
   const right = arg.slice(op.index + op[0].length).trim();
   const literal = NUMBER_LITERAL.test(left) ? left : NUMBER_LITERAL.test(right) ? right : undefined;
-  if (literal === undefined || PRESENCE_LITERAL.test(literal)) return false;
+  if (literal === undefined || isPresence(literal)) return false;
   return !NOT_MEASURED.test(literal === left ? right : left);
 }
 
@@ -659,6 +660,7 @@ function sidedForm(blank: string, plain: string): string | undefined {
     const form = literal ? sidedPattern(literal[1]!) : call ? sidedPattern(call[2]!) : undefined;
     if (form !== undefined) return form;
   }
+  let numeric = false;
   for (const m of blank.matchAll(OK_SITE)) {
     const from = m.index + m[0].length;
     const end = argumentEnd(blank, from);
@@ -669,8 +671,10 @@ function sidedForm(blank: string, plain: string): string | undefined {
       const form = sidedPattern(source);
       if (form !== undefined) return form;
     }
-    if (numberSided(blank.slice(from, end < 0 ? undefined : end))) return NUMBER_FORM;
+    if (numberSided(blank.slice(from, end < 0 ? undefined : end))) numeric = true;
   }
+  // the numeric form is named last: a later site's pattern or ends form comes first
+  if (numeric) return NUMBER_FORM;
   return undefined;
 }
 
