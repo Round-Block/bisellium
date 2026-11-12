@@ -694,6 +694,7 @@ const PINNED_B: PinnedB[] = [
     why: "decisionId passes safeItemPath and readContainedRegularFile before the decision is read",
   },
   { key: "packages/commands/src/lifecycle.ts:runWaive#1", disposition: "guarded", why: "decisionId passed patronDecisionProblem -> safeItemPath and readContainedRegularFile" },
+  { key: "packages/commands/src/light-gates.ts:commandsAt#1", disposition: "guarded", why: "W-610: runReview passes opus through safeItemPath before gate admission and runNext validates it against ID_RE; the value only reaches a git pathspec (`git show HEAD:<studio>/briefs/<id>.md`), never a write" },
   {
     key: "packages/commands/src/opus-model.ts:currentDesign#1",
     disposition: "guarded",
@@ -993,6 +994,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/lifecycle.ts:runConclude:readFileSync#1", disposition: "outside", why: "reads the user-named --from report, lstat-checked regular; its bytes are copied, never parsed" },
   { key: "packages/commands/src/lifecycle.ts:runConclude:writeFileSync#1", disposition: "contained", why: "acta/<date>-report-<opus>.md in a real directory checked by ensureRealDirectory, opened wx so no symlink or file there is followed" },
   { key: "packages/commands/src/lifecycle.ts:declaredMilestoneIds:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (milestones.yml)" },
+  { key: "packages/commands/src/light-gates.ts:runLightGates:writeFileSync#1", disposition: "contained", why: "W-610: ci/<opus>-light-<8 hex>.log in a real directory chain checked by ensureRealDirectory; the opus id is validated by runNext (ID_RE), the hex is the source tree hash" },
   { key: "packages/commands/src/opus-model.ts:readContainedRegularFile:openSync#1", disposition: "helper", why: "the contained reader's own open and read" },
   { key: "packages/commands/src/opus-model.ts:readContainedRegularFile:readFileSync#1", disposition: "helper", why: "the contained reader's own open and read" },
   { key: "packages/commands/src/pause.ts:readPauseState:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (PAUSED)" },
