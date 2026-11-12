@@ -1,0 +1,35 @@
+# opus: W-610
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-12T16:44:29.220Z
+# tree: tree:a60b2c3aaca44ab22fe92660a8aca078abd42215
+# brief: briefs/W-610.md blob:3f01550416710d04cd5de80812618ebb35c9010a
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-610/studio","head":"ad3f7ee300c64576f93ff00922a7d08a10945ffc","brief":"3f01550416710d04cd5de80812618ebb35c9010a","at":"2026-11-12T16:44:21.633Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-610-spec/promise-ledger-r3.md
+Gate log: /home/edckt/.bisellium-evidence/W-610-spec/gate-r3.log
+
+Ledger: revision 3 lines; promise-ledger.md's revision-2 lines stand for every line r3 does not change. Gate: exit 0, 51 of 51 rows exit 0, 11.2 min; series prototype-r3.mbox sha256:23d9b1ae2b4927bf659bf2026003fd4de44701249b66de1944ea9c3584081eb2, the brief's Prototype line, format-patch 6d54a35f..76cc751d in the scratch clone r3-gate, tree e82430b3; gate-r3.sh. The fix-2 run, gate-r3-fix2.log, failed on next-review :709, closed by finding 5; gate-r3-nomaster.log is void.
+
+Signed. Brief: /home/edckt/.bisellium-evidence/W-610-spec/brief-r3.md (revision 3; diff brief-r3.diff). Code lines name the scratch prototype /home/edckt/.bisellium-evidence/W-610-spec/r3-proto (opus/W-610 at ad3f7ee3 plus r3-apply-fix.py and the four fix2 rows, then r3-fix3-apply.py: plain paths in the messages, `literal` at the git calls, and the fix3 drift row; whole diff r3-prototype.diff, the fix-2 diff kept as r3-prototype-fix2.diff). The opus worktree is not edited.
+
+## Earlier findings
+
+- ci/W-610-review-1.log #1: closed — the light-gate paths closed in fix round 1 (fix-1/census.md); the full-gate admitter's git pathspecs are `literal(officinaRel(studioRel, evidence))` (builder-run.ts:339, 343, 345; its messages name the plain path), so a root officina is found and a glob is a literal path, for next's review rung and the direct verb — check: W-610-b2 fix2 root and glob rows
+- ci/W-610-review-1.log #2: closed — admitCurrentGates and treeAtCapture read the one trustedSource (verdict.ts:72, moved from light-gates' repoOf, which now calls it): main's exclusions, any worktree build-review drift refused before any admitter returns ok, so the direct verb no longer short-circuits admitLightGates on a drifted manifest — check: W-610-b2 fix2 drift rows
+
+## Findings
+
+1. advisory — design keeps: same order, same admission rule, same records; the change routes the existing full-gate admitter and the verdict's tree header through the trusted-source reader the light gates already use, and makes its pathspecs literal. No new behaviour, verb, record field or dependency; the cases are rows inside W-610-b2 — check: brief Revisions row 3
+2. advisory — D-076 B: a build S1 that does not change the design is a required build fix with its own red, not a further spec review; revision 3 needs a re-sign only. Spec review r4's two advisories are adopted as replacement text (counts as signed) — check: studio/decisions/D-076.md B; ci/W-610-spec-4.log
+3. advisory — Codex's fixture census over revision 3 (`fixture-census.sh W-610`; request census-r3-request.md) is produced: fixture-census-r3.md (census-r3.exit 0) lists three flips, containment.test.ts:779 (inventory B), containment.test.ts:1276 (`W-163-b6`) and next.test.ts:572 (`W-179-b1`), all three already named in the brief's Acceptance; Unnamed: none; 32 rows must stay green unchanged. Also produced: every test file importing builder-run.ts, verdict.ts or light-gates.ts passes alone in r3-proto under an empty HOME after fix 3, 19 of 19 (singles-r9.sh, singles-r9.out; w610 16 of 16, next-review 47 of 47); containment.test.ts 71 of 71 (r3-containment.tap); the five kills in the ledger; the pre-sign gate (header). At signing, Input domain row 10 gains its forms clause and pins the two fix2 rows its kills fail (one line, no line moves; before: brief-r3.pre-row10.md); the ledger is promise-ledger-r3.md (build-ledger-r3.py), the kills' one-hunk patches kills-r3/*.mutation.patch (mutation-patches-r3.py) — check: production lex §9 step 1
+4. advisory — behaviour change outside light officinae: with trustedSource, admitCurrentGates (next's review rung and the direct verb, every officina) refuses a worktree manifest drifting from main's on a build-review key, and a verdict under such a drift or an unreadable main manifest records `# tree: unknown`; next already holds on the same drift (buildReviewDrift), so the verb and next now agree — check: fixture census (finding 3)
+5. advisory — closed: the fix-2 prototype's flip at `packages/cli/src/next-review.test.ts:709` (W-312-b1, "gates not committed": the refusal printed `(:(literal)studio/ci/...)`, singles-r8) is fixed in the code, not the row: admitCurrentGates keeps the plain officina path for its messages and passes `literal(...)` to git only (builder-run.ts:339, 343, 345); W-312-b1 is unchanged and passes alone (singles-r9: next-review.test.ts 47 of 47) — check: next-review.test.ts:709, :735
+6. advisory — closed: the `buildReviewDrift` refusal (verdict.ts:88) is now pinned directly: the W-610-b2 fix3 row (w610.test.ts:408) drifts `patron`, which leaves the tree unchanged, and admitCurrentGates refuses naming the key; red at ad3f7ee3 (r3-fix3-red.tap), and the drift kill now fails it (before fix 3 only the verdict row caught it: kills-r3-fix2/kills-r3-drift.log) — check: kills-r3-drift.log
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-610.md` revision 3 on opus/W-610 at ad3f7ee3: a re-sign under D-076 B, no spec review; both review-1 findings closed in the code with their rows red at ad3f7ee3 and green in the prototype, each pinned line killed, the pre-sign gate 51 of 51 at the prototype; Codex's fixture census r3 names three flips, all in Acceptance, none unnamed.
