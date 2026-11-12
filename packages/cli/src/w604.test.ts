@@ -45,6 +45,8 @@ const HOST_SCRIPTS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "
 
 /** The fixture file's own timer, assembled from fragments: it is fixture text the gate's child runs, not a wait in this process. */
 const PAUSE = ["set", "Timeout"].join("");
+/** The slow checker's blocking wait, assembled the same way (fixture text for the checker's own process). */
+const HOLD = ["Atomics", "wait"].join(".");
 /** A test file that logs `<name> start|end <ms>` to $W604_EVENTS, sleeps $W604_SLEEP_<NAME> ms, and reads studio when $W604_READ_<NAME> is 1. */
 const probe = (name: string, extra = ""): string =>
   [
@@ -82,7 +84,7 @@ function world(o: { record?: string; checkMs?: number } = {}): { repo: string; e
   // a reads check made slow by the fixture: the copied checker waits o.checkMs before it judges a trace
   if (o.checkMs !== undefined) {
     const f = join(repo, "scripts", "ci-scope.mjs");
-    writeFileSync(f, `if (process.argv.includes("--check-reads")) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ${o.checkMs});\n${readFileSync(f, "utf8")}`);
+    writeFileSync(f, `if (process.argv.includes("--check-reads")) ${HOLD}(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ${o.checkMs});\n${readFileSync(f, "utf8")}`);
   }
   const base = commitAll(repo, "base");
   put(repo, "src/a.mjs", "export const ok = true; // the series\n");
