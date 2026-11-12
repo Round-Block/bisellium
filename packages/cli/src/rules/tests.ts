@@ -28,6 +28,11 @@
  * the alphabet (`\b`, `\w`, an ASCII letter range, a letter property without
  * marks or numbers, or a set built from a substitution) needs a whole set, or
  * the same annotation (studio/briefs/W-392.md).
+ *
+ * W-608 adds the numeric form to `test.one_sided`: a line of a tracked test file added or changed since that
+ * merge-base whose `assert.ok` or `assert` first argument compares a number literal on one side only (one `<`, `<=`,
+ * `>` or `>=` at its top level, the other side no count, tolerance, or found index) needs the
+ * exact value or both bounds, or the same annotation (studio/briefs/W-608.md).
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync } from "node:fs";
@@ -572,6 +577,41 @@ const OK_SITE = /(?<![\w$])(?<!\.\s*)assert(?:\s*\.\s*ok)?\s*\(/g;
 const ENDS_CALL = /\.\s*(startsWith|endsWith)\s*\(/;
 const SIDED = /^\/\/\s*one-sided:\s*(\S.*)$/;
 const SIDED_HOW = 'assert the whole string (assert.equal, or a pattern anchored at both ends), or annotate "// one-sided: <reason>"';
+// ---- W-608: the numeric form. W-604-b5 bounded a measured seconds value from below only (studio/briefs/W-608.md).
+const NUMBER_FORM = "a number bounded on one side in an assertion";
+const NUMBER_HOW = 'assert the exact value (assert.equal) or both bounds in one assertion (lo <= x && x <= hi), or annotate "// one-sided: <reason>"';
+// one relational operator: not part of `=>`, `>>`, `<<`, `<=>` or an equality
+const RELATION = /(?<![<>=!])(?:<=?|>=?)(?![=>])/g;
+const NUMBER_LITERAL = /^[-+]?(?:\d[\d_]*(?:\.[\d_]*)?|\.\d[\d_]*)(?:[eE][-+]?\d+)?$/;
+// a bound that asserts presence or a count, not a measured value: 0, 1 and -1, a `.length` or `.size`, a `Math.abs` tolerance
+const PRESENCE_LITERAL = /^(?:[-+]?0|\+?1|-1)(?:\.0*)?$/;
+const NOT_MEASURED = /(?:\.\s*(?:length|size)\s*$)|^Math\s*\.\s*abs\s*\(/;
+
+/** In string-blanked code, `arg` with every bracketed span's contents (brackets included) blanked: its top level. */
+function topLevel(arg: string): string {
+  let depth = 0;
+  let out = "";
+  for (const c of arg) {
+    if (c === "(" || c === "[" || c === "{") depth++;
+    const close = c === ")" || c === "]" || c === "}";
+    out += depth === 0 && !close ? c : " ";
+    if (close && depth > 0) depth--;
+  }
+  return out;
+}
+
+/** W-608: whether an assertion's first argument (string-blanked) compares a number literal on one side only. */
+function numberSided(arg: string): boolean {
+  const top = topLevel(arg);
+  const ops = [...top.matchAll(RELATION)];
+  if (ops.length !== 1) return false;
+  const op = ops[0]!;
+  const left = arg.slice(0, op.index).trim();
+  const right = arg.slice(op.index + op[0].length).trim();
+  const literal = NUMBER_LITERAL.test(left) ? left : NUMBER_LITERAL.test(right) ? right : undefined;
+  if (literal === undefined || PRESENCE_LITERAL.test(literal)) return false;
+  return !NOT_MEASURED.test(literal === left ? right : left);
+}
 
 /** In string-blanked code, the index of the comma or closing bracket that ends the argument starting at `from`; -1
  *  when the line ends first. */
@@ -629,6 +669,7 @@ function sidedForm(blank: string, plain: string): string | undefined {
       const form = sidedPattern(source);
       if (form !== undefined) return form;
     }
+    if (numberSided(blank.slice(from, end < 0 ? undefined : end))) return NUMBER_FORM;
   }
   return undefined;
 }
@@ -822,7 +863,7 @@ export function oneSidedFindings(repo: string): Finding[] {
       const read = readCandidate(repo, rel);
       if (!("text" in read)) continue;
       const sites = oneSidedSites(read.text, addedLines(repo, resolved.base, rel), isTestPath(rel, registered));
-      for (const s of sites) findings.push(sidedBlock(`${rel}:${s.line}`, `${s.form}: ${isBoundaryForm(s.form) ? BOUND_HOW : SIDED_HOW}`));
+      for (const s of sites) findings.push(sidedBlock(`${rel}:${s.line}`, `${s.form}: ${isBoundaryForm(s.form) ? BOUND_HOW : s.form === NUMBER_FORM ? NUMBER_HOW : SIDED_HOW}`));
     }
   } catch (e) {
     findings.push(sidedBlock(GIT_WHERE, `the one-sided scan failed (${reasonOf(e)})`));
