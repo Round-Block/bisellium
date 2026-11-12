@@ -30,9 +30,9 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 - Standing: a Codex UI builder runs `codex-passes/ui-run.sh` directly: the confined `bisellium run` host cannot see ~/.bisellium-evidence. A `claude -p` reviewer in the sandbox cannot be resumed: reissue a shape refusal in a fresh session with `--session-reason`.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and daily retro.
-- Records dates are UTC; Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the opus after W-292.
+- Records dates are UTC; Patron reads SGT (UTC+8).
 6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/rn-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w608.py (row 236; one script per row); daily retro `npm run -s bisellium -- retro --daily --studio studio`; usage usage/usage-reading.sh <label>, when wanted; UI Codex via codex-passes/ui-run.sh.
-7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup on a sandbox-held empty folder names it for the Patron and still deletes the branches (W-227); never a hand delete. After a stray `cd` into `.worktrees/`, start a new process, never `/clear`. The producer's working notes are in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (notes, not a record; D-109 ended with W-333).
+7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup on a sandbox-held empty folder names it for the Patron and still deletes the branches (W-227); never a hand delete. After a stray `cd` into `.worktrees/`, start a new process, never `/clear`. Working notes: `~/.bisellium-evidence/current-state.md`, overwritten each refresh (D-109 ended with W-333).
 
 ## Artifacts
 
@@ -44,7 +44,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 ## Queue
 
-**D-181 is the plan, as D-182 changes its lanes and D-183, D-187 and D-188 its head (Patron 2026-11-05, 11-06, 11-07). Read them first. File through `land`: the `check` rule that a UI brief names the signed composition it follows, with every difference ruled by the Patron, and check how a general-purpose agent's edit of this file got past W-290. Audit: ~/.bisellium-evidence/audit-1105/fable/audit.md.**
+**D-181 is the plan, as D-182 changes its lanes and D-183, D-187 and D-188 its head. Read them first. File through `land`: the `check` rule that a UI brief names the signed composition it follows, every difference ruled by the Patron; and check how a general-purpose agent's edit of this file got past W-290. Audit: ~/.bisellium-evidence/audit-1105/fable/audit.md.**
 
 Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a new high starts after one in flight. Lanes: one until W-512 lands (D-182).
 
@@ -52,36 +52,31 @@ Greenlit on master, named here until `process.handoff.queue` reads studio/queue.
 
 Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615.
 
-D-193 replaces D-178: no per-opus exemptions; queue entries are product (M4 path) or process; after W-512, E1 and E2 take product, E3 is the one process lane (W-595 enforces). D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (W-502's cause fix) waits in the process lane.
+D-193 replaces D-178: no per-opus exemptions; entries are product (M4 path) or process; after W-512, E1 and E2 take product, E3 is the one process lane (W-595 enforces). D-174's items 3 to 7 keep 2026-11-17. W-506 waits in the process lane.
 
-In flight: W-451 merged (#1045), done once its master verify runs. W-610 PARKED (cap, lanes-meet-1112): build review r2 failed 2 S1 (ci/W-610-review-2.log, repeat class review×name-prefix-containment-misclassifies-valid-paths); opus/W-610 pushed at 9b886d5a. W-512 built, ci passed (opus/W-512 a33c54c6); its review is HELD by next: it conflicts with opus/W-610 further along. Leads' meet first next session (current-state.md NOW).
+In flight: W-451 merged (#1045), done once its master verify runs. W-512: build review r1 and r2 failed on one class; the architect stated the lane-walk domain and re-signed (r8, Codex spec r9 passed); fix round 2 62f289aa, fix check passed; ci r3 and build review r3 running at session end (~/.bisellium-evidence/W-512-build/).
 
-Greenlit ahead of build: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home D-175 keeps. Branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 (brief, spec-7/8 logs): keep). No W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
+Off the ladder: W-610: halted by D-196 (leads' meet w610-deadlock-meet-1113), then lifted by the Patron (D-197): queued after the next process entry (D-197), cause fix in brief r4; its local branch was removed, origin/opus/W-610 9b886d5a keeps it; PR #1182 (D-197, queue, record) waits on the Patron. W-507 stays greenlit on master, parked by D-181 (its master halt is refused while opus/W-507 exists, D-021).
 
-Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Spec drafts during a build (spec-ahead-meet-1109/). Meets: ~/.bisellium-evidence/*-meet-11*/. Leads-settled calls need no Patron (D-189).
+Greenlit ahead of build: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4 (the spec drifted from the signed round-6 Home D-175 keeps). Branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503: keep). No W-503 step before they answer; D-181 puts Home after W-301.
 
-Design-collegium questions go to design-lead (design.md:3; CLAUDE.md's Roles line names it as spec signer since W-589).
+Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Meets: ~/.bisellium-evidence/*-meet-11*/; leads-settled calls need no Patron (D-189).
 
-Next session: leads' meet on the W-610/W-512 hold first (options in current-state.md NOW), then the 11-12 daily retro (due after 00:00Z 11-13), then studio/queue.yml order: W-512, W-595, W-609, W-617 (drafted), W-615, W-551 (drafted). No new process opus above W-512 without a Patron high. State: ~/.bisellium-evidence/current-state.md.
+Next session: the 11-12 daily retro (briefs in ~/.bisellium-evidence/retro-1113/), then file fixround-meet-1113's opus (collated.md: a first spec× S1 goes to the architect; fix rounds census the class; W-184 folds; right after W-551), then W-512 to PR and land, then studio/queue.yml order: W-595 (draft done, unsigned, ~/.bisellium-evidence/W-595-spec/), W-610, W-609, W-617, W-615, W-551. State: ~/.bisellium-evidence/current-state.md.
 
-Unruled notes, read first: top NOW of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it.
-D-189: a Patron-waiting call goes to the relevant leads' meet; their recommendation is the default, vetoable at the next summary, never the producer's alone. Lex: W-525 (#1079, production.md §7).
+Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md beside it. D-189 (W-525, lex §7): a Patron-waiting call goes to the leads' meet first.
 
-D-186: greenlighting goes. W-524 waits for M4. Daily retro (D-188, lex 9 step 7): after 00:00Z, ladder-runner runs, fresh QA lead proposes, ladder-runner lands.
+D-186: greenlighting goes. W-524 waits for M4. Daily retro: lex §9 step 7 (D-188).
 
-Open gaps and W-508's done-step lessons: "Added 11-06" lines of ~/.bisellium-evidence/current-state-until-1106.md; read before any done step.
+Open gaps and W-508's done-step lessons: ~/.bisellium-evidence/current-state-until-1106.md ("Added 11-06"); read before any done step.
 
-W-510, after W-522, repairs talk, then the five leads' debate on which changes need a human-approved PR (brief ~/.bisellium-evidence/pr-debate-1106/brief-r1.md, two rounds, through talk).
+W-510, after W-522, repairs talk, then the leads' debate on which changes need a human-approved PR (brief ~/.bisellium-evidence/pr-debate-1106/brief-r1.md).
 
-D-184: W-520, after W-531 (studio/queue.yml order), in the process lane, taking over W-380 (folded in its Queue line). Do not use `prune-scratch.sh`. D-185: after it, W-521 and W-522; a diagnosed flake in a file an opus does not touch gets its own opus.
+D-184: W-520, after W-531, in the process lane, takes over W-380. Do not use `prune-scratch.sh`. D-185: then W-521 and W-522; a diagnosed flake in a file an opus does not touch gets its own opus.
 
-W-507 W-298's remainder: built, gated, on opus/W-507, parked until after M4 (D-181).
+Research is its own lane; none runs alongside D-182's one lane without the Patron's word. W-500 Runs screen waits for MVP (Patron 2026-11-05).
 
-Claude usage hold: ~98% (Patron 2026-11-05).
-
-Research is its own lane (Patron 2026-11-05); none runs alongside work under D-182's one lane without their word. W-500 Runs screen waits for MVP (Patron 2026-11-05).
-
-Off-ladder work and recommendations reaching the Patron ungated get the relevant lead's read first; ladder builds keep Codex as their one gate (D-066 C).
+Off-ladder work reaching the Patron ungated gets the relevant lead's read first; ladder builds keep Codex as their one gate (D-066 C).
 W-073, W-438 and W-136 stay halted until M4's exit passes (D-193).
 
-W-467 has not started: it follows W-503 in the Queue and takes W-451's Home palette. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01).
+W-467 has not started: it follows W-503 and takes W-451's Home palette. W-434 also links prototype hash, design digest, source tree, captures and reviews.
