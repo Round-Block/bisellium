@@ -1,0 +1,23 @@
+# opus: W-610
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1cf9a-54f2-7b02-ab5c-6a466d6ddc4d
+# outcome: passed
+# at: 2026-11-12T13:25:42.916Z
+# tree: tree:505a138548c4c0ccf1c42dd416b285b8820a7f49
+# brief: briefs/W-610.md blob:7cfa7e95f14d87f2f2fe0fed88ffe30170ecc096
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"caefe915d2fa7bd53c1bca2a0e3ca0465d2f2bfb","brief":"7cfa7e95f14d87f2f2fe0fed88ffe30170ecc096","at":"2026-11-12T13:25:42.361Z"}
+
+## Findings
+1. advisory — brief:164 [severity: S2] The Defaults still promise that the full suite “runs once,” contradicting the two-run cap established at brief:31, brief:45, brief:76, brief:126, and brief:134. Replace brief:164 with “Review runs on quick checks first; after review passes, the full suite runs once and may be rerun once only for an environment failure; after two committed runs at the reviewed tree, `next` dispatches a builder instead of ordering a third.” [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/w610.test.ts (W-610-b3)
+2. advisory — brief:107 [severity: S2] SHA-256 is collision-resistant, not injective; the same overstatement appears at brief:23 and brief:130. Replace those three claims with “JSON encoding preserves command-list boundaries and order, and its SHA-256 digest binds that encoding with collision resistance.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: cryptographic injectivity is not an automatable guarantee
+
+## Earlier findings
+- ci/W-610-spec-2.log #1: closed — brief:121 requires `admitLightGates` to recompute the exact current sequence and refuse any digest, boundary, or order mismatch.
+- ci/W-610-spec-2.log #2: closed — brief:122-124 require manifest mapping and `readSourceExcludes`, with every named boundary refusing parse, repository, directory, add, and commit failures.
+
+## Verdict
+Both earlier blockers are resolved and the remaining findings are advisory; required shell probe output was “caefe915 chore(studio): file W-616, process opera owe proof (#1174)”.
+VERDICT: PASS

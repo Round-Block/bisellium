@@ -1,0 +1,38 @@
+# opus: W-610
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-12T13:11:43.318Z
+# tree: tree:505a138548c4c0ccf1c42dd416b285b8820a7f49
+# brief: briefs/W-610.md blob:7cfa7e95f14d87f2f2fe0fed88ffe30170ecc096
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"caefe915d2fa7bd53c1bca2a0e3ca0465d2f2bfb","brief":"7cfa7e95f14d87f2f2fe0fed88ffe30170ecc096","at":"2026-11-12T13:11:36.689Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-610-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-610-spec/gate-r2.log
+
+## Earlier findings
+
+- ci/W-610-spec-2.log #1: closed — the light log's line 2 is `commandLine` of the exact command sequence (`@bisellium/shim` commandDigest: SHA-256 of the JSON list, injective over list boundaries and order, one line, so a multiline command keeps `exit code:` on line 3), the one shared helper W-615 extends to every full gate log; `admitLightGates` recomputes the sequence through `currentLightCommands` (the main checkout's `light_gates` by `git rev-parse --git-common-dir`, the brief committed at the worktree's HEAD), the reader next's order and perform use too, and refuses a mismatch; a master change to light_gates voids in-flight light logs (a stated limit, one cheap rerun) — check: brief Input domain row 4 (the reviewer's replacement text); W-610-b1 (binding, multiline, boundary, order); W-610-b2 (changed light_gates, changed Files owned, next and the verb); kills k1-digest, k2-bind, k2-head-brief
+- ci/W-610-spec-2.log #2: closed — `repoOf` reads the worktree manifest through `readWorktreeManifest` (a mapping) and `readSourceExcludes` and refuses a malformed one, so `runLightGates`, `admitLightGates`, `Facts.lightGates` and the direct `review` verb refuse while next holds on the drift (they agree); `runLightGates` catches every git, tree and write throw (`ensureRealDirectory` on a symlinked ci/ included) and `performLightGates` refuses a failed `git add` or `git commit` — check: brief Input domain rows 5-7; W-610-b2 (a mixed source_excludes); W-610-b1 (a symlinked ci/, an index lock, a failing pre-commit hook); kills k2-excludes, k1-realdir, k1-commit
+
+## Findings
+
+1. advisory — the meet's ruling (a) is applied in six behaviours (b1-b6); revision 2 adds no behaviour: the r2 cases and the w610-proof-meet-1112 cases are rows inside W-610-b1..b4 and b6; nothing of W-613 or W-615 is built — check: brief Revisions row 2; W-610-b1..b6
+2. advisory — every site that writes or reads the review's gate precondition, the full suite's order or the light log's command binding is closed or a stated limit (27 sites; full gate logs stay unbound until W-615, site 27) — check: brief Intent table
+3. advisory — an officina that declares no bisellium.yml#light_gates keeps master's W-312 order and texts, so no existing row flips; the real studio/bisellium.yml declares a well-formed light_gates, pinned in W-610-b6 (w610-proof-meet-1112 item 4) — check: apply-fallback.py; singles-r5.out; W-610-b6; kill k6-manifest
+4. advisory — a Files owned test path reaches `sh -c`: only a repo-relative [A-Za-z0-9_./-] path with no `..` segment runs, any other holds — check: W-610-b1; light-gates.ts SAFE_PATH
+5. advisory — the light log's write goes through ensureRealDirectory (containment inventory D, contained); commandsAt's brief pathspec is a guarded inventory B pin (W-047) — check: packages/cli/src/containment.test.ts; apply-containment.py
+6. advisory — the full suite is ordered at most twice at one reviewed tree (one rerun for an environment failure), then a builder is dispatched with `ci-runs:` (w610-proof-meet-1112 item 4); no fix check is ordered for a ci-driven fix after a pass (Defaults 3) — check: W-610-b3; kill k3-cap; brief site 6, site 10
+7. advisory — the end-to-end loop in an officina declaring light_gates (handoff, light gates, r1 failed, fix, light gates, r2 passed, one ci, pr) orders no ci before the pass, with a stub reviewer and ci (w610-proof-meet-1112 item 1) — check: W-610-b4; kill k4-loop
+8. advisory — code-owned paths are touched (studio/bisellium.yml, studio/prompts/build-review.md, studio/leges/production.md): the Patron merges — check: brief Files owned; .github/CODEOWNERS
+9. advisory — overlap with W-551 (next.ts build rung, lifecycle.ts disjoint functions): W-610 lands first, W-551 rebases over it; W-615 extends commandDigest to full logs after W-610 — check: brief Out of scope; studio/opera/W-615.md
+10. advisory — each red replayed as certify replays it (env -i, an empty HOME, a writable TMPDIR) on master 6d54a35f: b1-b6 each fail by ERR_ASSERTION only and at their declared pin; each green passes; each written red command run again at its test commit exits 1 with one ERR_ASSERTION — check: replay.sh; replay.summary; red-accept.out; red-cmd.summary
+11. advisory — at the tip: check 0 blocking, typecheck, lint and prettier on the touched files, the read scope of w610.test.ts and w610-texts.test.ts with no unlisted line; every importing test file in finding 11's list and packages/shim/test/shim.test.ts alone, each in its own process under an empty HOME, four at a time: all 31 exit 0 (`singles-r5.out`); the four next-family files (next-review, next-branch, next-spec, next.test) ran again alone after a kill had mutated next.ts for one row while they ran, all exit 0 (`singles-r6.out`) — check: singles-r5.out; singles-r6.out; checks.summary; check.blocking; read-scope-w610.log; read-scope-w610-texts.log
+12. advisory — master's pre-sign gate ran on the tip (series sha256:dca871d9…, base 6d54a35f, tree 67ba614f): 48 rows, every row exit 0, none UNNAMED or deferred, 11.0 min, the next-family command 585.7 s; Codex's fixture census ran before signing (read-only, gpt-5.6-sol) over revision 2: three flips (containment.test.ts:779 inventory B, W-163-b6, W-179-b1), all named in Acceptance and updated in b1's commit, Unnamed none, 32 rows must stay green unchanged — check: gate-r2.log; gate-r2.exit; fixture-census.md; brief Acceptance
+13. advisory — each pinned Promise line and Input domain row has a kill at the tip: fifteen one-hunk mutations of light-gates.ts, next.ts or studio/bisellium.yml (kills.py, restored from a copy, worktree clean after), each failing its pinned row by ERR_ASSERTION under certify's env; the kept-texts promise and Input domain rows 3 and 6 are unpinned stated limits — check: kills.py; kills.log; kills/
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-610.md` revision 2 at master 6d54a35f: six behaviours, each with a recorded red replayed under certify's conditions, both round-2 S1 findings closed and the w610-proof-meet-1112 cases folded in, master's pre-sign gate passed at the tip and brief admission at 0 problems; Codex's fixture census names no unnamed flip.

@@ -1,0 +1,19 @@
+# opus: W-610
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1cf9a-54f2-7b02-ab5c-6a466d6ddc4d
+# outcome: failed
+# at: 2026-11-12T11:59:29.332Z
+# tree: tree:1ffe3261a6a8f1e067dd0d2ead53c52c846d45a3
+# brief: briefs/W-610.md blob:24ee80ec2a50b0a229e615033d4eb4176e4654c5
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"d0ae1c96b7a7a0b14f1a0b1aca0e4f27316ef411","brief":"24ee80ec2a50b0a229e615033d4eb4176e4654c5","at":"2026-11-12T11:59:28.794Z"}
+
+## Findings
+1. blocking — brief:102 [severity: S1] An ordinary edit to the main `light_gates` list or the signed brief’s Files owned after a passing log leaves the SOURCE tree unchanged, and `admitLightGates` ignores line 2, so `next` and direct `review` admit stale checks; additionally, accepted multiline commands move `exit code:` away from line 3. Sites are both command-set writers, `lightCommands`/`lightGateCommands`, `runLightGates`’s non-injective `join(" ; ")` writer, `admitLightGates`, `Facts.lightGates`, and `runReview`; replace brief:102 with `| 4. The light log and current light-command sequence | committed and unchanged; line 1 certifies the current tree, line 2 contains an unambiguous encoding or digest of the exact commands recomputed from the trusted main manifest and committed branch brief, and line 3 is exit code: 0 | admitLightGates recomputes the sequence and refuses any missing, malformed or mismatched binding, non-zero exit, untracked or changed log, or other tree |`. [design: changes] [class: mechanism×certification-coverage-not-diff-bound] — check: packages/cli/src/w610.test.ts (change `light_gates` and Files owned after a passing log; cover multiline and list-boundary ambiguity)
+2. blocking — brief:103 [severity: S1] `repoOf` newly reads the worktree manifest but silently filters malformed `source_excludes`; for example, a mistaken mixed list can make `admitCurrentGates` refuse while direct `review` falls back to a matching light log and passes, bypassing `runNext` and `buildReviewDrift`. All sites are `studio/bisellium.yml` through main `readSourceExcludes`/`buildReviewDrift`, worktree `repoOf` through `runLightGates` and `admitLightGates`, their `performLightGates`, `Facts.lightGates`, and `runReview` consumers, plus the omitted `ensureRealDirectory`, `git add`, and `git commit` boundaries; replace brief:103 with rows stating that the worktree manifest must parse as a mapping and pass `readSourceExcludes`, that repository/tree/status calls must succeed on a clean tree, that `repoOf`, `runLightGates`, and `admitLightGates` refuse every failure, and that `ensureRealDirectory` and `performLightGates` refuse an unsafe destination or non-zero add/commit. [design: keeps] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w610.test.ts (direct review with malformed worktree `source_excludes`; failed destination/add/commit paths)
+
+## Verdict
+The brief has two S1 blockers; required shell probe output was “d0ae1c96 chore(studio): W-531 after W-512, file W-614 (#1172)”.
+VERDICT: FAIL

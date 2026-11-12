@@ -1,0 +1,34 @@
+# opus: W-610
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-12T11:51:33.510Z
+# tree: tree:1ffe3261a6a8f1e067dd0d2ead53c52c846d45a3
+# brief: briefs/W-610.md blob:24ee80ec2a50b0a229e615033d4eb4176e4654c5
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"d0ae1c96b7a7a0b14f1a0b1aca0e4f27316ef411","brief":"24ee80ec2a50b0a229e615033d4eb4176e4654c5","at":"2026-11-12T11:51:22.596Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-610-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-610-spec/gate.log
+
+## Findings
+
+1. advisory — the meet's ruling (a) is applied in six behaviours: the light gates ordered after the handoff and performed by a ladder-runner at the tree (b1), review on them with no full gate log, in next and in the review verb (b2), one ci --opus after the pass at the reviewed tree (b3), pr only at reviewed tree = gate tree = tip tree through source_excludes (b4), a source change voiding the pass (b5), build-review.md and lex §9 steps 3-4 (b6); nothing of W-613 is built — check: brief Intent; W-610-b1..b6
+2. advisory — every site that writes or reads the review's gate precondition or the full suite's order is closed or a stated limit (23 sites) — check: brief Intent table
+3. advisory — an officina that declares no bisellium.yml#light_gates keeps master's W-312 order and texts, so no existing row flips; revision 1's first cut flipped six (W-326-b3, W-312-b1, W-541-b1, W-309-b1, W-328-b2, W-377-b1) and the fallback was restaged into every feature commit — check: apply-fallback.py; singles-r0.out; singles-r3.out
+4. advisory — a Files owned test path reaches `sh -c`: only a repo-relative [A-Za-z0-9_./-] path with no `..` segment runs, any other holds; a ruled case in W-610-b1 pins five unsafe forms — check: W-610-b1; light-gates.ts SAFE_PATH
+5. advisory — the light log's write goes through ensureRealDirectory and is pinned in containment inventory D (contained) — check: packages/cli/src/containment.test.ts; apply-containment.py
+6. advisory — no fix check (D-086 D) is ordered for a ci-driven fix after a pass, since no review finding is open; the delta review is its check; a leads' or Patron call (Defaults 3) — check: brief site 10; Defaults 3
+7. advisory — the light-gates order after a replay no longer names the producer's handoff, so the pr rung's existing stale-handover hold asks it; `.claude/agents/ladder-runner.md`, later-round.md, meanwhile.ts, integrate.ts texts and prune.ts are unchanged limits — check: brief sites 1, 13-19, 22
+8. advisory — code-owned paths are touched (studio/bisellium.yml, studio/prompts/build-review.md, studio/leges/production.md): the Patron merges — check: brief Files owned; .github/CODEOWNERS
+9. advisory — overlap with W-551 (next.ts build rung :1336-:1384, lifecycle.ts disjoint functions): W-610 lands first, W-551 rebases over it — check: brief Out of scope
+10. advisory — each red replayed as certify replays it (env -i, an empty HOME, a writable TMPDIR) on master d0ae1c96: b1-b6 each fail by ERR_ASSERTION only and at their declared pin (b1-b5 in w610.test.ts, b6 in w610-texts.test.ts); each green passes — check: replay.sh; replay.summary; red-accept.out
+11. advisory — at the tip: check 0 blocking, typecheck, lint and prettier on the touched files, the read scope of w610.test.ts and w610-texts.test.ts with no unlisted line; every importing test file in finding 11's list (the twenty importers, the seven earlier singles, containment.test.ts, rules/tests.test.ts, w610-texts.test.ts) alone, each in its own process under an empty HOME, four at a time: all pass but next.test.ts W-179-b1, which flipped because w610.test.ts imports the next-world fixture undeclared; b1's commit now declares w610 in W-179-b1 and the next-family command (concurrency 16), and next.test.ts passes alone at the tip — check: singles-r3.out; singles-r4.out; checks.summary; check.blocking; read-scope-w610.log; read-scope-w610-texts.log; apply-suites.py
+12. advisory — master's pre-sign gate ran on the tip (series sha256:847b8612…, tree in gate.log): every row exit 0, none UNNAMED or deferred; b6 moved to its own test:record file w610-texts.test.ts (its own test:suite command), w610.test.ts is in the next-family test:suite command; Codex's fixture census ran before signing (read-only, gpt-5.6-sol): two flips, W-163-b6 (containment.test.ts:1276) and W-179-b1 (next.test.ts:572), both named in Acceptance and updated in b1's commit, Unnamed none, 29 rows must stay green unchanged — check: gate.log; gate.exit; fixture-census.md; brief Acceptance; brief Files owned; package.json
+13. advisory — each pinned Promise line and Input domain row has a kill at the tip: six one-hunk mutations of light-gates.ts or next.ts (kills.py, restored from a copy, worktree clean after), each failing its pinned row at its pinned assertion by ERR_ASSERTION under certify's env; the kept-texts promise (brief:68) and rows 3 and 5 are unpinned stated limits, since a kill of a text proves only that text — check: kills.py; kills.log; kills/
+14. advisory — each behaviour's written red command was run again at its test commit under certify's env, its output headed `# command:` as bisellium red records it: b1-b6 each exit 1 with one ERR_ASSERTION — check: red-cmd.sh; red-cmd.summary; red-cmd-b1.tap .. red-cmd-b6.tap
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-610.md` revision 1 at master d0ae1c96: six behaviours, each with a recorded red replayed under certify's conditions, master's pre-sign gate passed at the tip and brief admission at 0 problems; Codex's fixture census names no unnamed flip.
