@@ -133,3 +133,39 @@ row("W-610-b1 after the builder's handoff next orders the light gates and its pe
   assert.deepEqual(lightGateCommands({ light_gates: ["x {studio}"] }, "studio", brief("packages/a/b.test.ts")), ["x studio", "node --test-reporter=tap --import tsx packages/a/b.test.ts"], "a plain path runs");
 });
 
+row("W-610-b2 review is ordered on the light gates at the tip tree with no full gate log", async () => {
+  const w = handed("w610-b2");
+  performLight(w);
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "review", "named", "review is named on the light gates");
+  assert.match(o.out, /round[^\n]*1/i, ran("round 1", o));
+  const reviewArgs = ["review", OPUS, "--pass", "--evidence", `ci/${OPUS}-review-1.log`, "--round", "1", "--sella", "qa-lead", "--studio", w.wtStudio, "--now", T.review1];
+  const { admitLightGates } = await import("@bisellium/commands/light-gates.js");
+  // the log binds the commands: a changed light_gates list on master is not admitted by next or by the review verb
+  setLightGates(w, '"node -e 0"', '"node -e 1"');
+  const changed = next(w, [OPUS, ...BUDGET]);
+  expectStep(changed, "build", "named", "a changed light_gates list is not review's precondition");
+  assert.equal(direct(w, w.wt, reviewArgs).status, 2, "the review verb refuses a light log of other commands");
+  setLightGates(w, '"node -e 1"', '"node -e 0"');
+  // a changed Files owned (a new own test file) in the committed brief voids the log too
+  const briefRel = `briefs/${OPUS}.md`;
+  const brief = readFileSync(join(w.wtStudio, briefRel), "utf8");
+  editWt(w, briefRel, (t) => t.replace("`w462.test.mjs`, ", "`w462.test.mjs`, `w999.test.mjs`, "));
+  const owned = admitLightGates(w.wtStudio, OPUS);
+  assert.ok(!owned.ok && /not run for the current light-gate commands/.test(owned.error), `a changed Files owned voids the log: ${JSON.stringify(owned)}`);
+  assert.equal(direct(w, w.wt, reviewArgs).status, 2, "the review verb refuses it");
+  editWt(w, briefRel, () => brief);
+  // a malformed worktree source_excludes refuses: next holds on the drift and the review verb does not fall back to the light log
+  const manifestText = readFileSync(join(w.wtStudio, "bisellium.yml"), "utf8");
+  writeFileSync(join(w.wtStudio, "bisellium.yml"), manifestText.replace("source_excludes: []", "source_excludes: [docs, 3]"));
+  const malformed = admitLightGates(w.wtStudio, OPUS);
+  assert.ok(!malformed.ok && /source_excludes/.test(malformed.error), `a malformed worktree source_excludes refuses: ${JSON.stringify(malformed)}`);
+  assert.notEqual(next(w, [OPUS, ...BUDGET]).first, `next: ${OPUS} review named`, "next does not name review on it");
+  assert.equal(direct(w, w.wt, reviewArgs).status, 2, "the review verb refuses it too");
+  writeFileSync(join(w.wtStudio, "bisellium.yml"), manifestText);
+  expectStep(next(w, [OPUS, ...BUDGET]), "review", "named", "the restored inputs admit the log again");
+  verb(w.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "review-1.md"), "--studio", w.wtStudio, "--now", T.review1]);
+  const r = direct(w, w.wt, reviewArgs);
+  assert.equal(r.status, 0, ran("the review verb admits the light gates", r));
+});
+
