@@ -139,3 +139,11 @@ row("W-604-b3 a shared command's timeout is its files times the per-file cap", a
   assert.equal(await short.run({ rowTimeoutMs: 1000, perFileMs: 400 }, { W604_SLEEP_A: "1500" }), 1, "a run past its sized timeout fails the gate");
   assert.equal(of(short.rows(), "test", "src/a.test.mjs")[0], "124", `a run past its sized timeout is recorded 124 (rows ${brief(short.rows())})`);
 });
+
+row("W-604-b4 a shared command is exempt from the start budget", async () => {
+  const w = world();
+  const exit = await w.run({ budgetMs: 0 });
+  const rows = w.rows();
+  assert.equal(exit, 0, `exit (rows ${brief(rows)})`);
+  assert.deepEqual(rows.map(([exit, , kind, file]) => `${exit} ${kind} ${file}`), ["deferred check -", "deferred typecheck -", "0 reads src/r.test.mjs", "0 test src/a.test.mjs", "deferred test src/c.test.mjs", "0 test src/r.test.mjs"], "the pooled rows are deferred, the shared rows run");
+});
