@@ -1,0 +1,186 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-563-b2\s --import tsx packages/cli/src/w563.test.ts
+# exit: 1
+# at: 2026-11-11T10:33:11.086Z
+# sella: ladder-lead
+# tree: tree:239e8029e7e08fda591a41ff202fe47dfee648f9
+# ticket: {"opus":"W-563","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-563/studio","head":"202d1c6afc2db8d8390702a189e1b65f88767c37","brief":"8802baf84a30696fd58d0b6412d442f3a9622cf1","at":"2026-11-11T10:33:11.048Z"}
+
+TAP version 13
+# Subtest: W-563-b2 a dirty worktree is refused
+not ok 1 - W-563-b2 a dirty worktree is refused
+  ---
+  duration_ms: 36.589396
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:640'
+  failureType: 'testCodeFailure'
+  error: |-
+    a dirty worktree is refused: exit (stderr "")
+    
+    0 !== 2
+    
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-563-b2 a worktree at another tree is refused
+not ok 2 - W-563-b2 a worktree at another tree is refused
+  ---
+  duration_ms: 33.74032
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:640'
+  failureType: 'testCodeFailure'
+  error: |-
+    a worktree at another tree is refused: exit (stderr "")
+    
+    0 !== 2
+    
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-563-b2 a failing row is recorded and the runner exits 1
+not ok 3 - W-563-b2 a failing row is recorded and the runner exits 1
+  ---
+  duration_ms: 31.767278
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:640'
+  failureType: 'testCodeFailure'
+  error: |-
+    a failing row is recorded and the runner exits 1: exit (stderr "")
+    
+    0 !== 1
+    
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-563-b2 a new file reading studio unlisted fails its reads row
+not ok 4 - W-563-b2 a new file reading studio unlisted fails its reads row
+  ---
+  duration_ms: 36.825497
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:640'
+  failureType: 'testCodeFailure'
+  error: |-
+    a new file reading studio unlisted fails its reads row: exit (stderr "")
+    
+    0 !== 1
+    
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-563-b2 a row past its timeout is recorded 124 and the run goes on
+not ok 5 - W-563-b2 a row past its timeout is recorded 124 and the run goes on
+  ---
+  duration_ms: 32.495947
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:640'
+  failureType: 'testCodeFailure'
+  error: |-
+    a row past its timeout is recorded 124 and the run goes on: exit (stderr "")
+    
+    0 !== 1
+    
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-563-b2 rows past the budget are deferred and do not fail
+not ok 6 - W-563-b2 rows past the budget are deferred and do not fail
+  ---
+  duration_ms: 33.409658
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:640'
+  failureType: 'testCodeFailure'
+  error: 'rows past the budget are deferred and do not fail: the log is written'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-563-b2 a passing run writes the whole log and exits 0
+not ok 7 - W-563-b2 a passing run writes the whole log and exits 0
+  ---
+  duration_ms: 35.117185
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:640'
+  failureType: 'testCodeFailure'
+  error: 'a passing run writes the whole log and exits 0: the log is written'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 0
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 257.865963

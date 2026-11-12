@@ -1,0 +1,438 @@
+/**
+ * packages/commands/src/presign-gate.ts — W-563 (presign-meet-1109 call 1, D-189; ladder-time-meet-1111 call 2): the cheap
+ * gates a spec signature owes.
+ *
+ * `gateRows` names, from a git tree and its base, the rows the architect's signature owes: the officina check, typecheck,
+ * one `reads` row per test file the series adds, and one `test` row per test file the series adds or changes and per test
+ * file that directly imports a touched path. `runGate` (the runner, `node --import tsx <this file>`) runs them pooled in a
+ * clean scratch worktree at the series' own tree, each under a timeout, within a budget (a row not started by then is
+ * logged `deferred`, deferred to `ci --opus`), and always writes the log; `gateLogProblems` is `verdict --phase spec`'s
+ * reading of that log: it runs nothing, it checks the log is the runner's at the prototype's tree with every owed row
+ * passed or deferred.
+ *
+ * ponytail: the walk is one textual import edge deep. A transitive importer, a test that spawns or names a touched file, a
+ * non-literal dynamic import and a playwright or vitest spec under apps/ or docs/ are no rows; `ci --opus` stays the full judge.
+ */
+import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { availableParallelism, homedir, tmpdir } from "node:os";
+import { isAbsolute, join, posix } from "node:path";
+import { pathToFileURL } from "node:url";
+import { instant } from "@bisellium/schema";
+import { loadSeries, readPrototype } from "./prototype-line.js";
+
+export type RowKind = "check" | "typecheck" | "test" | "reads";
+export interface GateRow {
+  kind: RowKind;
+  /** the test file, for `test` and `reads` rows */
+  file?: string;
+  command: string;
+}
+export const CHECK_COMMAND = "npm run -s check -- studio --repo .";
+export const TYPECHECK_COMMAND = "npm run -s typecheck";
+/** A required test file that no `test:suite` command names: the runner records it as failed (exit 1), never runs it. */
+export const UNNAMED = "(no test:suite command names it)";
+export const LOG_MAX_BYTES = 1024 * 1024;
+/** W-563 r3 (ladder-time-meet-1111 call 2): a row's timeout, the run's budget and the pool's cap. */
+export const ROW_TIMEOUT_MS = 600_000;
+export const BUDGET_MS = 600_000;
+export const POOL_MAX = 8;
+const GIT_TIMEOUT_MS = 120_000;
+const READER_TIMEOUT_MS = 120_000;
+const TEST_FILE = /\.test\.(?:ts|mts|mjs)$/;
+const UNGATED = /^(?:apps|docs)\//;
+function git(repo: string, args: string[], input?: string, env?: NodeJS.ProcessEnv): { out: Buffer } | { error: string } {
+  const r = spawnSync("git", ["-C", repo, ...args], { input, env: env ?? process.env, maxBuffer: 256 * 1024 * 1024, timeout: GIT_TIMEOUT_MS });
+  if (r.error !== undefined || r.status !== 0) return { error: `git ${args[0]} failed: ${(r.stderr?.toString("utf8") ?? r.error?.message ?? "").trim().split("\n")[0] ?? ""}` };
+  return { out: r.stdout };
+}
+const z = (b: Buffer): string[] => b.toString("utf8").split("\0").filter((s) => s !== "");
+
+/** The test:suite `&&`-commands of a package.json text, or an error when it does not parse. */
+export function suiteCommands(pkg: string | undefined): string[] | { error: string } {
+  try {
+    const s = (JSON.parse(pkg ?? "") as { scripts?: Record<string, unknown> }).scripts?.["test:suite"];
+    return typeof s === "string" ? s.split("&&").map((c) => c.trim()).filter((c) => c !== "") : [];
+  } catch {
+    return { error: "package.json does not parse" };
+  }
+}
+
+// W-563 review 1 (fix 3): the literal-import domain is a language domain, read with the language's own parser: `typescript`, the root
+// devDependency (as `tsx` is). It is loaded only here, in a child node process the gate spawns when it reads import edges, so every
+// verb that imports this module without gating (verdict.ts is imported by almost every CLI verb) does not pay its ~0.4 s load (ci
+// rounds 5 and 6 timed out on that cost); the containment census admits no createRequire, and the gate's callers are synchronous.
+
+/**
+ * The reader the child runs: the literal specifiers a source text imports: a static `import`/`export … from` (every form,
+ * attributes and phase modifiers included), a side-effect `import "…"`, and a literal `import("…")`, `import.defer("…")` or
+ * `import.source("…")`. A type-only `import("…")`, `import x = require()`, `#import()` and `o.import()` are no edges. A parse
+ * error never drops a file: the parser's recovered tree is read. Stdin is a JSON object of file to text; stdout one of file to
+ * specifiers.
+ */
+const READER = `
+import ts from "typescript";
+const files = JSON.parse(await new Promise((res) => { let s = ""; process.stdin.setEncoding("utf8"); process.stdin.on("data", (d) => { s += d; }); process.stdin.on("end", () => res(s)); }));
+const result = {};
+for (const [file, text] of Object.entries(files)) {
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, false, file.endsWith(".ts") || file.endsWith(".mts") ? ts.ScriptKind.TS : ts.ScriptKind.JS);
+  const out = [];
+  const visit = (node) => {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier !== undefined && ts.isStringLiteral(node.moduleSpecifier)) out.push(node.moduleSpecifier.text);
+    else if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      const phase = ts.isMetaProperty(callee) && callee.keywordToken === ts.SyntaxKind.ImportKeyword && ["defer", "source"].includes(callee.name.text);
+      const arg = node.arguments[0];
+      if ((callee.kind === ts.SyntaxKind.ImportKeyword || phase) && arg !== undefined && (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg))) out.push(arg.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  result[file] = out;
+}
+process.stdout.write(JSON.stringify(result));
+`;
+
+/** The literal specifiers each file imports, read by one child node process (its env scrubbed as the rows' is); a failed child (any non-zero exit, signal, timeout, unparseable output, or output not holding every input file as an array of strings) is an error, never an empty read. */
+function specifiersOf(files: Map<string, string>, reader: string = READER, timeoutMs: number = READER_TIMEOUT_MS): Map<string, string[]> | { error: string } {
+  const run = spawnSync(process.execPath, ["--input-type=module", "-e", reader], { cwd: import.meta.dirname, input: JSON.stringify(Object.fromEntries(files)), encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: timeoutMs, env: rowEnv() });
+  if (run.error !== undefined || run.status !== 0) return { error: `the import reader failed (${run.error?.message ?? `exit ${run.status ?? run.signal}`})` };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(run.stdout);
+  } catch {
+    return { error: "the import reader's output does not parse" };
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return { error: "the import reader's output is not an object" };
+  const out = new Map<string, string[]>();
+  for (const file of files.keys()) {
+    const v = (parsed as Record<string, unknown>)[file];
+    if (!Object.hasOwn(parsed, file) || !Array.isArray(v) || !v.every((x) => typeof x === "string")) return { error: `the import reader's output does not cover ${file}` };
+    out.set(file, v as string[]);
+  }
+  return out;
+}
+
+/** The repo files a file imports directly (W-563 behaviour 1's forms), resolved against `present`. */
+function edges(file: string, specs: string[], present: Set<string>): string[] {
+  const out = new Set<string>();
+  for (const spec of specs) {
+    let base: string | undefined;
+    if (spec.startsWith("./") || spec.startsWith("../")) base = posix.normalize(posix.join(posix.dirname(file), spec));
+    else {
+      const ws = /^@bisellium\/([a-z0-9-]+)(?:\/(.+))?$/.exec(spec);
+      if (ws !== null) base = `packages/${ws[1]}/src/${ws[2] ?? "index.js"}`;
+    }
+    if (base === undefined) continue;
+    const tries = base.endsWith(".js") ? [base, `${base.slice(0, -3)}.ts`] : base.endsWith(".mjs") ? [base, `${base.slice(0, -4)}.mts`] : [base, `${base}.ts`, `${base}/index.ts`];
+    for (const t of tries) if (present.has(t)) out.add(t);
+  }
+  out.delete(file);
+  return [...out];
+}
+
+/** The rows owed at a tree, from its file list, a reader of its test files and package.json, and the touched and added paths. */
+export function rowsAt(files: string[], read: (path: string) => string | undefined, touched: string[], added: string[], reader?: string, readerTimeoutMs?: number): GateRow[] | { error: string } {
+  const present = new Set(files);
+  const suite = suiteCommands(read("package.json"));
+  if ("error" in suite) return suite;
+  const tests = files.filter((f) => TEST_FILE.test(f) && !UNGATED.test(f)).sort();
+  const specs = specifiersOf(new Map(tests.map((t) => [t, read(t) ?? ""] as const)), reader, readerTimeoutMs);
+  if ("error" in specs) return specs;
+  const direct = new Map(tests.map((t) => [t, edges(t, specs.get(t)!, present)] as const));
+  const imports = (t: string): string[] => direct.get(t) ?? [];
+  const named = (f: string): string | undefined => suite.find((c) => c.split(/\s+/).includes(f));
+  const touchedSet = new Set(touched);
+  // owed: a test file the series adds or changes, or one importing a touched path directly (no closure, no basename edge)
+  const owed = new Set(tests.filter((t) => touchedSet.has(t) || imports(t).some((p) => touchedSet.has(p))));
+  // a test file no command names that another test file imports is a fixture: its direct importers are its rows
+  const fixtures = new Set(tests.filter((t) => named(t) === undefined && tests.some((o) => imports(o).includes(t))));
+  for (const t of tests) if (imports(t).some((p) => fixtures.has(p) && owed.has(p))) owed.add(t);
+  // a command naming several test files (one `node --test` over a family) runs only the owed files it names, in its own order
+  const isTest = (w: string): boolean => present.has(w) && TEST_FILE.test(w);
+  const command = (f: string): string => {
+    const c = named(f);
+    if (c === undefined) return UNNAMED;
+    const words = c.split(/\s+/);
+    return words.filter(isTest).length < 2 ? c : words.filter((w) => !isTest(w) || (owed.has(w) && !fixtures.has(w))).join(" ");
+  };
+  const rows: GateRow[] = [{ kind: "check", command: CHECK_COMMAND }, { kind: "typecheck", command: TYPECHECK_COMMAND }];
+  for (const a of [...added].sort()) if (TEST_FILE.test(a) && !UNGATED.test(a)) rows.push({ kind: "reads", file: a, command: command(a) });
+  for (const t of tests) if (owed.has(t) && !fixtures.has(t)) rows.push({ kind: "test", file: t, command: command(t) });
+  return rows;
+}
+
+/** W-563 behaviour 1: the rows a signature owes for `tree` against `base`, read from the repo's object store. */
+export function gateRows(repo: string, base: string, tree: string): GateRow[] | { error: string } {
+  const diff = git(repo, ["diff", "--name-only", "-z", "--no-renames", base, tree]);
+  const add = git(repo, ["diff", "--name-only", "-z", "--no-renames", "--diff-filter=A", base, tree]);
+  const ls = git(repo, ["ls-tree", "-r", "-z", "--full-tree", tree]);
+  if ("error" in diff) return diff;
+  if ("error" in add) return add;
+  if ("error" in ls) return ls;
+  const blobs = new Map<string, string>();
+  for (const entry of z(ls.out)) {
+    const m = /^\d+ blob ([0-9a-f]+)\t(.+)$/s.exec(entry);
+    if (m !== null) blobs.set(m[2]!, m[1]!);
+  }
+  const wanted = [...blobs.keys()].filter((p) => (TEST_FILE.test(p) && !UNGATED.test(p)) || p === "package.json");
+  const cat = git(repo, ["cat-file", "--batch"], wanted.map((p) => blobs.get(p)!).join("\n") + "\n");
+  if ("error" in cat) return cat;
+  const text = new Map<string, string>();
+  let at = 0;
+  for (const p of wanted) {
+    const nl = cat.out.indexOf(10, at);
+    const size = Number(/ blob (\d{1,15})$/.exec(cat.out.subarray(at, nl).toString("utf8"))?.[1] ?? NaN);
+    if (!Number.isInteger(size)) return { error: `git cat-file could not read ${p}` };
+    text.set(p, cat.out.subarray(nl + 1, nl + 1 + size).toString("utf8"));
+    at = nl + 1 + size + 1;
+  }
+  return rowsAt([...blobs.keys()], (p) => text.get(p), z(diff.out), z(add.out));
+}
+
+/** The tree the series makes on `base`, built in a temporary index (never the repo's own), removed after. */
+export function treeOfSeries(repo: string, base: string, series: string): { tree: string } | { error: string } {
+  let dir: string;
+  try {
+    dir = mkdtempSync(join(tmpdir(), "presign-gate-"));
+  } catch (e) {
+    return { error: `a temporary index cannot be made: ${(e as Error).message}` };
+  }
+  try {
+    const env = { ...process.env, GIT_INDEX_FILE: join(dir, "index") };
+    const steps: [string[], string?][] = [[["read-tree", base]], [["apply", "--cached"], series], [["write-tree"]]];
+    let out = "";
+    for (const [args, input] of steps) {
+      const r = git(repo, args, input, env);
+      if ("error" in r) return { error: `the series does not apply to ${base}: ${r.error}` };
+      out = r.out.toString("utf8").trim();
+    }
+    return /^[0-9a-f]{40,64}$/.test(out) ? { tree: out } : { error: "git write-tree printed no tree" };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+export interface GateLog {
+  id: string;
+  base: string;
+  series: string;
+  tree: string;
+  rows: { exit: number | "deferred"; kind: RowKind; file?: string; command: string }[];
+}
+const HEADS = ["presign-gate", "base", "series", "tree", "started"] as const;
+const ROW = /^(0|[1-9][0-9]{0,2}|deferred)\t([0-9]+\.[0-9])\t(check|typecheck|test|reads)\t(-|[^\t]+)\t([^\t]+)$/;
+
+/** The log's grammar (W-563 behaviour 2): the five header lines once each in order, the rows, `# minutes:` last, LF ends. */
+export function readGateLog(text: string): GateLog | { error: string } {
+  if (text.includes("\r")) return { error: "the log holds a CR" };
+  if (!text.endsWith("\n")) return { error: "the log does not end with a newline" };
+  const lines = text.slice(0, -1).split("\n");
+  const head: string[] = [];
+  for (const [i, key] of HEADS.entries()) {
+    const m = new RegExp(`^# ${key}: (\\S+)$`).exec(lines[i] ?? "");
+    if (m === null) return { error: `line ${i + 1} is not "# ${key}: <value>"` };
+    head.push(m[1]!);
+  }
+  // the runner's own `new Date().toISOString()`: the exact form, and a real instant (a day past the month's end rolls over and is refused)
+  const started = head[4]!;
+  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(started) || instant(started) === undefined) return { error: "the started header is not an ISO instant" };
+  if (!/^[0-9a-f]{40,64}$/.test(head[1]!) || !/^sha256:[0-9a-f]{64}$/.test(head[2]!) || !/^[0-9a-f]{40,64}$/.test(head[3]!)) return { error: "the base, series or tree header is out of form" };
+  if (!/^# minutes: [0-9]+\.[0-9]$/.test(lines.at(-1) ?? "")) return { error: 'the last line is not "# minutes: <n.n>"' };
+  const rows: GateLog["rows"] = [];
+  for (const [i, line] of lines.slice(HEADS.length, -1).entries()) {
+    const m = ROW.exec(line);
+    if (m === null) return { error: `line ${i + HEADS.length + 1} is not a row "<exit>\\t<seconds>\\t<kind>\\t<file|->\\t<command>"` };
+    rows.push({ exit: m[1] === "deferred" ? "deferred" : Number(m[1]), kind: m[3] as RowKind, ...(m[4] === "-" ? {} : { file: m[4]! }), command: m[5]! });
+  }
+  return { id: head[0]!, base: head[1]!, series: head[2]!.slice("sha256:".length), tree: head[3]!, rows };
+}
+
+// W-563 r3: a deferred row (not started within the runner's budget) is deferred to `ci --opus`, not a failure
+const failedRow = (r: { exit: number | "deferred" }): boolean => r.exit !== 0 && r.exit !== "deferred";
+const rowName = (r: { kind: string; file?: string }): string => (r.file === undefined ? r.kind : `${r.kind} ${r.file}`);
+
+/**
+ * W-563 behaviour 3: why the signer's spec verdict on a prototyped brief cannot be written. Nothing when the brief names no
+ * prototype; else the transcript cites one `Gate log:`, the log parses, its series is the brief's digest and the series file
+ * holds it, its tree is the one the series makes on the log's base, and its rows cover `gateRows` there, each exit 0 or deferred.
+ */
+export function gateLogProblems(brief: string, transcript: string, root: string, id: string): string[] {
+  const proto = readPrototype(brief);
+  if (proto === undefined) return [];
+  if ("error" in proto) return [proto.error];
+  const cites = transcript.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith("Gate log:"));
+  if (cites.length !== 1) return [`${cites.length} "Gate log:" lines; cite the runner's log on one line: "Gate log: <absolute or ~/ path>" (node --import tsx packages/commands/src/presign-gate.ts)`];
+  const named = cites[0]!.slice("Gate log:".length).trim();
+  let path = named;
+  try {
+    if (named.startsWith("~/")) path = join(homedir(), named.slice(2));
+  } catch {
+    path = "";
+  }
+  if (!isAbsolute(path)) return [`"${named}" is not an absolute or ~/ path`];
+  let text: string;
+  try {
+    const st = statSync(path);
+    if (!st.isFile() || st.size > LOG_MAX_BYTES) throw new Error("cap");
+    text = readFileSync(path, "utf8");
+  } catch {
+    return [`${named} is not a readable regular file of at most ${LOG_MAX_BYTES} bytes`];
+  }
+  const log = readGateLog(text);
+  if ("error" in log) return [`${named}: ${log.error}`];
+  if (log.id !== id) return [`${named} gates ${log.id}, not ${id}`];
+  if (log.series !== proto.digest) return [`${named} gates series sha256:${log.series}, not the brief's sha256:${proto.digest}: run the gate again on the signed series`];
+  const series = loadSeries(proto);
+  if ("error" in series) return [series.error];
+  const top = git(root, ["rev-parse", "--show-toplevel"]);
+  if ("error" in top) return [`the officina is in no git repository: ${top.error}`];
+  const repo = top.out.toString("utf8").trim();
+  const made = treeOfSeries(repo, log.base, series.text);
+  if ("error" in made) return [made.error];
+  if (made.tree !== log.tree) return [`${named} gates tree ${log.tree}, and the series makes ${made.tree} on ${log.base}: run the gate again at the series' tree`];
+  const want = gateRows(repo, log.base, made.tree);
+  if ("error" in want) return [want.error];
+  const problems: string[] = [];
+  for (const w of want) {
+    const got = log.rows.filter((r) => r.kind === w.kind && r.file === w.file && r.command === w.command);
+    if (got.length === 0) problems.push(`${named} has no row ${rowName(w)} (\`${w.command}\`)`);
+    else if (got.some(failedRow)) problems.push(`${named}'s row ${rowName(w)} exited ${got.find(failedRow)!.exit}`);
+  }
+  return problems;
+}
+
+export interface GateOptions {
+  now?: () => Date;
+  /** a row still running at this many milliseconds is killed and recorded as failed, exit 124 */
+  rowTimeoutMs?: number;
+  /** a row not started this many milliseconds after the first is logged `deferred` (deferred to `ci --opus`) */
+  budgetMs?: number;
+  /** rows run at once: the host's cores, at most POOL_MAX */
+  pool?: number;
+}
+
+/** The gate's own environment for every row: an outer read trace (`bisellium ci` runs the suite under one) reaches no row, as test-reads.mjs starts its trace afresh. */
+function rowEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  delete env.NODE_OPTIONS;
+  for (const k of Object.keys(env)) if (k.startsWith("BISELLIUM_RECORD_")) delete env[k];
+  return env;
+}
+
+/** One command in the worktree, its process group killed at the timeout: its exit, 124 when it timed out. */
+function sh(wt: string, command: string, timeoutMs: number, env: NodeJS.ProcessEnv = rowEnv()): Promise<number> {
+  return new Promise((done) => {
+    const child = spawn("sh", ["-c", command], { cwd: wt, stdio: "ignore", env, detached: true });
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try {
+        process.kill(-(child.pid ?? NaN), "SIGKILL");
+      } catch {
+        child.kill("SIGKILL");
+      }
+    }, timeoutMs);
+    child.on("error", () => (clearTimeout(timer), done(1)));
+    child.on("close", (code) => (clearTimeout(timer), done(timedOut ? 124 : (code ?? 1))));
+  });
+}
+
+async function runRow(wt: string, row: GateRow, scratch: string, n: number, timeoutMs: number): Promise<number> {
+  if (row.command === UNNAMED) return 1;
+  if (row.kind !== "reads") return sh(wt, row.command, timeoutMs);
+  const log = join(scratch, `reads-${n}.log`);
+  const env = { ...rowEnv(), NODE_OPTIONS: `--import ${join(wt, "scripts", "record-reads.mjs")}`, BISELLIUM_RECORD_READS: log };
+  const run = await sh(wt, row.command, timeoutMs, env);
+  if (run !== 0) return run;
+  const check = spawnSync("node", [join("scripts", "ci-scope.mjs"), "--check-reads", log], { cwd: wt, encoding: "utf8", timeout: timeoutMs, env: rowEnv() });
+  if (check.error !== undefined) return (check.error as NodeJS.ErrnoException).code === "ETIMEDOUT" ? 124 : 1;
+  // a reused check's exit is the judge: a non-zero exit with no recognised line (a scalar test:record, a missing script) fails the row
+  const bad = check.status !== 0 || (check.stdout ?? "").split("\n").some((l) => l.startsWith("unlisted:") || l.startsWith("failed:") || l.startsWith("missing:"));
+  return bad ? 1 : 0;
+}
+
+/**
+ * W-563 behaviour 2: the runner. Exit 2 (no log) unless the worktree is clean at the series' tree; else the rows run pooled,
+ * each under its timeout, and a row not started within the budget is `deferred`; the log is always written; exit 1 when a
+ * row failed (a timeout included), 0 otherwise (deferred rows do not fail).
+ */
+export async function runGate(argv: string[], opts: GateOptions = {}): Promise<number> {
+  const now = opts.now ?? (() => new Date());
+  const flags = new Map<string, string>();
+  for (let i = 0; i < argv.length; i += 2) {
+    const [k, v] = [argv[i]!, argv[i + 1]];
+    if (!["--opus", "--worktree", "--base", "--series", "--out"].includes(k) || v === undefined || flags.has(k)) {
+      console.error("usage: presign-gate --opus <id> --worktree <dir> --base <sha> --series <mbox> --out <log>");
+      return 2;
+    }
+    flags.set(k, v);
+  }
+  const [id, wt, base, seriesPath, out] = ["--opus", "--worktree", "--base", "--series", "--out"].map((k) => flags.get(k));
+  if (id === undefined || wt === undefined || base === undefined || seriesPath === undefined || out === undefined) {
+    console.error("usage: presign-gate --opus <id> --worktree <dir> --base <sha> --series <mbox> --out <log>");
+    return 2;
+  }
+  const refuse = (why: string): number => (console.error(`presign-gate: ${why}`), 2);
+  let series: Buffer;
+  try {
+    series = readFileSync(seriesPath);
+  } catch {
+    return refuse(`${seriesPath} cannot be read`);
+  }
+  const status = git(wt, ["status", "--porcelain", "--untracked-files=all"]);
+  if ("error" in status) return refuse(status.error);
+  if (status.out.length > 0) return refuse(`${wt} is not clean`);
+  const head = git(wt, ["rev-parse", "HEAD^{tree}"]);
+  const baseSha = git(wt, ["rev-parse", "--verify", `${base}^{commit}`]);
+  if ("error" in head) return refuse(head.error);
+  if ("error" in baseSha) return refuse(baseSha.error);
+  const made = treeOfSeries(wt, base, series.toString("utf8"));
+  if ("error" in made) return refuse(made.error);
+  const tree = head.out.toString("utf8").trim();
+  if (tree !== made.tree) return refuse(`${wt} is at tree ${tree}, and the series makes ${made.tree} on ${base}`);
+  const rows = gateRows(wt, base, tree);
+  if ("error" in rows) return refuse(rows.error);
+  const [timeoutMs, budgetMs] = [opts.rowTimeoutMs ?? ROW_TIMEOUT_MS, opts.budgetMs ?? BUDGET_MS];
+  const pool = Math.max(1, Math.min(opts.pool ?? availableParallelism(), POOL_MAX, rows.length));
+  const started = now();
+  const lines = [
+    `# presign-gate: ${id}`,
+    `# base: ${baseSha.out.toString("utf8").trim()}`,
+    `# series: sha256:${createHash("sha256").update(series).digest("hex")}`,
+    `# tree: ${tree}`,
+    `# started: ${started.toISOString()}`,
+  ];
+  const results = rows.map((r) => `deferred\t0.0\t${r.kind}\t${r.file ?? "-"}\t${r.command}`);
+  const scratch = mkdtempSync(join(tmpdir(), "presign-gate-reads-"));
+  let failed = false;
+  let taken = 0;
+  const shared = new Map<string, Promise<number>>();
+  try {
+    const worker = async (): Promise<void> => {
+      for (let n = taken++; n < rows.length; n = taken++) {
+        // a row not started within the budget stays `deferred`: deferred to `ci --opus`, never a failure
+        if (now().getTime() - started.getTime() >= budgetMs) continue;
+        const row = rows[n]!;
+        const t0 = Date.now();
+        // rows sharing one kind and command (a multi-file test:suite command) run it once and share its exit
+        const key = `${row.kind}	${row.command}`;
+        const run = shared.get(key) ?? runRow(wt, row, scratch, n, timeoutMs);
+        shared.set(key, run);
+        const exit = await run;
+        failed ||= exit !== 0;
+        results[n] = `${Math.min(exit, 999)}\t${((Date.now() - t0) / 1000).toFixed(1)}\t${row.kind}\t${row.file ?? "-"}\t${row.command}`;
+      }
+    };
+    await Promise.all(Array.from({ length: pool }, worker));
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+    lines.push(...results, `# minutes: ${((now().getTime() - started.getTime()) / 60000).toFixed(1)}`);
+    writeFileSync(out, `${lines.join("\n")}\n`);
+  }
+  return failed ? 1 : 0;
+}
+
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) void runGate(process.argv.slice(2)).then((code) => process.exit(code));
+

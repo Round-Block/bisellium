@@ -6,6 +6,8 @@ import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
+import { gateLogProblems } from "./presign-gate.js";
+import { CLASS_TAG, censusProblems, repeatedClasses } from "./class-census.js";
 import { codexHome, codexModels, sessionRan, validTurnRan, type TurnRan } from "./codex-run.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
@@ -122,7 +124,7 @@ export function designOf(text: string): "changes" | "keeps" | undefined {
 }
 
 /** W-297: a class tag (D-070 B), whole: `[class: <area>×<slug>]`, each a lower-case word of letters, digits and hyphens. */
-export const CLASS_TAG = /\[class: ([a-z0-9][a-z0-9-]*×[a-z0-9][a-z0-9-]*)\]/g;
+export { CLASS_TAG };
 
 export interface Conversion {
   /** The finding's number as written. */
@@ -1187,6 +1189,14 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
         // W-443: a prototyped brief's written genuine red command is the one its red evidence ran
         ...redReplayProblems(read.bytes.toString("utf8"), opusId).map((p) => `red command: ${p}`),
       ];
+      // W-563 (D-189): a class this opus failed on that is repeated (another round, another opus) needs its census line
+      const repeated = repeatedClasses(join(root, "ci"), opusId, (rel) => {
+        const r = readContainedRegularFile(root, rel, "ci");
+        return "error" in r ? undefined : r.bytes.toString("utf8");
+      });
+      problems.push(...("error" in repeated ? [repeated.error] : censusProblems(read.bytes.toString("utf8"), repeated)).map((p) => `class census: ${p}`));
+      // W-563 (D-189): a prototyped brief's signature cites the pre-sign gate's log at the series' own tree, every owed row passed
+      if (problems.length === 0) problems.push(...gateLogProblems(read.bytes.toString("utf8"), transcript.toString("utf8"), root, opusId).map((p) => `pre-sign gate: ${p}`));
       if (problems.length > 0) {
         console.error(problems.map((p) => `${opusId}: ${p}`).join("\n"));
         return { exitCode: 2 };

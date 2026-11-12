@@ -1,0 +1,118 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-563-b4\s --import tsx packages/cli/src/w563.test.ts
+# exit: 1
+# at: 2026-11-11T10:33:22.531Z
+# sella: ladder-lead
+# tree: tree:a3511911a96c02c94d1e64c37fe6efd10182f07e
+# ticket: {"opus":"W-563","step":"reds","action":"red","round":4,"actor":"producer","studio":".worktrees/W-563/studio","head":"a6973c104655a487e84147123ebfe39bfd206965","brief":"8802baf84a30696fd58d0b6412d442f3a9622cf1","at":"2026-11-11T10:33:22.494Z"}
+
+TAP version 13
+# Subtest: W-563-b4 a repeated class without a census is refused
+not ok 1 - W-563-b4 a repeated class without a census is refused
+  ---
+  duration_ms: 31.270523
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:713'
+  failureType: 'testCodeFailure'
+  error: |-
+    a repeated class without a census is refused: exit (stderr "")
+    
+    0 !== 2
+    
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:28:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-563-b4 an output at another digest is refused
+not ok 2 - W-563-b4 an output at another digest is refused
+  ---
+  duration_ms: 16.303102
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:713'
+  failureType: 'testCodeFailure'
+  error: |-
+    an output at another digest is refused: exit (stderr "")
+    
+    0 !== 2
+    
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:28:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-563-b4 a limit without a follow-on is refused
+not ok 3 - W-563-b4 a limit without a follow-on is refused
+  ---
+  duration_ms: 17.199001
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:1:713'
+  failureType: 'testCodeFailure'
+  error: |-
+    a limit without a follow-on is refused: exit (stderr "")
+    
+    0 !== 2
+    
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-563/packages/cli/src/w563.test.ts:28:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-563-b4 a class seen once needs no census
+ok 4 - W-563-b4 a class seen once needs no census
+  ---
+  duration_ms: 14.661194
+  type: 'test'
+  ...
+# Subtest: W-563-b4 a well-shaped census signs
+ok 5 - W-563-b4 a well-shaped census signs
+  ---
+  duration_ms: 16.016348
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 2
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 106.252048

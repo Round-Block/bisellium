@@ -52,6 +52,7 @@ import { buildPacket, parsePacketArgs } from "../../../scripts/review-packet.mjs
 import { boundHead, clean, cleanup, dirtyHold, unstagedEdit, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readMergeQueue, rebindPr, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady, runRed, runReview } from "./lifecycle.js";
 import { amPatch, readPrototype, readReplay, writeAttempt, type Replay } from "./prototype-replay.js";
+import { OTHER_LOG, classesIn, findingLines } from "@bisellium/commands/class-census.js";
 import { sweepLines, sweepWorktrees, unpushedBranches } from "./prune.js";
 import { runVerdict } from "./verdict.js";
 import { censusUnrun, execStreamRan } from "@bisellium/commands/codex-run.js";
@@ -1697,21 +1698,7 @@ function classLoop(f: Facts, rounds: BuildReviewRound[]): string | undefined {
   return `${loop}: a class loop goes to the architect, not a builder (D-085): state the limit in ${briefRel(f.id)} (the forms the rule recognises, every other form a limit) and sign it again in ${join(".worktrees", f.id, f.studioRel)}, or sign it unchanged when the form is inside the stated domain; a security or evidence blocker opens blocking (security) or blocking (evidence)`;
 }
 
-/** W-381: another opus's review or spec log, by name: `<opus>-review-<n>.log` or `<opus>-spec-<n>.log`. */
-const OTHER_LOG = /^(.+)-(?:review|spec)-[1-9][0-9]{0,14}\.log$/;
-/** W-381: the numbered lines of every `## Findings` section of a log (each to the next `## ` line), read loosely so it reads
- *  no less than is there: CRLF and CR line ends and trailing blanks are dropped first, and a log `parseVerdictLog` refuses
- *  (one written before a grammar it now holds, or with a second Findings section) still names its classes. */
-function findingLines(text: string): string[] {
-  const out: string[] = [];
-  let inside = false;
-  for (const l of text.split(/\r\n|\r|\n/).map((x) => x.trimEnd())) {
-    if (l.startsWith("## ")) inside = l === "## Findings";
-    else if (inside && /^[1-9]\d*\. \S/.test(l)) out.push(l);
-  }
-  return out;
-}
-const classesIn = (text: string): string[] => [...text.matchAll(CLASS_TAG)].map((m) => m[1]!);
+// W-563: OTHER_LOG, findingLines and classesIn live in @bisellium/commands/class-census.js, shared with verdict's census
 
 /**
  * W-381 (D-070 C, D-076 D; W-297 part 2): why the fix of a failed review or spec-review round is held, or undefined. Each class

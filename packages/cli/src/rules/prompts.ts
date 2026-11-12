@@ -28,11 +28,17 @@ const BUILDER_SELF_REVIEW = [
   "test titles true to a changed domain",
 ];
 /** W-426 (the Patron, 2026-10-27): a UI judge asks whether each rule makes sense on the screen and who ruled it. */
+/** W-563 (D-189): a round-1 reviewer lists every instance of a flagged class, not the first. */
+export const EVERY_SITE = "every site of a flagged class in round 1";
+/** W-563: the draft prompt names the pre-sign gate's runner and the signature's citation of its log. */
+const GATE = ["presign-gate.ts", "Gate log:"];
+/** W-563: a reused call's non-zero exit or timeout must be named as a refusal. */
+export const EXIT_BOUNDARY = "Each reused command, script or subprocess the opus runs gets one Input row naming the call and the function that turns its non-zero exit or timeout into a refusal.";
 const SENSE = ["for sense, not only conformance", "the Patron ruled it or an agent wrote it", "what the screen should do instead"];
 export const PROMPT_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
-  "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA],
+  "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA, ...GATE, EXIT_BOUNDARY],
   "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA, ...BUILDER_SELF_REVIEW],
-  "prompts/build-review.md": ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>", "fills the eight slots", DATA],
+  "prompts/build-review.md": ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>", "fills the eight slots", DATA, EVERY_SITE],
 };
 /** W-541 (D-189): the command forms a template must not hold, case-sensitive substrings: the builder runs only the test
  *  files it touches and typecheck. Any other spelling of the full suite (a script it calls, a prose paraphrase) is not read. */
@@ -41,7 +47,7 @@ export const PROMPT_FORBIDS: Readonly<Record<string, readonly string[]>> = {
 };
 /** W-426: the UI judges' templates and their texts; the Ops lex clause names `PROMPT_TEMPLATES` only. */
 const SENSE_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
-  "prompts/spec-review.md": SENSE,
+  "prompts/spec-review.md": [...SENSE, EVERY_SITE],
   "prompts/ui-input.md": ["<ID>", "<OPUS>", "<READ>", "<SHOTS>", "<QUESTIONS>", DATA, ...SENSE],
 };
 
