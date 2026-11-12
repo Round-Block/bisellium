@@ -38,6 +38,9 @@ export const LOG_MAX_BYTES = 1024 * 1024;
 export const ROW_TIMEOUT_MS = 600_000;
 export const BUDGET_MS = 600_000;
 export const POOL_MAX = 8;
+/** W-604 (w551-gate-meet-1112): a command naming two or more test files (one `node --test` over a family) is shared: its rows take one run. */
+const testFiles = (command: string): string[] => command.split(/\s+/).filter((w) => TEST_FILE.test(w));
+export const isShared = (row: GateRow): boolean => (row.kind === "test" || row.kind === "reads") && row.command !== UNNAMED && testFiles(row.command).length >= 2;
 const GIT_TIMEOUT_MS = 120_000;
 const READER_TIMEOUT_MS = 120_000;
 const TEST_FILE = /\.test\.(?:ts|mts|mjs)$/;
@@ -321,10 +324,17 @@ function rowEnv(): NodeJS.ProcessEnv {
   return env;
 }
 
-/** One command in the worktree, its process group killed at the timeout: its exit, 124 when it timed out. */
-function sh(wt: string, command: string, timeoutMs: number, env: NodeJS.ProcessEnv = rowEnv()): Promise<number> {
+/**
+ * W-604: the traced run's one root. `node --test` does not run an `--import` preload in its runner, so each file's process
+ * would log its own root and the check would refuse the trace; this node wrapper, preloading record-reads, is the run's root
+ * and runs the command under `sh -c` (argv[1] is a fixed name, so the preload never takes the command for a test file).
+ */
+const TRACE_ROOT = 'const r = require("node:child_process").spawnSync("sh", ["-c", process.argv[2]], { stdio: "ignore" }); process.exit(r.status ?? 1);';
+
+/** One command in the worktree (as `sh -c`, or as `argv`), its process group killed at the timeout: its exit, 124 when it timed out. */
+function sh(wt: string, command: string, timeoutMs: number, env: NodeJS.ProcessEnv = rowEnv(), argv: [string, string[]] = ["sh", ["-c", command]]): Promise<number> {
   return new Promise((done) => {
-    const child = spawn("sh", ["-c", command], { cwd: wt, stdio: "ignore", env, detached: true });
+    const child = spawn(argv[0], argv[1], { cwd: wt, stdio: "ignore", env, detached: true });
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
@@ -343,14 +353,34 @@ async function runRow(wt: string, row: GateRow, scratch: string, n: number, time
   if (row.command === UNNAMED) return 1;
   if (row.kind !== "reads") return sh(wt, row.command, timeoutMs);
   const log = join(scratch, `reads-${n}.log`);
+  const run = await traced(wt, row.command, log, timeoutMs);
+  return run !== 0 ? run : judgeReads(wt, log, row.file!, timeoutMs);
+}
+
+/** The command once under record-reads, writing its trace to `log`: its exit, 124 when it timed out. */
+function traced(wt: string, command: string, log: string, timeoutMs: number): Promise<number> {
   const env = { ...rowEnv(), NODE_OPTIONS: `--import ${join(wt, "scripts", "record-reads.mjs")}`, BISELLIUM_RECORD_READS: log };
-  const run = await sh(wt, row.command, timeoutMs, env);
-  if (run !== 0) return run;
+  return sh(wt, command, timeoutMs, env, [process.execPath, ["-e", TRACE_ROOT, "presign-gate-root", command]]);
+}
+
+/** The reads check of a trace for one added test file: 0 when it passes, 1 when it fails, 124 when it timed out. */
+function judgeReads(wt: string, log: string, _file: string, timeoutMs: number): number {
   const check = spawnSync("node", [join("scripts", "ci-scope.mjs"), "--check-reads", log], { cwd: wt, encoding: "utf8", timeout: timeoutMs, env: rowEnv() });
   if (check.error !== undefined) return (check.error as NodeJS.ErrnoException).code === "ETIMEDOUT" ? 124 : 1;
   // a reused check's exit is the judge: a non-zero exit with no recognised line (a scalar test:record, a missing script) fails the row
   const bad = check.status !== 0 || (check.stdout ?? "").split("\n").some((l) => l.startsWith("unlisted:") || l.startsWith("failed:") || l.startsWith("missing:"));
   return bad ? 1 : 0;
+}
+
+/** W-604: a shared command's rows, run once: under the read trace when any is a `reads` row; each `test` row takes the run's exit, each `reads` row the run's exit or, when it passed, its own file's reads check. */
+async function runShared(wt: string, command: string, group: GateRow[], scratch: string, n: number, timeoutMs: number): Promise<number[]> {
+  if (!group.some((r) => r.kind === "reads")) {
+    const exit = await sh(wt, command, timeoutMs);
+    return group.map(() => exit);
+  }
+  const log = join(scratch, `reads-${n}.log`);
+  const run = await traced(wt, command, log, timeoutMs);
+  return group.map((r) => (r.kind !== "reads" || run !== 0 ? run : judgeReads(wt, log, r.file!, timeoutMs)));
 }
 
 /**
@@ -408,7 +438,9 @@ export async function runGate(argv: string[], opts: GateOptions = {}): Promise<n
   const scratch = mkdtempSync(join(tmpdir(), "presign-gate-reads-"));
   let failed = false;
   let taken = 0;
-  const shared = new Map<string, Promise<number>>();
+  const shared = new Map<string, Promise<number[]>>();
+  const groups = new Map<string, number[]>();
+  for (const [n, r] of rows.entries()) if (isShared(r)) groups.set(r.command, [...(groups.get(r.command) ?? []), n]);
   try {
     const worker = async (): Promise<void> => {
       for (let n = taken++; n < rows.length; n = taken++) {
@@ -416,11 +448,15 @@ export async function runGate(argv: string[], opts: GateOptions = {}): Promise<n
         if (now().getTime() - started.getTime() >= budgetMs) continue;
         const row = rows[n]!;
         const t0 = Date.now();
-        // rows sharing one kind and command (a multi-file test:suite command) run it once and share its exit
-        const key = `${row.kind}	${row.command}`;
-        const run = shared.get(key) ?? runRow(wt, row, scratch, n, timeoutMs);
-        shared.set(key, run);
-        const exit = await run;
+        // W-604: a shared command's rows (its test rows and its reads row) take one run of it
+        const group = groups.get(row.command);
+        let exit: number;
+        if (group === undefined || !isShared(row)) exit = await runRow(wt, row, scratch, n, timeoutMs);
+        else {
+          const run = shared.get(row.command) ?? runShared(wt, row.command, group.map((g) => rows[g]!), scratch, n, timeoutMs);
+          shared.set(row.command, run);
+          exit = (await run)[group.indexOf(n)]!;
+        }
         failed ||= exit !== 0;
         results[n] = `${Math.min(exit, 999)}\t${((Date.now() - t0) / 1000).toFixed(1)}\t${row.kind}\t${row.file ?? "-"}\t${row.command}`;
       }
