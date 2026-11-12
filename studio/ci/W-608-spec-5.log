@@ -1,0 +1,27 @@
+# opus: W-608
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1ce95-d9f0-7142-bff6-3a0be9ca1402
+# outcome: passed
+# at: 2026-11-12T07:28:44.182Z
+# tree: tree:5312f3f82f94d5d21c4fd3b074e5622877b3039d
+# brief: briefs/W-608.md blob:486019eafea6ee252b92828d3dda8bd903c78826
+# ticket: {"opus":"W-608","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":".worktrees/W-608/studio","head":"f425b0e96d95b6db1e516874847e6fd690797606","brief":"486019eafea6ee252b92828d3dda8bd903c78826","at":"2026-11-12T07:28:33.452Z"}
+
+## Findings
+
+1. advisory — brief:46 The new limit overpromises two Git cases: `.gitignore` does not hide already-tracked paths, and a `gitOut` failure during `resolveTestBase` makes `oneSidedFindings` return `[]`, not a block. Replace the affected text with: `an untracked path, including an ignored untracked path, is absent from the diff and not read; a git failure after base resolution is one test.one_sided block at the git site, while an unresolved base yields no test.one_sided site.` [severity: S2] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: none: compare the limit with `resolveTestBase` and `oneSidedFindings`
+
+## Verdict
+
+Required shell output:
+
+```text
+f425b0e9 docs(W-608): brief revision 2, r3 advisories applied
+83e9d28e spec(W-608): signed
+e869dcd2 chore(studio): mark W-604 done (#1165)
+```
+
+VERDICT: PASS

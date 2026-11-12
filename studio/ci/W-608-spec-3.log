@@ -1,0 +1,19 @@
+# opus: W-608
+# phase: spec
+# round: 3
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1ce95-d9f0-7142-bff6-3a0be9ca1402
+# outcome: passed
+# at: 2026-11-12T07:17:17.673Z
+# tree: tree:5312f3f82f94d5d21c4fd3b074e5622877b3039d
+# brief: briefs/W-608.md blob:caddc7ff9e7ba795e7174a2499a04c5f6fa93270
+# ticket: {"opus":"W-608","step":"spec","action":"verdict-spec","round":3,"actor":"spec-reviewer","studio":"studio","head":"e869dcd298bbb8412b0016a46f747d5f9656ade0","brief":"caddc7ff9e7ba795e7174a2499a04c5f6fa93270","at":"2026-11-12T07:17:16.996Z"}
+
+## Findings
+1. advisory — brief:59 The reused-call row omits the `bisellium ci --opus W-608 --studio studio` acceptance call at brief:75; replace brief:59 with: `| 4. The reused gates | npm test, npm run -s typecheck, lint, format:check, both officina checks and bisellium ci --opus W-608 --studio studio exit 0 | exit: each named reused command; a non-zero exit fails acceptance |`. [severity: S4] [class: spec×input-without-named-rejector] — check: none: brief.input.reused-call-coverage
+2. advisory — brief:46 The numeric-form promise combines Git’s changed paths and line numbers (`gitOut`/`addedLines`) with current filesystem text (`readCandidate`) without stating their disagreement cases. Replace brief:46 with: `Unchanged code the promises lean on is a stated limit, not a guarantee (D-076 E): lex, argumentEnd, OK_SITE, sidedWaived, isTestPath, registeredPaths, resolveTestBase, addedLines, readCandidate, gitOut, checkStudio's call of checkTests and the check CLI's printing and exit. For change/content identity, oneSidedFindings trusts gitOut and addedLines for changed paths and line numbers and readCandidate for current text; untracked or ignored paths are absent, while absent, symlink, non-file, over-1-MiB or unreadable entries produce no test.one_sided site and remain unchanged-code limits.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/rules/tests.test.ts
+
+## Verdict
+The brief may proceed with both advisory replacements; required shell output was `e869dcd2 chore(studio): mark W-604 done (#1165)`.
+VERDICT: PASS
