@@ -1448,6 +1448,7 @@ export function deriveNext(f: Facts): Derived {
 
     // W-610 (review-order-meet-1112): after a pass at this tree, the one full suite runs at the reviewed tree before pr; a
     // ci that exits non-zero is a builder's, and its source change voids the pass (the review is no longer current)
+    if (gate?.tree !== cur) return hold("pr", `the passed review's tree ${gate?.tree} is not the tip tree ${cur}`);
     // W-610 (w610-proof-meet-1112): at most CI_RUNS_PER_TREE full suites are ordered at one reviewed tree; then a failed ci is a builder's
     const ciRuns = gates !== undefined && !gates.ok ? ciRunsAt(f, id, cur) : { runs: 0, logs: [] };
     if (gates !== undefined && !gates.ok && ciRuns.runs >= CI_RUNS_PER_TREE)
@@ -1511,7 +1512,8 @@ export function deriveNext(f: Facts): Derived {
         "producer",
         p.kind === "open-stale" ? `PR #${p.pr.number} is OPEN but not on the local tip` : p.kind === "unrelated" ? `a MERGED PR settles nothing: ${p.reason}` : "review is met and no PR exists for the head",
         `bisellium next ${id} --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>`,
-        [],
+        // W-610: the pass, the full gates and the tip are one source tree (source_excludes keep bookkeeping commits out)
+        [["trees", `reviewed ${gate?.tree} = gates ${cur} = tip ${cur}`]],
         p.kind === "open-stale" ? p.pr : undefined,
       );
     }
