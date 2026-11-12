@@ -41,6 +41,15 @@ export const POOL_MAX = 8;
 /** W-604 (w551-gate-meet-1112): a command naming two or more test files (one `node --test` over a family) is shared: its rows take one run. */
 const testFiles = (command: string): string[] => command.split(/\s+/).filter((w) => TEST_FILE.test(w));
 export const isShared = (row: GateRow): boolean => (row.kind === "test" || row.kind === "reads") && row.command !== UNNAMED && testFiles(row.command).length >= 2;
+/**
+ * W-604: a shared command's timeout, sized to its row: its test files x PER_FILE_MS, at least the row timeout and at most
+ * SHARED_MAX_MS. Measured: the 15-file next family ran 582 s alone under ci (W-563-build/ci7/measure.md), 39 s a file, so
+ * 120 s a file gives the 7-file row of W-551 840 s and the whole family the 1800 s ceiling, about 3x the measure.
+ */
+export const PER_FILE_MS = 120_000;
+export const SHARED_MAX_MS = 1_800_000;
+export const sharedTimeoutMs = (command: string, rowTimeoutMs: number, perFileMs: number): number =>
+  Math.max(rowTimeoutMs, Math.min(testFiles(command).length * perFileMs, SHARED_MAX_MS));
 const GIT_TIMEOUT_MS = 120_000;
 const READER_TIMEOUT_MS = 120_000;
 const TEST_FILE = /\.test\.(?:ts|mts|mjs)$/;
@@ -312,6 +321,8 @@ export interface GateOptions {
   rowTimeoutMs?: number;
   /** a row not started this many milliseconds after the first is logged `deferred` (deferred to `ci --opus`) */
   budgetMs?: number;
+  /** W-604: a shared command's timeout per test file it names (see sharedTimeoutMs) */
+  perFileMs?: number;
   /** rows run at once: the host's cores, at most POOL_MAX */
   pool?: number;
 }
@@ -465,7 +476,7 @@ export async function runGate(argv: string[], opts: GateOptions = {}): Promise<n
       if (group === undefined || !isShared(row)) continue;
       if (now().getTime() - started.getTime() >= budgetMs) continue;
       const t0 = Date.now();
-      const run = shared.get(row.command) ?? runShared(wt, row.command, group.map((g) => rows[g]!), scratch, n, timeoutMs);
+      const run = shared.get(row.command) ?? runShared(wt, row.command, group.map((g) => rows[g]!), scratch, n, sharedTimeoutMs(row.command, timeoutMs, opts.perFileMs ?? PER_FILE_MS));
       shared.set(row.command, run);
       record(n, (await run)[group.indexOf(n)]!, t0);
     }
