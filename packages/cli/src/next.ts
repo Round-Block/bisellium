@@ -1037,6 +1037,8 @@ export interface Derived {
   extra: [string, string][];
   /** W-377: the why is printed whole, however long (a ui pr or merge that waits names every ruling and path in it) */
   uncut?: true;
+  /** W-512: the hold is the queue's start order (`startOrder`): `next --all` prints it as queued, never a failure */
+  queued?: true;
 }
 
 /** W-298: the open petitiones naming `id`, in id order, from the main checkout's records (the ones `petitio` and the Inbox's `answer` write). Fails closed: a record that cannot be read may name this opus. */
@@ -1120,7 +1122,7 @@ export function deriveNext(f: Facts): Derived {
   // opus or take, or the one entry ahead of it; any other is held here, before any spec order or signature ticket
   const order = f.tip === undefined && state === "greenlit" ? f.order?.() : undefined;
   // the hold names the rung the opus stands at: spec while its spec is owed, branch once it is signed (the rest derived unordered)
-  if (order?.kind === "refused") return hold(deriveNext({ ...f, order: () => ({ kind: "free" }) }).step === "branch" ? "branch" : "spec", order.why);
+  if (order?.kind === "refused") return { ...hold(deriveNext({ ...f, order: () => ({ kind: "free" }) }).step === "branch" ? "branch" : "spec", order.why), queued: true };
 
   // 2 spec (the committed trunk)
   // W-355: the kind and seat pairing come from the checkout that owns the spec evidence; an unreadable owner holds here
@@ -1238,7 +1240,7 @@ export function deriveNext(f: Facts): Derived {
       const owing = retroHold(f);
       if (owing !== undefined) return hold("branch", owing);
       // W-512 (D-181): branch starts a lane: only a lane's own opus or its take, never the spec ahead (a later entry held at spec, above)
-      if (order?.kind === "ahead") return hold("branch", order.why);
+      if (order?.kind === "ahead") return { ...hold("branch", order.why), queued: true };
       // W-512 (W-592's lane-start half, D-192): branch refuses while its Files owned overlap with an opus another lane holds in flight
       const overlap = order?.kind === "now" ? laneOverlap(f, order.held) : undefined;
       if (overlap !== undefined) return hold("branch", overlap);
@@ -3496,6 +3498,7 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
   const lines: string[] = [];
   let failed = false;
   let open = 0;
+  const states = new Map<string, string>();
   for (const id of ids) {
     const state = recordOf(fsSrc(studioAbs), id)?.["state"];
     if (typeof state !== "string" || !STATES.some((s) => s.id === state)) {
@@ -3506,7 +3509,7 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
     if (!OPEN_STATES.has(state)) continue;
     open++;
     try {
-      const f = gather(repo, studioAbs, id);
+      const f = gather(repo, studioAbs, id, states);
       // the refusal next <opus> makes first: a record in neither master nor opus/<id> is an unknown opus, never derived
       if (f.trunkRecord === undefined && f.branchRecord === undefined) {
         failed = true;
@@ -3522,8 +3525,9 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
         continue;
       }
       // a held derivation is printed as next <opus> prints it, and the run exits 1: something must be fixed or decided
-      if (d.status === "held") failed = true;
-      lines.push(`next: ${id} ${d.step} ${d.status} · actor: ${d.actor} · why: ${one(d.why)} · traditio: ${one(handover.line)}`);
+      // W-512: an order hold is the queue working as ruled, printed as queued: it fails nothing
+      if (d.status === "held" && d.queued !== true) failed = true;
+      lines.push(`next: ${id} ${d.step} ${d.queued === true ? "queued" : d.status} · actor: ${d.actor} · why: ${one(d.why)} · traditio: ${one(handover.line)}`);
     } catch (e) {
       failed = true;
       lines.push(`next: ${id} failed · why: ${one((e as Error).message)}`);
