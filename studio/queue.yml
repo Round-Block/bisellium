@@ -10,6 +10,7 @@ queues:
       - { opus: W-609, says: "no new lane opens while first-run ci fails over 30% or 2+ of the last 5 round-1 reviews have an S1; process, right after W-595 (balance-meet-1112)" }
       - { opus: W-301, says: "console writes via auto-merge PR" }
       - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), split from W-169; process (D-193)" }
+      - { opus: W-597, says: "each lane's next unclaimed entry gets one spec-ahead draft; sign refuses a stale base; overlap via W-592; process, after W-592 (spec-ahead-lanes-meet-1112)" }
       - { opus: W-308, says: "opus timeline; E1 (next.ts), after W-551 (D-192)", next_ts: true }
       - { opus: W-331, says: "next.ts split; debt slot, first (balance-meet-1112: lets two next.ts opera run at once)", next_ts: true }
       - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
@@ -19,7 +20,6 @@ queues:
       - { opus: W-157, says: "decide: the Patron records a ruling (D-181)" }
       - { opus: W-596, says: "handoff refuses without a passing pre-handoff gate (ci env, census tests, importers, per-file timeout); replaces test:preflight; high, process (misses-meet-1111)" }
       - { opus: W-283, says: "Status page served" }
-      - { opus: W-597, says: "while a lane builds, next orders the next entry's spec-ahead draft; check warns when none exists; W-547's follow-on, process (misses-meet-1111)" }
       - { opus: W-332, says: "step tickets", next_ts: true }
       - { opus: W-579, says: "tests gate limit from measured times, batch split; per-file timeout names the hung file, progress line; ci --opus commits its own logs; process (misses-meet-1111)", folded: [W-560] }
       - { opus: W-304, says: "seats read live, console MVP" }
