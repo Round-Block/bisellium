@@ -340,3 +340,81 @@ row("W-610-b2 fix1: a worktree source_excludes that differs from main's refuses 
   const r = direct(w, w.wt, reviewArgs);
   assert.notEqual(r.status, 0, ran("the review verb refuses a drifted exclusion", r));
 });
+
+// ---------------------------------------------------------------------------
+// fix round 2 (brief r3): the full-gate admitter (`admitCurrentGates`) and the verdict's `# tree:` read the one trusted
+// source (`trustedSource`): literal, root-relative pathspecs, and main's exclusions with any worktree drift refused
+// ---------------------------------------------------------------------------
+/** A scratch officina at `officina` (a sibling `axb/` outside the source tree) with a marked record whose automated `tests` gate passed at the tree, its log written (committed unless `commitLog` is false). */
+async function fullGateRepo(officina: string, commitLog = true): Promise<{ repo: string; studio: string; rel: string }> {
+  const { repo, studio } = officinaRepo(officina);
+  const studioRel = officina;
+  writeFileSync(join(studio, "bisellium.yml"), 'probationes:\n  - { id: tests, name: Tests, kind: automated, command: "node -e 0" }\nsource_excludes: [ci, opera, axb]\n');
+  sh(repo, "git", ["commit", "-q", "-am", "the gate manifest"]);
+  const { sourceTreeHash } = await import("@bisellium/shim");
+  const tree = `tree:${sourceTreeHash(repo, [studioRel, ".bisellium", "ci", "opera", "axb"], "HEAD")}`;
+  const rel = `ci/${OPUS}-tests-${tree.slice(5, 13)}.log`;
+  mkdirSync(join(studio, "opera"), { recursive: true });
+  writeFileSync(join(studio, "opera", `${OPUS}.md`), `---\nid: ${OPUS}\nkind: feature\nbuilder_runtime: isolated\nprobationes:\n  tests: { status: passed, evidence: ${rel}, certifies: "${tree}" }\n---\n`);
+  mkdirSync(join(studio, "ci"), { recursive: true });
+  writeFileSync(join(studio, rel), `certifies: ${tree}\ncommand: node -e 0\nexit code: 0\n`);
+  // not committed: the officina's own ci/ ignores its log, so git status shows nothing and only ls-files can tell
+  if (!commitLog) writeFileSync(join(studio, "ci", ".gitignore"), "*.log\n");
+  sh(repo, "git", ["add", "--", "."]);
+  sh(repo, "git", ["commit", "-q", "-m", "record and gates"]);
+  return { repo, studio, rel };
+}
+row("W-610-b2 fix2: a repository-root officina's passed full gates are admitted", async () => {
+  const { studio } = await fullGateRepo("");
+  const { admitCurrentGates } = await import("@bisellium/commands/builder-run.js");
+  const got = admitCurrentGates(studio, OPUS);
+  assert.ok(got.ok, `the full gates of a root officina are admitted (a root-relative pathspec, never /ci/...): ${JSON.stringify(got)}`);
+});
+row("W-610-b2 fix2: a glob-bearing officina's ignored full-gate log is not admitted by a sibling's committed one", async () => {
+  const { repo, studio, rel } = await fullGateRepo("a*b", false);
+  mkdirSync(join(repo, "axb", "ci"), { recursive: true });
+  writeFileSync(join(repo, "axb", rel), "a sibling's committed log\n");
+  sh(repo, "git", ["add", "--", "axb"]);
+  sh(repo, "git", ["commit", "-q", "-m", "a sibling officina's log"]);
+  const { admitCurrentGates } = await import("@bisellium/commands/builder-run.js");
+  const got = admitCurrentGates(studio, OPUS);
+  assert.equal(got.ok, false, `the officina's own ignored log is refused; a sibling matched by glob never stands in: ${JSON.stringify(got)}`);
+});
+/** driftWorld with the full gates passed at the tree the drifted exclusion gives (as an unchecked full-gate reader would compute it). */
+async function driftGates(tag: string): Promise<ReturnType<typeof driftWorld>> {
+  const d = driftWorld(tag);
+  const { sourceTreeHash } = await import("@bisellium/shim");
+  const drifted = `tree:${sourceTreeHash(d.w.wt, ["studio", ".bisellium", "hidden"], "HEAD")}`;
+  writeGates(d.w, { certifies: () => drifted, evidence: () => `ci/${OPUS}-tests-${drifted.slice(5, 13)}.log`, log: () => `certifies: ${drifted}\ncommand: node -e 0\nexit code: 0\n\n\n` });
+  return d;
+}
+row("W-610-b2 fix2: a worktree source_excludes drift never admits the full gates to a direct review", async () => {
+  const { w, reviewArgs, verdictArgs } = await driftGates("w610-b2-drift-full");
+  const { admitCurrentGates } = await import("@bisellium/commands/builder-run.js");
+  const got = admitCurrentGates(w.wtStudio, OPUS);
+  assert.equal(got.ok, false, `the full-gate admitter refuses the drifted manifest: ${JSON.stringify(got)}`);
+  direct(w, w.wt, verdictArgs);
+  const r = direct(w, w.wt, reviewArgs);
+  assert.notEqual(r.status, 0, ran("the review verb refuses a drift with full gates at the drifted tree", r));
+});
+row("W-610-b2 fix2: a verdict under a drifted source_excludes records no source tree", async () => {
+  const { w, verdictArgs } = await driftGates("w610-b2-drift-verdict");
+  direct(w, w.wt, verdictArgs);
+  const log = join(w.wtStudio, "ci", `${OPUS}-review-1.log`);
+  assert.ok(existsSync(log), "the verdict transcript is written (a log only)");
+  const header = readFileSync(log, "utf8").split("\n").find((l) => l.startsWith("# tree:"));
+  assert.equal(header, "# tree: unknown", `the verdict's tree is not the drifted exclusion's hash: ${header}`);
+});
+row("W-610-b2 fix3: a worktree drift on a build-review key that leaves the tree unchanged refuses the full gates", async () => {
+  const w = handed("w610-b2-drift-key");
+  writeGates(w);
+  const { admitCurrentGates } = await import("@bisellium/commands/builder-run.js");
+  const before = admitCurrentGates(w.wtStudio, OPUS);
+  assert.ok(before.ok, `the full gates at the tree are admitted with no drift: ${JSON.stringify(before)}`);
+  const manifest = join(w.wtStudio, "bisellium.yml");
+  const text = readFileSync(manifest, "utf8");
+  writeFileSync(manifest, /^patron: .*$/m.test(text) ? text.replace(/^patron: .*$/m, "patron: someone-else") : `${text}patron: someone-else\n`);
+  const got = admitCurrentGates(w.wtStudio, OPUS);
+  assert.equal(got.ok, false, `the full-gate admitter refuses a patron drift (the tree unchanged): ${JSON.stringify(got)}`);
+  assert.match(got.ok ? "" : got.error, /bisellium\.yml#patron differs between the main checkout/, "the refusal names the drifted key");
+});
