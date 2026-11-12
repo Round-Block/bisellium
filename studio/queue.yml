@@ -8,6 +8,7 @@ queues:
       - { opus: W-551, says: "required fixes, build-review fix rounds and fix-check rounds get a red ticket tied to the pre-fix commit; reviewer and certify read it; high, process (w551-rank-meet-1111)", folded: [W-365, W-421] }
       - { opus: W-613, says: "ci --opus alongside the build review in a scratch checkout, killed on a failed review; follow-up of W-610, right after W-551 (review-order-meet-1112 round 2)" }
       - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182); right after W-551 (balance-meet-1112)" }
+      - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead; qa-lead to gpt-6); right after W-512; W-451, W-503 by one-off exceptions (w590-rank-meet-1112)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; first in the process lane (D-193)" }
       - { opus: W-609, says: "no new lane opens while first-run ci fails over 30% or 2+ of the last 5 round-1 reviews have an S1; process, right after W-595 (balance-meet-1112)" }
       - { opus: W-301, says: "console writes via auto-merge PR" }
@@ -15,6 +16,7 @@ queues:
       - { opus: W-597, says: "each lane's next unclaimed entry gets one spec-ahead draft; sign refuses a stale base; overlap via W-592; process, after W-592 (spec-ahead-lanes-meet-1112)" }
       - { opus: W-611, says: "W-494 guard clears a resumed runner's finished background run; process (retro 11-12)" }
       - { opus: W-612, says: "verdict --phase spec runs brief.admission before signing; process (retro 11-12)" }
+      - { opus: W-614, says: "next names the dispatched seat, not a fixed architect, on a spec order; process (w590-rank-meet-1112)" }
       - { opus: W-308, says: "opus timeline; E1 (next.ts), after W-551 (D-192)", next_ts: true }
       - { opus: W-331, says: "next.ts split; debt slot, first (balance-meet-1112: lets two next.ts opera run at once)", next_ts: true }
       - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
@@ -57,7 +59,6 @@ queues:
       - { opus: W-532, says: "cut what a fresh session loads at boot; folds W-517; exempt from the freeze on the leads' boot meet (D-189)", folded: [W-517] }
       - { opus: W-519, says: "run affected tests before the full gate; exempt from the freeze (D-183)" }
       - { opus: W-529, says: "pool the local test gate at eight; hosted CI stays serial; exempt, the Patron said yes 2026-11-06 (W-456)" }
-      - { opus: W-531, says: "one spec-writing lead per collegium; qa-lead to a gpt-6 Codex model after 11-09; exempt from the freeze (D-191); producer renamed production-lead, producer kept as an alias (the Patron 2026-11-11)" }
       - { opus: W-520, says: "evidence storage, a daily prune (evidence, worktrees, branches) from the daily retro, one safe-to-clear test; takes over W-380 (cleanup-meet-1111)", folded: [W-380] }
       - { opus: W-521, says: "check flags git differing from the queue runner's; exempt from the freeze (D-185)" }
       - { opus: W-522, says: "refuse process.exit after bulk output in fixtures; exempt from the freeze (D-185)" }
@@ -123,7 +124,7 @@ queues:
       - { opus: W-586, says: "busy worktree admin dirs are listed at done and retried in a later session; retro 11-10 cause fix; process (D-193)" }
       - { opus: W-587, says: "the guard refuses a backgrounded subshell group; retro 11-10 cause fix (or fold into W-537); process (D-193)" }
       - { opus: W-588, says: "the guard refuses a dispatch naming a brief whose Write failed; retro 11-10 cause fix; process (D-193)" }
-      - { opus: W-590, says: "explicit spec_seats legacy signer, each magister reader moved to the seat it means, then magister: design-lead (magister-meet-1111); process (D-193)" }
+      - { opus: W-590, says: "explicit legacy signer, each magister reader moved, then magister: design-lead; red row: same-model signer and reviewer refuse; after W-531; process (w590-rank-meet-1112)" }
       - { opus: W-591, says: "retro resolves spec signers through spec_seats, so ladder-lead and ops-lead signatures stop counting as review rounds; a measurement defect (magister-meet-1111); process (D-193)" }
       - { opus: W-324, says: "a spec round counts signature plus review; qa, E1, after W-591 (same retro.ts) (D-192); process (D-193)" }
       - { opus: W-291, says: "commit trailers name a declared sella; after W-591 (D-192); process (D-193)" }
