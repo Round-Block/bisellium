@@ -31,7 +31,7 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } fr
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
-import { admitLightGates, currentLightCommands, runLightGates, type LightAdmission } from "@bisellium/commands/light-gates.js";
+import { admitLightGates, currentLightCommands, fullGateRuns, literal, officinaRel, runLightGates, type LightAdmission } from "@bisellium/commands/light-gates.js";
 import { webBuild, webBuildReason } from "@bisellium/commands/web-build.js";
 import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, terminalHalt, tookLadder, uiReviewSuperseded, unliftableHalt, utcTimestampProblem, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
@@ -3091,13 +3091,7 @@ export async function performLanding(f: { repo: string; studioRel: string }, ctx
 const CI_RUNS_PER_TREE = 2;
 /** W-610: the full ci runs at `tree`: the commits on the worktree's HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded), and those logs; unreadable counts as the cap (fail closed). */
 function ciRunsAt(f: Facts, id: string, tree: string): { runs: number; logs: string[] } {
-  const dir = `${f.studioRel === "" ? "" : `${f.studioRel}/`}ci`;
-  const spec = [`:(glob)${dir}/${id}-*-${tree.slice(5, 13)}.log`, `:(glob,exclude)${dir}/${id}-light-*.log`];
-  const runs = git(f.wt.dir, ["log", "--format=%H", "HEAD", "--", ...spec]);
-  const logs = git(f.wt.dir, ["ls-files", "--", ...spec]);
-  if (runs.status !== 0 || logs.status !== 0) return { runs: CI_RUNS_PER_TREE, logs: [] };
-  const prefix = `${dir.slice(0, -2)}`;
-  return { runs: runs.stdout.split("\n").filter(Boolean).length, logs: logs.stdout.split("\n").filter(Boolean).map((l) => l.slice(prefix.length)) };
+  return fullGateRuns(f.wt.dir, f.studioRel, id, tree, CI_RUNS_PER_TREE);
 }
 
 /** W-610: the light-gate commands for the opus: the main checkout's kept list (bisellium.yml#light_gates) and the test files of the brief committed at the worktree's HEAD, through the one reader admitLightGates also uses. */
@@ -3111,9 +3105,9 @@ function performLightGates(f: Facts): StepResult {
   if ("error" in cmds) return heldResult(cmds.error);
   const run = runLightGates(f.wt.studio, f.id, cmds);
   if ("error" in run) return heldResult(run.error);
-  const rel = `${f.studioRel}/${run.rel}`;
-  const added = git(f.wt.dir, ["add", "--", rel]);
-  const committed = added.status === 0 ? git(f.wt.dir, ["commit", "-q", "-m", `chore(studio): ${f.id} light gates`, "-m", "Co-Authored-By: producer (bisellium next) <noreply@anthropic.com>", "--", rel]) : added;
+  const rel = officinaRel(f.studioRel, run.rel);
+  const added = git(f.wt.dir, ["add", "--", literal(rel)]);
+  const committed = added.status === 0 ? git(f.wt.dir, ["commit", "-q", "-m", `chore(studio): ${f.id} light gates`, "-m", "Co-Authored-By: producer (bisellium next) <noreply@anthropic.com>", "--", literal(rel)]) : added;
   if (committed.status !== 0) return heldResult(`could not commit ${rel}: ${one(committed.stderr)}`);
   return { ok: run.exitCode === 0, lines: [`light-gates: exit ${run.exitCode}`, `log: ${run.rel}`, `branch: opus/${f.id}`] };
 }

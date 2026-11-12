@@ -15,13 +15,23 @@ import { bindsCommands, commandLine, isDirtyOutside, sourceTreeHash } from "@bis
 import { ownedFiles } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readContainedRegularFile } from "./opus-model.js";
-import { readSourceExcludes, readWorktreeManifest } from "./verdict.js";
+import { buildReviewDrift, readSourceExcludes, readWorktreeManifest } from "./verdict.js";
 
 const GIT_TIMEOUT_MS = 30_000;
 /** One light-gate command's ceiling; a timeout is a non-zero exit (124). */
 export const LIGHT_GATE_TIMEOUT_MS = 600_000;
 const TEST_FILE = /\.test\.(?:ts|mts|mjs)$/;
 const SAFE_PATH = /^[A-Za-z0-9_][A-Za-z0-9_./-]*$/;
+
+/** One officina-relative path joined to the officina's repo-relative path: a root officina (`""`) stays relative, never `/ci/...`. */
+export const officinaRel = (studioRel: string, rel: string): string => (studioRel === "" ? rel : `${studioRel}/${rel}`);
+/** A path as a literal git pathspec: no glob, no magic, whatever characters the officina's name holds. */
+export const literal = (path: string): string => `:(literal)${path}`;
+/** The officina path as one shell word: left bare when plain, `.` for a root officina, else single-quoted whole (whitespace, quotes and metacharacters are data). */
+export function shellWord(studioRel: string): string {
+  if (studioRel === "") return ".";
+  return SAFE_PATH.test(studioRel) ? studioRel : `'${studioRel.split("'").join(`'\\''`)}'`;
+}
 
 export type LightAdmission = { ok: true } | { ok: false; error: string; failed?: string };
 
@@ -34,13 +44,18 @@ export function lightGateCommands(manifest: Record<string, unknown>, studioRel: 
   // a test path reaches a shell command line: only a repo-relative path of letters, digits, `_`, `.`, `/` and `-`, no `..`
   const unsafe = tests.filter((p) => !SAFE_PATH.test(p) || p.split("/").includes(".."));
   if (unsafe.length > 0) return { error: `the brief's Files owned names a test path the light gates do not run (${unsafe.join(", ")}): only [A-Za-z0-9_./-], repo-relative, no ..` };
-  return [...(raw as string[]).map((c) => c.split("{studio}").join(studioRel)), ...tests.map((p) => `node --test-reporter=tap${p.endsWith(".mjs") ? "" : " --import tsx"} ${p}`)];
+  return [...(raw as string[]).map((c) => c.split("{studio}").join(shellWord(studioRel))), ...tests.map((p) => `node --test-reporter=tap${p.endsWith(".mjs") ? "" : " --import tsx"} ${p}`)];
 }
 
-type RepoOf = { repo: string; studioRel: string; exclusions: string[] };
+type RepoOf = { repo: string; studioRel: string; exclusions: string[]; main: Record<string, unknown> };
 const gitIn = (cwd: string, args: string[]): SpawnSyncReturns<string> => spawnSync("git", args, { cwd, encoding: "utf8", timeout: GIT_TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024 });
 
-/** The worktree's repository, its officina path and the source exclusions: its manifest must parse as a mapping and pass `readSourceExcludes`, as next's and verify's do. */
+/**
+ * The worktree's repository, its officina path, the main checkout's manifest and the source exclusions. The exclusions come
+ * from the trusted main manifest, and a worktree manifest that cannot be read, is malformed or drifts from main's on any
+ * build-review key (`buildReviewDrift`, `source_excludes` among them, as next's hold does) is refused, so an uncommitted
+ * exclusion never changes the tree a light log certifies.
+ */
 function repoOf(studioRoot: string): RepoOf | { error: string } {
   const root = gitIn(studioRoot, ["rev-parse", "--show-toplevel"]);
   if (root.status !== 0) return { error: "the current source tree is unavailable" };
@@ -48,21 +63,25 @@ function repoOf(studioRoot: string): RepoOf | { error: string } {
   const studioRel = relative(repo, studioRoot).split(sep).join("/");
   const read = readWorktreeManifest(studioRoot);
   if ("error" in read) return { error: `the worktree manifest cannot be read: ${read.error}` };
-  const excludes = readSourceExcludes(read.manifest);
-  if ("error" in excludes) return { error: `the worktree manifest is malformed: ${excludes.error}` };
-  return { repo, studioRel, exclusions: [studioRel, ".bisellium", ...excludes.excludes] };
+  const own = readSourceExcludes(read.manifest);
+  if ("error" in own) return { error: `the worktree manifest is malformed: ${own.error}` };
+  const common = gitIn(repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+  if (common.status !== 0) return { error: "the main checkout is unavailable" };
+  const main = readWorktreeManifest(join(dirname(resolve(common.stdout.trim())), studioRel));
+  if ("error" in main) return { error: `the main checkout's manifest cannot be read: ${main.error}` };
+  const drift = buildReviewDrift(main.manifest, read.manifest);
+  if (drift !== undefined) return { error: drift };
+  const excludes = readSourceExcludes(main.manifest);
+  if ("error" in excludes) return { error: `the main checkout's manifest is malformed: ${excludes.error}` };
+  return { repo, studioRel, exclusions: [studioRel, ".bisellium", ...excludes.excludes], main: main.manifest as unknown as Record<string, unknown> };
 }
 
-/** The light-gate commands at the worktree's HEAD: the main checkout's `light_gates` (the trusted list) and the test files of the brief committed at HEAD; or why not. */
+/** The light-gate commands at the worktree's HEAD: the main checkout's `light_gates` (the trusted list, read once by `repoOf`) and the test files of the brief committed at HEAD; or why not. */
 function commandsAt(r: RepoOf, opus: string): string[] | { error: string } {
-  const common = gitIn(r.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
-  if (common.status !== 0) return { error: "the main checkout is unavailable" };
-  const main = readWorktreeManifest(join(dirname(resolve(common.stdout.trim())), r.studioRel));
-  if ("error" in main) return { error: `the main checkout's manifest cannot be read: ${main.error}` };
-  const briefPath = `${r.studioRel === "" ? "" : `${r.studioRel}/`}briefs/${opus}.md`;
+  const briefPath = officinaRel(r.studioRel, `briefs/${opus}.md`);
   const brief = gitIn(r.repo, ["show", `HEAD:${briefPath}`]);
   if (brief.status !== 0) return { error: `${briefPath} cannot be read at HEAD, so its own test files are unknown` };
-  return lightGateCommands(main.manifest as unknown as Record<string, unknown>, r.studioRel, brief.stdout);
+  return lightGateCommands(r.main, r.studioRel, brief.stdout);
 }
 
 /** The light-gate commands for the opus whose worktree officina is `studioRoot`, or why there are none (`next`'s order and its perform, and `admitLightGates`, read this one). */
@@ -87,10 +106,10 @@ export function admitLightGates(studioRoot: string, opus: string): LightAdmissio
     const rel = lightLogRel(opus, tree);
     const log = readContainedRegularFile(studioRoot, rel, "ci");
     if ("error" in log) return { ok: false, error: `${opus}: no light-gate log at the current source tree ${tree.slice(0, 17)} (${rel})` };
-    const path = `${r.studioRel}/${rel}`;
-    if (spawnSync("git", ["ls-files", "--error-unmatch", "--", path], { cwd: r.repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS }).status !== 0)
+    const path = officinaRel(r.studioRel, rel);
+    if (spawnSync("git", ["ls-files", "--error-unmatch", "--", literal(path)], { cwd: r.repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS }).status !== 0)
       return { ok: false, error: `${opus}: the light-gate log is not committed (${path})` };
-    const status = spawnSync("git", ["status", "--porcelain", "--", path], { cwd: r.repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
+    const status = spawnSync("git", ["status", "--porcelain", "--", literal(path)], { cwd: r.repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
     if (status.status !== 0 || status.stdout !== "") return { ok: false, error: `${opus}: the light-gate log is not committed (${path})` };
     const [first, second, third] = log.bytes.toString("utf8").split("\n");
     if (first !== `certifies: ${tree}`) return { ok: false, error: `${opus}: ${rel} does not open with certifies: ${tree}` };
@@ -130,4 +149,29 @@ export function runLightGates(studioRoot: string, opus: string, commands: string
   } catch (error) {
     return { error: `the light gates cannot be run or logged: ${(error as Error).message}` };
   }
+}
+
+/** W-610 (fix 1): the full ci runs at `tree` in the officina at `studioRel`: the commits on HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded) and those logs' names. Literal pathspecs and a plain name match, so a glob character in the officina's name or an opus sibling never counts; unreadable counts as `cap` (fail closed). */
+export function fullGateRuns(repoDir: string, studioRel: string, opus: string, tree: string, cap = 2): { runs: number; logs: string[] } {
+  const dir = officinaRel(studioRel, "ci");
+  const tail = `-${tree.slice(5, 13)}.log`;
+  const isFull = (name: string): boolean => name.startsWith(`${opus}-`) && name.endsWith(tail) && !name.startsWith(`${opus}-light-`);
+  const names = (paths: string[]): string[] => paths.filter((p) => p.startsWith(`${dir}/`) && !p.slice(dir.length + 1).includes("/") && isFull(p.slice(dir.length + 1)));
+  const log = gitIn(repoDir, ["log", "--format=%x00%H", "--name-only", "-z", "HEAD", "--", literal(dir)]);
+  const tracked = gitIn(repoDir, ["ls-files", "-z", "--", literal(dir)]);
+  if (log.status !== 0 || tracked.status !== 0) return { runs: cap, logs: [] };
+  // -z with --name-only: records are NUL separated; a record opening with the marker is a commit, the rest are its paths
+  let runs = 0;
+  let counted = false;
+  for (const field of log.stdout.split("\0")) {
+    const clean = field.replace(/^\n+/, "");
+    if (clean === "") continue;
+    if (/^[0-9a-f]{40}$/.test(clean)) {
+      counted = false;
+    } else if (!counted && names([clean]).length > 0) {
+      counted = true;
+      runs += 1;
+    }
+  }
+  return { runs, logs: names(tracked.stdout.split("\0").filter(Boolean)).map((p) => p.slice(dir.length + 1)) };
 }
