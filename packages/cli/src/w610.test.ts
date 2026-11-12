@@ -238,3 +238,18 @@ row("W-610-b4 pr names reviewed tree = gate tree = tip tree and bookkeeping comm
   assert.equal(step("the gates", "pr").kv.get("trees"), `reviewed ${et} = gates ${et} = tip ${et}`, "the loop ends at pr on one tree");
 });
 
+row("W-610-b5 a source change after a pass orders the light gates and a delta review, never ci or pr", () => {
+  const w = passed("w610-b5");
+  const reviewed = sourceTree(w.wt);
+  writeGates(w);
+  advanceSource(w, false, false);
+  builderHandoff(w, "2026-10-02T09:30:00.000Z");
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "build", "named", "the changed tree goes back to the light gates");
+  assert.equal(o.kv.has("light-gates"), true, ran("the light gates, not ci", o));
+  assert.doesNotMatch(o.kv.get("command") ?? "", /ci --opus/, ran("no ci on the old pass", o));
+  performLight(w);
+  const r = next(w, [OPUS, ...BUDGET]);
+  expectStep(r, "review", "named", "a delta review");
+  assert.equal(r.kv.get("delta"), `since round 1 passed at ${reviewed}`, ran("the review order names the delta's base", r));
+});
