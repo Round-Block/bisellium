@@ -1,0 +1,23 @@
+# opus: W-608
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1cecf-7add-7380-96dc-c5f00779c4df
+# outcome: passed
+# at: 2026-11-12T09:05:12.340Z
+# tree: tree:4904de985bb821a306960710006ecd7a76953da0
+# brief: briefs/W-608.md blob:5418221c3e07d8e8e99e42ee49aba352cad202bc
+# ticket: {"opus":"W-608","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-608/studio","head":"0c05ede10d8aeb6544730c68b93300b8404bbe90","brief":"5418221c3e07d8e8e99e42ee49aba352cad202bc","at":"2026-11-12T09:01:33.444Z"}
+
+## Findings
+1. advisory — packages/cli/src/rules/tests.test.ts:1424 [severity: S4] The new `LITERAL_FORMS` and `SITE_ORDERS` regression cases are certified green, but no red log shows them failing against the round-one implementation; `studio/ci/reds/W-608` still contains only `01.log`, whose tested tree predates these cases. [class: review×evidence-backfilled-or-absent] — check: none: record the added cases failing against review-1 head `48c37cda`
+
+## Earlier findings
+- ci/W-608-review-1.log #1: closed — packages/cli/src/rules/tests.ts:585 now accepts underscore-bearing exponents, lines 588–596 classify exact decimal 0/±1 values without floating point, and packages/cli/src/rules/tests.test.ts:1427 covers separator and presence forms in both operand positions.
+- ci/W-608-review-1.log #2: closed — packages/cli/src/rules/tests.ts:672 defers the numeric result until every `OK_SITE` has been checked for pattern and ends forms, with both site orders covered at packages/cli/src/rules/tests.test.ts:1441.
+
+## Verdict
+Both prior blockers are closed; the missing pre-fix regression log is advisory and should be added in the same pass.
+
+VERDICT: PASS
