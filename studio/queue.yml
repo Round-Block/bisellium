@@ -5,32 +5,34 @@ queues:
       - { opus: W-604, says: "pre-sign gate runs a shared multi-file command once, alone after the pool, timeout sized to the row; high, ahead of W-551 (w551-gate-meet-1112)" }
       - { opus: W-608, says: "cause fix, tests×one-sided-bound-assertion: oneSidedSites reads a number bounded on one side; spec-draft line for measured values; high, after W-604 (w604-class-meet-1112)" }
       - { opus: W-551, says: "required fixes, build-review fix rounds and fix-check rounds get a red ticket tied to the pre-fix commit; reviewer and certify read it; high, process (w551-rank-meet-1111)", folded: [W-365, W-421] }
-      - { opus: W-605, says: "certify's replay and the pr rung's rewrite check read fix-round reds; split-first (W-323); high, after W-551 (w551-gate-meet-1112)" }
-      - { opus: W-596, says: "handoff refuses without a passing pre-handoff gate (ci env, census tests, importers, per-file timeout); replaces test:preflight; high, process (misses-meet-1111)" }
-      - { opus: W-185, says: "records checked once, at load: cause fix, fail-open-on-malformed-records (7 opera); after W-596 (daily retro 2026-11-11)", next_ts: true }
-      - { opus: W-579, says: "tests gate limit from measured times, batch split; per-file timeout names the hung file, progress line; ci --opus commits its own logs; process (misses-meet-1111)", folded: [W-560] }
-      - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; process (D-193)" }
-      - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182; D-181); after W-563, on the leads meet w512-rank-meet-1111 and the Patron 2026-11-11" }
-      - { opus: W-301, says: "console writes via auto-merge PR" }
-      - { opus: W-308, says: "opus timeline; E1 (next.ts), after W-551 (D-192)", next_ts: true }
-      - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
-      - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not M4 path (D-193); after W-074 (the Patron 11-11, call C)" }
-      - { opus: W-157, says: "decide: the Patron records a ruling (D-181)" }
-      - { opus: W-283, says: "Status page served" }
-      - { opus: W-332, says: "step tickets", next_ts: true }
-      - { opus: W-304, says: "seats read live, console MVP" }
-      - { opus: W-280, says: "Inbox newItem fail-open" }
+      - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182); right after W-551 (balance-meet-1112)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; first in the process lane (D-193)" }
+      - { opus: W-609, says: "no new lane opens while first-run ci fails over 30% or 2+ of the last 5 round-1 reviews have an S1; process, right after W-595 (balance-meet-1112)" }
+      - { opus: W-301, says: "console writes via auto-merge PR" }
+      - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), split from W-169; process (D-193)" }
+      - { opus: W-308, says: "opus timeline; E1 (next.ts), after W-551 (D-192)", next_ts: true }
+      - { opus: W-331, says: "next.ts split; debt slot, first (balance-meet-1112: lets two next.ts opera run at once)", next_ts: true }
+      - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
+      - { opus: W-605, says: "certify's replay and the pr rung's rewrite check read fix-round reds; split-first (W-323); high, after W-551 (w551-gate-meet-1112)" }
+      - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not M4 path (D-193); after W-074 (the Patron 11-11, call C)" }
+      - { opus: W-185, says: "records checked once, at load: cause fix, fail-open-on-malformed-records (7 opera); debt slot (balance-meet-1112)", next_ts: true }
+      - { opus: W-157, says: "decide: the Patron records a ruling (D-181)" }
+      - { opus: W-596, says: "handoff refuses without a passing pre-handoff gate (ci env, census tests, importers, per-file timeout); replaces test:preflight; high, process (misses-meet-1111)" }
+      - { opus: W-283, says: "Status page served" }
+      - { opus: W-597, says: "while a lane builds, next orders the next entry's spec-ahead draft; check warns when none exists; W-547's follow-on, process (misses-meet-1111)" }
+      - { opus: W-332, says: "step tickets", next_ts: true }
+      - { opus: W-579, says: "tests gate limit from measured times, batch split; per-file timeout names the hung file, progress line; ci --opus commits its own logs; process (misses-meet-1111)", folded: [W-560] }
+      - { opus: W-304, says: "seats read live, console MVP" }
+      - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; process (D-193)" }
+      - { opus: W-280, says: "Inbox newItem fail-open" }
+      - { opus: W-603, says: "land carries studio/lessons/, so the stashed L-042, L-058 and L-198 stamps land; process (daily retro 2026-11-11)" }
       - { opus: W-606, says: "check flags changed usage lines, rule ids or paths whose docs are untouched (advise, then block); spec-draft and review lines; lex 9 gate pointer; process (docdrift-meet-1112)" }
       - { opus: W-607, says: "top-level and docs/ markdown audited, unowned docs brought current, CHANGELOG retired; after W-606, process (docdrift-meet-1112)" }
-      - { opus: W-603, says: "land carries studio/lessons/, so the stashed L-042, L-058 and L-198 stamps land; process (daily retro 2026-11-11)" }
-      - { opus: W-597, says: "while a lane builds, next orders the next entry's spec-ahead draft; check warns when none exists; W-547's follow-on, process (misses-meet-1111)" }
       - { opus: W-602, says: "a census test refuses a static import of a heavy package on the CLI start path (W-563 cost 0.4 s per process); process (daily retro 2026-11-11)" }
       - { opus: W-599, says: "one parser-backed import scanner, eslint ban on import regexes, parser-or-limits prompt lines; misses-meet fix 4; process" }
       - { opus: W-598, says: "builder-brief and fix-check prompts send a departure from an architect ruling back before handoff; code-owned; process (retro 2026-11-11)" }
       - { opus: W-601, says: "land refuses a clerk-copied path unless byte-identical to its kit source; process (daily retro 2026-11-11)" }
       - { opus: W-600, says: "check refuses a stray </content> line in records and the handoff; process (daily retro 2026-11-11)" }
-      - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), split from W-169; process (D-193)" }
       - { opus: W-593, says: "amend gains --collegium, so the leads' agreed retags run by the verb; process (D-193)" }
       - { opus: W-538, says: "guard ends a finished background run; process (D-193); ranked below W-512 so rank and lane agree (D-192)" }
       - { opus: W-574, says: "Stop hook shows the next-session prompt from a checked handoff block (leads' meet endprompt-meet-1110); process (D-193)" }
@@ -100,7 +102,6 @@ queues:
       - { opus: W-245, says: "provider-agnostic closing step" }
       - { opus: W-374, says: "next --all in-flight only", next_ts: true }
       - { opus: W-375, says: "context serves lex without §9, §12" }
-      - { opus: W-331, says: "next.ts split", next_ts: true }
       - { opus: W-183, says: "heavy-job slots", next_ts: true }
       - { opus: W-169, says: "lane claims; the Files owned overlap refusal split to W-592 (D-192)", next_ts: true }
       - { opus: W-561, says: "next's gather reads --now for the daily hold and red findings; W-547's stated limit; producer's rank, vetoable" }
