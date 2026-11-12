@@ -46,13 +46,13 @@ const testFiles = (command: string): string[] => command.split(/\s+/).filter((w)
 export const isShared = (row: GateRow): boolean => (row.kind === "test" || row.kind === "reads") && row.command !== UNNAMED && testFiles(row.command).length >= 2;
 /**
  * W-604: a shared command's timeout, sized to its row: its test files x PER_FILE_MS, at least the row timeout and at most
- * SHARED_MAX_MS. Measured: the 15-file next family ran 582 s alone under ci (W-563-build/ci7/measure.md), 39 s a file, so
+ * SHARED_MAX_MS (the ceiling wins over the caller's row timeout). Measured: the 15-file next family ran 582 s alone under ci (W-563-build/ci7/measure.md), 39 s a file, so
  * 120 s a file gives the 7-file row of W-551 840 s and the whole family the 1800 s ceiling, about 3x the measure.
  */
 export const PER_FILE_MS = 120_000;
 export const SHARED_MAX_MS = 1_800_000;
 export const sharedTimeoutMs = (command: string, rowTimeoutMs: number, perFileMs: number): number =>
-  Math.max(rowTimeoutMs, Math.min(testFiles(command).length * perFileMs, SHARED_MAX_MS));
+  Math.min(SHARED_MAX_MS, Math.max(rowTimeoutMs, testFiles(command).length * perFileMs));
 const GIT_TIMEOUT_MS = 120_000;
 const READER_TIMEOUT_MS = 120_000;
 const TEST_FILE = /\.test\.(?:ts|mts|mjs)$/;
@@ -404,14 +404,16 @@ function judgeReads(wt: string, log: string, file: string, timeoutMs: number): n
 }
 
 /** W-604: a shared command's rows, run once: under the read trace when any is a `reads` row; each `test` row takes the run's exit, each `reads` row the run's exit or, when it passed, its own file's reads check. */
-async function runShared(wt: string, command: string, group: GateRow[], scratch: string, n: number, timeoutMs: number): Promise<number[]> {
+async function runShared(wt: string, command: string, group: GateRow[], scratch: string, n: number, timeoutMs: number): Promise<{ exits: number[]; t0: number; t1: number }> {
+  const t0 = Date.now();
   if (!group.some((r) => r.kind === "reads")) {
     const exit = await sh(wt, command, timeoutMs);
-    return group.map(() => exit);
+    return { exits: group.map(() => exit), t0, t1: Date.now() };
   }
   const log = join(scratch, `reads-${n}.log`);
   const run = await traced(wt, command, log, timeoutMs);
-  return group.map((r) => (r.kind !== "reads" || run !== 0 ? run : judgeReads(wt, log, r.file!, timeoutMs)));
+  const t1 = Date.now(); // the run's own seconds end here: a reads check's time is not in them
+  return { exits: group.map((r) => (r.kind !== "reads" || run !== 0 ? run : judgeReads(wt, log, r.file!, timeoutMs))), t0, t1 };
 }
 
 /**
@@ -492,9 +494,7 @@ export async function runGate(argv: string[], opts: GateOptions = {}): Promise<n
     // W-604: a shared command's rows (its test rows and its reads row) take one run of it, alone, after the pool, exempt from
     // the start budget (it starts after the pool by design, so the budget would defer it every time); each row logs the run's time
     for (const [command, group] of groups) {
-      const t0 = Date.now();
-      const exits = await runShared(wt, command, group.map((g) => rows[g]!), scratch, group[0]!, sharedTimeoutMs(command, timeoutMs, opts.perFileMs ?? PER_FILE_MS));
-      const t1 = Date.now();
+      const { exits, t0, t1 } = await runShared(wt, command, group.map((g) => rows[g]!), scratch, group[0]!, sharedTimeoutMs(command, timeoutMs, opts.perFileMs ?? PER_FILE_MS));
       for (const [i, n] of group.entries()) record(n, exits[i]!, t0, t1);
     }
   } finally {
