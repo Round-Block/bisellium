@@ -583,9 +583,18 @@ const NUMBER_HOW = 'assert the exact value (assert.equal) or both bounds in one 
 // one relational operator: not part of `=>`, `>>`, `<<`, `<=>` or an equality
 const RELATION = /(?<![<>=!])(?:<=?|>=?)(?![=>])/g;
 const NUMBER_LITERAL = /^[-+]?(?:\d[\d_]*(?:\.[\d_]*)?|\.\d[\d_]*)(?:[eE][-+]?\d[\d_]*)?$/;
-// a bound that asserts presence or a count, not a measured value: a literal of value 0, 1 or -1 (separators dropped), a
-// `.length` or `.size`, a `Math.abs` tolerance
-const isPresence = (literal: string): boolean => [0, 1, -1].includes(Number(literal.replaceAll("_", "")));
+// a bound that asserts presence or a count, not a measured value: a literal whose exact decimal value is 0, 1 or -1, a
+// `.length` or `.size`, a `Math.abs` tolerance. The value is read from the digits, never through floating point.
+function isPresence(literal: string): boolean {
+  const m = /^[-+]?(\d[\d_]*)?(?:\.([\d_]*))?(?:[eE]([-+]?)(\d[\d_]*))?$/.exec(literal);
+  if (m === null) return false;
+  const frac = (m[2] ?? "").replaceAll("_", "");
+  const digits = ((m[1] ?? "").replaceAll("_", "") + frac).replace(/^0+/, "");
+  if (digits === "") return true;
+  const trimmed = digits.replace(/0+$/, "");
+  const exp = (m[3] === "-" ? -1n : 1n) * BigInt((m[4] ?? "0").replaceAll("_", "")) - BigInt(frac.length) + BigInt(digits.length - trimmed.length);
+  return trimmed === "1" && exp === 0n;
+}
 const NOT_MEASURED = /(?:\.\s*(?:length|size)\s*$)|^Math\s*\.\s*abs\s*\(/;
 
 /** In string-blanked code, `arg` with every bracketed span's contents (brackets included) blanked: its top level. */
