@@ -1373,7 +1373,7 @@ export function deriveNext(f: Facts): Derived {
     // an officina that declares no light_gates keeps the W-312 order: the full gates before review (master's texts)
     const lightOn = (f.manifest as unknown as Record<string, unknown>)["light_gates"] !== undefined;
     const light = lightOn ? f.lightGates?.() : undefined;
-    const admitted = gates === undefined || gates.ok;
+    const admitted = gates === undefined || gates.ok || light?.ok === true;
     const lightError = light !== undefined && !light.ok ? light : undefined;
     const lightOrder = (extra: [string, string][], fullCommand: string): Derived => {
       if (!lightOn) return named("build", "producer", gates?.ok === false ? gates.error : "the gate evidence cannot be read", fullCommand, extra);
