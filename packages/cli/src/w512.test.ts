@@ -8,7 +8,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { BUDGET, OPUS, type World, commit, next, put, ran, world } from "./next-world.test.js";
+import { BUDGET, MAIN, OPUS, TSX, type World, commit, next, put, ran, world } from "./next-world.test.js";
 
 const rec = (id: string, state: string): string => `---\nid: "${id}"\ntitle: "queued ${id}"\nkind: "feature"\ncollegium: "engineering"\nstate: ${state}\nprobationes: {}\n---\nqueued\n`;
 /** A queue.yml with one engineering queue: `lanes` (`E1: W-901` form) and the ranked entries (`W-901!` marks next_ts), committed unless `dirty`. */
@@ -145,4 +145,15 @@ test("W-512-b3 behaviour 3: an opus is in flight by its opus branch, whatever qu
   const unnamed = next(w, [OPUS, ...BUDGET]);
   assert.equal(unnamed.first, `next: ${OPUS} branch held`, ran("W-901, in flight but ranked below E1's take, is no lane's now and is still read", unnamed));
   assert.equal(unnamed.kv.get("why"), `${OPUS}'s Files owned overlap with an opus in flight: W-901 in no lane: \`docs/ADOPTION.md\`; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`, ran("the why says W-901 is in no lane", unnamed));
+});
+
+test("W-512-b4 behaviour 4: next --all prints an order hold as queued and does not fail the run on it", () => {
+  const w = world("w512-b4", "greenlight");
+  records(w, { "W-901": "greenlit", "W-902": "greenlit" });
+  queue(w, "E1: W-901", ["W-901", "W-902", OPUS]);
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, "next", "--all", "--studio", w.studio, "--repo", w.repo], { cwd: w.repo, encoding: "utf8", timeout: 300_000, env: { ...process.env, BISELLIUM_SELLA: "", HOME: w.home } });
+  const line = (r.stdout ?? "").split("\n").find((l) => l.startsWith(`next: ${OPUS} `)) ?? "";
+  assert.equal(line, `next: ${OPUS} spec queued · actor: producer · why: ${OPUS} is #3 in queue engineering and no lane takes it: E1 holds W-901 (greenlit), ahead W-902 (#2); to start it now, rank it higher in queue.yml and land that edit · traditio: none`, `the out-of-order opus is queued, not held\n${r.stdout}${r.stderr}`);
+  assert.equal((r.stdout ?? "").split("\n").find((l) => l.startsWith("next: W-902 ")), "next: W-902 spec named · actor: architect · why: briefs/W-902.md is missing or lacks the six design-lex sections · traditio: none", `the spec ahead is still named\n${r.stdout}`);
+  assert.equal(r.status, 0, `an order hold alone does not fail next --all\n${r.stdout}${r.stderr}`);
 });
