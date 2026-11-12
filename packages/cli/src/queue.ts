@@ -219,7 +219,7 @@ interface LaneTake {
  * W-333, W-512: the lanes' takes, the one computation `laneLines` prints and `lanePlan` orders starts by (see `laneLines`).
  * With `until`, the walk is lazy in rank and file order and stops being strict once a lane's now is `until`: every lane up to
  * it reads each entry its walk reaches (a throw refuses), and a lane after it is read only to name its now, so an unreadable
- * entry there is dropped with its lane, never a refusal of `until`.
+ * entry there drops that one lane (it keeps its slot and names nothing) and the walk goes on, never a refusal of `until`.
  */
 function laneTakes(file: QueueFile, stateOf: (opus: string) => string | undefined, until?: string): LaneTake[] {
   const state = (opus: string): string => stateOf(opus) ?? "no state";
@@ -259,7 +259,8 @@ function laneTakes(file: QueueFile, stateOf: (opus: string) => string | undefine
         if (until !== undefined && (t.busy ?? t.take?.opus) === until) reached = true;
       } catch (e) {
         if (!reached) throw e;
-        return out;
+        // read only after the start is decided: this lane names nothing, but keeps its slot (lanePlan pairs the passes by index)
+        out.push({ queue: q.id, lane, skipped: [] });
       }
     }
   return out;
