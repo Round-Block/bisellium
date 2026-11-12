@@ -127,3 +127,15 @@ row("W-604-b2 a shared command runs after the pool", async () => {
   const sharedStart = Math.min(...ev.filter((e) => (e.name === "a" || e.name === "r") && e.at === "start").map((e) => e.ms));
   assert.ok(sharedStart >= cEnd, `the shared command starts after every pooled row ended (shared start ${sharedStart}, pooled end ${cEnd})`);
 });
+
+row("W-604-b3 a shared command's timeout is its files times the per-file cap", async () => {
+  const w = world();
+  const exit = await w.run({ rowTimeoutMs: 1000, perFileMs: 2500 }, { W604_SLEEP_A: "1500" });
+  const rows = w.rows();
+  assert.equal(exit, 0, `exit (rows ${brief(rows)})`);
+  for (const [kind, file] of [["test", "src/a.test.mjs"], ["test", "src/r.test.mjs"], ["reads", "src/r.test.mjs"]] as const)
+    assert.equal(of(rows, kind, file)[0], "0", `the ${kind} row ${file} runs within 2 x 2500 ms`);
+  const short = world();
+  assert.equal(await short.run({ rowTimeoutMs: 1000, perFileMs: 400 }, { W604_SLEEP_A: "1500" }), 1, "a run past its sized timeout fails the gate");
+  assert.equal(of(short.rows(), "test", "src/a.test.mjs")[0], "124", `a run past its sized timeout is recorded 124 (rows ${brief(short.rows())})`);
+});
