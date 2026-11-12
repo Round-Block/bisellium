@@ -1446,6 +1446,26 @@ export function deriveNext(f: Facts): Derived {
       });
     }
 
+    // W-610 (review-order-meet-1112): after a pass at this tree, the one full suite runs at the reviewed tree before pr; a
+    // ci that exits non-zero is a builder's, and its source change voids the pass (the review is no longer current)
+    // W-610 (w610-proof-meet-1112): at most CI_RUNS_PER_TREE full suites are ordered at one reviewed tree; then a failed ci is a builder's
+    const ciRuns = gates !== undefined && !gates.ok ? ciRunsAt(f, id, cur) : { runs: 0, logs: [] };
+    if (gates !== undefined && !gates.ok && ciRuns.runs >= CI_RUNS_PER_TREE)
+      return dispatch(f, "build", `the full suite ran ${ciRuns.runs} times at the reviewed tree ${cur.slice(0, 17)} and is not passed (${gates.error}); no further ci is ordered at this tree`, {
+        phase: "2",
+        resume: true,
+        inputs: [briefRel(id), ...ciRuns.logs],
+        extra: [["ci-runs", `${ciRuns.runs} at ${cur}`], ...fixes],
+      });
+    if (gates !== undefined && !gates.ok)
+      return named(
+        "build",
+        "producer",
+        gates.error,
+        `from .worktrees/${id}: a ladder-runner runs bisellium run --sella producer --no-worktree --studio ${f.studioRel} -- npm run -s bisellium -- ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, once after the passed review, in the background; W-364 admits it only in a run session); then it commits the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
+        [["reviewed", `round ${gate?.round} at ${gate?.tree}`]],
+      );
+
     // 8 pr, 9 merge
     const p = f.pr();
     if (p.kind === "held") return hold("pr", p.reason);
@@ -3062,6 +3082,19 @@ export async function performLanding(f: { repo: string; studioRel: string }, ctx
     return heldResult(`refusing: ${head} changes ${outside.length === 0 ? "nothing" : outside.slice(0, 5).map((p) => clean(p)).join(", ")}, outside the officina records; nothing pushed`);
   }
   return landHead({ ...ctx, head });
+}
+
+/** W-610 (w610-proof-meet-1112): the full suites ordered at one reviewed tree before a failed ci goes to a builder (one rerun for an environment failure). */
+const CI_RUNS_PER_TREE = 2;
+/** W-610: the full ci runs at `tree`: the commits on the worktree's HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded), and those logs; unreadable counts as the cap (fail closed). */
+function ciRunsAt(f: Facts, id: string, tree: string): { runs: number; logs: string[] } {
+  const dir = `${f.studioRel === "" ? "" : `${f.studioRel}/`}ci`;
+  const spec = [`:(glob)${dir}/${id}-*-${tree.slice(5, 13)}.log`, `:(glob,exclude)${dir}/${id}-light-*.log`];
+  const runs = git(f.wt.dir, ["log", "--format=%H", "HEAD", "--", ...spec]);
+  const logs = git(f.wt.dir, ["ls-files", "--", ...spec]);
+  if (runs.status !== 0 || logs.status !== 0) return { runs: CI_RUNS_PER_TREE, logs: [] };
+  const prefix = `${dir.slice(0, -2)}`;
+  return { runs: runs.stdout.split("\n").filter(Boolean).length, logs: logs.stdout.split("\n").filter(Boolean).map((l) => l.slice(prefix.length)) };
 }
 
 /** W-610: the light-gate commands for the opus: the main checkout's kept list (bisellium.yml#light_gates) and the test files of the brief committed at the worktree's HEAD, through the one reader admitLightGates also uses. */
