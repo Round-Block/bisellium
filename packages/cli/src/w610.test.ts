@@ -169,3 +169,28 @@ row("W-610-b2 review is ordered on the light gates at the tip tree with no full 
   assert.equal(r.status, 0, ran("the review verb admits the light gates", r));
 });
 
+row("W-610-b3 after a pass next orders one ci --opus at the reviewed tree", () => {
+  const w = passed("w610-b3");
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "build", "named", "the full suite is ordered after the pass");
+  assert.equal(o.kv.get("actor"), "producer", ran("a ladder-runner's", o));
+  assert.equal(o.kv.get("reviewed"), `round 1 at ${sourceTree(w.wt)}`, ran("the order names the reviewed tree", o));
+  assert.match(o.kv.get("command") ?? "", new RegExp(`ci --opus ${OPUS} --studio studio --repo \\.`), ran("one ci --opus", o));
+  // the cap (w610-proof-meet-1112): a failed full suite at the reviewed tree is ordered once more, then it is a builder's
+  const failedRun = (n: number): void => {
+    writeGates(w, { log: (t) => `certifies: ${t}\ncommand: node -e 1\nexit code: 1\n\nrun ${n}\n`, commit: false });
+    editRecord(w, "wt", (doc) => doc.setIn(["probationes", "tests", "status"], "failed"));
+    commit(w.wt, `studio(${OPUS}): gates failed, run ${n}`);
+  };
+  failedRun(1);
+  const rerun = next(w, [OPUS, ...BUDGET]);
+  expectStep(rerun, "build", "named", "one failed ci at the reviewed tree is ordered once more");
+  assert.equal(rerun.kv.get("reviewed"), `round 1 at ${sourceTree(w.wt)}`, ran("the rerun is the ci order", rerun));
+  failedRun(2);
+  const capped = next(w, [OPUS, ...BUDGET]);
+  expectStep(capped, "build", "named", "a second failed ci at the reviewed tree goes to a builder");
+  assert.equal(capped.kv.get("ci-runs"), `2 at ${sourceTree(w.wt)}`, ran("the order names the capped runs", capped));
+  assert.notEqual(capped.kv.get("actor"), "producer", ran("a builder's, not a third ci", capped));
+  assert.doesNotMatch(capped.kv.get("command") ?? "", /ci --opus/, ran("no third ci at the tree", capped));
+});
+
