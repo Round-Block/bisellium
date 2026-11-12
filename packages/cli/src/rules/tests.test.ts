@@ -1433,6 +1433,8 @@ const LITERAL_FORMS: [string, string | undefined][] = [
   ["0.0", undefined], ["1.0", undefined], ["-1.0", undefined], ["0.00", undefined],
   ["0.0_0", undefined], ["1.0_0", undefined], ["-1.0_0", undefined], ["+1.0_0", undefined], ["0.0_00", undefined], ["1.0_0_0", undefined],
   ["1e0", undefined], ["0e1_0", undefined], ["1.0e0_0", undefined], ["-1e0", undefined],
+  ["1e-400", NUMBER_FORM], ["0.99999999999999999", NUMBER_FORM], ["1.00000000000000001", NUMBER_FORM], ["-0.99999999999999999", NUMBER_FORM], ["1e-1_000", NUMBER_FORM],
+  ["0e400", undefined], ["10e-1", undefined], ["0.1e1", undefined], ["100e-2", undefined], ["-10.0e-1", undefined],
   ["0x1F", undefined], ["0o17", undefined], ["0b101", undefined], ["10n", undefined], ["0x1_0", undefined],
 ];
 // two assertion sites on one line, in each order: the pattern and ends forms are named before the numeric form
