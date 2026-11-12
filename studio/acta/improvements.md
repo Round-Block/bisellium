@@ -1250,3 +1250,84 @@ Classes in more than one opus, 2026-10-28..2026-11-10:
 - review-system practices from the review-article meet (eval set of past misses, Pre-existing tag, noise by outcome, which layer should have caught it): none now, because the meet put them all after M4 as one study opus (collated.md §1, §3); the producer files that study opus behind M4 so the daily retro's tags have a place to go. Owner: ops-lead (prompts), eng-lead (eval runner).
 - review×, spec×, security×, tests× classes in the 14-day list: none new, because no review or spec round failed on 11-10 (the round table has passes only and no loop) and each standing class has a cause fix named by a lesson (none is owed).
 - UI and design-quality classes: none, because no UI opus ran on 11-10.
+
+### 2026-11-11
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-573 | 262 | 2 | S1 2 |
+| W-589 | 69 | 0 |  |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-563 | review | 1 | failed | - | review×fail-open-on-malformed-records-patched-per-site S1, review×census-misses-ordinary-direct-binding-forms S1 |
+| W-563 | spec | 1 | passed | - |  |
+| W-563 | spec | 2 | failed | 58 | spec×reused-code-read-enumerated-instead-of-exit-boundary S1 |
+| W-573 | review | 1 | failed | - | mechanism×replay-environment-not-pristine S1 |
+| W-573 | review | 2 | passed | 40 |  |
+| W-573 | spec | 2 | passed | 9 |  |
+| W-573 | spec | 3 | failed | 24 | spec×input-domain-missing-or-unenforceable S1 |
+| W-573 | spec | 4 | passed | 33 |  |
+| W-573 | spec | 5 | passed | 2 |  |
+| W-573 | spec | 6 | passed | 35 |  |
+| W-573 | spec | 7 | passed | 2 |  |
+| W-589 | review | 1 | passed | - |  |
+| W-589 | spec | 1 | passed | - |  |
+| W-589 | spec | 2 | passed | 6 |  |
+
+- no loop
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| W-573 | ci/W-573-tests-5be8a82d.log | gate×W-179 | W-179-b1 |
+
+Classes in more than one opus, 2026-10-29..2026-11-11:
+- class gate×W-339 seen in 2 opera: W-463, W-487
+- class gate×tests seen in 7 opera: W-364, W-407, W-494, W-502, W-509, W-558, W-572
+- class interface×validation-order-masks-errors seen in 3 opera: W-474, W-543, W-547
+- class mechanism×replay-environment-not-pristine seen in 3 opera: W-462, W-477, W-573
+- class review×evidence-backfilled-or-absent seen in 7 opera: W-300, W-413, W-430, W-477, W-495, W-502, W-541
+- class review×fail-open-on-malformed-records-patched-per-site seen in 7 opera: W-430, W-444, W-468, W-525, W-547, W-558, W-563
+- class review×shared-log-grammar-rejects-valid-records seen in 2 opera: W-459, W-492
+- class security×symlink-parent-write-escape seen in 4 opera: W-430, W-461, W-542, W-543
+- class spec×input-domain-missing-or-unenforceable seen in 13 opera: W-227, W-298, W-409, W-430, W-445, W-452, W-459, W-461, W-525, W-530, W-547, W-558, W-573
+- class spec×input-without-named-rejector seen in 2 opera: W-489, W-495
+- class spec×promise-unattainable-under-accepted-domain seen in 17 opera: W-227, W-298, W-333, W-452, W-459, W-462, W-468, W-472, W-489, W-494, W-495, W-498, W-501, W-509, W-525, W-543, W-547
+- class tests×assertion-satisfied-by-the-wrong-cause seen in 2 opera: W-298, W-473
+- class tests×ruled-case-uncovered seen in 11 opera: W-364, W-444, W-450, W-454, W-463, W-474, W-495, W-496, W-525, W-542, W-547
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-227, W-501
+- class tests×tests-that-agree-with-the-bug seen in 4 opera: W-407, W-409, W-487, W-543
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-487, W-508
+
+#### Owed cause fixes
+
+- OWED class gate×W-339 (W-463, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class gate×tests (W-364, W-407, W-494, W-502, W-509, W-558, W-572): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class mechanism×replay-environment-not-pristine (W-462, W-477, W-573): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- Owed mechanism×replay-environment-not-pristine, now 3 opera (W-573 review r1, the relative-TMPDIR red cell, beside W-462, W-477), and the stamps proposed 11-07 to 11-10 still unlanded: studio/lessons/L-058.md:7 is still `addressed_by: "W-175"` (halted) and L-042.md:7 still `"W-080"` (halted). A fifth day of a hand stamp not landing is itself the class: the stamps L-058 -> W-464 and L-042 -> W-506 go into the next records PR as two named lines (post-w563-records/todo.md gains them), and W-464's queue line (studio/queue.yml:77, "replay-environment-not-pristine") names W-573 as its third instance. Until W-533 lets an opus's own front matter name its class, this is the only path. Owner: ops-lead (L-058, W-464), design lead (L-042, W-506). Opus: W-464, W-506.
+- Owed gate×tests (7 opera) and gate×W-339 (W-463, W-487): still no `gate×` lesson in studio/lessons/, so the owed line cannot clear however many fixes land. W-563 (pre-sign gate, merged #1152) and W-596 (pre-handoff gate, greenlit high) are gate×tests' cause fixes: a dispatched clerk files one gate×tests lesson with `addressed_by: "W-596"`; gate×W-339 stays covered by W-533 (an opus names the gate row class it fixes). Owner: eng-lead. Opus: W-596, W-533.
+- gate×W-179 (W-573, ci/W-573-tests-5be8a82d.log, W-179-b1 counted w573.test.ts as a 15th next-row file): one opus, fixed in-opus by the signer's option A; the builder never ran the tree-wide census test before handoff. Covered by W-596 (census tests in the pre-handoff gate). Owner: eng-lead.
+- review×fail-open-on-malformed-records-patched-per-site, now 7 opera (W-563 review r1 S1: readGateLog's `started` not checked as ISO): the named cause fix W-185 is greenlit high but sits at studio/queue.yml:78, behind the freeze-era tail, so the class keeps paying S1 rounds. The producer ranks W-185 into the process lane right after W-596 (it is the class with the most S1s still recurring). Owner: eng-lead. Opus: W-185 (re-rank).
+- review×census-misses-ordinary-direct-binding-forms (new, W-563 review r1 S1; fix checks 1-2 found 8 then 7 open import forms until fix3/architect-ruling.md moved to the typescript parser): misses-meet-1111 fix 4 (one shared parser-backed import scanner; an eslint ban on import-matching regexes outside it; spec-draft.md and spec-review.md "a source-syntax scan uses the language's parser or lists excluded forms as limits", pinned by rules/prompts.test) is agreed but not filed: nothing in studio/opera/ or studio/queue.yml names a shared scanner. File it as the small W-563 follow-on. Red: a second regex import matcher added outside the scanner fails lint. Owner: eng-lead. Opus: file.
+- build×per-process-import-cost (W-563 ci rounds 5 and 6 timed out at the 30-min gate: f653d9b8's static `import ts from "typescript"` in presign-gate.ts reached every CLI process through verdict.ts, main.ts no-args 0.25 -> 0.64 s, the 15-wide next group 689 -> 1247 s; W-563-build/ci7/measure.md): fixed in 8a04167c, but nothing stops the next heavy static import, and it shows only as a suite timeout 40 min later. File: a census test that no module in packages/cli/src/main.ts's static import graph imports a listed heavy package (typescript first), so a lazy `await import` or a child is the only route. Red: the f653d9b8 form fails the test. W-579's slowest-files line helps find it but does not refuse it. Owner: eng-lead. Opus: file.
+- prompt×builder-departs-from-architect-ruling (fix round 5 made the typescript import static against fix3/architect-ruling.md's lazy-load ruling because containment admits no createRequire; the conflict never went back to the architect and fix checks 3-4 passed it; w563-scope-meet-1112 "Missed by the producer", 4 of 5 seats): studio/prompts/builder-brief.md and the fix-check prompt gain one line each, pinned by a rules/prompts.test row: a builder who cannot keep a cited ruling stops and reports the conflict instead of choosing; the fix check lists each clause of every ruling the brief cites as kept or departed, and a departure is blocking until the ruling's author re-rules. Code-owned (Patron approves). Owner: ops-lead. Opus: file.
+- prompt×builder-briefs-name-too-few-tests (W-563 ci rounds 1, 2, 4 failed on census tests the briefs never named: lint, W-121 b5 waiver cap, W-163-b6 containment; ci's NODE_OPTIONS/BISELLIUM_RECORD_* env): covered by W-596; the interim npm `test:preflight` script (misses-meet-1111 "Fastest", Patron "Approved" 11-11, current-state.md 11-12 01:30Z "Still owed") is still unbuilt a day later: the producer dispatches it next, before W-551's build starts. Owner: ops-lead. Opus: W-596 (interim PR owed).
+- script×failed-ci-logs-untracked (the W-563 review perform refused 6 untracked failed logs because the runner brief said leave them; current-state.md 11-11 10:50Z): covered twice, by W-560 ("a failed ci --opus commits its own gate logs") and by W-579's widened queue line ("ci --opus commits its own logs"). The producer drops the clause from one of them (fold W-560 into W-579, which builds first in E1) so it is not built twice. Owner: ops-lead. Opus: W-579 (fold W-560).
+- script×clerk-copy-not-verbatim (11-11: the clerk's Write appended a stray "</content>" line to 3 of 4 copies and one landed in #1144; 11-12: a Haiku clerk copy dropped a handoff line, caught by cmp; handoff-check and check passed both; current-state.md 11-11 01:30Z, 11-12 01:30Z): the cmp lives only in the producer's habit. File: (a) a check rule refusing a line that is exactly `</content>` in studio/ records and docs/SESSION-HANDOFF.md (eng-lead, check-rule class); (b) a kept script the land runner runs, cmp of every kit-to-record copy a kit lists, refusing the land on any difference (ops-lead, script class). Red: (a) a fixture handoff ending in `</content>` refused; (b) a copy one line short refuses the land. Owner: eng-lead (a), ops-lead (b). Opus: file.
+- eng×new-has-no-milestone (the W-597 filing brief missed its milestone; `opus.milestone` refused it, packages/cli/src/rules/milestones.ts:83, at the cost of a redo): `new` takes no `--milestone`/`--value`, so every filing is new plus amend and a brief can leave the second step out. Fold into W-585 (greenlit; `new` already gains `--dry-run`): `new` takes `--milestone <id> --value <n>` and, while milestones.yml exists, refuses a filing without them. Red: `new` without a milestone refused, with one writes a mapped opus. Owner: eng-lead. Opus: W-585.
+- hook×dispatch-on-failed-Write (the first W-551 spec-ahead dispatch went out on a failed brief Write, stopped in seconds; a third time after 11-10's two): covered by W-588. Owner: ops-lead.
+- workflow×magister-not-seated (production lead not seated at two meets on 11-11; cleanup-meet-1111 "seated late at the Patron's ask"): covered by W-554 (queue line: the owning collegium's magister always; check refuses a cited meet missing one). Owner: ops-lead.
+- workflow×opus-too-big (W-563: two independent behaviour groups, every failure from group G; w563-scope-meet-1112): covered by W-553 (queue line: check refuses unconnected behaviour groups without a keep-together reason). Owner: design lead (spec class).
+- workflow×spec-ahead-not-dispatched (W-579's spec-ahead draft dispatched only once the Patron asked): covered by W-597. Owner: ops-lead.
+- red×fix-round-reds-unrecorded (W-563 fix1/, fix2/; W-573 fix1/red-unrecorded.log): covered by W-551 (next in E1, widened per w551-rank-meet-1111). Owner: eng-lead.
+- spec×reused-code-read-enumerated-instead-of-exit-boundary (W-563 spec r2 S1): none further, because its cause fix (spec-draft.md exit-boundary line, process.prompt_templates rule, W-563-b5 row) merged inside W-563 (#1152, w563-class-meet-1111). If it recurs, the qa-lead's brief.admission shape rule from that meet is next.
+- spec×input-domain-missing-or-unenforceable (W-573 spec r3 S1; 13 opera) and W-573's seven spec rounds (262 min cycle): none new, because the class is not owed (a lesson names its cause fix) and the round count is what W-594 (brief-first spec review) targets. Owner: design lead.
+- workflow×amend-title-over-8-words and the architect r4 dispatched before reading `next` (current-state.md 11-11 14:20Z): none, because amend refuses an over-long title before writing (one retry) and the dispatch error is one occurrence that W-537's checked brief template and W-545's one-perform build rung both remove at the source.
+- UI and design-quality classes: none, because no UI opus ran on 11-11 (W-589, Instructions renders each collegium's spec signer, is an engineering feature).
