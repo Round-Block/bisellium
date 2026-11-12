@@ -1116,6 +1116,12 @@ export function deriveNext(f: Facts): Derived {
   if (state === "greenlit" && rec["kind"] === "research" && !tookLadder(rec) && f.tip === undefined)
     return hold("spec", `${id} is research and takes no build ladder; when its report is written: bisellium conclude ${id} --from <report> --decision <id> --sella <id> --studio ${f.studioRel}`);
 
+  // W-512 (D-181, spec-ahead meet 1109 (d)): an unstarted opus (greenlit, no opus/<id>) takes its spec rung only as a lane's
+  // opus or take, or the one entry ahead of it; any other is held here, before any spec order or signature ticket
+  const order = f.tip === undefined && state === "greenlit" ? f.order?.() : undefined;
+  // the hold names the rung the opus stands at: spec while its spec is owed, branch once it is signed (the rest derived unordered)
+  if (order?.kind === "refused") return hold(deriveNext({ ...f, order: () => ({ kind: "free" }) }).step === "branch" ? "branch" : "spec", order.why);
+
   // 2 spec (the committed trunk)
   // W-355: the kind and seat pairing come from the checkout that owns the spec evidence; an unreadable owner holds here
   const owner = f.specOwner;
@@ -1231,9 +1237,8 @@ export function deriveNext(f: Facts): Derived {
       // D-039 §1: no new opus starts while a retro is owed
       const owing = retroHold(f);
       if (owing !== undefined) return hold("branch", owing);
-      // W-512 (D-181): branch starts a lane: only a lane's own opus or its take, never the spec ahead or a later entry
-      const order = state === "greenlit" ? f.order?.() : undefined;
-      if (order !== undefined && (order.kind === "refused" || order.kind === "ahead")) return hold("branch", order.why);
+      // W-512 (D-181): branch starts a lane: only a lane's own opus or its take, never the spec ahead (a later entry held at spec, above)
+      if (order?.kind === "ahead") return hold("branch", order.why);
       return { ...named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`, fixes), ticket: { action: "branch", round: 0 } };
     }
   }
