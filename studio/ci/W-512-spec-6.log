@@ -1,0 +1,33 @@
+# opus: W-512
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-12T19:10:33.885Z
+# tree: tree:08ff6aa9038dde6bc659df615a232ee99ce72adc
+# brief: briefs/W-512.md blob:bef53aa3e4a41311799def4158c6b643b56e3326
+# ticket: {"opus":"W-512","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-512/studio","head":"3245b8bdeb0b2eb6c51fe3c3e367e78ce989072b","brief":"bef53aa3e4a41311799def4158c6b643b56e3326","at":"2026-11-12T19:10:23.328Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-512-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-512-spec/gate.log
+
+## Findings
+
+1. advisory — closed: S1's class, censused (the brief's Class census line, rev2/class-census.py -> rev2/class-census.out; rev2/census.sh -> rev2/census-af0a7172.out, rev2/census-tip.out): readers of the lane set are laneTakes, startOrder's held, laneOverlap, lanePlan, runAll (via deriveNext) and meanwhile's nextEntry (unchanged, W-597); createOpusBranch writes a ref and no lane field. The reviewer's text closes a branched take but misses two live cases: an opus in flight that is no lane's now (a take displaced when a skipped entry's block clears, or a re-rank down) and one ranked where no lane runs; on the real officina opus/W-503 (ui #3) and opus/W-507 (engineering #67) are both. So laneOverlap reads every opus in flight from its ref, and the lane set only names the lane (`in no lane` otherwise) — check: brief Intent 4, site-table paragraph, Files owned; W-512-b3 "W-901, in flight but ranked below E1's take, is no lane's now and is still read"; mutant in-flight-only-lanes
+2. advisory — closed: S3 (spec r2 #2) adopted word for word as order-fails-closed's limit: an ignored untracked queue.yml is omitted by git status and may be obeyed by readQueue — check: brief Promises, order-fails-closed
+3. advisory — the new in-flight read fails closed: a for-each-ref failure, a listed id outside ID_RE, an unreadable record and a branch with no readable brief each hold; a ref with no main record is no opus (opus/W-408-r3) and a done or halted one holds nothing, as furtherAlongBranches reads opus refs; laneRecord and CONFLICT_OPEN_STATES are reused unchanged, a stated limit — check: brief Input domain 6-9; W-512-b3 rows
+4. advisory — the real consequence, named in Acceptance: W-507 (parked, opus branch, owns packages/cli/src/next.ts) will hold W-512's own branch when E1 takes it after W-610 (`W-507 in no lane`) until a lead halts W-507 or it is done; that is the refusal working, not a defect — check: rev2/census-tip.out; brief Acceptance
+5. advisory — a lane is idle by its lane field and its take, so a lane whose take was displaced may branch a second entry beside an unnamed one in flight; the overlap still reads it, so the two never share a file; stated as a limit (landing the lane field after branch closes it) — check: brief Limits
+6. advisory — the series grows by one red/feat pair for behaviour 3 (16e8b2f1, 22e1851b) on r1's signed eight, which are unchanged; prototype.mbox re-cut (sha256 44a0e9d0…), r1 copies in r1-24ec115c/ — check: brief Prototype, behaviour 3; rev2/reds.out
+7. advisory — red matrix rerun over the ten commits under certify's cell (env -i, an empty HOME, a writable TMPDIR): five pairs, each red ERR_ASSERTION only and accepted by classifyReplay, each green exit 0 — check: rev2/reds.sh; rev2/reds.out
+8. advisory — ten one-hunk mutants at the tip each fail their row at a pinned assertion: r1's eight rerun, plus takes-unnamed (queue.ts) and in-flight-only-lanes (next.ts) — check: rev2/mutants.py; rev2/mutants.out
+9. advisory — the pre-sign gate at this series (base 24ec115c, tree ecca958a, an empty HOME): check, typecheck, the w512.test.ts reads row and every owed test row, next.test.ts among them, all exit 0 in 7.2 minutes — check: gate.log
+10. advisory — at the tip under ci's env (env -i, an empty HOME, CI=true): check, typecheck and lint exit 0; the w512.test.ts read scope has no unlisted line; the 13 importer and queue.yml test files, containment.test.ts and rules/tests.test.ts each pass alone with 0 not ok — check: rev2/all.sh; rev2/all.out; rev2/singles.out
+11. advisory — closed: Codex's fixture census (gpt-5.6-sol, read-only), rerun over revision 2 at the tip, lists the same two flips, W-547-b2 and W-179-b1, both named in Acceptance, none unnamed, 46 must-stay-green rows — check: fixture-census.md sha256 05c4fb4b…; r1-24ec115c/fixture-census.md
+12. advisory — closed: brief admission (round 3's `next`) refused line 63, order-fails-closed's "— limits:"; it now reads "— limit:" (wording only, no line moved, ledger unchanged); master's admission is clean for the whole brief — check: rev2/admission-r4.out; rev2/brief-r3-signed.md
+13. advisory — gap, for the producer to file: the sign-time admission ran readBriefAdmission at admissionLimit and lifecycle.ts briefAdmissionProblems (admission-check.mts, rev2/admission-r4.out: 0 problems), but `ready` (runReady, lifecycle.ts:325-341) runs readRedOrder and then brief-admission.ts declaredRedProblems (W-473) after those two, and neither of the two calls it, so no sign-time check saw behaviour 3's two `pinned by` pins; `ready` refused (`behaviour 3's genuine red declares 2 failing assertions`). Fixed in wording only on line 129, no line moved, ledger unchanged: the revision-2 pair's row is cited as "fails by `ERR_ASSERTION` at `W-512-b3`'s "E1 takes W-901, …"" instead of a second pin, and the fold sentence says the recorded red fails at the one declared assertion, "E2's take overlaps W-901, in flight in E1, so it does not branch", which red-b3.log fails at (redFailsAt true) — check: rev2/admission-r6.mts; rev2/admission-r6.out (before: declaredRedProblems 1; after: readBriefAdmission 0, readRedOrder ok, declaredRedProblems 0, briefAdmissionProblems 0); rev2/edit-brief-r6.py; rev2/brief-r6.md
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-512.md` revision 2 (line 63's admission wording and line 129's single declared red, W-473, fixed) at master 24ec115c: spec r2's S1 closed for its whole class (every opus in flight is read by its branch; lanes only name it), S3 adopted as a stated limit; four behaviours, behaviour 3 with a second recorded red; the prototype series sha256 44a0e9d0… at tip 22e1851b, gated at its own tree.
