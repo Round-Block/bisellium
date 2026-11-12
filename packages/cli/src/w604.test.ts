@@ -2,7 +2,7 @@
  * W-604 (studio/briefs/W-604.md): the pre-sign gate runs a shared multi-file test:suite command once (b1), alone after the
  * pool (b2), under a timeout sized to its files (b3), exempt from the start budget (b4), logging its run time on every row it
  * serves (b5); and a reads row judges only the series' files (b6). Every row works in its own scratch git repository under the
- * OS temp directory; none reads studio/, the host HOME or ~/.codex. The fixture's slow file sleeps at most 2.5 s. Select one
+ * OS temp directory; none reads studio/, the host HOME or ~/.codex. A probe file pauses at most 2.5 s, the slow checker 3 s. Select one
  * behaviour with --test-name-pattern='^W-604-b<k>\s'.
  */
 import assert from "node:assert/strict";
@@ -43,10 +43,9 @@ const put = (repo: string, rel: string, text: string): void => {
 const commitAll = (repo: string, msg: string): string => (git(repo, "add", "-A"), git(repo, "commit", "-qm", msg), git(repo, "rev-parse", "HEAD"));
 const HOST_SCRIPTS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "scripts");
 
-/** The fixture file's own timer, assembled from fragments: it is fixture text the gate's child runs, not a wait in this process. */
-const PAUSE = ["set", "Timeout"].join("");
-/** The slow checker's blocking wait, assembled the same way (fixture text for the checker's own process). */
-const HOLD = ["Atomics", "wait"].join(".");
+/** The fixture's one wait: text the gate's child runs (a probe file or the slow checker), blocking it for `ms` milliseconds. */
+// sleep-waiver: fixture -- injected latency: the fixture's child blocks for ms so the gate's timeouts and run seconds have a known floor
+const hold = (ms: string): string => `Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ${ms});`;
 /** A test file that logs `<name> start|end <ms>` to $W604_EVENTS, sleeps $W604_SLEEP_<NAME> ms, and reads studio when $W604_READ_<NAME> is 1. */
 const probe = (name: string, extra = ""): string =>
   [
@@ -55,7 +54,7 @@ const probe = (name: string, extra = ""): string =>
     `const ev = (s) => process.env.W604_EVENTS && appendFileSync(process.env.W604_EVENTS, \`${name} \${s} \${Date.now()}\\n\`);`,
     'ev("start");',
     `if (process.env.W604_READ_${name.toUpperCase()} === "1") readFileSync("studio/bisellium.yml", "utf8");`,
-    `await new Promise((r) => ${PAUSE}(r, Number(process.env.W604_SLEEP_${name.toUpperCase()} ?? 0)));`,
+    hold(`Number(process.env.W604_SLEEP_${name.toUpperCase()} ?? 0)`),
     'ev("end");',
     "",
   ].join("\n");
@@ -84,7 +83,7 @@ function world(o: { record?: string; checkMs?: number } = {}): { repo: string; e
   // a reads check made slow by the fixture: the copied checker waits o.checkMs before it judges a trace
   if (o.checkMs !== undefined) {
     const f = join(repo, "scripts", "ci-scope.mjs");
-    writeFileSync(f, `if (process.argv.includes("--check-reads")) ${HOLD}(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ${o.checkMs});\n${readFileSync(f, "utf8")}`);
+    writeFileSync(f, `if (process.argv.includes("--check-reads")) ${hold(String(o.checkMs))}\n${readFileSync(f, "utf8")}`);
   }
   const base = commitAll(repo, "base");
   put(repo, "src/a.mjs", "export const ok = true; // the series\n");
@@ -177,8 +176,10 @@ row("W-604-b5 the shared row's seconds exclude the reads check", async () => {
   const exit = await w.run({ pool: 1 }, { W604_SLEEP_A: "1200" });
   const rows = w.rows();
   assert.equal(exit, 0, `exit (rows ${brief(rows)})`);
-  for (const r of [of(rows, "reads", "src/r.test.mjs"), of(rows, "test", "src/a.test.mjs")])
+  for (const r of [of(rows, "reads", "src/r.test.mjs"), of(rows, "test", "src/a.test.mjs"), of(rows, "test", "src/r.test.mjs")]) {
+    assert.ok(Number(r[1]) >= 1.2, `the run's seconds include the 1.2 s pause (got ${r[1]})`);
     assert.ok(Number(r[1]) < 3, `the run's seconds do not include the 3 s reads check (got ${r[1]})`);
+  }
 });
 
 row("W-604-b6 a reads row judges only the series' files", async () => {
