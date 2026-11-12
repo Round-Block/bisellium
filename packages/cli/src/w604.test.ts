@@ -157,3 +157,14 @@ row("W-604-b5 every row of a shared command logs its run time", async () => {
   for (const s of secs) assert.ok(s >= 1.2, `each shared row logs the run's own seconds, at least the 1.2 s pause (got ${secs.join(", ")})`);
   assert.equal(new Set(secs).size, 1, `the shared rows log one run time (got ${secs.join(", ")})`);
 });
+
+row("W-604-b6 a reads row judges only the series' files", async () => {
+  const w = world({ record: "node src/r.test.mjs && node src/old.test.mjs" });
+  const exit = await w.run({}, { W604_READ_A: "1" });
+  const rows = w.rows();
+  assert.equal(of(rows, "reads", "src/r.test.mjs")[0], "0", `another file's test:record entry or unlisted read does not fail the series' reads row (rows ${brief(rows)})`);
+  assert.equal(exit, 0, `exit (rows ${brief(rows)})`);
+  const own = world({ record: "node src/old.test.mjs" });
+  assert.equal(await own.run(), 1, "the series' own unlisted read fails the gate");
+  assert.equal(of(own.rows(), "reads", "src/r.test.mjs")[0], "1", `the series' own unlisted read fails its reads row (rows ${brief(own.rows())})`);
+});
