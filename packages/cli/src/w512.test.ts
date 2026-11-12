@@ -245,7 +245,7 @@ test("W-512-b1 lane walk: a lane dropped on the ahead pass names no ahead, and n
 test("W-512-b3 lane walk: a lane dropped after the target is decided drops only itself: E3 is still named", () => {
   const w = world("w512-b3d", "spec");
   records(w, { "W-902": "building", [BAD]: "sideways" });
-  queue(w, "E1: ~, E2: ~, E3: W-902", [OPUS, BAD]);
+  queue(w, "E1: ~, E2: ~, E3: W-902", [OPUS, BAD, "W-902"]);
   put(w.studio, "briefs/W-902.md", `# W-902\n\n## Files owned\n\n- \`docs/\`\n\n## Interfaces\n\nNone.\n`);
   commit(w.repo, "studio: W-902 brief");
   const b = spawnSync("git", ["branch", "-f", "opus/W-902"], { cwd: w.repo, encoding: "utf8" });
