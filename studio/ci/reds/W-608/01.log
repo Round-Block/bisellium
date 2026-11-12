@@ -1,0 +1,56 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-608-b1\s --import tsx packages/cli/src/rules/tests.test.ts
+# exit: 1
+# at: 2026-11-12T07:31:32.972Z
+# sella: builder.W-608
+# tree: tree:1f0de73b10b80a8fd4aab93edf5006309fd151de
+# ticket: {"opus":"W-608","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-608/studio","head":"4c1e2d9eede7cf9b849e1f9089bc8134f698da19","brief":"486019eafea6ee252b92828d3dda8bd903c78826","at":"2026-11-12T07:31:27.146Z"}
+
+TAP version 13
+# Subtest: W-608-b1 behaviour 1: an added assert.ok or assert whose first argument bounds a number on one side only is a test.one_sided block, unless annotated
+not ok 1 - W-608-b1 behaviour 1: an added assert.ok or assert whose first argument bounds a number on one side only is a test.one_sided block, unless annotated
+  ---
+  duration_ms: 165.050435
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-608/packages/cli/src/rules/tests.test.ts:31:6124'
+  failureType: 'testCodeFailure'
+  error: |-
+    an added lower bound: one block at its line
+    + actual - expected
+    
+    + []
+    - [
+    -   {
+    -     level: 'block',
+    -     message: 'a number bounded on one side in an assertion: assert the exact value (assert.equal) or both bounds in one assertion (lo <= x && x <= hi), or annotate "// one-sided: <reason>"',
+    -     rule: 'test.one_sided',
+    -     where: 'a.test.ts:3'
+    -   }
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      rule: 'test.one_sided'
+      level: 'block'
+      where: 'a.test.ts:3'
+      message: 'a number bounded on one side in an assertion: assert the exact value (assert.equal) or both bounds in one assertion (lo <= x && x <= hi), or annotate "// one-sided: <reason>"'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-608/packages/cli/src/rules/tests.test.ts:1427:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 572.395655
