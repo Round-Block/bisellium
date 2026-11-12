@@ -440,28 +440,35 @@ export async function runGate(argv: string[], opts: GateOptions = {}): Promise<n
   let taken = 0;
   const shared = new Map<string, Promise<number[]>>();
   const groups = new Map<string, number[]>();
+  const pooled: number[] = [];
   for (const [n, r] of rows.entries()) if (isShared(r)) groups.set(r.command, [...(groups.get(r.command) ?? []), n]);
+  else pooled.push(n);
+  const record = (n: number, exit: number, t0: number): void => {
+    const row = rows[n]!;
+    failed ||= exit !== 0;
+    results[n] = `${Math.min(exit, 999)}\t${((Date.now() - t0) / 1000).toFixed(1)}\t${row.kind}\t${row.file ?? "-"}\t${row.command}`;
+  };
   try {
     const worker = async (): Promise<void> => {
-      for (let n = taken++; n < rows.length; n = taken++) {
+      for (let i = taken++; i < pooled.length; i = taken++) {
         // a row not started within the budget stays `deferred`: deferred to `ci --opus`, never a failure
         if (now().getTime() - started.getTime() >= budgetMs) continue;
-        const row = rows[n]!;
+        const n = pooled[i]!;
         const t0 = Date.now();
-        // W-604: a shared command's rows (its test rows and its reads row) take one run of it
-        const group = groups.get(row.command);
-        let exit: number;
-        if (group === undefined || !isShared(row)) exit = await runRow(wt, row, scratch, n, timeoutMs);
-        else {
-          const run = shared.get(row.command) ?? runShared(wt, row.command, group.map((g) => rows[g]!), scratch, n, timeoutMs);
-          shared.set(row.command, run);
-          exit = (await run)[group.indexOf(n)]!;
-        }
-        failed ||= exit !== 0;
-        results[n] = `${Math.min(exit, 999)}\t${((Date.now() - t0) / 1000).toFixed(1)}\t${row.kind}\t${row.file ?? "-"}\t${row.command}`;
+        record(n, await runRow(wt, rows[n]!, scratch, n, timeoutMs), t0);
       }
     };
-    await Promise.all(Array.from({ length: pool }, worker));
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(pool, pooled.length)) }, worker));
+    // W-604: a shared command's rows (its test rows and its reads row) take one run of it, alone, after the pool
+    for (const [n, row] of rows.entries()) {
+      const group = groups.get(row.command);
+      if (group === undefined || !isShared(row)) continue;
+      if (now().getTime() - started.getTime() >= budgetMs) continue;
+      const t0 = Date.now();
+      const run = shared.get(row.command) ?? runShared(wt, row.command, group.map((g) => rows[g]!), scratch, n, timeoutMs);
+      shared.set(row.command, run);
+      record(n, (await run)[group.indexOf(n)]!, t0);
+    }
   } finally {
     rmSync(scratch, { recursive: true, force: true });
     lines.push(...results, `# minutes: ${((now().getTime() - started.getTime()) / 60000).toFixed(1)}`);
