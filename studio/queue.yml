@@ -1,8 +1,7 @@
 queues:
   engineering:
-    lanes: { E1: W-610 }
+    lanes: { E1: W-512 }
     next:
-      - { opus: W-610, says: "build review before the full ci: light gates run by a ladder-runner, review, then one ci --opus at the reviewed tree; high, after W-608, ahead of W-551 (review-order-meet-1112)" }
       - { opus: W-512, says: "next refuses out-of-order starts and a lane branch whose Files owned overlap another lane's in-flight opus; opens the lanes (D-182); right after W-610 (lanes-meet-1112)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-512 (D-193, lanes-meet-1112)" }
       - { opus: W-609, says: "no new lane opens while first-run ci fails over 30% or 2+ of the last 5 round-1 reviews have an S1; until it lands, E2 opens on the qa-lead's retro reading; after W-595" }
@@ -68,7 +67,6 @@ queues:
       - { opus: W-510, says: "repair talk when its session is gone; then the leads' PR-approval debate (D-182); ordered, not process (D-193)" }
       - { opus: W-514, says: "next enforces the UI revision cap (D-182); ordered, not process (D-193)" }
       - { opus: W-516, says: "Files owned check covers docs/SESSION-HANDOFF.md (D-182); ordered, not process (D-193)" }
-      - { opus: W-507, says: "W-298's remainder: two manifest input cases and the cause fix for spec×fix-opens-new-surface; parked until after M4 (D-181)" }
       - { opus: W-506, says: "cause fix, a build review running on a failed spec verdict; starts after the process freeze ends, when M4 passes (D-178)" }
       - { opus: W-534, says: "land honours notice.ok, reports a remote arm, polls pending checks; behind the freeze" }
       - { opus: W-533, says: "retro owes gate failures by failing row and recurrences after a done fix; behind the freeze" }
@@ -152,6 +150,8 @@ halted:
   - { opus: W-485, says: "ADOPTION.md restructured as a lean agent-readable contract; until the freeze ends and it is re-ranked (D-174)" }
   - { opus: W-479, says: "an outside advisory that breaks the gates for every PR has a filing path: the fix opus files without an admin merge; until the freeze ends and it is re-ranked (D-174)" }
   - { opus: W-371, says: "one provider-neutral sandbox row per seat in the manifest (write roots, network, tools), which bisellium run composes for each harness; until the freeze ends and it is re-ranked (D-174)" }
+  - { opus: W-610, says: "build review before the full ci; halted until W-595 lands and a Patron lift names it; cause fix folds into brief r4 (D-196)" }
+  - { opus: W-507, says: "W-298's remainder; halted until M4's exit passes (D-181, D-196)" }
 cut:
   - { opus: W-436, says: "hard rule, enforced: memory does not work: every open item lives in a record the moment it arises" }
   - { opus: W-465, says: "the orchestrator drains before it hands over: past 250k context it starts no new task unless the Patron asks for that one" }
