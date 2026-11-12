@@ -147,3 +147,13 @@ row("W-604-b4 a shared command is exempt from the start budget", async () => {
   assert.equal(exit, 0, `exit (rows ${brief(rows)})`);
   assert.deepEqual(rows.map(([exit, , kind, file]) => `${exit} ${kind} ${file}`), ["deferred check -", "deferred typecheck -", "0 reads src/r.test.mjs", "0 test src/a.test.mjs", "deferred test src/c.test.mjs", "0 test src/r.test.mjs"], "the pooled rows are deferred, the shared rows run");
 });
+
+row("W-604-b5 every row of a shared command logs its run time", async () => {
+  const w = world();
+  const exit = await w.run({ pool: 1 }, { W604_SLEEP_A: "1200" });
+  const rows = w.rows();
+  assert.equal(exit, 0, `exit (rows ${brief(rows)})`);
+  const secs = [of(rows, "reads", "src/r.test.mjs"), of(rows, "test", "src/a.test.mjs"), of(rows, "test", "src/r.test.mjs")].map((r) => Number(r[1]));
+  for (const s of secs) assert.ok(s >= 1.2, `each shared row logs the run's own seconds, at least the 1.2 s pause (got ${secs.join(", ")})`);
+  assert.equal(new Set(secs).size, 1, `the shared rows log one run time (got ${secs.join(", ")})`);
+});
