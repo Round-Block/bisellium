@@ -6,7 +6,10 @@
  * one `reads` row per test file the series adds, and one `test` row per test file the series adds or changes and per test
  * file that directly imports a touched path. `runGate` (the runner, `node --import tsx <this file>`) runs them pooled in a
  * clean scratch worktree at the series' own tree, each under a timeout, within a budget (a row not started by then is
- * logged `deferred`, deferred to `ci --opus`), and always writes the log; `gateLogProblems` is `verdict --phase spec`'s
+ * logged `deferred`, deferred to `ci --opus`), and always writes the log. W-604: a shared command (one naming two or more
+ * test files) runs once, alone after the pool, exempt from the budget, under a timeout sized to its files and, when one of
+ * its rows is `reads`, under the read trace; its exit serves every row it names, and a reads row judges only its own file.
+ * `gateLogProblems` is `verdict --phase spec`'s
  * reading of that log: it runs nothing, it checks the log is the runner's at the prototype's tree with every owed row
  * passed or deferred.
  *
@@ -374,13 +377,30 @@ function traced(wt: string, command: string, log: string, timeoutMs: number): Pr
   return sh(wt, command, timeoutMs, env, [process.execPath, ["-e", TRACE_ROOT, "presign-gate-root", command]]);
 }
 
+/**
+ * W-604: the reads check's problem lines that judge `file`, a test file the series adds. The check compares a whole-suite
+ * trace to the whole test:record list; a gate trace holds only the rows' run, so an `unlisted:` line of another owner and an
+ * `unread:` line of a command not naming `file` judge other files and are dropped. Every other line (a failed, malformed or
+ * unattributed trace, a root count, an unterminated root, no commands, a missing log) stays.
+ */
+export function readsProblems(stdout: string, file: string): string[] {
+  return stdout.split("\n").filter((l) => {
+    if (l === "" || l === "record_reads=ok") return false;
+    const unlisted = /^unlisted: (\S+) \(read /.exec(l);
+    if (unlisted !== null) return unlisted[1] === file;
+    if (l.startsWith("unread: ")) return l.slice("unread: ".length).split(/\s+/).includes(file);
+    return true;
+  });
+}
+
 /** The reads check of a trace for one added test file: 0 when it passes, 1 when it fails, 124 when it timed out. */
-function judgeReads(wt: string, log: string, _file: string, timeoutMs: number): number {
+function judgeReads(wt: string, log: string, file: string, timeoutMs: number): number {
   const check = spawnSync("node", [join("scripts", "ci-scope.mjs"), "--check-reads", log], { cwd: wt, encoding: "utf8", timeout: timeoutMs, env: rowEnv() });
   if (check.error !== undefined) return (check.error as NodeJS.ErrnoException).code === "ETIMEDOUT" ? 124 : 1;
-  // a reused check's exit is the judge: a non-zero exit with no recognised line (a scalar test:record, a missing script) fails the row
-  const bad = check.status !== 0 || (check.stdout ?? "").split("\n").some((l) => l.startsWith("unlisted:") || l.startsWith("failed:") || l.startsWith("missing:"));
-  return bad ? 1 : 0;
+  if (check.status === 0) return 0;
+  // a reused check's exit is the judge: a non-zero exit with no line at all (a scalar test:record, a missing script) fails the row
+  const said = (check.stdout ?? "").split("\n").filter((l) => l !== "");
+  return said.length === 0 || readsProblems(check.stdout ?? "", file).length > 0 ? 1 : 0;
 }
 
 /** W-604: a shared command's rows, run once: under the read trace when any is a `reads` row; each `test` row takes the run's exit, each `reads` row the run's exit or, when it passed, its own file's reads check. */
