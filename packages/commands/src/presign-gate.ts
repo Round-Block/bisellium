@@ -470,11 +470,11 @@ export async function runGate(argv: string[], opts: GateOptions = {}): Promise<n
       }
     };
     await Promise.all(Array.from({ length: Math.max(1, Math.min(pool, pooled.length)) }, worker));
-    // W-604: a shared command's rows (its test rows and its reads row) take one run of it, alone, after the pool
+    // W-604: a shared command's rows (its test rows and its reads row) take one run of it, alone, after the pool,
     for (const [n, row] of rows.entries()) {
       const group = groups.get(row.command);
+      // exempt from the start budget: it starts after the pool by design, so the budget would defer it every time
       if (group === undefined || !isShared(row)) continue;
-      if (now().getTime() - started.getTime() >= budgetMs) continue;
       const t0 = Date.now();
       const run = shared.get(row.command) ?? runShared(wt, row.command, group.map((g) => rows[g]!), scratch, n, sharedTimeoutMs(row.command, timeoutMs, opts.perFileMs ?? PER_FILE_MS));
       shared.set(row.command, run);
