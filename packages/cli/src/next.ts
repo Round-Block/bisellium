@@ -1442,7 +1442,8 @@ export function deriveNext(f: Facts): Derived {
         inputs: [briefRel(id), ...(uiIn === undefined ? [] : [uiIn]), ...rounds.map((r) => `ci/${r.name}`), `ci/reds/${id}/`],
         ...(uiIn === undefined ? {} : { uiInput: uiIn }),
         ...(session === undefined ? {} : { session }),
-        extra: [...(session === undefined ? [] : [["session", session] as [string, string]]), ...fixes, ...evidence],
+        // W-610: a source change after a pass voids it: the next round reviews the change since the passed tree, then ci runs again
+        extra: [...(session === undefined ? [] : [["session", session] as [string, string]]), ...(gate?.status === "passed" && gate.tree !== cur ? [["delta", `since round ${gate.round} passed at ${gate.tree}`] as [string, string]] : []), ...fixes, ...evidence],
       });
     }
 
