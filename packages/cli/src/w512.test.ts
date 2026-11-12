@@ -79,3 +79,21 @@ test("W-512-b1 behaviour 1: the order fails closed: an unranked opus, an uncommi
   // one-sided: the rest is readQueue's own problem text, pinned by W-333's and W-558's rows
   assert.match(bad.kv.get("why") ?? "", /^no start is ordered while queue\.yml is malformed: /, ran("the why names the queue's problem", bad));
 });
+
+test("W-512-b2 behaviour 2: the spec rung starts only for a lane's opus or the one entry ahead of it, never two ahead", () => {
+  const w = world("w512-b2", "greenlight");
+  records(w, { "W-901": "greenlit", "W-902": "greenlit" });
+  queue(w, "E1: W-901", ["W-901", "W-902", OPUS]);
+  const two = next(w, [OPUS, ...BUDGET]);
+  assert.equal(two.first, `next: ${OPUS} spec held`, ran("two entries behind the lane's opus, no spec is ordered", two));
+  assert.equal(two.kv.get("why"), `${OPUS} is #3 in queue engineering and no lane takes it: E1 holds W-901 (greenlit), ahead W-902 (#2); to start it now, rank it higher in queue.yml and land that edit`, ran("the why names the lane's opus and its spec ahead", two));
+  assert.equal(two.kv.get("role"), undefined, ran("and no architect is dispatched", two));
+  queue(w, "E1: W-901", ["W-901", OPUS, "W-902"]);
+  const ahead = next(w, [OPUS, ...BUDGET]);
+  assert.equal(ahead.first, `next: ${OPUS} spec named`, ran("the one entry ahead of the lane's opus may take its spec", ahead));
+  assert.equal(ahead.kv.get("role"), "architect", ran("the architect is ordered", ahead));
+  records(w, { "W-901": "halted" });
+  queue(w, "E1: W-901", ["W-901", "W-902", OPUS]);
+  const after = next(w, [OPUS, ...BUDGET]);
+  assert.equal(after.first, `next: ${OPUS} spec named`, ran("with the lane's opus halted, the lane takes W-902 and this entry is its spec ahead", after));
+});
