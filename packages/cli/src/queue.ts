@@ -215,8 +215,13 @@ interface LaneTake {
   skipped: string[];
 }
 
-/** W-333, W-512: the lanes' takes, the one computation `laneLines` prints and `lanePlan` orders starts by (see `laneLines`). */
-function laneTakes(file: QueueFile, stateOf: (opus: string) => string | undefined): LaneTake[] {
+/**
+ * W-333, W-512: the lanes' takes, the one computation `laneLines` prints and `lanePlan` orders starts by (see `laneLines`).
+ * With `until`, the walk is lazy in rank and file order and stops being strict once a lane's now is `until`: every lane up to
+ * it reads each entry its walk reaches (a throw refuses), and a lane after it is read only to name its now, so an unreadable
+ * entry there is dropped with its lane, never a refusal of `until`.
+ */
+function laneTakes(file: QueueFile, stateOf: (opus: string) => string | undefined, until?: string): LaneTake[] {
   const state = (opus: string): string => stateOf(opus) ?? "no state";
   const nextTs = new Set(file.queues.flatMap((q) => q.next.filter((e) => e.nextTs).map((e) => e.opus)));
   const held = new Map<string, string>();
@@ -227,27 +232,35 @@ function laneTakes(file: QueueFile, stateOf: (opus: string) => string | undefine
   };
   const busy = (opus: string | undefined): opus is string => opus !== undefined && !RELEASED.has(state(opus));
   for (const q of file.queues) for (const [lane, opus] of q.lanes) if (busy(opus)) hold(opus, `in ${lane}`, lane);
-  const out: LaneTake[] = [];
-  for (const q of file.queues)
-    for (const [lane, opus] of q.lanes) {
-      if (busy(opus)) {
-        out.push({ queue: q.id, lane, busy: opus, skipped: [] });
+  const walk = (q: QueueFile["queues"][number], lane: string, opus: string | undefined): LaneTake => {
+    if (busy(opus)) return { queue: q.id, lane, busy: opus, skipped: [] };
+    const skipped: string[] = [];
+    let take: LaneTake["take"];
+    for (const [i, e] of q.next.entries()) {
+      const s = state(e.opus);
+      const why = held.get(e.opus) ?? (!TAKEABLE.has(s) ? s : e.nextTs && nextTsBy !== undefined ? `next.ts with ${nextTsBy}` : undefined);
+      if (why !== undefined) {
+        skipped.push(`${e.opus} (#${i + 1}): ${why}`);
         continue;
       }
-      const skipped: string[] = [];
-      let take: LaneTake["take"];
-      for (const [i, e] of q.next.entries()) {
-        const s = state(e.opus);
-        const why = held.get(e.opus) ?? (!TAKEABLE.has(s) ? s : e.nextTs && nextTsBy !== undefined ? `next.ts with ${nextTsBy}` : undefined);
-        if (why !== undefined) {
-          skipped.push(`${e.opus} (#${i + 1}): ${why}`);
-          continue;
-        }
-        take = { opus: e.opus, rank: i + 1 };
-        hold(e.opus, `taken by ${lane}`, lane);
-        break;
+      take = { opus: e.opus, rank: i + 1 };
+      hold(e.opus, `taken by ${lane}`, lane);
+      break;
+    }
+    return { queue: q.id, lane, ...(opus === undefined ? {} : { released: opus }), ...(take === undefined ? {} : { take }), skipped };
+  };
+  const out: LaneTake[] = [];
+  let reached = false;
+  for (const q of file.queues)
+    for (const [lane, opus] of q.lanes) {
+      try {
+        const t = walk(q, lane, opus);
+        out.push(t);
+        if (until !== undefined && (t.busy ?? t.take?.opus) === until) reached = true;
+      } catch (e) {
+        if (!reached) throw e;
+        return out;
       }
-      out.push({ queue: q.id, lane, ...(opus === undefined ? {} : { released: opus }), ...(take === undefined ? {} : { take }), skipped });
     }
   return out;
 }
@@ -284,10 +297,10 @@ export interface LanePlan {
  * opus it holds or, idle, the entry it takes; its `ahead` is the entry it would take were every lane's `now` done (one
  * ahead, never two). `stateOf` may throw: the caller turns that into a refusal, never a skipped entry.
  */
-export function lanePlan(file: QueueFile, stateOf: (opus: string) => string | undefined): LanePlan[] {
+export function lanePlan(file: QueueFile, stateOf: (opus: string) => string | undefined, until?: string): LanePlan[] {
   const first = laneTakes(file, stateOf);
   const nows = new Set(first.map((t) => t.busy ?? t.take?.opus).filter((o): o is string => o !== undefined));
-  const then = laneTakes(file, (o) => (nows.has(o) ? "done" : stateOf(o)));
+  const then = laneTakes(file, (o) => (nows.has(o) ? "done" : stateOf(o)), until);
   return first.map((t, i) => {
     const opus = t.busy ?? t.take?.opus;
     const after = then[i]?.take;
@@ -328,12 +341,12 @@ export function startOrder(read: QueueRead, id: string, stateOf: (opus: string) 
   // a lane's own opus or take is judged on the lanes' first pass alone: an entry ranked below it never holds its start
   let plan: LanePlan[];
   try {
-    const takes = laneTakes(read.file, stateOf);
+    const takes = laneTakes(read.file, stateOf, id);
     const now = takes.find((t) => (t.busy ?? t.take?.opus) === id);
     // every other lane's now, held or taken, in every queue (spec r2 S1: a take branched while its lane is still ~ is that lane's):
     // the branch rung names their lanes when it reads the Files owned of every opus in flight
     if (now !== undefined) return { kind: "now", lane: now.lane, held: takes.flatMap((t) => { const o = t.busy ?? t.take?.opus; return t !== now && o !== undefined ? [{ opus: o, lane: t.lane }] : []; }) };
-    plan = lanePlan(read.file, stateOf);
+    plan = lanePlan(read.file, stateOf, id);
   } catch (e) {
     return { kind: "refused", why: `the queue order cannot be read: ${(e as Error).message.split("\n")[0]}` };
   }
