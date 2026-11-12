@@ -1,0 +1,19 @@
+# opus: W-512
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1d0f9-c8fc-7180-a9d6-e9d37f587c16
+# outcome: failed
+# at: 2026-11-12T18:20:38.836Z
+# tree: tree:08ff6aa9038dde6bc659df615a232ee99ce72adc
+# brief: briefs/W-512.md blob:46ed25372902fea475885583b8358926422649f4
+# ticket: {"opus":"W-512","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"24ec115c058d50f7b77724b3ebc13c9699e61c79","brief":"46ed25372902fea475885583b8358926422649f4","at":"2026-11-12T18:20:38.299Z"}
+
+## Findings
+1. blocking — brief:69 [severity: S1] [design: changes] If an idle E1 takes W-901 and `branch` creates `refs/heads/opus/W-901` before anyone manually writes W-901 into `queue.yml`’s lane, a real `next W-512` caller in E2 receives `kind: "now"` with E1 omitted from `held`; `laneOverlap` therefore never reads W-901’s branch brief and wrongly names `branch` despite overlapping Files owned, while the current b3 rows test only an explicit `E1: W-901` holder. Sites: `laneTakes` reads `queue.yml` lanes and main records; unchanged `bisellium branch` writes the opus ref but no lane; `startOrder` drops other lanes’ takes; `deriveNext`/`laneOverlap` read the own brief, other ref and branch brief; `runAll` reuses that derivation—replace brief:69 with `- packages/cli/src/queue.ts (behaviour 1): laneTakes, LanePlan, lanePlan, LaneHeld (every other lane's now, whether held or taken, for overlap checking), StartOrder (whose now carries those opera), startOrder.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w512.test.ts: add a W-512-b3 row where E1 takes an overlapping opus whose branch exists while its lane remains `~`, and E2’s branch is held
+2. advisory — brief:59 [severity: S3] `queueOrder` combines Git status with filesystem `readQueue`, but Git status omits an ignored untracked `queue.yml`; direct `next` and every per-opus `runAll` derivation can therefore obey an uncommitted order, while `runAll`’s separate `readQueue`/`laneLines` reader prints it too (manual edits and reused `bisellium land` are the writers; unchanged `meanwhile`, `liftQueueRefusal`, and `queue.shape` are stated limits). Replace brief:59 with `Promise order-fails-closed: an unranked opus, an uncommitted queue.yml edit reported by Git and a malformed queue.yml each hold the start; none fails open within that domain. No queue.yml at all orders nothing — limits: a queued record whose state cannot be read holds every reached start; an ignored untracked queue.yml is omitted by Git status and may be obeyed by readQueue even though it is not committed.` [class: spec×promise-unattainable-under-accepted-domain] — check: none: D-070 C requires the brief to name the ignored Git/filesystem disagreement
+
+## Verdict
+The required shell check returned `24ec115c docs(studio): handoff refresh, W-610 capped, lanes order (#1178)`; the unclaimed-take overlap path is a design-changing fail-open blocker.
+VERDICT: FAIL
