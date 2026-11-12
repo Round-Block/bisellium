@@ -9,7 +9,7 @@ import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { aheadIn } from "./meanwhile.js";
-import { startOrder } from "./queue.js";
+import { lanePlan, startOrder } from "./queue.js";
 import { BUDGET, MAIN, OPUS, TSX, type World, commit, next, put, ran, world } from "./next-world.test.js";
 
 const rec = (id: string, state: string): string => `---\nid: "${id}"\ntitle: "queued ${id}"\nkind: "feature"\ncollegium: "engineering"\nstate: ${state}\nprobationes: {}\n---\nqueued\n`;
@@ -205,4 +205,52 @@ test("W-512-b1 fix round: the lane lines and the spec ahead (aheadOf) never read
   const found = aheadIn({ kind: "ok" as const, file }, "W-1", (o) => { read.push(o); if (o === "W-3") throw new Error("the queued record opera/W-3.md cannot be read (ENOENT)"); return "greenlit"; }, () => ({ step: "spec", status: "named", actor: "architect", why: "", extra: [], order: { role: "architect" } }) as never);
   assert.deepEqual(found, { ahead: { opus: "W-2", spec: "draft" } }, "the spec ahead is the first takeable entry; a lower entry's state is never needed");
   assert.equal(read.includes("W-3"), false, "W-3's state is not read once W-2 is the ahead");
+});
+
+/** The lane-walk rows (build review round 2, Lane walk): a read before the start is decided refuses it; a read after it drops that one lane, which keeps its slot. */
+const entries = (ids: string[]) => ids.map((opus) => ({ opus, says: "", folded: [], nextTs: false }));
+const BAD = "W-904";
+const unreadable = (o: string): string => { if (o === BAD) throw new Error("the queued record opera/W-904.md cannot be read (ENOENT)"); return "greenlit"; };
+const CANNOT = "the queue order cannot be read: the queued record opera/W-904.md cannot be read (ENOENT)";
+
+test("W-512-b1 lane walk: a lane field's own unreadable opus refuses every start", () => {
+  const file = { queues: [{ id: "e", lanes: [["E1", BAD], ["E2", undefined]] as [string, string | undefined][], next: entries([OPUS, "W-902"]) }], halted: [], cut: [], deferred: [] };
+  for (const id of [OPUS, "W-902"]) {
+    const r = startOrder({ kind: "ok", file }, id, unreadable);
+    assert.equal(r.kind === "refused" ? r.why : r.kind, CANNOT, `${id}: a lane's own unreadable opus refuses every start`);
+  }
+});
+
+test("W-512-b1 lane walk: an unreadable entry above the target refuses it", () => {
+  const file = { queues: [{ id: "e", lanes: [["E1", undefined]] as [string, string | undefined][], next: entries([BAD, OPUS]) }], halted: [], cut: [], deferred: [] };
+  const r = startOrder({ kind: "ok", file }, OPUS, unreadable);
+  assert.equal(r.kind === "refused" ? r.why : r.kind, CANNOT, "the entry above the target is read before the target is decided");
+});
+
+test("W-512-b1 lane walk: an unreadable entry in an earlier queue's lane refuses it", () => {
+  const file = { queues: [{ id: "u", lanes: [["UI1", undefined]] as [string, string | undefined][], next: entries([BAD]) }, { id: "e", lanes: [["E1", undefined]] as [string, string | undefined][], next: entries([OPUS]) }], halted: [], cut: [], deferred: [] };
+  const r = startOrder({ kind: "ok", file }, OPUS, unreadable);
+  assert.equal(r.kind === "refused" ? r.why : r.kind, CANNOT, "a lane walked before the target's lane is read before the target is decided");
+});
+
+test("W-512-b1 lane walk: a lane dropped on the ahead pass names no ahead, and no other lane's moves into it", () => {
+  const file = { queues: [{ id: "e", lanes: [["E1", undefined], ["E2", undefined]] as [string, string | undefined][], next: entries(["W-910", "W-911", OPUS, BAD]) }, { id: "u", lanes: [["UI1", undefined]] as [string, string | undefined][], next: entries(["W-920", "W-921"]) }], halted: [], cut: [], deferred: [] };
+  const r = startOrder({ kind: "ok", file }, OPUS, unreadable);
+  assert.equal(r.kind, "ahead", "the target is E1's ahead, decided before E2's ahead pass reads the unreadable entry");
+  assert.match(r.kind === "ahead" ? r.why : "", new RegExp(`: E1 takes W-910 \\(#1\\), ahead ${OPUS} \\(#3\\); E2 takes W-911 \\(#2\\); to start it now`), "the why names E2 with no ahead");
+  const plan = lanePlan(file, unreadable, OPUS);
+  assert.deepEqual(plan.map((p) => [p.lane, p.ahead?.opus]), [["E1", OPUS], ["E2", undefined], ["UI1", "W-921"]], "UI1 keeps its own ahead: the dropped lane keeps its slot");
+});
+
+test("W-512-b3 lane walk: a lane dropped after the target is decided drops only itself: E3 is still named", () => {
+  const w = world("w512-b3d", "spec");
+  records(w, { "W-902": "building", [BAD]: "sideways" });
+  queue(w, "E1: ~, E2: ~, E3: W-902", [OPUS, BAD]);
+  put(w.studio, "briefs/W-902.md", `# W-902\n\n## Files owned\n\n- \`docs/\`\n\n## Interfaces\n\nNone.\n`);
+  commit(w.repo, "studio: W-902 brief");
+  const b = spawnSync("git", ["branch", "-f", "opus/W-902"], { cwd: w.repo, encoding: "utf8" });
+  assert.equal(b.status, 0, `git branch opus/W-902\n${b.stderr}`);
+  const held = next(w, [OPUS, ...BUDGET]);
+  assert.equal(held.first, `next: ${OPUS} branch held`, ran("E1 takes the target; E2's walk reaches the unreadable entry, and E3's opus in flight still holds it", held));
+  assert.equal(held.kv.get("why"), `${OPUS}'s Files owned overlap with an opus in flight: W-902 in lane E3: \`docs/ADOPTION.md\`; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`, ran("the why names W-902 in lane E3", held));
 });
