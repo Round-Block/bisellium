@@ -4,13 +4,17 @@ queues:
     next:
       - { opus: W-604, says: "pre-sign gate runs a shared multi-file command once, alone after the pool, timeout sized to the row; high, ahead of W-551 (w551-gate-meet-1112)" }
       - { opus: W-608, says: "cause fix, tests×one-sided-bound-assertion: oneSidedSites reads a number bounded on one side; spec-draft line for measured values; high, after W-604 (w604-class-meet-1112)" }
+      - { opus: W-610, says: "build review before the full ci: light gates run by a ladder-runner, review, then one ci --opus at the reviewed tree; high, after W-608, ahead of W-551 (review-order-meet-1112)" }
       - { opus: W-551, says: "required fixes, build-review fix rounds and fix-check rounds get a red ticket tied to the pre-fix commit; reviewer and certify read it; high, process (w551-rank-meet-1111)", folded: [W-365, W-421] }
+      - { opus: W-613, says: "ci --opus alongside the build review in a scratch checkout, killed on a failed review; follow-up of W-610, right after W-551 (review-order-meet-1112 round 2)" }
       - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182); right after W-551 (balance-meet-1112)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; first in the process lane (D-193)" }
       - { opus: W-609, says: "no new lane opens while first-run ci fails over 30% or 2+ of the last 5 round-1 reviews have an S1; process, right after W-595 (balance-meet-1112)" }
       - { opus: W-301, says: "console writes via auto-merge PR" }
       - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), split from W-169; process (D-193)" }
       - { opus: W-597, says: "each lane's next unclaimed entry gets one spec-ahead draft; sign refuses a stale base; overlap via W-592; process, after W-592 (spec-ahead-lanes-meet-1112)" }
+      - { opus: W-611, says: "W-494 guard clears a resumed runner's finished background run; process (retro 11-12)" }
+      - { opus: W-612, says: "verdict --phase spec runs brief.admission before signing; process (retro 11-12)" }
       - { opus: W-308, says: "opus timeline; E1 (next.ts), after W-551 (D-192)", next_ts: true }
       - { opus: W-331, says: "next.ts split; debt slot, first (balance-meet-1112: lets two next.ts opera run at once)", next_ts: true }
       - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
