@@ -5,6 +5,8 @@ queues:
       - { opus: W-512, says: "next refuses out-of-order starts and a lane branch whose Files owned overlap another lane's in-flight opus; opens the lanes (D-182); right after W-610 (lanes-meet-1112)" }
       - { opus: W-610, says: "build review before the full ci; brief r4 first fixes the daily retro's gate-log reader (exit code forms); cause fix in r4; above W-595 (D-197, D-198)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-610 (D-201)" }
+      - { opus: W-624, says: "pre-sign gate runs check on a named branch: an old-base opus's signature is refused (W-503 blocked); right after W-595" }
+      - { opus: W-623, says: "a probatio named light gets its own log; W-610 spec review r10's split remainder (D-061 item 4); right after W-624" }
       - { opus: W-622, says: "opus checkouts as local clones, not worktrees: the sandbox locks every worktree that exists at session start; right after W-610 (worktree-block-meet-1113)" }
       - { opus: W-621, says: "every hold names a release path the held work does not depend on; retro --daily reports an unparseable log, not refuse; right after W-610 (D-198)" }
       - { opus: W-609, says: "no new lane opens while first-run ci fails over 30% or 2+ of the last 5 round-1 reviews have an S1; until it lands, E2 opens on the qa-lead's retro reading; after W-595" }
