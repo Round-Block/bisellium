@@ -3,11 +3,14 @@ queues:
     lanes: { E1: W-512 }
     next:
       - { opus: W-512, says: "next refuses out-of-order starts and a lane branch whose Files owned overlap another lane's in-flight opus; opens the lanes (D-182); right after W-610 (lanes-meet-1112)" }
+      - { opus: W-610, says: "build review before the full ci; brief r4 first fixes the daily retro's gate-log reader (exit code forms); cause fix in r4; above W-595 (D-197, D-198)" }
+      - { opus: W-621, says: "every hold names a release path the held work does not depend on; retro --daily reports an unparseable log, not refuse; right after W-610 (D-198)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-512 (D-193, lanes-meet-1112)" }
       - { opus: W-609, says: "no new lane opens while first-run ci fails over 30% or 2+ of the last 5 round-1 reviews have an S1; until it lands, E2 opens on the qa-lead's retro reading; after W-595" }
       - { opus: W-617, says: "guard and check refuse claude.ai session links in commits, PR bodies and briefs; forward-only; high, right after W-610 (memory-enforce-meet-1112)" }
       - { opus: W-615, says: "cause fix, gate logs bind a digest of their exact commands; every admitter refuses a mismatch; high, right after W-610 (w610-class-meet-1112)" }
       - { opus: W-551, says: "required fixes, build-review fix rounds and fix-check rounds get a red ticket tied to the pre-fix commit; reviewer and certify read it; high, process (w551-rank-meet-1111)", folded: [W-365, W-421] }
+      - { opus: W-620, says: "a first spec-class build-review S1 goes to the architect; fix rounds census the class; right after W-551 (fixround-meet-1113)", folded: [W-184] }
       - { opus: W-616, says: "process opera name their switch (pinned on in the real studio, loud if missing) and owed proof; done marks unproven; check rule, not memory (w610-proof-meet-1112)" }
       - { opus: W-618, says: "process.checkpoint reads the newest row: cycle minutes first, a spend cell, both from records; after W-616 (memory-enforce-meet-1112)" }
       - { opus: W-613, says: "ci --opus alongside the build review in a scratch checkout, killed on a failed review; follow-up of W-610, right after W-551 (review-order-meet-1112 round 2)" }
@@ -150,7 +153,6 @@ halted:
   - { opus: W-485, says: "ADOPTION.md restructured as a lean agent-readable contract; until the freeze ends and it is re-ranked (D-174)" }
   - { opus: W-479, says: "an outside advisory that breaks the gates for every PR has a filing path: the fix opus files without an admin merge; until the freeze ends and it is re-ranked (D-174)" }
   - { opus: W-371, says: "one provider-neutral sandbox row per seat in the manifest (write roots, network, tools), which bisellium run composes for each harness; until the freeze ends and it is re-ranked (D-174)" }
-  - { opus: W-610, says: "build review before the full ci; halted until W-595 lands and a Patron lift names it; cause fix folds into brief r4 (D-196)" }
   - { opus: W-507, says: "W-298's remainder; halted until M4's exit passes (D-181, D-196)" }
 cut:
   - { opus: W-436, says: "hard rule, enforced: memory does not work: every open item lives in a record the moment it arises" }
