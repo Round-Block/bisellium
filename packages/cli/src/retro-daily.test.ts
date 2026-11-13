@@ -12,7 +12,7 @@ import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { checkStudio, type Finding } from "./check.js";
 import { initStudio } from "./init.js";
-import { previousUtcDay, runRetro } from "./retro.js";
+import { dailyRetroStep, previousUtcDay, runRetro } from "./retro.js";
 
 const NOW = new Date("2026-10-31T09:00:00Z");
 const DAY = "2026-10-30";
@@ -272,6 +272,13 @@ test("W-459-b2 behaviour 2: check warns retro.daily.missing while the tracker ha
   assert.match(blocked[0]!.message, /^acta\/improvements\.md: .+$/, `it names the tracker: ${blocked[0]!.message}`);
   // the clock's domain: years 0000-0099 are stepped back as written, never remapped to 1900-1999
   assert.equal(previousUtcDay(new Date("0050-03-01T09:00:00Z")), "0050-02-28", "a year below 100 is not remapped");
+});
+
+test("D-204: the owed-day count is not remapped across year 0099 to 0100", () => {
+  const root = officina("d204-year");
+  tracker(root, ["0099-12-28"]);
+  // the newest entry is 0099-12-28 and the previous day is 0100-01-01: 4 days owed, never a 1999-based count
+  assert.equal(dailyRetroStep(root, undefined, new Date("0100-01-02T09:00:00Z"))?.owedDays, 4, "owed days across 0099 to 0100");
 });
 
 // ---------------------------------------------------------------------------
