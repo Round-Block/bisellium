@@ -149,3 +149,18 @@ test("W-488-b2 behaviour 2: a pin appends one bounded comment bound to selector 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("W-488-b3 behaviour 3: three injected local routes preserve bounded capture bindings", () => {
+  const api = readFileSync(join(ROOT, "apps/web/src/api.ts"), "utf8");
+  const http = readFileSync(join(ROOT, "apps/server/src/http.ts"), "utf8");
+  const serve = readFileSync(join(ROOT, "packages/cli/src/serve.ts"), "utf8");
+  assert.match(api, /export function fetchUiCaptureSets/, "the browser-facing API can read bounded capture metadata");
+  assert.match(api, /export async function fetchUiCaptureImage/, "image requests encode only the selected opus and manifest image name");
+  assert.match(api, /export function submitUiCaptureComment/, "comment writes use the authenticated JSON helper");
+  assert.match(http, /\/api\/ui-capture-sets/, "the existing local server exposes capture metadata");
+  assert.match(http, /\/api\/ui-capture-image\//, "the existing local server serves only an image from that manifest");
+  assert.match(http, /\/api\/ui-capture-comment/, "the existing local server accepts one bounded pin");
+  assert.match(serve, /readUiCaptureReview/, "serve injects the current checkout's bounded metadata reader");
+  assert.match(serve, /readUiCaptureImage/, "serve injects the manifest-bound immutable image reader");
+  assert.match(serve, /appendUiCaptureComment/, "serve injects the append-only comment writer");
+});
