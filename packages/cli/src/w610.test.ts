@@ -131,7 +131,7 @@ row("W-610-b1 after the builder's handoff next orders the light gates and its pe
   const brief = (p: string): string => `## Files owned\n\n- \`${p}\`\n`;
   for (const bad of ["x.test.ts; touch pwned.test.ts", "$(id).test.ts", "../up.test.ts", "/abs.test.ts", "a b.test.ts"])
     assert.ok("error" in lightGateCommands({ light_gates: ["node -e 0"] }, "studio", brief(bad)), `an unsafe test path is refused: ${bad}`);
-  assert.deepEqual(lightGateCommands({ light_gates: ["x {studio}"] }, "studio", brief("packages/a/b.test.ts")), ["x studio", "node --test-reporter=tap --import tsx packages/a/b.test.ts"], "a plain path runs");
+  assert.deepEqual(lightGateCommands({ light_gates: ['x "$BISELLIUM_STUDIO"'] }, "studio", brief("packages/a/b.test.ts")), ['x "$BISELLIUM_STUDIO"', "node --test-reporter=tap --import tsx packages/a/b.test.ts"], "a plain path runs");
 });
 
 row("W-610-b2 review is ordered on the light gates at the tip tree with no full gate log", async () => {
@@ -256,8 +256,8 @@ row("W-610-b5 a source change after a pass orders the light gates and a delta re
 });
 
 // ---------------------------------------------------------------------------
-// fix round 1 (build review r1): the officina path is data, never shell text or pathspec syntax, and the light gates
-// read source_excludes from the main manifest
+// fix round 1 (build review r1) and behaviour 8 (D-196 item 1): the officina path is data, never shell text or pathspec
+// syntax; a light command reads it from BISELLIUM_STUDIO; the light gates read source_excludes from the main manifest
 // ---------------------------------------------------------------------------
 const SAFE_ENV = { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.invalid", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.invalid" };
 const sh = (cwd: string, cmd: string, args: string[]): string => {
@@ -265,43 +265,66 @@ const sh = (cwd: string, cmd: string, args: string[]): string => {
   if (r.status !== 0) throw new Error(`${cmd} ${args.join(" ")}: ${r.stderr}`);
   return r.stdout;
 };
-/** A scratch repository whose officina is at `officina` ("" = the repository root); returns the repo and the officina directory. */
-function officinaRepo(officina: string): { repo: string; studio: string } {
+/** A scratch repository whose officina is at `officina` ("" = the repository root), its `light_gates` the given entries; returns the repo and the officina directory. */
+function officinaRepo(officina: string, gates: string[] = ['test -f "$BISELLIUM_STUDIO/bisellium.yml"']): { repo: string; studio: string } {
   const repo = mkdtempSync(join(tmpdir(), "w610-fix1-"));
   sh(repo, "git", ["init", "-q", "-b", "master"]);
   const studio = officina === "" ? repo : join(repo, officina);
   mkdirSync(join(studio, "briefs"), { recursive: true });
-  writeFileSync(join(studio, "bisellium.yml"), 'light_gates:\n  - "test -f {studio}/bisellium.yml"\nsource_excludes: [ci]\n');
+  writeFileSync(join(studio, "bisellium.yml"), `light_gates:\n${gates.map((g) => `  - '${g.split("'").join("''")}'\n`).join("")}source_excludes: [ci]\n`);
   writeFileSync(join(studio, "briefs", `${OPUS}.md`), "## Files owned\n\n- `x.txt`\n");
   writeFileSync(join(repo, "x.txt"), "source\n");
   sh(repo, "git", ["add", "-A"]);
   sh(repo, "git", ["commit", "-q", "-m", "init"]);
   return { repo, studio };
 }
-/** One officina path through the light gates: the list's `{studio}` is one literal path, the run exits 0, the log is admitted. */
-async function officinaRow(officina: string, extraSibling?: string): Promise<void> {
-  const { repo, studio } = officinaRepo(officina);
+const STUDIO_GATES = [`printf '%s\\n' "$BISELLIUM_STUDIO" > out-dq`, `printf '%s\\n' "--at=$BISELLIUM_STUDIO/x" > out-embed`, `printf '%s\\n' '$BISELLIUM_STUDIO' > out-sq`];
+const OFFICINAE = ["studio", "", "my studio", "it's", 'a"b', "$(touch PWNED)", "`touch PWNED`", "a;b", "a*b"];
+row("W-610-b8 the officina path reaches each light command as BISELLIUM_STUDIO, never spliced", async () => {
   const lg = await import("@bisellium/commands/light-gates.js");
-  const cmds = lg.currentLightCommands(studio, OPUS);
-  assert.ok(!("error" in cmds), `the commands are read for officina ${JSON.stringify(officina)}: ${JSON.stringify(cmds)}`);
-  const run = lg.runLightGates(studio, OPUS, cmds as string[]);
-  assert.ok(!("error" in run), `the light gates run: ${JSON.stringify(run)}`);
-  assert.equal((run as { exitCode: number }).exitCode, 0, `{studio} is the one literal officina path for ${JSON.stringify(officina)}: ${cmds}`);
-  for (const gone of ["pwned.txt", "pwned"]) assert.equal(existsSync(join(repo, gone)), false, `no shell metacharacter of the officina path executes (${gone})`);
-  void extraSibling;
-  sh(repo, "git", ["add", "-A"]);
-  sh(repo, "git", ["commit", "-q", "-m", "log"]);
-  const admitted = lg.admitLightGates(studio, OPUS);
-  assert.ok(admitted.ok, `the log is admitted for ${JSON.stringify(officina)}: ${JSON.stringify(admitted)}`);
-}
-row("W-610-b1 fix1: a repository-root officina keeps {studio} a relative path", () => officinaRow(""));
-row("W-610-b1 fix1: an officina path with whitespace is one argument", () => officinaRow("my studio"));
-row("W-610-b1 fix1: an officina path with a quote is one argument", () => officinaRow("it's studio"));
-row("W-610-b1 fix1: an officina path with a shell metacharacter never executes", () => officinaRow("o;touch pwned.txt;x"));
-row("W-610-b1 fix1: an officina path with a glob character is a literal path", async () => {
-  await officinaRow("a*b");
+  for (const officina of OFFICINAE) {
+    const { repo, studio } = officinaRepo(officina, STUDIO_GATES);
+    const cmds = lg.currentLightCommands(studio, OPUS);
+    assert.ok(!("error" in cmds), `the commands are read for officina ${JSON.stringify(officina)}: ${JSON.stringify(cmds)}`);
+    assert.deepEqual(cmds, STUDIO_GATES, `the manifest's command strings are run unchanged for ${JSON.stringify(officina)}`);
+    const run = lg.runLightGates(studio, OPUS, cmds as string[]);
+    assert.ok(!("error" in run) && run.exitCode === 0, `the light gates run for ${JSON.stringify(officina)}: ${JSON.stringify(run)}`);
+    const seen = officina === "" ? "." : officina;
+    const out = (f: string): string => (existsSync(join(repo, f)) ? readFileSync(join(repo, f), "utf8") : "<none>");
+    assert.equal(out("out-dq"), `${seen}\n`, `a double-quoted "$BISELLIUM_STUDIO" is the officina path's bytes for ${JSON.stringify(officina)}`);
+    assert.equal(out("out-embed"), `--at=${seen}/x\n`, `the path inside a double-quoted word for ${JSON.stringify(officina)}`);
+    assert.equal(out("out-sq"), "$BISELLIUM_STUDIO\n", `a single-quoted '$BISELLIUM_STUDIO' stays literal for ${JSON.stringify(officina)}`);
+    assert.equal(existsSync(join(repo, "PWNED")), false, `no substitution in the officina path ${JSON.stringify(officina)} executes`);
+  }
+});
+row("W-610-b8 a light_gates entry holding {studio} is refused", async () => {
   const lg = await import("@bisellium/commands/light-gates.js");
-  assert.equal(typeof lg.fullGateRuns, "function", "the full-gate run counter is one exported reader, literal pathspecs");
+  const got = lg.lightGateCommands({ light_gates: ["npm run -s check -- {studio} --repo ."] }, "studio", "");
+  assert.ok("error" in got && /entry 1 holds \{studio\}; name the officina path as "\$BISELLIUM_STUDIO" \(D-196\)/.test(got.error), `a {studio} entry is refused: ${JSON.stringify(got)}`);
+  const w = handed("w610-b8-token");
+  assert.equal(performLight(w).status, 0, "the light gates pass at the tree");
+  setLightGates(w, '"node -e 0"', '"test -d {studio}"');
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "build", "held", "next holds the light gates on a {studio} entry");
+  assert.match(o.out, /holds \{studio\}/, ran("the hold names the token", o));
+  const admitted = lg.admitLightGates(w.wtStudio, OPUS);
+  assert.ok(!admitted.ok && /holds \{studio\}/.test(admitted.error), `admitLightGates refuses under a {studio} entry: ${JSON.stringify(admitted)}`);
+});
+row("W-610-b8 a metacharacter officina's light log is admitted with no command run from its path", async () => {
+  const lg = await import("@bisellium/commands/light-gates.js");
+  for (const officina of ["$(touch PWNED) it's", ""]) {
+    const { repo, studio } = officinaRepo(officina);
+    const cmds = lg.currentLightCommands(studio, OPUS);
+    assert.ok(!("error" in cmds), `the commands are read for officina ${JSON.stringify(officina)}: ${JSON.stringify(cmds)}`);
+    const run = lg.runLightGates(studio, OPUS, cmds as string[]);
+    assert.ok(!("error" in run) && run.exitCode === 0, `"$BISELLIUM_STUDIO" is the one literal officina path for ${JSON.stringify(officina)}: ${JSON.stringify(run)}`);
+    assert.equal(existsSync(join(repo, "PWNED")), false, `no shell metacharacter of the officina path executes (${JSON.stringify(officina)})`);
+    sh(repo, "git", ["add", "-A"]);
+    sh(repo, "git", ["commit", "-q", "-m", "log"]);
+    const admitted = lg.admitLightGates(studio, OPUS);
+    assert.ok(admitted.ok, `the log is admitted for ${JSON.stringify(officina)}: ${JSON.stringify(admitted)}`);
+  }
+  // r3's fix-1 glob rows, kept: the full-gate run counter's literal pathspecs and the root-relative join
   const { repo } = officinaRepo("a*b");
   const tree = "tree:0123456789abcdef";
   for (const d of ["a*b", "axb", "a[b]"]) {
@@ -311,11 +334,11 @@ row("W-610-b1 fix1: an officina path with a glob character is a literal path", a
   sh(repo, "git", ["add", "-A"]);
   sh(repo, "git", ["commit", "-q", "-m", "logs"]);
   for (const d of ["a*b", "a[b]"]) {
-    const got = (lg.fullGateRuns as (r: string, s: string, o: string, t: string) => { runs: number; logs: string[] })(repo, d, OPUS, tree);
-    assert.deepEqual(got, { runs: 1, logs: [`${OPUS}-tests-01234567.log`] }, `only ${d}'s own log counts, no sibling by glob`);
+    const got = lg.fullGateRuns(repo, d, OPUS, tree);
+    assert.equal(got.runs, 1, `only ${d}'s own log counts, no sibling by glob`);
+    assert.equal(got.logs.length, 1, `one log of ${d}'s own`);
   }
-  assert.equal(typeof lg.officinaRel, "function", "one path join keeps a root officina relative");
-  assert.equal((lg.officinaRel as (s: string, r: string) => string)("", "ci/x.log"), "ci/x.log", "a root officina joins to a relative path");
+  assert.equal(lg.officinaRel("", "ci/x.log"), "ci/x.log", "a root officina joins to a relative path");
 });
 
 /** An officina whose worktree manifest has a well-formed `source_excludes` that differs from main's, past the light gates. */
