@@ -1434,7 +1434,7 @@ test("W-384-b1 behaviour 1: the done land counts a records PR as landed when the
 });
 
 // ---------------------------------------------------------------------------
-// W-459 behaviour 3: next holds a new spec while the previous UTC day's daily retro is owed (W-530), never an opus in flight
+// W-459 behaviour 3, D-204: a daily retro owed is advisory: next names the new spec and says the retro is owed; only an unreadable tracker holds
 // ---------------------------------------------------------------------------
 /** The previous UTC day by the real clock, which the daily hold reads (a run across UTC midnight is a stated limit). */
 const previousDay = (): string => {
@@ -1454,16 +1454,17 @@ function setTracker(w: World, days: string[]): void {
   commit(w.repo, "test: daily tracker");
   git(w.repo, ["push", "-q", "origin", "master"]);
 }
-test("W-459-b3 behaviour 3: next holds a new spec while the previous UTC day's retro is owed, and never an opus in flight", { timeout: 1_800_000 }, () => {
+test("W-459-b3 behaviour 3: a previous UTC day's retro owed holds no new spec (D-204), an unreadable tracker still does", { timeout: 1_800_000 }, () => {
   const w = world("w459-b3", "done");
   addSpecced(w);
   addUnsigned(w);
   expectOther(next(w, [OTHER]), "branch", "named", "with no tracker a new start is named as today");
 
   setTracker(w, ["2026-10-01"]);
-  const held = next(w, [UNSIGNED]);
-  assert.equal(held.first, `next: ${UNSIGNED} spec held`, ran("a new spec holds while the previous UTC day has no entry", held));
-  assert.match(held.out, new RegExp(`daily retro owed: acta/improvements\\.md has no entry for ${previousDay()}; a ladder-runner runs bisellium retro --daily --studio `), ran("the hold names the day, the runner and the verb", held));
+  const held = next(w, [UNSIGNED, "--budget", "100000"]);
+  assert.equal(held.first, `next: ${UNSIGNED} spec named`, ran("a new spec is named while the previous UTC day has no entry (D-204)", held));
+  assert.doesNotMatch(held.out, /daily retro owed:/, ran("no daily hold is stated", held));
+  assert.match(held.out, new RegExp(`daily-retro: ${previousDay()} step 1 of 3: a ladder-runner runs: bisellium retro --daily --studio `), ran("the advisory line names the day, the runner and the verb", held));
   expectOther(next(w, [OTHER]), "branch", "named", "a signed spec is not held (W-530)");
   expectStep(next(w, [OPUS]), "checkpoint", "complete", "a done opus is not held by the daily retro");
 
@@ -1488,20 +1489,20 @@ test("W-459-b3 behaviour 3: next holds a new spec while the previous UTC day's r
 });
 
 // ---------------------------------------------------------------------------
-// W-530: a missing daily retro holds only unsigned work (D-188; studio/briefs/W-530.md)
+// W-530 (D-188), turned advisory by D-204: a missing daily retro holds no work; only an unreadable tracker holds new work
 // ---------------------------------------------------------------------------
 const W530_BUDGET = ["--budget", "100000"];
 /** The step as `next` derives it, before the dispatch gate's own holds (a resumed round wants a fresh handoff), read from `next --all`. */
 const derived = (w: World, id: string): string | undefined => outLines(next(w, ["--all"], { clock: false })).find((l) => l.startsWith(`next: ${id} `))?.split(" · ")[0];
-test("W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed spec at the start of its spec, and never one with a signed spec", { timeout: 1_800_000 }, () => {
+test("W-530-b1 behaviour 1: a missing daily retro holds no spec start (D-204); an unreadable tracker holds new work and never a signed spec", { timeout: 1_800_000 }, () => {
   const w = world("w530-b1", "done");
   addSpecced(w);
   addUnsigned(w);
   setTracker(w, ["2026-10-01"]);
   const held = next(w, [UNSIGNED, ...W530_BUDGET]);
-  assert.equal(held.first, `next: ${UNSIGNED} spec held`, ran("no signed spec: held at the start of its spec", held));
-  assert.equal(held.status, 1, ran("no signed spec: exit 1", held));
-  assert.match(held.kv.get("why") ?? "", new RegExp(`^daily retro owed: acta/improvements\\.md has no entry for ${previousDay()}; a ladder-runner runs bisellium retro --daily --studio \\S+ before a new spec starts$`), ran("no signed spec: says why", held));
+  assert.equal(held.first, `next: ${UNSIGNED} spec named`, ran("no signed spec: the spec start is named, not held (D-204)", held));
+  assert.equal(held.status, 0, ran("no signed spec: exit 0", held));
+  assert.doesNotMatch(held.out, /daily retro owed/, ran("no signed spec: no hold text", held));
 
   const named = next(w, [OTHER]);
   expectOther(named, "branch", "named", "a signed spec with no branch is not held");
@@ -1509,7 +1510,7 @@ test("W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed s
 
   // a brief with no signature is still new work
   put(w.repo, `studio/briefs/${UNSIGNED}.md`, briefText(w.behaviours).replace(`# ${OPUS}`, `# ${UNSIGNED}`));
-  assert.equal(next(w, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec held`, "a draft brief with no signature: held");
+  assert.equal(next(w, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec named`, "a draft brief with no signature: named, not held (D-204)");
   git(w.repo, ["rm", "-q", "--cached", "--ignore-unmatch", `studio/briefs/${UNSIGNED}.md`]);
   rmSync(join(w.repo, `studio/briefs/${UNSIGNED}.md`));
 
@@ -1537,7 +1538,7 @@ test("W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed s
 
   // an old debt still holds, by no timer: a tracker missing yesterday only, its last entry long past, reads the same
   setTracker(w, ["2020-01-01"]);
-  assert.equal(next(w, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec held`, "no time limit: a tracker years behind still holds");
+  assert.equal(next(w, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec named`, "a tracker years behind holds nothing either (D-204)");
 
   // a tracker that cannot be read holds new work the same way, and no signed spec
   const bad = world("w530-b1-bad", "done");
@@ -1554,9 +1555,9 @@ test("W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed s
   // with a reviewer: a first signature and a failed review are signed work
   const r = srWorld("w530-b1-review");
   setTracker(r, ["2026-10-01"]);
-  expectStep(next(r, [OPUS, ...W530_BUDGET]), "spec", "held", "a reviewer's world, no brief: held");
+  expectStep(next(r, [OPUS, ...W530_BUDGET]), "spec", "named", "a reviewer's world, no brief: named, not held (D-204)");
   putBrief(r);
-  expectStep(next(r, [OPUS, ...W530_BUDGET]), "spec", "held", "a reviewer's world, a draft brief: held");
+  expectStep(next(r, [OPUS, ...W530_BUDGET]), "spec", "named", "a reviewer's world, a draft brief: named, not held (D-204)");
   sign(r, 1);
   assert.equal(derived(r, OPUS), `next: ${OPUS} spec named`, "a signature waiting for its review: not held");
   review(r, 2, "failed");
@@ -1572,6 +1573,30 @@ test("W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed s
   setRetro(c, "retro: { since: 2026-10-01T00:00:00Z }");
   expectOther(next(c, [OTHER]), "branch", "held", "a cascade retro owed still holds at branch");
   assert.equal(next(c, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec named`, "a cascade retro owed holds no new spec");
+});
+
+test("D-204: a daily retro owed more than 3 days says overdue, loudly, and still holds nothing", { timeout: 1_800_000 }, () => {
+  const w = world("d204-overdue", "done");
+  addSpecced(w);
+  addUnsigned(w);
+  const line = (o: Out): string[] => outLines(o).filter((l) => l.startsWith("daily-retro:"));
+  const REAL = (): string[] => ["--now", new Date().toISOString()];
+  const ago = (n: number): string => {
+    const d = new Date();
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - n)).toISOString().slice(0, 10);
+  };
+  // last entry 4 days ago: the previous day and 2 more are owed (3 days), not yet over 3
+  setTracker(w, [ago(4)]);
+  const three = next(w, [OTHER, ...REAL()]);
+  assert.doesNotMatch(line(three).join("\n"), /overdue/, ran("3 days owed: not overdue", three));
+  // last entry 5 days ago: 4 days owed
+  setTracker(w, [ago(5)]);
+  const over = next(w, [OTHER, ...REAL()]);
+  expectOther(over, "branch", "named", "overdue: a signed spec is still named");
+  assert.equal(over.status, 0, ran("overdue: exit 0", over));
+  assert.match(line(over).join("\n"), /^daily-retro: \d{4}-\d\d-\d\d OVERDUE 4 days \(does not hold\): step 1 of 3: /, ran("4 days owed: the line says overdue loudly", over));
+  const newSpec = next(w, [UNSIGNED, ...W530_BUDGET, ...REAL()]);
+  assert.equal(newSpec.first, `next: ${UNSIGNED} spec named`, ran("overdue: a new spec is named too", newSpec));
 });
 
 const TRACKER_FILE = "studio/acta/improvements.md";
@@ -1691,7 +1716,7 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   expectOther(before, "branch", "named", "before the run: a signed spec is still named");
   assert.equal(before.status, 0, ran("before the run: exit 0", before));
   assert.deepEqual(line(before), [`daily-retro: ${day} step 1 of 3: ${RUN}; then ${QA}; then ${LAND}`], ran("before the run: all three, in order", before));
-  assert.deepEqual(line(next(w, [UNSIGNED, ...W530_BUDGET, ...REAL()])), [`daily-retro: ${day} step 1 of 3: ${RUN}; then ${QA}; then ${LAND}`], "a held spec names them too");
+  assert.deepEqual(line(next(w, [UNSIGNED, ...W530_BUDGET, ...REAL()])), [`daily-retro: ${day} step 1 of 3: ${RUN}; then ${QA}; then ${LAND}`], "a new spec, named, carries the line too");
   const all = next(w, ["--all"], { clock: false });
   assert.equal(outLines(all).filter((l) => l.startsWith("daily-retro:")).length, 1, ran("--all: one line, not one per opus", all));
   assert.deepEqual(line(all), [`daily-retro: ${day} step 1 of 3: ${RUN}; then ${QA}; then ${LAND}`], ran("--all: the same line", all));
