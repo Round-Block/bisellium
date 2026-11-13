@@ -1,8 +1,9 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseFrontMatter } from "@bisellium/adapter-native";
 import { currentDesign, readContainedRegularFile, readServedShots, type NativeRecord } from "./opus-model.js";
+import { appendPatronTimeline } from "./writes.js";
 
 const SET_MAX = 64;
 const OPUS = /^W-[0-9]+$/;
@@ -29,6 +30,29 @@ export interface UiCaptureSet {
 }
 
 export type UiCaptureSetsRead = { sets: UiCaptureSet[] } | { problems: string[] };
+
+export interface UiCaptureComment {
+  version: 1;
+  kind: "ui_capture_comment";
+  id: string;
+  at: string;
+  author: "patron" | "design-lead";
+  opus: string;
+  tree: string;
+  designDigest: string;
+  manifestSha256: string;
+  image: string;
+  imageSha256: string;
+  viewport: { width: number; height: number };
+  selector: string;
+  state: string;
+  pin: { x: number; y: number };
+  body: string;
+}
+
+export type UiCaptureCommentInput = Omit<UiCaptureComment, "version" | "kind" | "id" | "at">;
+export type UiCaptureCommentsRead = { comments: UiCaptureComment[] } | { problems: string[] };
+export type UiCaptureCommentWrite = { ok: true; record: UiCaptureComment } | { ok: false; error: string };
 
 const sha256 = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
 
@@ -98,3 +122,106 @@ export function readUiCaptureSets(root: string, currentTree: string): UiCaptureS
   return problems.length > 0 ? { problems } : { sets };
 }
 
+const noControls = (value: string): boolean => !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
+const textIn = (value: unknown, max: number): value is string => typeof value === "string" && value.trim().length > 0 && value.length <= max && noControls(value);
+const digest = (value: unknown): value is string => typeof value === "string" && /^sha256:[0-9a-f]{64}$/.test(value);
+const hexDigest = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+const unit = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
+
+function commentProblem(value: unknown): string | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return "comment record must be an object";
+  const c = value as Record<string, unknown>;
+  if (c["version"] !== 1 || c["kind"] !== "ui_capture_comment") return "comment record has another version or kind";
+  if (!textIn(c["id"], 80) || !/^UC-[A-Za-z0-9-]+$/.test(c["id"])) return "comment id is malformed";
+  if (typeof c["at"] !== "string" || !UTC.test(c["at"])) return "comment timestamp is malformed";
+  if (c["author"] !== "patron" && c["author"] !== "design-lead") return "comment author is not recognised";
+  if (typeof c["opus"] !== "string" || !OPUS.test(c["opus"]) || typeof c["tree"] !== "string" || !TREE.test(c["tree"])) return "comment opus or tree is malformed";
+  if (!digest(c["designDigest"]) || !hexDigest(c["manifestSha256"]) || !hexDigest(c["imageSha256"])) return "comment digest is malformed";
+  if (!textIn(c["image"], 26) || !/^[a-z][a-z0-9-]{0,21}\.png$/.test(c["image"])) return "comment image is malformed";
+  const viewport = c["viewport"] as Record<string, unknown> | undefined;
+  if (typeof viewport !== "object" || viewport === null || !Number.isInteger(viewport["width"]) || !Number.isInteger(viewport["height"]) || (viewport["width"] as number) < 390 || (viewport["height"] as number) < 600)
+    return "comment viewport is malformed";
+  const pin = c["pin"] as Record<string, unknown> | undefined;
+  if (typeof pin !== "object" || pin === null || !unit(pin["x"]) || !unit(pin["y"])) return "comment pin must be inside the image";
+  if (!textIn(c["selector"], 200)) return "selector must be 1 to 200 characters without control characters";
+  if (!textIn(c["state"], 80)) return "state must be 1 to 80 characters without control characters";
+  if (!textIn(c["body"], 1000)) return "comment must be 1 to 1000 characters without control characters";
+  return undefined;
+}
+
+function asComment(value: unknown): UiCaptureComment | undefined {
+  if (commentProblem(value) !== undefined) return undefined;
+  const { role: _role, ...record } = value as UiCaptureComment & { role?: unknown };
+  return record;
+}
+
+/** Bounded ui_capture_comment lines in the existing Patron timeline; unrelated timeline events are ignored. */
+export function readUiCaptureComments(root: string, set: UiCaptureSet): UiCaptureCommentsRead {
+  const file = readContainedRegularFile(root, "timeline/patron.jsonl", "timeline", 1024 * 1024);
+  if ("error" in file) return file.code === "ENOENT" ? { comments: [] } : { problems: [`capture comment timeline is unsafe or unreadable: ${file.error}`] };
+  const lines = file.bytes.toString("utf8").split("\n").filter(Boolean);
+  const comments: UiCaptureComment[] = [];
+  const problems: string[] = [];
+  for (const [index, line] of lines.entries()) {
+    let value: unknown;
+    try {
+      value = JSON.parse(line);
+    } catch {
+      if (line.includes('"ui_capture_comment"')) problems.push(`capture comment line ${index + 1}: record is not valid JSON`);
+      continue; // another timeline producer owns unrelated malformed history
+    }
+    if (typeof value !== "object" || value === null || (value as Record<string, unknown>)["kind"] !== "ui_capture_comment") continue;
+    const problem = commentProblem(value);
+    if (problem !== undefined) {
+      problems.push(`capture comment line ${index + 1}: ${problem}`);
+      continue;
+    }
+    const comment = asComment(value)!;
+    if (comment.opus === set.opus && comment.tree === set.tree && comment.designDigest === set.designDigest && comment.manifestSha256 === set.manifestSha256)
+      comments.push(comment);
+  }
+  if (comments.length > 256) problems.push("capture set has more than 256 comments");
+  return problems.length > 0 ? { problems } : { comments };
+}
+
+/** Append one immutable pin only while every capture binding still matches the served-e2e set. */
+export function appendUiCaptureComment(
+  root: string,
+  currentTree: string,
+  input: UiCaptureCommentInput,
+  opts: { now?: Date; id?: string } = {},
+): UiCaptureCommentWrite {
+  const read = readUiCaptureSets(root, currentTree);
+  if ("problems" in read) return { ok: false, error: read.problems.join("; ") };
+  const set = read.sets.find((candidate) => candidate.opus === input.opus);
+  if (set === undefined || !set.current || input.tree !== set.tree || input.designDigest !== set.designDigest || input.manifestSha256 !== set.manifestSha256)
+    return { ok: false, error: "capture set changed; reload before commenting" };
+  const shot = set.shots.find((candidate) => candidate.name === input.image);
+  if (shot === undefined || input.imageSha256 !== shot.sha256 || input.viewport.width !== shot.width || input.viewport.height !== shot.height)
+    return { ok: false, error: "capture image changed; reload before commenting" };
+  const record: UiCaptureComment = {
+    version: 1,
+    kind: "ui_capture_comment",
+    id: opts.id ?? `UC-${randomUUID()}`,
+    at: (opts.now ?? new Date()).toISOString(),
+    author: input.author,
+    opus: input.opus,
+    tree: input.tree,
+    designDigest: input.designDigest,
+    manifestSha256: input.manifestSha256,
+    image: input.image,
+    imageSha256: input.imageSha256,
+    viewport: input.viewport,
+    selector: input.selector,
+    state: input.state,
+    pin: input.pin,
+    body: input.body,
+  };
+  const problem = commentProblem(record);
+  if (problem !== undefined) return { ok: false, error: problem };
+  const existing = readUiCaptureComments(root, set);
+  if ("problems" in existing) return { ok: false, error: existing.problems.join("; ") };
+  if (existing.comments.length >= 256) return { ok: false, error: "capture set has 256 comments; no more can be added" };
+  appendPatronTimeline(root, { ...record });
+  return { ok: true, record };
+}
