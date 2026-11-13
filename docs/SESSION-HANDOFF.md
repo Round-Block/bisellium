@@ -46,27 +46,29 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 **D-181 is the plan, as D-182 changes its lanes and D-183, D-187 and D-188 its head. Read them first. File through `land`: the `check` rule that a UI brief names the signed composition it follows, every difference ruled by the Patron; and check how a general-purpose agent's edit of this file got past W-290. Audit: ~/.bisellium-evidence/audit-1105/fable/audit.md.**
 
-Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a new high starts after one in flight. W-512 has landed; D-194 (one ranked list; no new lane before the qa-lead's reading) governs opening E2/E3: the Patron's call on lanes-meet-1113 is open.
+Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a new high starts after one in flight. D-194 (one ranked list) governs opening E2/E3: D-201 settled lanes-meet-1113 (see the D-201 line below).
 
-Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522.
+Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624.
 
-Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-623 W-624.
+Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615.
 
 D-193 replaces D-178: no per-opus exemptions; entries are product (M4 path) or process; after W-512, E1 and E2 take product, E3 is the one process lane (W-595 enforces). D-174's items 3 to 7 keep 2026-11-17. W-506 waits in the process lane.
 
-In flight: W-610 (build review before the full ci) at the spec step: r4 on opus/W-610 80ee3c40, signed round 7; Codex spec review r8 failed two S1 (multiline command status; valid gate ids). The architect's r5 was cut off by crashes: fix 2 at spec-scratch/W-610-r4 32ef3913; fix 1 and the round-9 signature owed, resume in a new scratch worktree (W-610-r4-1113/architect-r5-brief.md). W-451 (Home groundwork) at next's done step, record still verifying: master verify passed; PR #1190 (its records and D-200) waits on the Patron.
+D-201 (Patron 11-13): keep D-194's one ranked list (a single ranked queue); W-595 right after W-610; E2 (second engineering lane) and a second UI lane open on the qa-lead's reading at a daily retro.
 
-Off the ladder: W-622 (opus checkouts as local clones) is filed right after W-610: a worktree that exists at a session's start cannot be committed in or removed from it (its .git/worktrees admin directory is read-only; its files stay writable) (~/.bisellium-evidence/worktree-block-meet-1113/producer-probe.md). W-507 stays greenlit on master, parked by D-181.
+In flight: W-610 (build review before the full ci): brief cut and signed round 11 after spec review r10 split its light-gate id collision to a new opus (a light probatio id gets its own log); spec perform faae245b; behaviours 7-9 built test-first on opus/W-610 (head cc38905e). Next: `next W-610` names the review perform (fix check of build review r2's findings at the new tree), then light gates, build review, ci, PR (Patron code-owned), merge.
 
-Greenlit ahead of build: W-503 Home: the Patron's four calls are D-200 (bars, signed colours, Needs you as round 6, blank card fine); the design lead's revision 8 is done (~/.bisellium-evidence/W-503-spec/r8-out.md, signature-r8.md), waiting on the Patron's look at the captures, then onto the branch, sign, and the UI spec review. .worktrees/W-503 was re-created (the old one is .worktrees/W-503-1105).
+Off the ladder: W-622 (opus checkouts as local clones) is filed right after W-610: a worktree that exists at a session's start cannot be committed in or removed from it (its .git/worktrees admin directory is read-only; its files stay writable) (~/.bisellium-evidence/worktree-block-meet-1113/producer-probe.md). Until W-622 lands, the orchestrator makes new checkouts by hand as local clones (`git clone --local`); a worktree made in one session locks in the next. W-507 stays greenlit on master, parked by D-181.
+
+Greenlit ahead of build: W-503 (the Home screen): the Patron's four calls are D-200. The Patron accepted revision 8 after a full-Home preview (D-202); r8 is on opus/W-503. Its design-lead signature waits on W-624 (the pre-sign gate runs check on a named branch; the old base fails detached) or a rebase.
 
 Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Meets: ~/.bisellium-evidence/*-meet-11*/; leads-settled calls need no Patron (D-189).
 
-Next session: first move this session's worktrees from the Patron's shell (W-610, verify-W-451-1113), re-add them and copy their uncommitted files; then W-610: the architect's revision 5 (fix 1, sign round 9), the last spec review, build, review, ci, PR, merge; then the 11-12 daily retro (briefs in ~/.bisellium-evidence/retro-1113/), then the queue in studio/queue.yml order. State: ~/.bisellium-evidence/current-state.md.
+Next session: first probe a clone commit (.worktrees/W-610-r5); W-610 from the review perform; then the 11-12 daily retro after W-610 merges (retro-1113/); then W-595 (queue entry classes), W-624 (pre-sign gate branch check, unblocks W-503's signature), W-623 (light probatio log). Open for a leads' meet: docs/SESSION-HANDOFF.md is not in source_excludes, so every refresh invalidates recorded certificates. State: ~/.bisellium-evidence/current-state.md.
 
-Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md beside it. D-189 (W-525, lex §7): a Patron-waiting call goes to the leads' meet first.
+Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md beside it.
 
-D-186: greenlighting goes. W-524 waits for M4. Daily retro: lex §9 step 7 (D-188).
+D-186: greenlighting goes. W-524 waits for M4.
 
 Open gaps and W-508's done-step lessons: ~/.bisellium-evidence/current-state-until-1106.md ("Added 11-06"); read before any done step.
 
