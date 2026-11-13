@@ -48,7 +48,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a new high starts after one in flight. D-194 (one ranked list) governs opening E2/E3: D-201 settled lanes-meet-1113 (see the D-201 line below).
 
-Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624.
+Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624 W-625 W-626 W-627 W-628 W-629.
 
 Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615.
 
@@ -64,7 +64,7 @@ Greenlit ahead of build: W-503 (the Home screen): the Patron's four calls are D-
 
 Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Meets: ~/.bisellium-evidence/*-meet-11*/; leads-settled calls need no Patron (D-189).
 
-Next session: hotfix review, PR, merge (D-204 with it); then lanes per lanes-now-meet-1113: E1 W-610 class loop, E3 (the process lane, D-193) W-595 (queue entry classes) then W-624 (pre-sign gate branch check), UI2 the next UI entry (W-503 after W-624). File: boot-context caps and prune opera (boot-context-meet-1113/collated-r2.md), fresh review session after a blind resume, lex §9 review-path drift; SESSION-HANDOFF.md into source_excludes (handoff-excludes-meet-1113).
+Next session: hotfix review, PR, merge (D-204 with it); then lanes per lanes-now-meet-1113: E1 W-610 class loop, E3 (the process lane, D-193) W-595 (queue entry classes) then W-624 (pre-sign gate branch check), UI2 the next UI entry (W-503 after W-624). Filed W-625 to W-629 (boot caps, prune, fresh review session, lex §9 drift, guard background run); file SESSION-HANDOFF.md into source_excludes (handoff-excludes-meet-1113).
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md beside it.
 
