@@ -82,7 +82,7 @@ doc_caps:
 # opus's own test files (its brief's Files owned) run after them. The full suite is ci --opus, after a passed review.
 light_gates:
   - "npm run -s typecheck"
-  - "npm run -s check -- {studio} --repo ."
+  - 'npm run -s check -- "$BISELLIUM_STUDIO" --repo .'
 # W-209: the dossier's HTML pages are checkpoint records; a new page joins this list in a records PR.
 source_excludes:
   - examples/

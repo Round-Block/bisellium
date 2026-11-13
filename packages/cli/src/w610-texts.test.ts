@@ -37,4 +37,5 @@ row("W-610-b6 build-review.md and lex production 9 steps 3-4 state review on the
   const manifest = parse(readFileSync(join(REPO_ROOT, "studio", "bisellium.yml"), "utf8")) as Record<string, unknown>;
   const cmds = lightGateCommands(manifest, "studio", "");
   assert.ok(Array.isArray(cmds) && cmds.length > 0, `studio/bisellium.yml declares a well-formed light_gates: ${JSON.stringify(cmds)}`);
+  assert.ok(!(manifest["light_gates"] as string[]).some((c) => c.includes("{studio}")), "no light_gates entry splices {studio} (D-196): the officina path is BISELLIUM_STUDIO");
 });

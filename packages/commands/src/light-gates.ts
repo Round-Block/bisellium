@@ -1,7 +1,7 @@
 /**
  * W-610 (review-order-meet-1112): the light gates a build review is ordered on, before the one full `ci --opus`. The list
- * is kept in one place, `bisellium.yml#light_gates` (each entry a shell command; `{studio}` is the officina's
- * repo-relative path), and the opus's own test files (Files owned paths ending `.test.ts`, `.test.mts` or `.test.mjs`)
+ * is kept in one place, `bisellium.yml#light_gates` (each entry a shell command, run as written with the officina's
+ * repo-relative path in `BISELLIUM_STUDIO`, D-196), and the opus's own test files (Files owned paths ending `.test.ts`, `.test.mts` or `.test.mjs`)
  * run one at a time after it (`node --test-reporter=tap`, with `--import tsx` for a TypeScript file). The light-gates perform runs them at the worktree's HEAD and writes one log,
  * `ci/<id>-light-<8 hex>.log`, opening with `certifies: tree:<hash>`, `command: sha256:<hex>` (the shared `commandLine`
  * binding of the exact command sequence) and `exit code: <n>`; `admitLightGates` recomputes the sequence from the main
@@ -27,11 +27,10 @@ const SAFE_PATH = /^[A-Za-z0-9_][A-Za-z0-9_./-]*$/;
 export const officinaRel = (studioRel: string, rel: string): string => (studioRel === "" ? rel : `${studioRel}/${rel}`);
 /** A path as a literal git pathspec: no glob, no magic, whatever characters the officina's name holds. */
 export const literal = (path: string): string => `:(literal)${path}`;
-/** The officina path as one shell word: left bare when plain, `.` for a root officina, else single-quoted whole (whitespace, quotes and metacharacters are data). */
-export function shellWord(studioRel: string): string {
-  if (studioRel === "") return ".";
-  return SAFE_PATH.test(studioRel) ? studioRel : `'${studioRel.split("'").join(`'\\''`)}'`;
-}
+/** W-610 (D-196 item 1): the variable a light command reads the officina's repo-relative path from (`.` for a root
+ *  officina). The path is never spliced into the command string, so the shell never parses it. */
+export const LIGHT_STUDIO_ENV = "BISELLIUM_STUDIO";
+const STUDIO_TOKEN = "{studio}";
 
 export type LightAdmission = { ok: true } | { ok: false; error: string; failed?: string };
 
@@ -40,11 +39,14 @@ export function lightGateCommands(manifest: Record<string, unknown>, studioRel: 
   const raw = manifest["light_gates"];
   if (!Array.isArray(raw) || raw.length === 0 || raw.some((c) => typeof c !== "string" || c.trim() === ""))
     return { error: "bisellium.yml#light_gates must be a non-empty list of commands" };
+  const spliced = (raw as string[]).findIndex((c) => c.includes(STUDIO_TOKEN));
+  if (spliced !== -1) return { error: `bisellium.yml#light_gates entry ${spliced + 1} holds ${STUDIO_TOKEN}; name the officina path as "$${LIGHT_STUDIO_ENV}" (D-196)` };
+  void studioRel;
   const tests = ownedFiles(briefText).filter((p) => TEST_FILE.test(p));
   // a test path reaches a shell command line: only a repo-relative path of letters, digits, `_`, `.`, `/` and `-`, no `..`
   const unsafe = tests.filter((p) => !SAFE_PATH.test(p) || p.split("/").includes(".."));
   if (unsafe.length > 0) return { error: `the brief's Files owned names a test path the light gates do not run (${unsafe.join(", ")}): only [A-Za-z0-9_./-], repo-relative, no ..` };
-  return [...(raw as string[]).map((c) => c.split("{studio}").join(shellWord(studioRel))), ...tests.map((p) => `node --test-reporter=tap${p.endsWith(".mjs") ? "" : " --import tsx"} ${p}`)];
+  return [...(raw as string[]), ...tests.map((p) => `node --test-reporter=tap${p.endsWith(".mjs") ? "" : " --import tsx"} ${p}`)];
 }
 
 type RepoOf = { repo: string; studioRel: string; exclusions: string[]; main: Record<string, unknown> };
@@ -113,8 +115,10 @@ export function runLightGates(studioRoot: string, opus: string, commands: string
     const tree = `tree:${sourceTreeHash(r.repo, r.exclusions, "HEAD")}`;
     const body: string[] = [];
     let exitCode = 0;
+    // the officina path reaches each command as one variable's bytes, never as shell text (D-196 item 1)
+    const env = { ...process.env, [LIGHT_STUDIO_ENV]: r.studioRel === "" ? "." : r.studioRel };
     for (const c of commands) {
-      const run = spawnSync("sh", ["-c", c], { cwd: r.repo, encoding: "utf8", timeout: LIGHT_GATE_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 });
+      const run = spawnSync("sh", ["-c", c], { cwd: r.repo, env, encoding: "utf8", timeout: LIGHT_GATE_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 });
       const code = run.error !== undefined ? 124 : (run.status ?? 1);
       body.push(`$ ${c}`, `exit: ${code}`, run.stdout ?? "", run.stderr ?? "");
       if (code !== 0) {
