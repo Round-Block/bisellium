@@ -1593,7 +1593,8 @@ test("D-204: a daily retro owed more than 3 days says overdue, loudly, and still
   // last entry 4 days ago: the previous day and 2 more are owed (3 days), not yet over 3
   setTracker(w, [ago(4)]);
   const three = next(w, [OTHER, ...REAL()]);
-  assert.doesNotMatch(line(three).join("\n"), /overdue/, ran("3 days owed: not overdue", three));
+  assert.match(line(three).join("\n"), /^daily-retro: \d{4}-\d\d-\d\d .*step 1 of 3/, ran("3 days owed: the daily-retro line is printed", three));
+  assert.doesNotMatch(line(three).join("\n"), /OVERDUE/, ran("3 days owed: not overdue", three));
   // last entry 5 days ago: 4 days owed
   setTracker(w, [ago(5)]);
   const over = next(w, [OTHER, ...REAL()]);
