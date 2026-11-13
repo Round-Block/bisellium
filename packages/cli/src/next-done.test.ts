@@ -1436,6 +1436,11 @@ test("W-384-b1 behaviour 1: the done land counts a records PR as landed when the
 // ---------------------------------------------------------------------------
 // W-459 behaviour 3, D-204: a daily retro owed is advisory: next names the new spec and says the retro is owed; only an unreadable tracker holds
 // ---------------------------------------------------------------------------
+/** The day before the previous UTC day: a tracker whose newest entry is this has one day owed, never overdue (D-204). */
+const olderDay = (): string => {
+  const d = new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - 2)).toISOString().slice(0, 10);
+};
 /** The previous UTC day by the real clock, which the daily hold reads (a run across UTC midnight is a stated limit). */
 const previousDay = (): string => {
   const d = new Date();
@@ -1461,10 +1466,10 @@ test("W-459-b3 behaviour 3: a previous UTC day's retro owed holds no new spec (D
   expectOther(next(w, [OTHER]), "branch", "named", "with no tracker a new start is named as today");
 
   setTracker(w, ["2026-10-01"]);
-  const held = next(w, [UNSIGNED, "--budget", "100000"]);
+  const held = next(w, [UNSIGNED, "--budget", "100000", "--now", new Date().toISOString()]);
   assert.equal(held.first, `next: ${UNSIGNED} spec named`, ran("a new spec is named while the previous UTC day has no entry (D-204)", held));
   assert.doesNotMatch(held.out, /daily retro owed:/, ran("no daily hold is stated", held));
-  assert.match(held.out, new RegExp(`daily-retro: ${previousDay()} step 1 of 3: a ladder-runner runs: bisellium retro --daily --studio `), ran("the advisory line names the day, the runner and the verb", held));
+  assert.match(held.out, new RegExp(`daily-retro: ${previousDay()} OVERDUE \\d+ days \\(does not hold\\): step 1 of 3: a ladder-runner runs: bisellium retro --daily --studio `), ran("the advisory line names the day, the runner and the verb", held));
   expectOther(next(w, [OTHER]), "branch", "named", "a signed spec is not held (W-530)");
   expectStep(next(w, [OPUS]), "checkpoint", "complete", "a done opus is not held by the daily retro");
 
@@ -1711,7 +1716,7 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   const LAND = `a ladder-runner lands the entry: bisellium land studio/acta/improvements.md --title 'chore(studio): daily retro ${day}' --sella producer --studio studio`;
 
   // before the run
-  setTracker(w, ["2026-10-01"]);
+  setTracker(w, [olderDay()]);
   const before = next(w, [OTHER, ...REAL()]);
   expectOther(before, "branch", "named", "before the run: a signed spec is still named");
   assert.equal(before.status, 0, ran("before the run: exit 0", before));
@@ -1744,7 +1749,7 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   // landed with its heading empty: the proposals are still the qa-lead's, then a second land
   const e = world("w530-b4-early", "done");
   addSpecced(e);
-  setTracker(e, ["2026-10-01"]);
+  setTracker(e, [olderDay()]);
   verb(e.repo, ["retro", "--daily", "--studio", e.studio]);
   commit(e.repo, "test: the entry landed with no proposals");
   git(e.repo, ["push", "-q", "origin", "master"]);
@@ -1753,7 +1758,7 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   // an entry from before W-530, with no heading: no proposals asked; the land only while it is not on master
   const o = world("w530-b4-old", "done");
   addSpecced(o);
-  setTracker(o, ["2026-10-01", day]);
+  setTracker(o, [olderDay(), day]);
   assert.deepEqual(line(next(o, [OTHER, ...REAL()])), [], "an entry with no heading, on master: no line");
   const noRead = next(o, [OTHER, ...REAL()], { env: { GIT_STUB_REAL: failingGit("w530-b4-show", ["show refs/heads/master:studio/acta/improvements.md"]) } });
   assert.deepEqual(line(noRead), [`daily-retro: ${day} step 3 of 3: ${LAND}`], ran("a failed master read reads as absent (the limit)", noRead));
@@ -1771,7 +1776,7 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   // the routes that do not reach `render` carry no line, with a step owed
   const p = world("w530-b4-routes", "done");
   addSpecced(p);
-  setTracker(p, ["2026-10-01"]);
+  setTracker(p, [olderDay()]);
   const refused = next(p, [OTHER, "--expect", "ready"]);
   assert.equal(refused.status, 1, ran("an --expect refusal: exit 1", refused));
   assert.deepEqual(line(refused), [], ran("an --expect refusal carries no line", refused));
@@ -1790,7 +1795,7 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   }
   const p2 = world("w530-b4-perform", "done");
   addSpecced(p2);
-  setTracker(p2, ["2026-10-01"]);
+  setTracker(p2, [olderDay()]);
   const performed = next(p2, [OTHER, "--perform", "--expect", "branch"]);
   expectOther(performed, "branch", "performed", "a performed step: performed");
   assert.deepEqual(line(performed), [], ran("a perform's output carries no line", performed));
