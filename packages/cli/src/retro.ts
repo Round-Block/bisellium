@@ -1263,7 +1263,13 @@ export function dailyRetroStep(root: string, trunk: string | undefined, now: Dat
   // D-204: the days owed run from the day after the newest entry to the previous day; none when the tracker holds no entry to count from
   const newest = [...tracker.days].sort().pop();
   const [ny, nm, nd] = (newest ?? "").split("-").map(Number);
-  const owedDays = newest === undefined || ny === undefined || nm === undefined || nd === undefined ? undefined : Math.round((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1) - Date.UTC(ny, nm - 1, nd)) / 86_400_000);
+  // Date.UTC remaps years 0-99 to 1900-1999, so each day is built with setUTCFullYear
+  const utcDay = (y: number, m: number, d: number): number => {
+    const t = new Date(0);
+    t.setUTCFullYear(y, m, d);
+    return t.getTime();
+  };
+  const owedDays = newest === undefined || ny === undefined || nm === undefined || nd === undefined ? undefined : Math.round((utcDay(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1) - utcDay(ny, nm - 1, nd)) / 86_400_000);
   const owed = owedDays === undefined || owedDays < 1 ? {} : { owedDays };
   if (state === "no entry") return { day, step: 1, ...owed };
   if (state === "empty") return { day, step: 2 };
