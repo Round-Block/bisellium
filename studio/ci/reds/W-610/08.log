@@ -1,0 +1,86 @@
+# behaviour: 8
+# command: node --test-reporter=tap --test-name-pattern=^W-610-b8\s --import tsx packages/cli/src/w610.test.ts
+# exit: 1
+# at: 2026-11-13T07:06:18.125Z
+# sella: builder.W-610
+# tree: tree:fcf04d352dd5ddedef076c60eabd8881a2027ff2
+# ticket: {"opus":"W-610","step":"reds","action":"red","round":8,"actor":"builder","studio":".worktrees/W-610/studio","head":"16c31758c910b33195d250d18ba8e84d109fca85","brief":"fea5f8ecf58a608296c32960a2f032f480d34ca5","at":"2026-11-13T07:06:15.501Z"}
+
+TAP version 13
+# Subtest: W-610-b8 the officina path reaches each light command as BISELLIUM_STUDIO, never spliced
+not ok 1 - W-610-b8 the officina path reaches each light command as BISELLIUM_STUDIO, never spliced
+  ---
+  duration_ms: 85.445529
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: |-
+    the officina path reaches each light command as BISELLIUM_STUDIO, never spliced: a double-quoted "$BISELLIUM_STUDIO" is the officina path's bytes for "studio"
+    
+    '\n' !== 'studio\n'
+    
+    
+    '\n' !== 'studio\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    studio
+    
+  actual: |-
+    
+    
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-610-b8 a light_gates entry holding {studio} is refused
+not ok 2 - W-610-b8 a light_gates entry holding {studio} is refused
+  ---
+  duration_ms: 0.457991
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: 'a light_gates entry holding {studio} is refused: a {studio} entry is refused: ["npm run -s check -- studio --repo ."]'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-610-b8 a metacharacter officina's light log is admitted with no command run from its path
+not ok 3 - W-610-b8 a metacharacter officina's light log is admitted with no command run from its path
+  ---
+  duration_ms: 31.241132
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: `a metacharacter officina's light log is admitted with no command run from its path: "$BISELLIUM_STUDIO" is the one literal officina path for "$(touch PWNED) it's": {"rel":"ci/W-900-light-2603bb0b.log","exitCode":1}`
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 0
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 127.829182
