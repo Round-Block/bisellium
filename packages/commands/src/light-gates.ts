@@ -76,7 +76,17 @@ export function currentLightCommands(studioRoot: string, opus: string): string[]
   }
 }
 
-export const lightLogRel = (opus: string, tree: string): string => `ci/${opus}-light-${tree.slice(5, 13)}.log`;
+// <gate> is `light` or any manifest-valid probatio id: check.ts's ID_RE (`[A-Za-z0-9][A-Za-z0-9._-]*`) with no `..`
+// (manifest.id.format); W-610-b9 pins this form against ID_RE itself (spec review r8 #2)
+const GATE_LOG_NAME = /^W-\d+-([A-Za-z0-9][A-Za-z0-9._-]*)-[0-9a-f]{8,40}\.log$/;
+/** W-610 (D-196 item 1): the one shape of a ci log path handed on, the officina-relative `ci/<name>` (it resolves under
+ *  the worktree officina, as every builder input does); `name` is one gate-log file name, anything else throws. */
+export function ciLogRel(name: string): string {
+  if (GATE_LOG_NAME.exec(name)?.[1]?.includes("..") !== false) throw new Error(`${JSON.stringify(name)} is not one gate-log file name (W-<n>-<gate>-<8..40 hex>.log)`);
+  return `ci/${name}`;
+}
+
+export const lightLogRel = (opus: string, tree: string): string => ciLogRel(`${opus}-light-${tree.slice(5, 13)}.log`);
 
 /** The light gates passed at the worktree's current source tree, their log committed and unchanged; or why not. */
 export function admitLightGates(studioRoot: string, opus: string): LightAdmission {
@@ -135,11 +145,11 @@ export function runLightGates(studioRoot: string, opus: string, commands: string
   }
 }
 
-/** W-610 (fix 1): the full ci runs at `tree` in the officina at `studioRel`: the commits on HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded) and those logs' names. Literal pathspecs and a plain name match, so a glob character in the officina's name or an opus sibling never counts; unreadable counts as `cap` (fail closed). */
+/** W-610 (fix 1): the full ci runs at `tree` in the officina at `studioRel`: the commits on HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded) and those logs as `ciLogRel` paths. Literal pathspecs and a plain name match, so a glob character in the officina's name or an opus sibling never counts; unreadable counts as `cap` (fail closed). */
 export function fullGateRuns(repoDir: string, studioRel: string, opus: string, tree: string, cap = 2): { runs: number; logs: string[] } {
   const dir = officinaRel(studioRel, "ci");
   const tail = `-${tree.slice(5, 13)}.log`;
-  const isFull = (name: string): boolean => name.startsWith(`${opus}-`) && name.endsWith(tail) && !name.startsWith(`${opus}-light-`);
+  const isFull = (name: string): boolean => name.startsWith(`${opus}-`) && name.endsWith(tail) && name !== `${opus}-light${tail}`;
   const names = (paths: string[]): string[] => paths.filter((p) => p.startsWith(`${dir}/`) && !p.slice(dir.length + 1).includes("/") && isFull(p.slice(dir.length + 1)));
   const log = gitIn(repoDir, ["log", "--format=%x00%H", "--name-only", "-z", "HEAD", "--", literal(dir)]);
   const tracked = gitIn(repoDir, ["ls-files", "-z", "--", literal(dir)]);
@@ -157,5 +167,5 @@ export function fullGateRuns(repoDir: string, studioRel: string, opus: string, t
       runs += 1;
     }
   }
-  return { runs, logs: names(tracked.stdout.split("\0").filter(Boolean)).map((p) => p.slice(dir.length + 1)) };
+  return { runs, logs: names(tracked.stdout.split("\0").filter(Boolean)).map((p) => ciLogRel(p.slice(dir.length + 1))) };
 }
