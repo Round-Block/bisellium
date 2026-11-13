@@ -1,0 +1,38 @@
+# opus: W-610
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-13T04:39:38.205Z
+# tree: tree:49f8c5a0301360ea112152691f404befe8d4e327
+# brief: briefs/W-610.md blob:2914c23a770e9e465635444793844fed693a2d22
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-610/studio","head":"80ee3c40b6274c3192614a7850608ad8d6fb170e","brief":"2914c23a770e9e465635444793844fed693a2d22","at":"2026-11-13T04:39:21.295Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-610-spec/r4/promise-ledger-r4b.md
+Gate log: /home/edckt/.bisellium-evidence/W-610-spec/r4/gate-r4.log
+
+Ledger: revision 4 (D-199 numbering), built by build-ledger-r4.py: revision 3's lines carried and repinned onto the r4 prototype tip 683afffc, revision 4's new lines each killed by an r4 kill. Gate: exit 0, 60 of 60 rows exit 0, 13.1 min; series prototype-r4.mbox sha256:6186a02243f5b6c68ecadeaf674462c59d260bbb2e382b016562937f3ad455e3 (the brief's Prototype line), base b145ec4c, tree a8e58c5a; gate-r4.sh. gate-r4-try1.log is void (closed by finding 3).
+
+Signed. Brief: /home/edckt/.bisellium-evidence/W-610-spec/r4/brief-r4b.md (revision 4 with row 5; finish-r4.sh, finish-r4.log; then fix-brief-r4c.py in place, no line moved, diff brief-r4c.diff; admission-r4c.out: problems 0, exception D-199), on the branch as studio/briefs/W-610.md. Code lines name the scratch prototype .worktrees/W-610-r4p (spec-scratch/W-610-r4 at 683afffc). The opus worktree's code is the real rebase only; behaviours 7-9 are not on opus/W-610 and are built as reds (W-326).
+
+## Earlier findings
+
+- ci/W-610-review-2.log #1: closed — behaviour 8: the officina path reaches every light command as the environment variable BISELLIUM_STUDIO, never spliced into a shell string; `{studio}` and `shellWord` are gone and a `{studio}` entry is refused; red r4/red-b8.tap, green r4/green-b8.tap; kills resplice-studio and drop-env — check: W-610-b8 rows
+- ci/W-610-review-2.log #2: closed — behaviour 9: one helper `ciLogRel` gives every builder input and log path of the light gates and the ci cap the `ci/<log>` shape; red r4/red-b9.tap, green r4/green-b9.tap; kills fullgateruns-bare, light-input-bare, cilogrel-no-check — check: W-610-b9 rows
+
+## Findings
+
+1. advisory — real rebase: opus/W-610 9b886d5a rebased onto master 0c2e7e4d in .worktrees/W-610 by r4/rebase-final.sh (a copy of rebase-real.sh), log r4/rebase-final.log: two stops (`feat(W-610): behaviour 1`: package.json and next.test.ts; `feat(W-610): behaviour 6`: package.json), the W-512 union of the trial; tip 80ee3c40, 35 commits over master; packages/ equal e41ebbff's, package.json differs only by the next family's --test-concurrency 16 -> 17 (W-179-b1: 17 files with w512 and w610), set at the behaviour 1 stop; typecheck exit 0 (r4/typecheck-final.log) — check: r4/rebase-final.log
+2. advisory — studio/opera/W-610.md did not conflict at this rebase (master past #1187 merges cleanly), so the producer's take-the-branch-record ruling was not triggered; git's merge keeps the branch's state (building) and appends master's two D-197 lift amendments; no hand edit — check: r4/rebase-final.log last line
+3. advisory — the gate's first run (gate-r4-try1.log) failed W-179-b1 on the next family's concurrency (16 with 17 files) and lacked a test:suite command for w610-retro.test.ts; the prototype's last commit 683afffc carries both, the real rebase carries the concurrency at behaviour 1, and the w610-retro command lands with behaviour 7's file in the build — check: gate-r4.log w512.test.ts row
+4. advisory — reds and greens of behaviours 7-9 produced in the prototype (r4/red-b7..9.tap exit 1, r4/green-b7..9.tap exit 0); built and red-recorded first, in the order 7, 8, 9, on opus/W-610 (D-199 rulings 1-2); r3's recorded reds 01..06 keep their numbers — check: studio/decisions/D-199.md
+5. advisory — kills: 10 of 10 killed, none survived (r4/kills-r4.summary); singles: every test file importing a changed source passes alone under an empty HOME, 16 of 16 (r4/singles-r4.out) — check: r4/kills-r4.summary
+6. advisory — class censuses over the filled brief: review×shell-quoting-and-path-shape hits 17, sites 3, limits 14, faults 0, unnamed 0, flips 3; gate×writer-reader-drift hits 10, sites 5, limits 5, faults 0, unnamed 0, flips 4; the census's earlier unnamed hits are named as sites 35-36 — check: r4/census/*.out
+7. advisory — stated limits (D-076 E): the other readers of the gate status line (admitCurrentGates, admitLightGates, the served-e2e reader) and the dispatch inputs at site 36 are unchanged code; each is named as a limit, not promised — check: brief sites 35-36
+8. advisory — the first sign attempt (r4/verdict-r7.log, refused before the gate) named the brief's own evidence; fixed by fix-brief-r4c.py with no line moved: Input domain rows 7, 10 (revision 3's signed text) and 11 carry their forms clauses and hostile-form words; row 13's four pins each open "pinned by"; reds 1-6 cite the recorded `studio/ci/reds/W-610/0k.log` by absolute path; reds 7-9 cite red-cmd-r4.sh outputs (`# command:` headed, each exit 1 at its red commit, red-cmd-r4.summary); kills gatefailure-numeric and writer-ternary-restored re-run with stdout-only TAP (kills-r4c.py, kills-r4c.summary: both killed) — check: r4/brief-r4c.diff
+9. advisory — review×name-prefix-containment-misclassifies-valid-paths is the tag review rounds 1-2 put on their S1s, so the check reads it as a repeated class; D-196 item 1 rules the tag named the wrong class, so its census (census/class-census-tagged.py) is review×shell-quoting-and-path-shape's census under the tag: 17 hits, sites 3, limits 14 each a stated limit, faults 0, unnamed 0 — check: r4/census/name-prefix-containment-misclassifies-valid-paths.out
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-610.md` revision 4 on opus/W-610 at 80ee3c40: both review-2 S1 closed as behaviours 8 and 9 with reds and greens in the prototype, the reader fix as behaviour 7, every new pinned line killed, the pre-sign gate 60 of 60 at the prototype, both owed class censuses produced with no unnamed hit.

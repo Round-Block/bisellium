@@ -1,0 +1,32 @@
+# opus: W-610
+# phase: spec
+# round: 11
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-13T07:03:18.062Z
+# tree: tree:49f8c5a0301360ea112152691f404befe8d4e327
+# brief: briefs/W-610.md blob:fea5f8ecf58a608296c32960a2f032f480d34ca5
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":11,"actor":"architect","studio":".worktrees/W-610/studio","head":"80ee3c40b6274c3192614a7850608ad8d6fb170e","brief":"fea5f8ecf58a608296c32960a2f032f480d34ca5","at":"2026-11-13T07:03:07.152Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-610-spec/r5/promise-ledger-r5-cut.md
+Gate log: /home/edckt/.bisellium-evidence/W-610-spec/r5/gate-r5.log
+
+Ledger: the r5 cut (D-061 §4), built by r5/build-ledger-cut.py from r5/promise-ledger-r5.md: every brief:<n> remapped from brief-r5.md onto brief-r5-cut.md (220 of 220 lines mapped, none unmapped), code pins unchanged because the prototype is unchanged; the Promise any-probatio-gate and Input domain row 12 lines carry the cut's stated limit. Gate: r5/gate-r5.log as signed in round 9 (exit 0, 60 of 60 rows exit 0), series prototype-r4.mbox sha256:7dea454b637685a3f59f3908ec364e6867174d93a2ab088c7bc3c204f4dbe2dd (the brief's Prototype line, unchanged), base b145ec4c, at 3c18a444; no prototype commit since, so no gate rerun is owed.
+
+Signed. Brief: /home/edckt/.bisellium-evidence/W-610-spec/r5/brief-r5-cut.md (the r5 cut: r5/cut-brief-r5.py over r5/brief-r5.md, fifteen exact replacements and one Revisions row, "r5 cut (D-061 §4, W-623)"; diff r5/brief-r5-cut.diff; admission r5/admission-r5-cut.out: problems 0, exception D-199), on the branch as studio/briefs/W-610.md, uncommitted. Code lines name the r5 prototype, the local clone .worktrees/W-610-r5 (spec-scratch/W-610-r4 at 3c18a444). The opus worktree's code is the real rebase only; behaviours 7-9 are not on opus/W-610 and are built as reds (W-326).
+
+## Earlier findings
+
+- ci/W-610-spec-10.log #1: closed — cut, not fixed (D-061 §4, no third review): the brief no longer promises a probatio named exactly `light`; Intent 9, site 38, Promise any-probatio-gate, Input domain row 12, behaviour 9 and Out of scope state it as a stated limit (its full-gate log takes the light run's own name, which `fullGateRuns` leaves out at light-gates.ts:152, so its runs are not counted or handed on), and the producer filed the remainder as W-623 (A probatio named light gets its own log, greenlit) — check: r5/brief-r5-cut.diff
+
+## Findings
+
+1. advisory — the r10 S2 advisory is taken as wording only: Revisions row 6, Intent 7, site 37, Promise one-status-field and Out of scope now say a C0 control character except tab, which is what `gateCommandLine`'s range `[\u0000-\u0008\u000a-\u001f]` (Interfaces 6) encodes; DEL and C1 controls stay raw and cannot open a line. The reviewer's brief:187 holds no such phrase (behaviour 7's rows), so it is unchanged; row 11's "another control character" is the officina path's domain, not the encoder's, and is unchanged — check: r5/brief-r5-cut.diff
+2. advisory — what the cut leaves promised is what r10 closed: spec review r8 #1 (row 13, one status field) and r8 #2 (row 12 for every manifest-valid probatio id but `light`: `unit-tests`, `unit_tests`, `unit.tests`, `UnitTests`, `light-x` through capping under nested, deeper and root officinae), both closed in ci/W-610-spec-10.log's Earlier findings; no row, kill or pin moved — check: r5/promise-ledger-r5-cut.md
+3. advisory — class census gate×writer-reader-drift is now a repeated class (r8 and r10), so its output is read strictly; the first sign attempt (r5/verdict-r11-try1.log) refused the round-9 output (limit lines with no follow-on, a summary line). r5/census/class-census-cut.py runs the round-9 script unchanged over the cut brief (its hits byte-identical to r5/census/writer-reader-drift.out: hits 23, sites 11, limits 12, faults 0, unnamed 0, flips 4, summary now on stderr, r5/census/writer-reader-drift-cut.summary) and gives each limit its follow-on: the seven gate-log file-name limits W-623, the five line-3 status limits none (fail closed, unchanged, site 35); the brief's Class census line names it, by r5/finish-cut.sh — check: r5/census/writer-reader-drift-cut.out
+4. advisory — stated limits (D-076 E): unchanged code the promises lean on is named, not promised: the `localPipeline` filename writer and `runLightGates`' log name (which collide for a probatio named `light`, W-623), the line-3 exact readers (site 35), `admitCurrentGates`, `ciRunsAt`, the certify mint, `prune.ts`' shape (site 38) and the daily retro's `GATE_LOG` walk (`tests`, `lint` and `types` only) — check: brief sites 35 and 38
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-610.md`, the r5 cut, on opus/W-610 at 80ee3c40: spec review r10's one S1 is cut out of the promises as a stated limit and filed as W-623 (D-061 §4); the S2 advisory taken as wording; the prototype, its pre-sign gate, kills and census unchanged and still answering every line the cut brief promises.

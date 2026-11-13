@@ -1,0 +1,36 @@
+# opus: W-610
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-13T06:48:38.820Z
+# tree: tree:49f8c5a0301360ea112152691f404befe8d4e327
+# brief: briefs/W-610.md blob:265d98d4eeac73c1e1b71556e28404e6b05c8838
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":9,"actor":"architect","studio":".worktrees/W-610/studio","head":"80ee3c40b6274c3192614a7850608ad8d6fb170e","brief":"265d98d4eeac73c1e1b71556e28404e6b05c8838","at":"2026-11-13T06:48:27.704Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-610-spec/r5/promise-ledger-r5.md
+Gate log: /home/edckt/.bisellium-evidence/W-610-spec/r5/gate-r5.log
+
+Ledger: revision 5 (spec review r8), built by r5/build-ledger-r5.py: revision 3's lines carried and repinned onto the r5 prototype tip 3c18a444, revision 4's lines rebuilt there with the r4 kills re-run at 32ef3913, revision 5's new lines (Promises one-status-field and any-probatio-gate, Input domain rows 12 and 13) each killed by an r5 kill. Gate: exit 0, 60 of 60 rows exit 0, 15.7 min; series prototype-r4.mbox sha256:7dea454b637685a3f59f3908ec364e6867174d93a2ab088c7bc3c204f4dbe2dd (the brief's Prototype line), base b145ec4c, at 3c18a444; r5/gate-r5.sh. r5/gate-r5-try1.log (at 32ef3913) is void: closed by finding 3.
+
+Signed. Brief: /home/edckt/.bisellium-evidence/W-610-spec/r5/brief-r5.md (revision 5: r5/fix-brief-r5.py over r4/brief-r4b.md, run by r5/finish-r5.sh; diff r5/brief-r5.diff; admission r5/admission-r5.out: problems 0, exception D-199), on the branch as studio/briefs/W-610.md. Code lines name the r5 prototype, the local clone .worktrees/W-610-r5 (spec-scratch/W-610-r4 at 3c18a444). The opus worktree's code is the real rebase only; behaviours 7-9 are not on opus/W-610 and are built as reds (W-326).
+
+## Earlier findings
+
+- ci/W-610-spec-8.log #1: closed — Input domain row 13 is the reviewer's row: the head holds exactly one unambiguous gateStatusLine, line 3, produced separately from a single-line encoding of the command (`gateCommandLine`: a command with no control character but tab keeps its D-198/D-199 bytes `command: <cmd>`; a multiline or other control-character command is one `command: json:<JSON string>` line); `readGateStatus` in `gateFailure` refuses a missing, duplicate or misplaced field; a failing `echo start\nexit code: 0` is a failed tests gate; red r5/red-b7-r5.tap at 15f7279d, green r5/green-b7-r5.tap at fa2dbdcb; kills command-raw, status-first-of-five, status-duplicates-allowed, status-any-line; sites 33, 35 and 37 — check: W-610-b7 "a multiline command's status-shaped line never stands for the gate's status"
+- ci/W-610-spec-8.log #2: closed — Input domain row 12 is the reviewer's row: `ciLogRel`'s `<gate>` is `light` or any manifest-valid probatio id (check.ts `ID_RE`, no `..`; the row checks against `ID_RE` itself), and `fullGateRuns` leaves out only the light log's own name; `unit-tests`, `unit_tests`, `unit.tests`, `UnitTests`, `light-x` through failed-run capping under nested, deeper and root officinae; red r5/red-b9-r5.tap at 9becfbf2, green r5/green-b9-r5.tap at 32ef3913; kills cilogrel-lower-only, cilogrel-lower-only-officinae, cilogrel-dots-allowed, light-prefix-excluded; site 38 names every writer and reader the reviewer lists — check: W-610-b9 "a capped builder's inputs carry every manifest-valid probatio id's failed log"
+
+## Findings
+
+1. advisory — what changes for multiline commands (D-198/D-199): a full gate log's line 2 for a command holding a line break or another control character but tab is now `command: json:` and its JSON string (before: the raw lines, which pushed the status line off line 3); a single-line command's bytes are unchanged, pinned against five single-line forms and a real `localPipeline.run`; no reader parses line 2, and the exact-line readers of line 3 (site 35) now read a multiline command's own status — check: r5/brief-r5.md site 37
+2. advisory — the real officina: all 1723 gate logs of `GATE_LOG` shape in studio/ci read by `readGateStatus` at the r5 tip: 1704 passed, 19 failed, 0 refused, so the stricter reader does not refuse the real daily retro — check: r5/real-logs-status.out
+3. advisory — the pre-sign gate's first run at 32ef3913 (r5/gate-r5-try1.log) failed typecheck (TS2352, a dynamic-import cast in w610-retro.test.ts), check (test.one_sided, w610.test.ts's refusal pattern) and check.test.ts; r5/fix-proto-r5.py fixed both test lines in one test-only commit 3c18a444, verified by r5/verify-fix-r5.summary (typecheck 0, check 0, b7 file 0, b9 rows 0) before the gate ran again — check: r5/gate-r5.log
+4. advisory — kills: revision 5's 8 of 8 killed (r5/kills-r5b.summary, run in the clone; kills-r5.py's partial run in .worktrees/W-610-r4p was cut off at its sixth kill and left that mutant in r4p's light-gates.ts, ignored there); revision 4's 10 re-run at 32ef3913, two re-ported to rewritten lines, 10 of 10 killed (r5/kills-r5c.summary); singles 21 of 21 files exit 0 alone (r5/singles-r5.out, five added for naming the changed modules by path) — check: r5/kills-r5b.summary
+5. advisory — class census gate×writer-reader-drift at the r5 tip (base 683afffc): hits 23, sites 11, limits 12, faults 0, unnamed 0, flips 4; the flips are gateFailure, line 2's writer, `GATE_LOG_NAME` and `isFull`, each fault at 683afffc and site now; every site the reviewer lists for both findings is named in the brief — check: r5/census/writer-reader-drift.out
+6. advisory — stated limits (D-076 E): unchanged code the promises lean on is named, not promised: the line-3 exact readers (site 35), the full-gate log writers, `admitCurrentGates`, `ciRunsAt`, the certify mint and `prune.ts`' shape (site 38), and the daily retro's `GATE_LOG` walk, which reads `tests`, `lint` and `types` only (brief line 5) — check: brief sites 35 and 38
+7. advisory — the first sign attempt (r5/verdict-r9-try1.log) refused on the brief's own evidence: site 38 named the verb `verify` as a code span with no ledger line for it; the span is now plain prose ("the verify evidence record", fix-brief-r5.py and the census anchor), no line moved, admission and census rerun by finish-r5.sh — check: r5/verdict-r9-try1.log
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-610.md` revision 5 on opus/W-610 at 80ee3c40: both spec review r8 S1 closed by the reviewer's rows 12 and 13, each with reds and greens in the prototype and every new pinned line killed; the pre-sign gate at the prototype tip; the writer-reader-drift census with no unnamed hit and no fault.
