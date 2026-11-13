@@ -1,0 +1,32 @@
+# opus: W-512
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-12T18:15:06.802Z
+# tree: tree:08ff6aa9038dde6bc659df615a232ee99ce72adc
+# brief: briefs/W-512.md blob:46ed25372902fea475885583b8358926422649f4
+# ticket: {"opus":"W-512","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"24ec115c058d50f7b77724b3ebc13c9699e61c79","brief":"46ed25372902fea475885583b8358926422649f4","at":"2026-11-12T18:15:00.494Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-512-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-512-spec/gate.log
+
+## Findings
+
+1. advisory — the order is laneLines' own computation, moved unchanged into laneTakes and read by both next --all and the new startOrder: a lane's now (held or taken) may branch; its one ahead may take only its spec rung; every other unstarted opus is held at spec or branch, naming its rank, the lanes and the one way past (a landed re-rank of queue.yml); a skipped entry keeps its place and is taken before the entries below it — check: brief Intent 2-5; W-512-b1, W-512-b2
+2. advisory — fails closed: an unranked or folded opus, an uncommitted or untracked queue.yml edit, a malformed queue.yml, a failing git status and a throwing queued-state read each refuse; an absent queue.yml orders nothing — check: brief Input domain 1-4; W-512-b1; mutants held-queue-free, queue-edit-ignored, unranked-free
+3. advisory — the overlap refusal (the producer's call, 11-12: W-592's lane-start half): a lane's now does not branch while its Files owned (the main checkout's signed brief) share a span with the committed branch brief of an opus another lane holds in flight; ownedFiles is master's reader, reused unchanged, a stated limit; the why names both opera, the lane and the paths; an unreadable brief or a failing git show-ref holds; an unbranched lane opus (a spec-ahead draft included) is not read, a stated limit closed by symmetry at its own branch — check: brief Intent 4, Input domain 6-8; W-512-b3; mutants overlap-ignored, unreadable-brief-skipped
+4. advisory — scope held to lanes-meet-1112 collated 4 plus the producer's widening: W-609 (rates) stays its own opus right after W-512; research and lane-id refusals are W-619's; the queue.lane_collision check rule stays W-592's; no meanwhile change, class, stale-base or slot accounting (W-595, W-597) — check: brief Out of scope, Limits
+5. advisory — W-610 overlap: W-512's next.ts change stays off the build and review rungs (spec-rung check at 1123-1125, branch holds at 1243-1246, queueOrder, laneOverlap, runAll); merge-tree over opus/W-610 merges next.ts cleanly; package.json's test:suite line and W-179-b1's declared list (W-610 adds w610 there too) conflict, both names are kept at concurrency 17; the rebased tree reruns both opera's rows — check: w610-overlap.out; brief Acceptance
+6. advisory — every start site is closed or a stated limit (8 sites): the spec rung's one check comes before every spec order and its ticket; branch and verdict need the tickets only those orders mint (reused unchanged); meanwhile's nextEntry can name a different entry from lanePlan's ahead (a limit for W-597) — check: brief site table; importers.out
+7. advisory — each red replayed as certify replays it (env -i, an empty HOME, a writable TMPDIR) on the rebuilt series: b1-b4 each fail by ERR_ASSERTION only, accepted by the tip's classifyReplay, each red log headed by its command and commit; each green passes; eight one-hunk mutants each fail their row at a pinned assertion (run at the pre-fold tip, whose source and w512.test.ts are byte-identical to this tip's) — check: reds.sh; reds.out; red-b1..b4.log; mutants.py; mutants.out; ledger-check.out
+8. advisory — two existing rows flip and both are named in Acceptance: W-179-b1 (next.test.ts), updated in behaviour 1's red commit (w512.test.ts imports the next-world fixture, so it is a sixteenth declared next-family file and the command runs at concurrency 16); W-547-b2, updated in behaviour 2's commit (its queue.yml is committed and its malformed queue now holds the spec start) — check: brief Files owned, Acceptance; single-next-w179.test.log; single-w547.test.log
+9. advisory — the pre-sign gate at this series (base 24ec115c, tree c70199c4, an empty HOME): check, typecheck, the w512.test.ts reads row (no unlisted line) and every owed test row, next.test.ts among them, all exit 0 in 7.1 minutes; lint, containment.test.ts and rules/tests.test.ts passed at the pre-fold tip (all.out), whose source is this tip's — check: gate.log; all.out; check.log; singles.out
+10. advisory — class census over the real officina, rerun at 24ec115c with the same output (sha256 0b97a08e…): none of the six order whys in 3,584 studio/ci logs; of the 152 greenlit records, W-610 is E1's now, W-512 is E1's ahead and W-488 is another lane's ahead; 132 are out of order, 17 unranked (folded ids), 0 from a broken input; with one engineering lane today the overlap refusal has no other lane to read — check: census.mts; census.out
+11. advisory — closed: Codex's fixture census (gpt-5.6-sol, read-only, over studio/briefs/W-512.md) lists two flips, W-547-b2 (named) and W-179-b1 (unnamed, and failing at the prototype tip); W-179-b1 is now folded into behaviour 1's red commit, named in Files owned and Acceptance, and passes at the tip and in the gate; its 32 must-stay-green rows include W-333-b1/b2, W-558-b1..b4/f2/f3, W-498-b1/f1..f4, W-430-b2..b5, W-547-b1/b5 and the queue-less next-world fixture — check: fixture-census.md sha256 aa1f27ce…; fix-w179.sh; edit-brief-w179.py
+12. advisory — the base moved from 13d358ec to 24ec115c by records only (SESSION-HANDOFF.md, opera/W-619.md, queue.yml, which now ranks W-512 right after W-610); the rebase was clean and the series was re-cut — check: brief Status, Prototype; prototype.mbox
+
+## Verdict
+
+passed — signed by the engineering spec signer (`architect`, `claude-opus-5-5`) for `studio/briefs/W-512.md` revision 1 at master 24ec115c: four behaviours (the order with its fail-closed reads, one spec ahead, the Files-owned overlap at branch, next --all queued), each with a recorded red replayed under certify's conditions, the prototype series sha256 2b97a4ef… at tip af0a7172, gated at tree c70199c4.

@@ -232,12 +232,17 @@ test("W-547-b2 behaviour 2: the locks are read from live state: a perform writin
   const file = { queues: [{ id: "e", lanes: [["E1", "W-1"], ["E2", "W-5"]] as [string, string | undefined][], next: ["W-1", "W-2", "W-5", "W-3", "W-4"].map((opus) => ({ opus, says: "", folded: [], nextTs: false })) }], halted: [], cut: [], deferred: [] };
   put(q.studio, "opera/W-903.md", "---\nid: \"W-903\"\ntitle: \"no state\"\nkind: \"feature\"\ncollegium: \"engineering\"\nprobationes: {}\n---\nno state\n");
   put(q.studio, "queue.yml", `queues:\n  engineering:\n    lanes: { E1: ${OPUS} }\n    next:\n      - { opus: ${OPUS}, says: "in flight" }\n      - { opus: W-903, says: "no state" }\nhalted: []\ncut: []\ndeferred: []\n`);
+  commit(q.repo, "studio: W-547 queue, no state"); // W-512: a start obeys the committed queue.yml only
   const norec = next(q, [OPUS, ...BUDGET]);
   assert.match(norec.kv.get("meanwhile") ?? "", /: held: the spec ahead cannot be read: the queued record opera\/W-903\.md has no state; no step is named/, ran("a queued record with no state holds the meanwhile line, never skipped", norec));
   put(q.studio, "queue.yml", "queues: [not, a, mapping]\n");
+  commit(q.repo, "studio: W-547 malformed queue");
   const badq = next(q, [OPUS, ...BUDGET]);
-  assert.match(badq.kv.get("meanwhile") ?? "", /: held: queue\.yml is malformed: /, ran("a malformed queue.yml holds the meanwhile line instead of naming a step", badq));
-  assert.equal(badq.kv.get("role"), "architect", ran("and the step next names is unchanged", badq));
+  // W-512 (behaviour 2): a malformed queue.yml now holds the start itself, so no wait and no meanwhile line is named; the
+  // held meanwhile form for a malformed queue stays pinned by aheadIn's own assertion above
+  assert.equal(badq.first, `next: ${OPUS} spec held`, ran("a malformed queue.yml holds the spec start (W-512)", badq));
+  // one-sided: the rest is readQueue's own problem text, pinned by W-333's and W-558's rows
+  assert.match(badq.kv.get("why") ?? "", /^no start is ordered while queue\.yml is malformed: /, ran("naming the queue's problem (W-512)", badq));
   assert.equal(m.nextEntry!(file, "W-1", (x) => (x === "W-2" ? "done" : "greenlit")), "W-3", "the next entry skips the opus itself, a done entry and another lane's opus");
   assert.equal(m.specAhead!({ step: "spec", status: "named", actor: "spec-reviewer", why: "", extra: [], order: order("spec-reviewer") } as never), "review", "a signed spec not yet reviewed is still ahead");
 });

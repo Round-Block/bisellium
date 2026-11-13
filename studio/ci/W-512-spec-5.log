@@ -1,0 +1,21 @@
+# opus: W-512
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1d0f9-c8fc-7180-a9d6-e9d37f587c16
+# outcome: passed
+# at: 2026-11-12T19:05:11.776Z
+# tree: tree:08ff6aa9038dde6bc659df615a232ee99ce72adc
+# brief: briefs/W-512.md blob:4ae06195fe69e4c6d485f2ab84ee8f660c41c9a7
+# ticket: {"opus":"W-512","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"24ec115c058d50f7b77724b3ebc13c9699e61c79","brief":"4ae06195fe69e4c6d485f2ab84ee8f660c41c9a7","at":"2026-11-12T19:05:11.236Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-512-spec-2.log #1: closed — `startOrder` now carries every other lane’s now, held or taken, while `laneOverlap` reads every open opus branch regardless of lane; W-512-b3 covers both an unclaimed take and an in-flight opus in no lane, with regression mutants killed.
+
+## Verdict
+The required shell check returned `22e1851b feat(W-512): behaviour 3, every opus in flight is read by its branch (spec r2 S1)`; revision 2 closes the blocker and states the required input boundaries and limits.
+VERDICT: PASS

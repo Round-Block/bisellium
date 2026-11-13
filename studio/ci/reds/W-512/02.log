@@ -1,0 +1,64 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-512-b2\s --import tsx packages/cli/src/w512.test.ts
+# exit: 1
+# at: 2026-11-12T19:15:30.630Z
+# sella: builder.W-512
+# tree: tree:1f1dfc8a97543415f6ccf7dbf0a25c8f03d03414
+# ticket: {"opus":"W-512","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-512/studio","head":"04e3a324dd63da366d1d3e29d161fd85ae1c736b","brief":"bef53aa3e4a41311799def4158c6b643b56e3326","at":"2026-11-12T19:15:29.494Z"}
+
+TAP version 13
+# Subtest: W-512-b2 behaviour 2: the spec rung starts only for a lane's opus or the one entry ahead of it, never two ahead
+not ok 1 - W-512-b2 behaviour 2: the spec rung starts only for a lane's opus or the one entry ahead of it, never two ahead
+  ---
+  duration_ms: 346.1541
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:19:4893'
+  failureType: 'testCodeFailure'
+  error: |-
+    two entries behind the lane's opus, no spec is ordered
+    --- exit 0
+    --- stdout
+    next: W-900 spec named
+    actor: architect
+    why: briefs/W-900.md is missing or lacks the six design-lex sections
+    role: architect
+    sella: architect
+    boot: bisellium context --sella architect --studio studio
+    budget_tokens: 100000
+    phase: spec
+    round: 1
+    inputs: briefs/W-900.md, opera/W-900.md#traditio
+    command: dispatch architect to sign the spec for W-900; close out with: bisellium verdict W-900 --round 1 --sella architect --outcome passed --phase spec --studio studio
+    health: no step recorded
+    meanwhile: agent wait on a dispatched session (builder, architect or ui-lead): records: file and land records from main: bisellium land <paths> --title <title> --sella producer --studio studio; no edit to the opus's Files owned or its worktree
+    meanwhile-locks: writer none · stash none · heavy 0 of 3 · ahead none
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 spec named'
+    - 'next: W-900 spec held'
+                        ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 spec held'
+  actual: 'next: W-900 spec named'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:88:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 360.516986

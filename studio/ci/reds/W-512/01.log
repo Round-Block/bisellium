@@ -1,0 +1,172 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-512-b1\s --import tsx packages/cli/src/w512.test.ts
+# exit: 1
+# at: 2026-11-12T19:15:09.696Z
+# sella: builder.W-512
+# tree: tree:4641451d222786e9b4adb9373c8646ea80a64968
+# ticket: {"opus":"W-512","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-512/studio","head":"4ae1ec5ba4a1c24ef7fc4fcd32dabe8e8de06bf1","brief":"bef53aa3e4a41311799def4158c6b643b56e3326","at":"2026-11-12T19:15:08.685Z"}
+
+TAP version 13
+# Subtest: W-512-b1 behaviour 1: branch is named only for a lane's opus; the spec ahead holds at branch and names the way past
+not ok 1 - W-512-b1 behaviour 1: branch is named only for a lane's opus; the spec ahead holds at branch and names the way past
+  ---
+  duration_ms: 748.319185
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:19:263'
+  failureType: 'testCodeFailure'
+  error: |-
+    a signed spec ranked behind the lane's opus holds at branch
+    --- exit 0
+    --- stdout
+    next: W-900 branch named
+    actor: producer
+    why: refs/heads/opus/W-900 does not exist
+    command: bisellium next W-900 --perform --expect branch
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 branch named'
+    - 'next: W-900 branch held'
+                          ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 branch held'
+  actual: 'next: W-900 branch named'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:29:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-512-b1 behaviour 1: an idle lane takes the highest entry, and a lower one holds at branch
+not ok 2 - W-512-b1 behaviour 1: an idle lane takes the highest entry, and a lower one holds at branch
+  ---
+  duration_ms: 737.240067
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:19:1330'
+  failureType: 'testCodeFailure'
+  error: |-
+    an idle lane takes the highest entry, not this one
+    --- exit 0
+    --- stdout
+    next: W-900 branch named
+    actor: producer
+    why: refs/heads/opus/W-900 does not exist
+    command: bisellium next W-900 --perform --expect branch
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 branch named'
+    - 'next: W-900 branch held'
+                          ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 branch held'
+  actual: 'next: W-900 branch named'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:42:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-512-b1 behaviour 1: an entry skipped for another lane's next.ts opus keeps its place and is taken before the entries below it
+not ok 3 - W-512-b1 behaviour 1: an entry skipped for another lane's next.ts opus keeps its place and is taken before the entries below it
+  ---
+  duration_ms: 734.991345
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:19:2169'
+  failureType: 'testCodeFailure'
+  error: |-
+    E2 skips the next.ts entry while E1 holds a next.ts opus, so it does not branch
+    --- exit 0
+    --- stdout
+    next: W-900 branch named
+    actor: producer
+    why: refs/heads/opus/W-900 does not exist
+    command: bisellium next W-900 --perform --expect branch
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 branch named'
+    - 'next: W-900 branch held'
+                          ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 branch held'
+  actual: 'next: W-900 branch named'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:53:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-512-b1 behaviour 1: the order fails closed: an unranked opus, an uncommitted queue.yml edit and a malformed queue.yml hold the start
+not ok 4 - W-512-b1 behaviour 1: the order fails closed: an unranked opus, an uncommitted queue.yml edit and a malformed queue.yml hold the start
+  ---
+  duration_ms: 740.888865
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:19:3413'
+  failureType: 'testCodeFailure'
+  error: |-
+    an unranked opus holds
+    --- exit 0
+    --- stdout
+    next: W-900 branch named
+    actor: producer
+    why: refs/heads/opus/W-900 does not exist
+    command: bisellium next W-900 --perform --expect branch
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 branch named'
+    - 'next: W-900 branch held'
+                          ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 branch held'
+  actual: 'next: W-900 branch named'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-512/packages/cli/src/w512.test.ts:67:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 0
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3123.070226

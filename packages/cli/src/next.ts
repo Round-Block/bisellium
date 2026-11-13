@@ -42,7 +42,7 @@ import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisell
 import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
-import { laneLines, readQueue } from "./queue.js";
+import { laneLines, QUEUE_FILE, readQueue, startOrder, type LaneHeld, type StartOrder } from "./queue.js";
 import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
 import { STEPS, checkCollection, loadMarker, loadOpusRecord, walkReal, walkStudio, type Marker, type Step } from "./inputs.js";
 import { ID_RE } from "./check.js";
@@ -558,6 +558,9 @@ export interface Facts {
   wtCiProblem(): string | undefined;
   /** W-206: the worktree's changed paths (porcelain, untracked included), split into the brief and spec logs, and the rest */
   wtChanges(): Changes;
+  /** W-512: where the opus stands in the queue's start order (`startOrder`), read from the main checkout's committed queue.yml;
+   *  `gather` always sets it; a hand-built Facts (a unit fixture) without it orders nothing */
+  order?(): StartOrder;
   /** W-293: the same split of the main checkout's changes */
   mainChanges(): Changes;
 }
@@ -798,7 +801,7 @@ const mergeOf = (f: Pick<Facts, "pr">): string | undefined => {
   return p.kind === "settled" ? p.pr.mergeOid : undefined;
 };
 
-export function gather(repo: string, studioAbs: string, id: string): Facts {
+export function gather(repo: string, studioAbs: string, id: string, states: Map<string, string> = new Map()): Facts {
   const manifest = readManifest(studioAbs);
   const realRepo = realpathSync(repo);
   const studioRel = relative(realRepo, realpathSync(studioAbs)).split("\\").join("/");
@@ -896,6 +899,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     }),
     wtChanges: memo(() => specChanges(wt.dir, studioRel, id)),
     mainChanges: memo(() => specChanges(repo, studioRel, id)),
+    order: memo(() => queueOrder(repo, studioAbs, studioRel, id, states)),
     replay: memo(() => {
       const brief = branch?.read(briefRel(id));
       return brief === undefined ? undefined : readReplay(brief, id, wt, repo);
@@ -1033,6 +1037,8 @@ export interface Derived {
   extra: [string, string][];
   /** W-377: the why is printed whole, however long (a ui pr or merge that waits names every ruling and path in it) */
   uncut?: true;
+  /** W-512: the hold is the queue's start order (`startOrder`): `next --all` prints it as queued, never a failure */
+  queued?: true;
 }
 
 /** W-298: the open petitiones naming `id`, in id order, from the main checkout's records (the ones `petitio` and the Inbox's `answer` write). Fails closed: a record that cannot be read may name this opus. */
@@ -1111,6 +1117,12 @@ export function deriveNext(f: Facts): Derived {
   // W-525: research takes no build ladder; a record already started keeps it
   if (state === "greenlit" && rec["kind"] === "research" && !tookLadder(rec) && f.tip === undefined)
     return hold("spec", `${id} is research and takes no build ladder; when its report is written: bisellium conclude ${id} --from <report> --decision <id> --sella <id> --studio ${f.studioRel}`);
+
+  // W-512 (D-181, spec-ahead meet 1109 (d)): an unstarted opus (greenlit, no opus/<id>) takes its spec rung only as a lane's
+  // opus or take, or the one entry ahead of it; any other is held here, before any spec order or signature ticket
+  const order = f.tip === undefined && state === "greenlit" ? f.order?.() : undefined;
+  // the hold names the rung the opus stands at: spec while its spec is owed, branch once it is signed (the rest derived unordered)
+  if (order?.kind === "refused") return { ...hold(deriveNext({ ...f, order: () => ({ kind: "free" }) }).step === "branch" ? "branch" : "spec", order.why), queued: true };
 
   // 2 spec (the committed trunk)
   // W-355: the kind and seat pairing come from the checkout that owns the spec evidence; an unreadable owner holds here
@@ -1227,6 +1239,11 @@ export function deriveNext(f: Facts): Derived {
       // D-039 §1: no new opus starts while a retro is owed
       const owing = retroHold(f);
       if (owing !== undefined) return hold("branch", owing);
+      // W-512 (D-181): branch starts a lane: only a lane's own opus or its take, never the spec ahead (a later entry held at spec, above)
+      if (order?.kind === "ahead") return { ...hold("branch", order.why), queued: true };
+      // W-512 (W-592's lane-start half, D-192): branch refuses while its Files owned overlap with an opus another lane holds in flight
+      const overlap = order?.kind === "now" ? laneOverlap(f, order.held) : undefined;
+      if (overlap !== undefined) return hold("branch", overlap);
       return { ...named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`, fixes), ticket: { action: "branch", round: 0 } };
     }
   }
@@ -2545,6 +2562,59 @@ function inputErrorOf(f: Facts): string | undefined {
   return undefined;
 }
 
+/**
+ * W-512: the start order of `id` (`startOrder`) over the main checkout's queue.yml, which must be committed: an edit not
+ * committed (or an untracked file) refuses every start, so the order a start obeys is the landed one (D-181 item 8).
+ * Each queued state is read once per process through `states` (`queuedState`, which throws on an unreadable record).
+ */
+function queueOrder(repo: string, studioAbs: string, studioRel: string, id: string, states: Map<string, string>): StartOrder {
+  const rel = `${studioRel}/${QUEUE_FILE}`;
+  const st = git(repo, ["status", "--porcelain", "--untracked-files=all", "--", rel]);
+  if (st.error !== undefined || st.status !== 0) return { kind: "refused", why: `the queue order cannot be read: git status ${rel} exited ${st.status ?? "without status"}` };
+  if (st.stdout.trim() !== "") return { kind: "refused", why: `${rel} has an edit that is not committed; a start obeys the landed order: land it first` };
+  return startOrder(readQueue(studioAbs, repo), id, (o) => {
+    const known = states.get(o);
+    if (known !== undefined) return known;
+    const s = queuedState(studioAbs, o, repo);
+    states.set(o, s);
+    return s;
+  });
+}
+
+/**
+ * W-512 (W-592's lane-start half, D-192): why `f.id` may not branch while an opus in flight has Files owned that overlap its
+ * own, or undefined. Its own Files owned are the main checkout's signed brief (`branch` commits it). An opus is in flight
+ * once refs/heads/opus/<it> exists and its main record is open (greenlit up to review), whatever queue.yml's lane field
+ * says (spec r2 S1): every one is read, and `lanes` (every other lane's now, held or taken) only names its lane. Its Files
+ * owned are that branch's committed brief (the blob its spec gate judged). Two spans overlap when equal, or when one ends
+ * in `/` and the other opens with it; a glob is not expanded. Each read fails closed; a ref with no record is not an opus.
+ */
+function laneOverlap(f: Facts, lanes: LaneHeld[]): string | undefined {
+  const own = f.work.read(briefRel(f.id));
+  if (own === undefined) return `${briefRel(f.id)} cannot be read in the main checkout, so its Files owned cannot be checked against the opera in flight (W-592)`;
+  const mine = ownedFiles(own);
+  const meets = (a: string, b: string): boolean => a === b || (a.endsWith("/") && b.startsWith(a)) || (b.endsWith("/") && a.startsWith(b));
+  const listed = git(f.repo, ["for-each-ref", "--format=%(refname)", "refs/heads/opus/"]);
+  if (listed.error !== undefined || listed.status !== 0) return `the opus branches cannot be listed (git for-each-ref exited ${listed.status ?? "without status"}), so ${f.id}'s Files owned cannot be checked against the opera in flight (W-592)`;
+  const hits: string[] = [];
+  for (const ref of listed.stdout.split("\n").filter(Boolean).sort((a, b) => a.localeCompare(b, "en", { numeric: true }))) {
+    const x = ref.startsWith("refs/heads/opus/") ? ref.slice("refs/heads/opus/".length) : "";
+    if (!ID_RE.test(x)) return `git listed an opus branch whose id is outside the opus grammar, so ${f.id}'s Files owned cannot be checked against the opera in flight (W-592)`;
+    if (x === f.id) continue;
+    const main = laneRecord(f.studioAbs, x, "allowed", f.repo);
+    if ("error" in main) return `${recordRel(x)} cannot be read (${main.error}), so ${x}'s Files owned cannot be checked against ${f.id}'s (W-592)`;
+    if (main.record === undefined || !CONFLICT_OPEN_STATES.has(main.record["state"] as string)) continue;
+    const theirs = git(f.repo, ["cat-file", "blob", `${ref}:${join(f.studioRel, briefRel(x))}`]);
+    if (theirs.error !== undefined || theirs.status !== 0) return `${briefRel(x)} is not a readable blob on ${ref}, so its Files owned cannot be checked against ${f.id}'s (W-592)`;
+    const owned = ownedFiles(theirs.stdout);
+    const paths = mine.filter((m) => owned.some((t) => meets(m, t)));
+    const lane = lanes.find((h) => h.opus === x)?.lane;
+    if (paths.length > 0) hits.push(`${x} ${lane === undefined ? "in no lane" : `in lane ${lane}`}: ${paths.map((p) => `\`${clean(p)}\``).join(", ")}`);
+  }
+  if (hits.length === 0) return undefined;
+  return `${f.id}'s Files owned overlap with an opus in flight: ${hits.join("; ")}; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`;
+}
+
 /** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */
 function queuedState(studioAbs: string, id: string, repo: string): string {
   // W-558 (W-559 3): the opus record loader; absent, unreadable, no front matter, or a state outside STATES throws
@@ -3428,6 +3498,7 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
   const lines: string[] = [];
   let failed = false;
   let open = 0;
+  const states = new Map<string, string>();
   for (const id of ids) {
     const state = recordOf(fsSrc(studioAbs), id)?.["state"];
     if (typeof state !== "string" || !STATES.some((s) => s.id === state)) {
@@ -3438,7 +3509,7 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
     if (!OPEN_STATES.has(state)) continue;
     open++;
     try {
-      const f = gather(repo, studioAbs, id);
+      const f = gather(repo, studioAbs, id, states);
       // the refusal next <opus> makes first: a record in neither master nor opus/<id> is an unknown opus, never derived
       if (f.trunkRecord === undefined && f.branchRecord === undefined) {
         failed = true;
@@ -3454,8 +3525,9 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
         continue;
       }
       // a held derivation is printed as next <opus> prints it, and the run exits 1: something must be fixed or decided
-      if (d.status === "held") failed = true;
-      lines.push(`next: ${id} ${d.step} ${d.status} · actor: ${d.actor} · why: ${one(d.why)} · traditio: ${one(handover.line)}`);
+      // W-512: an order hold is the queue working as ruled, printed as queued: it fails nothing
+      if (d.status === "held" && d.queued !== true) failed = true;
+      lines.push(`next: ${id} ${d.step} ${d.queued === true ? "queued" : d.status} · actor: ${d.actor} · why: ${one(d.why)} · traditio: ${one(handover.line)}`);
     } catch (e) {
       failed = true;
       lines.push(`next: ${id} failed · why: ${one((e as Error).message)}`);

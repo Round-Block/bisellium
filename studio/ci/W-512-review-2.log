@@ -1,0 +1,21 @@
+# opus: W-512
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1d1be-3ce2-7f43-b08c-e6f6eec42c02
+# outcome: failed
+# at: 2026-11-12T22:43:25.116Z
+# tree: tree:1ea512f6ba067a370cdfdfadbb54f227b92bbc5f
+# brief: briefs/W-512.md blob:bef53aa3e4a41311799def4158c6b643b56e3326
+# ticket: {"opus":"W-512","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-512/studio","head":"84c8a3d5ea4647fb0d17802f614652002c6eda73","brief":"bef53aa3e4a41311799def4158c6b643b56e3326","at":"2026-11-12T22:41:33.819Z"}
+
+## Findings
+1. blocking — packages/cli/src/queue.ts:262 Reached by the earlier finding’s class: after the target is found, an unreadable later lane returns the partial `out` instead of dropping only that lane and continuing, so valid still-later lane nows disappear from `StartOrder.held`; `laneOverlap` then wrongly reports an overlapping in-flight opus as “in no lane,” contrary to brief:37 within brief:111’s domain. [severity: S1] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w512.test.ts: add a three-lane b3 row with the target first, a malformed lower entry reached by E2, and an overlapping in-flight E3 opus; assert the hold names lane E3
+
+## Earlier findings
+- ci/W-512-review-1.log #1: closed — packages/cli/src/queue.ts:344 passes the target to the lazy lane walk, and the new W-512-b1 rows pin direct `next`, `--perform`, `next --all`, and the spec-ahead path against lower malformed records
+
+## Verdict
+The original refusal is fixed, but the partial-return sibling still corrupts the required overlap lane attribution.
+VERDICT: FAIL
