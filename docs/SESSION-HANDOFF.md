@@ -56,7 +56,7 @@ D-193 replaces D-178: no per-opus exemptions; entries are product (M4 path) or p
 
 D-201 (Patron 11-13): keep D-194's one ranked list (a single ranked queue); W-595 right after W-610; E2 (second engineering lane) and a second UI lane open on the qa-lead's reading at a daily retro. D-204: the daily retro no longer holds; E2 and UI2 open now (lanes-now-meet-1113).
 
-In flight: W-610 (build review before the full ci; greenlit on master until merge): ci passed 0576b004; review r3 found a 3rd S1 of its class (light-gates.ts:170), unrecorded; the architect's class loop takes it (w610-deadlock-meet-1113b). Its checkout is a clone at .worktrees/W-610: run `next` only from main. Hotfix (D-204): #1199 was refused by certify (not an opus branch); the 11-12 daily retro is a hand entry (D-205).
+In flight: W-610 (build review before the full ci; greenlit on master until merge): ci passed 0576b004; review r3 found a 3rd S1 of its class (light-gates.ts:170), unrecorded; its r6 class fix is prepared, red then green (w610-r6-meet-1113: it goes in even if r3 passes). Its checkout is a clone at .worktrees/W-610: run `next` only from main. Hotfix (D-204): #1199 was refused by certify (not an opus branch); the 11-12 daily retro is a hand entry (D-205).
 
 Off the ladder: until W-622 (opus checkouts as local clones), a new checkout is `git clone --local`, plus `git -C <clone> fetch origin master:master`; for a locked opus worktree, move the folder aside and put the clone at .worktrees/<id>; after each clone commit, `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 stays greenlit on master, parked by D-181.
 
@@ -64,7 +64,7 @@ Greenlit ahead of build: W-503 (the Home screen): the Patron's four calls are D-
 
 Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Meets: ~/.bisellium-evidence/*-meet-11*/; leads-settled calls need no Patron (D-189).
 
-Next session: W-630 (the D-204 hotfix as an opus) in E3, after W-610 hands over next.ts and retro.ts; then lanes per lanes-now-meet-1113: E1 W-610 class loop, E3 (the process lane, D-193) W-595 (queue entry classes) then W-624 (pre-sign gate branch check), UI2 the next UI entry (W-503 after W-624). Filed W-625 to W-629 (boot caps, prune, fresh review session, lex §9 drift, guard background run); file SESSION-HANDOFF.md into source_excludes (handoff-excludes-meet-1113).
+Next session: E1 W-610: record r3 by the manual fresh-session path (W-610-spec/r6/ladder-brief-record-r3.md), the architect re-signs r6, and W-610 hands over next.ts and retro.ts to W-630 by a recorded handoff (w610-r6-meet-1113); E3 W-630 (the D-204 hotfix as an opus; next names its spec), then W-595 (queue entry classes); UI1 W-488 (comments on UI captures), UI2 W-503 after W-624. File SESSION-HANDOFF.md into source_excludes. An 11-13 daily-retro hand entry may be owed (D-205).
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md beside it.
 
