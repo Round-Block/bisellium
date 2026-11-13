@@ -164,3 +164,40 @@ test("W-488-b3 behaviour 3: three injected local routes preserve bounded capture
   assert.match(serve, /readUiCaptureImage/, "serve injects the manifest-bound immutable image reader");
   assert.match(serve, /appendUiCaptureComment/, "serve injects the append-only comment writer");
 });
+
+test("W-488-b4 behaviour 4: only comments bound to the reviewed capture set feed the one review gate", async () => {
+  const packetPath = join(ROOT, "scripts/review-packet.mjs");
+  const source = readFileSync(packetPath, "utf8");
+  assert.match(source, /ui-comments\.txt/, "the existing build-review packet receives bounded capture comments");
+  assert.match(source, /readUiCaptureReview/, "review reuses the capture-set binding reader instead of trusting browser data");
+  assert.match(source, /selectedSet\.current/, "a capture from an older tree cannot feed the current review");
+  const { captureCommentFact } = await import(pathToFileURL(packetPath).href) as { captureCommentFact: (comments: unknown[]) => string };
+  assert.equal(captureCommentFact([]), "Capture comments bound to this served set: 0\nNo capture comments.\n", "zero comments is explicit");
+  const comments = [
+    { id: "UC-1", author: "patron", image: "board-1280.png", viewport: { width: 1280, height: 900 }, selector: ".board__card", state: "settled", pin: { x: 0.25, y: 0.5 }, body: "First note." },
+    { id: "UC-2", author: "design-lead", image: "board-390.png", viewport: { width: 390, height: 900 }, selector: "#board", state: "phone", pin: { x: 0.75, y: 0.2 }, body: "Second note." },
+  ];
+  const text = captureCommentFact(comments);
+  assert.match(text, /^Capture comments bound to this served set: 2$/m, "many comments are counted once");
+  assert.match(text, /^1\. Patron — board-1280\.png — 1280x900 — \.board__card — settled — pin 25%,50%\nFirst note\.$/m, "one comment carries every visual binding");
+  assert.match(text, /^2\. Design lead — board-390\.png — 390x900 — #board — phone — pin 75%,20%\nSecond note\.$/m, "comments keep append order");
+
+  const { appendUiCaptureComment, readUiCaptureComments, readUiCaptureSets } = await captureModule();
+  const root = fixture();
+  try {
+    const listed = readUiCaptureSets(root, TREE);
+    assert.ok("sets" in listed);
+    const set = listed.sets[0]!;
+    const shot = set.shots[0]!;
+    const written = appendUiCaptureComment(root, TREE, {
+      author: "patron", opus: set.opus, tree: set.tree, designDigest: set.designDigest, manifestSha256: set.manifestSha256,
+      image: shot.name, imageSha256: shot.sha256, viewport: { width: shot.width, height: shot.height },
+      selector: ".board__card", state: "settled", pin: { x: 0.5, y: 0.5 }, body: "Bound to these image bytes.",
+    }, { now: new Date("2026-11-13T04:05:06.000Z"), id: "UC-image" });
+    assert.equal(written.ok, true);
+    const changed = { ...set, shots: [{ ...shot, sha256: "f".repeat(64) }] };
+    assert.deepEqual(readUiCaptureComments(root, changed), { comments: [] }, "a comment whose image hash no longer matches is left out of review");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
