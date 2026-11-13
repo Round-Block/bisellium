@@ -1592,7 +1592,8 @@ test("W-630-b1 behaviour 1: a daily retro owed holds no new spec and the advisor
   assert.equal(named.first, `next: ${UNSIGNED} spec named`, ran("a retro owed: the new spec is named, not held", named));
   assert.equal(named.status, 0, ran("a retro owed: exit 0", named));
   assert.doesNotMatch(named.out, /daily retro owed/, ran("a retro owed: no hold is stated", named));
-  assert.match(named.out, new RegExp(`^daily-retro: ${previousDay()} step 1 of 3: a ladder-runner runs: bisellium retro --daily --studio `, "m"), ran("a retro owed: the advisory line names the day and the run", named));
+  const whole = `daily-retro: ${previousDay()} step 1 of 3: a ladder-runner runs: bisellium retro --daily --studio studio; then the qa-lead writes the proposals under "Proposed improvements" in studio/acta/improvements.md; then a ladder-runner lands the entry: bisellium land studio/acta/improvements.md --title 'chore(studio): daily retro ${previousDay()}' --sella producer --studio studio`;
+  assert.match(named.out, new RegExp(`^${whole.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m"), ran("a retro owed: the advisory line names the day and the run", named));
 
   const bad = world("w630-b1-bad", "done");
   addSpecced(bad);
