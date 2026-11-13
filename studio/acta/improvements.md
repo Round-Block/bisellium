@@ -1331,3 +1331,15 @@ Classes in more than one opus, 2026-10-29..2026-11-11:
 - spec×input-domain-missing-or-unenforceable (W-573 spec r3 S1; 13 opera) and W-573's seven spec rounds (262 min cycle): none new, because the class is not owed (a lesson names its cause fix) and the round count is what W-594 (brief-first spec review) targets. Owner: design lead.
 - workflow×amend-title-over-8-words and the architect r4 dispatched before reading `next` (current-state.md 11-11 14:20Z): none, because amend refuses an over-long title before writing (one retry) and the dispatch error is one occurrence that W-537's checked brief template and W-545's one-perform build rung both remove at the source.
 - UI and design-quality classes: none, because no UI opus ran on 11-11 (W-589, Instructions renders each collegium's spec signer, is an engineering feature).
+
+### 2026-11-12
+
+retro --daily refused, no measured section; hand entry per D-204 and D-205.
+
+Hand-written by the clerk on the qa-lead's order (leads' meet unblock-meet-1113, 3/3): `npm run -s bisellium -- retro --daily --studio studio` at 2026-11-13T11:10:39Z exited 2: `ci/W-563-tests-90514cbc.log: a gate log carries an "exit code: <n>" line in its head` (log ~/.bisellium-evidence/unblock-meet-1113/retro-daily-fresh.log). No table, count or class is given here, and none will be added later. Cost: `retro --daily` now refuses 2026-11-12 as already held (packages/cli/src/retro.ts:1477), so that day's measured section is lost unless a later decision removes this entry; the next real run's 14-day lookback (retro.ts:1179) still covers the 11-12 rounds.
+
+#### Proposed improvements
+
+- The D-204 hotfix (dailyHold advisory; PR #1199 was refused by certify because its branch is not an opus) becomes its own opus, first in E3, reusing its reviewed commits with fresh reds and a fresh review. Owner: eng-lead.
+- W-621 (retro --daily reports an unparseable log instead of refusing) follows soon after, so this hand entry does not repeat past 11-13. Owner: ops-lead.
+- The gate-log reader fix stays in W-610. Owner: eng-lead.
