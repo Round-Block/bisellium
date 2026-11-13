@@ -1,6 +1,6 @@
 queues:
   engineering:
-    lanes: { E1: W-512 }
+    lanes: { E1: W-610, E3: ~ }
     next:
       - { opus: W-512, says: "next refuses out-of-order starts and a lane branch whose Files owned overlap another lane's in-flight opus; opens the lanes (D-182); right after W-610 (lanes-meet-1112)" }
       - { opus: W-610, says: "build review before the full ci; brief r4 first fixes the daily retro's gate-log reader (exit code forms); cause fix in r4; above W-595 (D-197, D-198)" }
@@ -145,7 +145,7 @@ queues:
     lanes: { R1: ~ }
     next: []
   ui:
-    lanes: { UI1: ~ }
+    lanes: { UI1: ~, UI2: ~ }
     next:
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
       - { opus: W-488, says: "comment on served UI captures; UI2, no Home files (D-192)" }
