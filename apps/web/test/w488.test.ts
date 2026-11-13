@@ -60,3 +60,92 @@ test("W-488-b1 behaviour 1: the browser lists only bounded capture manifests wit
     rmSync(many, { recursive: true, force: true });
   }
 });
+
+test("W-488-b2 behaviour 2: a pin appends one bounded comment bound to selector viewport state and image bytes", async () => {
+  const source = readFileSync(MODULE, "utf8");
+  assert.match(source, /export function appendUiCaptureComment/, "the capture browser has one append-only bounded comment writer");
+  const { appendUiCaptureComment, readUiCaptureComments, readUiCaptureSets } = await captureModule();
+  const root = fixture();
+  try {
+    const listed = readUiCaptureSets(root, TREE);
+    assert.ok("sets" in listed);
+    const set = listed.sets[0]!;
+    assert.deepEqual(readUiCaptureComments(root, set), { comments: [] }, "zero comments stays an explicit empty list");
+    const first = appendUiCaptureComment(
+      root,
+      TREE,
+      {
+        author: "patron",
+        opus: set.opus,
+        tree: set.tree,
+        designDigest: set.designDigest,
+        manifestSha256: set.manifestSha256,
+        image: "board-390.png",
+        imageSha256: set.shots[0]!.sha256,
+        viewport: { width: 390, height: 900 },
+        selector: '[data-card-id="W-004"]',
+        state: "sidebar collapsed",
+        pin: { x: 0.25, y: 0.5 },
+        body: "Keep the reason with the card.",
+      },
+      { now: new Date("2026-11-13T02:03:04.000Z"), id: "UC-1" },
+    );
+    assert.equal(first.ok, true, "one valid pin is appended");
+    const second = appendUiCaptureComment(
+      root,
+      TREE,
+      {
+        author: "design-lead",
+        opus: set.opus,
+        tree: set.tree,
+        designDigest: set.designDigest,
+        manifestSha256: set.manifestSha256,
+        image: "board-390.png",
+        imageSha256: set.shots[0]!.sha256,
+        viewport: { width: 390, height: 900 },
+        selector: ".board__card-title",
+        state: "settled",
+        pin: { x: 1, y: 0 },
+        body: "This title needs one more complete line.",
+      },
+      { now: new Date("2026-11-13T02:04:05.000Z"), id: "UC-2" },
+    );
+    assert.equal(second.ok, true, "many comments append independently");
+    const comments = readUiCaptureComments(root, set);
+    assert.ok("comments" in comments);
+    assert.equal(comments.comments.length, 2, "one and many are counted from valid records");
+    assert.deepEqual(
+      comments.comments[0],
+      {
+        version: 1,
+        kind: "ui_capture_comment",
+        id: "UC-1",
+        at: "2026-11-13T02:03:04.000Z",
+        author: "patron",
+        opus: "W-1",
+        tree: TREE,
+        designDigest: set.designDigest,
+        manifestSha256: set.manifestSha256,
+        image: "board-390.png",
+        imageSha256: set.shots[0]!.sha256,
+        viewport: { width: 390, height: 900 },
+        selector: '[data-card-id="W-004"]',
+        state: "sidebar collapsed",
+        pin: { x: 0.25, y: 0.5 },
+        body: "Keep the reason with the card.",
+      },
+      "the record carries every binding in plain data",
+    );
+    const stale = appendUiCaptureComment(root, `tree:${"3".repeat(40)}`, { ...first.record!, body: "stale tab" });
+    assert.deepEqual(stale, { ok: false, error: "capture set changed; reload before commenting" }, "an older tab cannot append onto a different set");
+    const huge = appendUiCaptureComment(root, TREE, { ...first.record!, body: "x".repeat(1001) });
+    assert.deepEqual(huge, { ok: false, error: "comment must be 1 to 1000 characters without control characters" }, "the comment body is bounded");
+    const timeline = join(root, "timeline/patron.jsonl");
+    writeFileSync(timeline, readFileSync(timeline, "utf8") + '{"kind":"ui_capture_comment"\n');
+    const malformed = readUiCaptureComments(root, set);
+    assert.ok("problems" in malformed, "an unparseable line naming a capture comment fails closed");
+    assert.match(malformed.problems.join("\n"), /capture comment line 3: record is not valid JSON/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
