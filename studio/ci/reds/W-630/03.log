@@ -1,0 +1,41 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-630-b3\s --import tsx packages/cli/src/retro-daily.test.ts
+# exit: 1
+# at: 2026-11-13T12:59:17.059Z
+# sella: builder.W-630
+# tree: tree:7d33320172f2513d3f1283882d1dbdef6d0419b3
+# ticket: {"opus":"W-630","step":"reds","action":"red","round":3,"actor":"builder","studio":"studio","head":"bc387f0b5c786c8e63e26a465977bbd9590ba95a","brief":"9fc5c128b9d555182b51f6c2747398a9aca798de","at":"2026-11-13T12:59:15.738Z"}
+
+TAP version 13
+# Subtest: W-630-b3 behaviour 3: the owed-day count is right across year 0099 to 0100, never remapped to 1999
+not ok 1 - W-630-b3 behaviour 3: the owed-day count is right across year 0099 to 0100, never remapped to 1999
+  ---
+  duration_ms: 42.144447
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-630/packages/cli/src/retro-daily.test.ts:50:2810'
+  failureType: 'testCodeFailure'
+  error: |-
+    owed days across 0099 to 0100
+    
+    undefined !== 4
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 4
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-630/packages/cli/src/retro-daily.test.ts:281:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 276.271697

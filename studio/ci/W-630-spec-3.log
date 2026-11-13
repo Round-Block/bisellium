@@ -1,0 +1,28 @@
+# opus: W-630
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-13T12:20:17.142Z
+# tree: tree:c650b5e16606ce86beee56c1cbe81eefbed9ec39
+# brief: briefs/W-630.md blob:9fc5c128b9d555182b51f6c2747398a9aca798de
+# ticket: {"opus":"W-630","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-630/studio","head":"478233bb29a82314cfd185bd21a2cc15a8424a61","brief":"9fc5c128b9d555182b51f6c2747398a9aca798de","at":"2026-11-13T12:20:11.150Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-630-spec/promise-ledger-r2.md
+
+## Findings
+
+1. advisory — the design is the reviewed hotfix (04badd74..227ff895, Codex PASS and fix check PASS on PR #1199, context only); the prototype's source at stage 3 equals 227ff895's next.ts and retro.ts and stage 2's retro.ts equals 962c0095's, so the build cherry-picks and splits by behaviour; the test files differ from the hotfix's only by the W-630 row names, the new row W-630-b1 and W-459-b3's stage-independent line pattern — check: prototype-src.diff, test-vs-hotfix.diff, stages.sh
+2. advisory — each red fails by assertion on master 0695d050 with the final test rows (b1 at "a retro owed: the new spec is named, not held", b2 at "4 days owed: the line says overdue loudly", b3 at "owed days across 0099 to 0100") and on its stage (b2 on stage 1, b3 on stage 2); the host replay classifier accepts all five; each behaviour's rows pass at its stage — check: red-b1-master.out, red-b2-master.out, red-b3-master.out, red-b2-stage1.out, red-b3-stage2.out, red-accept.out, proto-b1-stage1.out, proto-b2-stage2.out, proto-b3-stage3.out
+3. advisory — must-stay-green on the prototype: next-done.test.ts 40 of 40, retro-daily.test.ts whole, w547.test.ts whole, containment.test.ts whole with no pin change; the flips fail unedited as Acceptance names them (W-459-b3, W-530-b1 with behaviour 1; W-530-b4 only with behaviour 2's code); retro-daily.test.ts passes unedited — check: next-done-proto.out, retro-daily-proto.out, w547-proto.out, containment-proto.out, next-done-unedited-proto.out, next-done-unedited-b2-proto.out, retro-daily-unedited-proto.out
+4. advisory — the Codex test check lists three flips, every one named (Unnamed: None), and three must-stay-green rows (W-530-b2, W-547-b1, W-163-b6), each passing in the full prototype runs — check: fixture-census.md
+5. advisory — docs/NEXT.md still described the hold the hotfix removed; this opus owns that section's correction (not code-owned), beyond the hotfix's diff — check: prototype-docs.diff, brief Interfaces
+6. advisory — the build needs W-610's recorded handover of next.ts and retro.ts first (engineering lex §2, one opus owns its declared files); not done here, Defaults 3 — check: none: a recorded handoff of next.ts and retro.ts from W-610 to W-630
+7. advisory — the brief passes briefAdmissionProblems and the ledger covers the three promise lines, each stated limit and every Input domain row; lint, format and typecheck pass on the touched files — check: admission.out, admission-r2.out, promise-ledger.md, lint-proto.out, format-proto.out, typecheck-proto.out
+8. advisory — revision 1 failed ready's W-473 rule (each genuine red declares one failing assertion), which the kept admission script did not run; the script now adds declaredRedProblems and reproduced the three refusals, and revision 2 adds one line per behaviour after its Genuine red marker (pinned by `W-630-b1` "a retro owed: the new spec is named, not held", `W-630-b2` "4 days owed: the line says overdue loudly", `W-630-b3` "owed days across 0099 to 0100"); no other change; each kept red output fails at its declared pin by redFailsAt — check: admission-r2-before.out, admission-r2.out, pins-r2.out
+9. advisory — the round-2 signature cited the round-1 promise ledger, whose brief line cites the three added lines shifted (brief:86, 110, 118); the kept ledger-r2.py remaps every cite to revision 2 (brief:87, 113, 121; no other cite moves), kept as promise-ledger-r2.md — check: ledger-r2.py, promise-ledger-r2.md
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 2 at `studio/briefs/W-630.md` (revision 1 plus the three W-473 declarations, a format-only edit, D-076 B), opus/W-630 at 478233bb (the reds and prototype on 0695d050).

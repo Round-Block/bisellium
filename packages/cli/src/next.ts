@@ -1217,7 +1217,7 @@ export function deriveNext(f: Facts): Derived {
   if (uiDone !== undefined && uiDone.outcome !== "passed" && uiOpen())
     return dispatch(f, "spec", `${uiDone.log} records the ui-lead's outcome ${uiDone.outcome} on the current brief; the signer revises the brief and signs again`, { phase: "spec", round: spec.maxRound + 1, resume: true, inputs: [briefRel(id), uiDone.log], signer, ...(pre ? {} : { studio: join(".worktrees", id, f.studioRel) }) });
   if (!spec.ok) {
-    // W-530 (D-188): a missing daily retro holds new work only: an opus with no branch and no spec log, at the start of its spec
+    // W-530 (D-188), D-204: only an unreadable daily retro tracker holds new work: an opus with no branch and no spec log, at the start of its spec
     if (pre && !spec.anyLog) {
       const owing = dailyHold(f);
       if (owing !== undefined) return hold("spec", owing);
@@ -1671,11 +1671,10 @@ function retroHold(f: Facts): string | undefined {
   return undefined;
 }
 
-/** W-459, W-530 (D-188): why a new spec may not start: the daily retro of the previous UTC day is owed, or its tracker cannot be read. No time limit. */
+/** W-459, W-530 (D-188), D-204: why a new spec may not start: only a daily retro tracker that cannot be read. A retro owed holds nothing: `dailyLine` says it is owed. */
 function dailyHold(f: Facts): string | undefined {
   const daily = f.daily();
-  if ("error" in daily) return `the daily retro tracker cannot be read: ${daily.error}`;
-  return daily.owed === undefined ? undefined : `daily retro owed: ${DAILY_TRACKER} has no entry for ${daily.owed}; a ladder-runner runs bisellium retro --daily --studio ${f.studioRel} before a new spec starts`;
+  return "error" in daily ? `the daily retro tracker cannot be read: ${daily.error}` : undefined;
 }
 
 /** After done: the retro, then the checkpoint, complete once the trunk record is done (W-299: no handoff edit is asked; the done perform carries the history row, W-214). */
@@ -2531,7 +2530,9 @@ function dailyLine(repo: string, studioAbs: string, studioRel: string, nowMs: nu
   if (at === undefined) return undefined;
   const tracker = `${studioRel}/${DAILY_TRACKER}`;
   const steps = [`a ladder-runner runs: bisellium retro --daily --studio ${studioRel}`, `the qa-lead writes the proposals under "Proposed improvements" in ${tracker}`, `a ladder-runner lands the entry: bisellium land ${tracker} --title 'chore(studio): daily retro ${at.day}' --sella producer --studio ${studioRel}`];
-  return `daily-retro: ${at.day} step ${at.step} of 3: ${steps.slice(at.step - 1).join("; then ")}`;
+  // D-204: owed more than 3 days, the line says so loudly; it still holds nothing
+  const overdue = at.owedDays !== undefined && at.owedDays > 3 ? ` OVERDUE ${at.owedDays} days (does not hold):` : "";
+  return `daily-retro: ${at.day}${overdue} step ${at.step} of 3: ${steps.slice(at.step - 1).join("; then ")}`;
 }
 
 /** W-547: the meanwhile lines beside the wait `d` names (none when the caller acts next): the retro owed, the locks and the spec ahead. */

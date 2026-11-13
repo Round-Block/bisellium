@@ -382,20 +382,20 @@ halt (`resume_when` of `never`) holds and names no verb, as a malformed one does
 with neither `start` nor `builder_runtime` and no branch holds at `spec` and names `bisellium conclude`: research takes
 no build ladder, and no ticket is issued. A concluded record is complete, with no retro owed.
 
-## The daily retro (W-530, D-188)
+## The daily retro (W-530, D-188, D-204)
 
-A missing entry for the previous UTC day in `<studio>/acta/improvements.md` holds an
-opus only at the start of its spec: `next <opus>` reads `spec held` while the opus has
-no `opus/<id>` branch and no spec log, with no time limit, and so does a tracker that
-cannot be read. An opus with a signed spec is never held by it; a cascade retro owed
-still holds at `branch` (D-039). While any step is left, `next <opus>`'s report, the output `render` builds, and `next --all`
-print one line that holds nothing, `daily-retro: <day> step <k> of 3: <step>; then
-<step>`, naming from the first step left: a ladder-runner runs `retro --daily`, the
-qa-lead writes the proposals under `#### Proposed improvements` (each the
-change, its evidence and an owner, or "none, because"), and a ladder-runner lands the
-entry. `--track`, a performed step, an `--expect` refusal and the step-health lines do not
-carry it. `check` warns (`retro.daily.missing`, `retro.daily.proposals`) and refuses
-neither. An entry from before W-530, with no such heading, asks for no proposals.
+A missing entry for the previous UTC day in `<studio>/acta/improvements.md` holds no opus (D-204): `next <opus>` names the
+step it would name with the entry filed, and the line below says the retro is owed. Only a tracker that cannot be read
+holds, and only an opus at the start of its spec: `next <opus>` reads `spec held` while the opus has no `opus/<id>` branch
+and no spec log. An opus with a signed spec is never held by it; a cascade retro owed still holds at `branch` (D-039).
+While any step is left, `next <opus>`'s report, the output `render` builds, and `next --all` print one line that holds
+nothing, `daily-retro: <day> step <k> of 3: <step>; then <step>`, naming from the first step left: a ladder-runner runs
+`retro --daily`, the qa-lead writes the proposals under `#### Proposed improvements` (each the change, its evidence and an
+owner, or "none, because"), and a ladder-runner lands the entry. While the run is owed and more than 3 days are owed,
+counted from the day after the tracker's newest entry through the previous UTC day, the line reads
+`daily-retro: <day> OVERDUE <n> days (does not hold): step 1 of 3: …`; it still holds nothing. `--track`, a performed
+step, an `--expect` refusal and the step-health lines do not carry it. `check` warns (`retro.daily.missing`,
+`retro.daily.proposals`) and refuses neither. An entry from before W-530, with no such heading, asks for no proposals.
 
 The entry is a tracked edit in the main checkout until it lands. As an unstaged edit it
 stops none of the `branch`, `merge` and `done` performs and rides none of their commits.

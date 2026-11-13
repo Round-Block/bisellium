@@ -1,0 +1,55 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-630-b1\s --import tsx packages/cli/src/next-done.test.ts
+# exit: 1
+# at: 2026-11-13T12:56:12.870Z
+# sella: builder.W-630
+# tree: tree:e89d32a3e140bfd1a9cc36190b61b2afba3f5239
+# ticket: {"opus":"W-630","step":"reds","action":"red","round":1,"actor":"builder","studio":"studio","head":"5c3de9b532cf894b92f70781da91d9bb092d3567","brief":"9fc5c128b9d555182b51f6c2747398a9aca798de","at":"2026-11-13T12:56:08.863Z"}
+
+TAP version 13
+# Subtest: W-630-b1 behaviour 1: a daily retro owed holds no new spec and the advisory line names it; an unreadable tracker still holds
+not ok 1 - W-630-b1 behaviour 1: a daily retro owed holds no new spec and the advisory line names it; an unreadable tracker still holds
+  ---
+  duration_ms: 2759.262524
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-630/packages/cli/src/next-done.test.ts:53:2691'
+  failureType: 'testCodeFailure'
+  error: |-
+    a retro owed: the new spec is named, not held
+    --- exit 1
+    --- stdout
+    next: W-902 spec held
+    actor: producer
+    why: daily retro owed: acta/improvements.md has no entry for 2026-11-12; a ladder-runner runs bisellium retro --daily --studio studio before a new spec starts
+    daily-retro: 2026-11-12 step 1 of 3: a ladder-runner runs: bisellium retro --daily --studio studio; then the qa-lead writes the proposals under "Proposed improvements" in studio/acta/improvements.md; then a ladder-runner lands the entry: bisellium land studio/acta/improvements.md --title 'chore(studio): daily retro 2026-11-12' --sella producer --studio studio
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-902 spec held'
+    - 'next: W-902 spec named'
+                        ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-902 spec named'
+  actual: 'next: W-902 spec held'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-630/packages/cli/src/next-done.test.ts:1592:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2982.166198

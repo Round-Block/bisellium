@@ -1,0 +1,50 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-630-b2\s --import tsx packages/cli/src/next-done.test.ts
+# exit: 1
+# at: 2026-11-13T12:57:31.924Z
+# sella: builder.W-630
+# tree: tree:c457af8314762e82b75cf490e1c707b18a837de6
+# ticket: {"opus":"W-630","step":"reds","action":"red","round":2,"actor":"builder","studio":"studio","head":"e920fef38f22b5c4e83d1a4a2ab81bdface311f5","brief":"9fc5c128b9d555182b51f6c2747398a9aca798de","at":"2026-11-13T12:57:30.611Z"}
+
+TAP version 13
+# Subtest: W-630-b2 behaviour 2: a daily retro owed more than 3 days says OVERDUE n days (does not hold) and holds nothing; 3 days owed is not overdue
+not ok 1 - W-630-b2 behaviour 2: a daily retro owed more than 3 days says OVERDUE n days (does not hold) and holds nothing; 3 days owed is not overdue
+  ---
+  duration_ms: 4247.655689
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-630/packages/cli/src/next-done.test.ts:53:4165'
+  failureType: 'testCodeFailure'
+  error: |-
+    4 days owed: the line says overdue loudly
+    --- exit 0
+    --- stdout
+    next: W-901 branch named
+    actor: producer
+    why: refs/heads/opus/W-901 does not exist
+    command: bisellium next W-901 --perform --expect branch
+    daily-retro: 2026-11-12 step 1 of 3: a ladder-runner runs: bisellium retro --daily --studio studio; then the qa-lead writes the proposals under "Proposed improvements" in studio/acta/improvements.md; then a ladder-runner lands the entry: bisellium land studio/acta/improvements.md --title 'chore(studio): daily retro 2026-11-12' --sella producer --studio studio
+    health: no step recorded
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: `daily-retro: 2026-11-12 step 1 of 3: a ladder-runner runs: bisellium retro --daily --studio studio; then the qa-lead writes the proposals under "Proposed improvements" in studio/acta/improvements.md; then a ladder-runner lands the entry: bisellium land studio/acta/improvements.md --title 'chore(studio): daily retro 2026-11-12' --sella producer --studio studio`
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-630/packages/cli/src/next-done.test.ts:1632:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4274.110822
