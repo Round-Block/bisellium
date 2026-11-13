@@ -54,17 +54,17 @@ Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W
 
 D-193 replaces D-178: no per-opus exemptions; entries are product (M4 path) or process; after W-512, E1 and E2 take product, E3 is the one process lane (W-595 enforces). D-174's items 3 to 7 keep 2026-11-17. W-506 waits in the process lane.
 
-D-201 (Patron 11-13): keep D-194's one ranked list (a single ranked queue); W-595 right after W-610; E2 (second engineering lane) and a second UI lane open on the qa-lead's reading at a daily retro.
+D-201 (Patron 11-13): keep D-194's one ranked list (a single ranked queue); W-595 right after W-610; E2 (second engineering lane) and a second UI lane open on the qa-lead's reading at a daily retro. D-204: the daily retro no longer holds; E2 and UI2 open now (lanes-now-meet-1113).
 
-In flight: W-610 (build review before the full ci): brief cut and signed round 11 after spec review r10 split its light-gate id collision to a new opus (a light probatio id gets its own log); spec perform faae245b; behaviours 7-9 built test-first on opus/W-610 (head cc38905e). Next: `next W-610` names the review perform (fix check of build review r2's findings at the new tree), then light gates, build review, ci, PR (Patron code-owned), merge.
+In flight: W-610 (build review before the full ci; greenlit on master until merge): ci passed 0576b004; review r3 found a 3rd S1 of its class (light-gates.ts:170), unrecorded; the architect's class loop takes it (w610-deadlock-meet-1113b). Its checkout is a clone at .worktrees/W-610: run `next` only from main. Hotfix (D-204, the daily retro never holds work): built on hotfix/daily-retro-advisory (.worktrees/hotfix-daily-1113, suite green); owes Codex review, PR (Patron), merge.
 
-Off the ladder: W-622 (opus checkouts as local clones) is filed right after W-610: a worktree that exists at a session's start cannot be committed in or removed from it (its .git/worktrees admin directory is read-only; its files stay writable) (~/.bisellium-evidence/worktree-block-meet-1113/producer-probe.md). Until W-622 lands, the orchestrator makes new checkouts by hand as local clones (`git clone --local`); a worktree made in one session locks in the next. W-507 stays greenlit on master, parked by D-181.
+Off the ladder: until W-622 (opus checkouts as local clones), a new checkout is `git clone --local`, plus `git -C <clone> fetch origin master:master`; for a locked opus worktree, move the folder aside and put the clone at .worktrees/<id>; after each clone commit, `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 stays greenlit on master, parked by D-181.
 
 Greenlit ahead of build: W-503 (the Home screen): the Patron's four calls are D-200. The Patron accepted revision 8 after a full-Home preview (D-202); r8 is on opus/W-503. Its design-lead signature waits on W-624 (the pre-sign gate runs check on a named branch; the old base fails detached) or a rebase.
 
 Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Meets: ~/.bisellium-evidence/*-meet-11*/; leads-settled calls need no Patron (D-189).
 
-Next session: first probe a clone commit (.worktrees/W-610-r5); W-610 from the review perform; then the 11-12 daily retro after W-610 merges (retro-1113/); then W-595 (queue entry classes), W-624 (pre-sign gate branch check, unblocks W-503's signature), W-623 (light probatio log). Open for a leads' meet: docs/SESSION-HANDOFF.md is not in source_excludes, so every refresh invalidates recorded certificates. State: ~/.bisellium-evidence/current-state.md.
+Next session: hotfix review, PR, merge (D-204 with it); then lanes per lanes-now-meet-1113: E1 W-610 class loop, E3 (the process lane, D-193) W-595 (queue entry classes) then W-624 (pre-sign gate branch check), UI2 the next UI entry (W-503 after W-624). File: boot-context caps and prune opera (boot-context-meet-1113/collated-r2.md), fresh review session after a blind resume, lex §9 review-path drift; SESSION-HANDOFF.md into source_excludes (handoff-excludes-meet-1113).
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md beside it.
 
