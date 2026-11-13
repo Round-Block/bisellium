@@ -441,3 +441,120 @@ row("W-610-b2 fix3: a worktree drift on a build-review key that leaves the tree 
   assert.equal(got.ok, false, `the full-gate admitter refuses a patron drift (the tree unchanged): ${JSON.stringify(got)}`);
   assert.match(got.ok ? "" : got.error, /bisellium\.yml#patron differs between the main checkout/, "the refusal names the drifted key");
 });
+
+// ---------------------------------------------------------------------------
+// behaviour 9 (D-196 item 1, build review r2 #2): one ci log path shape, `ci/<name>` from ciLogRel, for every log the
+// light gates and the ci cap hand on; it resolves under the worktree officina
+// ---------------------------------------------------------------------------
+const inputsOf = (o: ReturnType<typeof next>): string[] => (o.kv.get("inputs") ?? "").split(", ").filter(Boolean);
+row("W-610-b9 the capped builder's inputs are ci/<log> paths that resolve in the worktree officina", () => {
+  const w = passed("w610-b9-cap");
+  for (const n of [1, 2]) {
+    writeGates(w, { log: (t) => `certifies: ${t}\ncommand: node -e 1\nexit code: 1\n\nrun ${n}\n`, commit: false });
+    editRecord(w, "wt", (doc) => doc.setIn(["probationes", "tests", "status"], "failed"));
+    commit(w.wt, `studio(${OPUS}): gates failed, run ${n}`);
+  }
+  const capped = next(w, [OPUS, ...BUDGET]);
+  expectStep(capped, "build", "named", "two failed runs at the reviewed tree go to a builder");
+  assert.equal(capped.kv.get("ci-runs"), `2 at ${sourceTree(w.wt)}`, ran("the capped order", capped));
+  const inputs = inputsOf(capped);
+  const logs = inputs.filter((i) => i !== `briefs/${OPUS}.md` && !i.includes("#"));
+  assert.deepEqual(logs, [`ci/${OPUS}-tests-${sourceTree(w.wt).slice(5, 13)}.log`], ran("the failed gate log is a ci/<log> input", capped));
+  for (const i of [`briefs/${OPUS}.md`, ...logs]) assert.ok(inputs.includes(i) && existsSync(join(w.wtStudio, i)), ran(`each input is a file under the worktree officina: ${i}`, capped));
+});
+row("W-610-b9 a root and a deeper officina's capped inputs keep ci/<log>", async () => {
+  const lg = await import("@bisellium/commands/light-gates.js");
+  const tree = "tree:0123456789abcdef";
+  for (const officina of ["", "a/b"]) {
+    const { repo, studio } = officinaRepo(officina);
+    mkdirSync(join(studio, "ci"), { recursive: true });
+    writeFileSync(join(studio, "ci", `${OPUS}-tests-01234567.log`), "log\n");
+    sh(repo, "git", ["add", "-A"]);
+    sh(repo, "git", ["commit", "-q", "-m", "a full gate log"]);
+    const got = lg.fullGateRuns(repo, officina, OPUS, tree);
+    assert.deepEqual(got, { runs: 1, logs: [`ci/${OPUS}-tests-01234567.log`] }, `the runs and their ci/<log> for officina ${JSON.stringify(officina)}`);
+    for (const l of got.logs) assert.ok(existsSync(join(studio, l)), `${l} resolves under officina ${JSON.stringify(officina)}`);
+  }
+});
+row("W-610-b9 a failed light log's builder input is ci/<id>-light-<8 hex>.log", async () => {
+  const w = handed("w610-b9-light");
+  setLightGates(w, '"node -e 0"', '"exit 1"');
+  const p = performLight(w);
+  assert.match(p.out, /light-gates: exit 1/, ran("the failing light gates are logged", p));
+  const { admitLightGates } = await import("@bisellium/commands/light-gates.js");
+  const failed = admitLightGates(w.wtStudio, OPUS);
+  assert.ok(!failed.ok && failed.failed !== undefined, `the admission names the failed log: ${JSON.stringify(failed)}`);
+  assert.match(failed.ok ? "" : (failed.failed ?? ""), new RegExp(`^ci/${OPUS}-light-[0-9a-f]{8}\\.log$`), "the failed light log is a ci/<log> path");
+  assert.ok(existsSync(join(w.wtStudio, failed.ok ? "" : failed.failed!)), "it resolves under the worktree officina");
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "build", "named", "a failed light gate is a builder's");
+  assert.ok(inputsOf(o).includes(failed.ok ? "" : failed.failed!), ran("the builder's inputs carry the failed light log", o));
+});
+row("W-610-b9 ciLogRel refuses a name that is not one gate-log file", async () => {
+  const lg = (await import("@bisellium/commands/light-gates.js")) as Record<string, unknown>;
+  assert.equal(typeof lg["ciLogRel"], "function", "light-gates.ts exports ciLogRel, the one ci log path helper");
+  const ciLogRel = lg["ciLogRel"] as (name: string) => string;
+  for (const ok of [`${OPUS}-tests-01234567.log`, `${OPUS}-light-89abcdef.log`, `${OPUS}-types-${"a".repeat(40)}.log`])
+    assert.equal(ciLogRel(ok), `ci/${ok}`, `a gate-log file name: ${ok}`);
+  for (const bad of ["a/b.log", "../x.log", "", "W-1-tests.log", "W-1-tests-0123456.log", `ci/${OPUS}-tests-01234567.log`])
+    assert.throws(() => ciLogRel(bad), /not one gate-log file name/, `refused: ${JSON.stringify(bad)}`);
+});
+
+// spec review r8 #2: any manifest-valid probatio id (check.ts ID_RE, no `..`) is a gate in a ci log name
+const PROBATIO_IDS = ["unit-tests", "unit_tests", "unit.tests", "UnitTests", "light-x"];
+row("W-610-b9 a capped builder's inputs carry every manifest-valid probatio id's failed log", () => {
+  const w = passed("w610-b9-ids");
+  for (const n of [1, 2]) {
+    for (const gate of PROBATIO_IDS) writeGates(w, { gate, log: (t) => `certifies: ${t}\ncommand: node -e 1\nexit code: 1\n\nrun ${n}\n`, commit: false });
+    for (const gate of PROBATIO_IDS) editRecord(w, "wt", (doc) => doc.setIn(["probationes", gate, "status"], "failed"));
+    commit(w.wt, `studio(${OPUS}): gates failed, run ${n}`);
+  }
+  const capped = next(w, [OPUS, ...BUDGET]);
+  expectStep(capped, "build", "named", "two failed runs of any valid probatio id at the reviewed tree go to a builder");
+  assert.equal(capped.kv.get("ci-runs"), `2 at ${sourceTree(w.wt)}`, ran("the capped order", capped));
+  const inputs = inputsOf(capped);
+  const logs = inputs.filter((i) => i !== `briefs/${OPUS}.md` && !i.includes("#"));
+  const tree8 = sourceTree(w.wt).slice(5, 13);
+  assert.deepEqual([...logs].sort(), PROBATIO_IDS.map((g) => `ci/${OPUS}-${g}-${tree8}.log`).sort(), ran("each failed gate log is a ci/<log> input", capped));
+  for (const i of logs) assert.ok(existsSync(join(w.wtStudio, i)), ran(`each input is a file under the worktree officina: ${i}`, capped));
+});
+row("W-610-b9 every manifest-valid probatio id's runs count to the cap under a nested, a deeper and a root officina", async () => {
+  const lg = await import("@bisellium/commands/light-gates.js");
+  const tree = "tree:0123456789abcdef";
+  for (const officina of ["studio", "a/b", ""])
+    for (const gate of PROBATIO_IDS) {
+      const { repo, studio } = officinaRepo(officina);
+      mkdirSync(join(studio, "ci"), { recursive: true });
+      const name = `${OPUS}-${gate}-01234567.log`;
+      for (const n of [1, 2]) {
+        writeFileSync(join(studio, "ci", name), `run ${n}\n`);
+        sh(repo, "git", ["add", "-A"]);
+        sh(repo, "git", ["commit", "-q", "-m", `a failed full gate log, run ${n}`]);
+      }
+      let got: { runs: number; logs: string[] } | string;
+      try {
+        got = lg.fullGateRuns(repo, officina, OPUS, tree);
+      } catch (e) {
+        got = (e as Error).message;
+      }
+      assert.deepEqual(got, { runs: 2, logs: [`ci/${name}`] }, `two runs of ${gate} and its ci/<log> under officina ${JSON.stringify(officina)}`);
+      assert.ok(existsSync(join(studio, `ci/${name}`)), `ci/${name} resolves under officina ${JSON.stringify(officina)}`);
+    }
+});
+row("W-610-b9 ciLogRel takes exactly the manifest-valid probatio ids as the gate", async () => {
+  const { ID_RE } = await import("./check.js");
+  const lg = (await import("@bisellium/commands/light-gates.js")) as Record<string, unknown>;
+  const ciLogRel = lg["ciLogRel"] as (name: string) => string;
+  for (const id of [...PROBATIO_IDS, "tests", "light", "T", "a.b_c-d", "unit..tests", ".x", "-x", "_x", "a/b", "", "a b", "é", "a\nb"]) {
+    const valid = ID_RE.test(id) && !id.includes("..");
+    const name = `${OPUS}-${id}-01234567.log`;
+    let got: string;
+    try {
+      got = ciLogRel(name);
+    } catch (e) {
+      got = `refused: ${(e as Error).message}`;
+    }
+    if (valid) assert.equal(got, `ci/${name}`, `a manifest-valid probatio id is a gate: ${JSON.stringify(id)}`);
+    else assert.match(got, /^refused: ".*" is not one gate-log file name \(W-<n>-<gate>-<8\.\.40 hex>\.log\)$/, `an id manifest.id.format rejects is refused: ${JSON.stringify(id)}`);
+  }
+});
