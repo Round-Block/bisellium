@@ -1255,12 +1255,17 @@ export function dailyProposalsOwed(root: string, now: Date): string | undefined 
  * W-530 (D-188): the first daily retro step not yet done for the previous UTC day: 1 the run, 2 the qa-lead's proposals, 3 the
  * land of the entry. `trunk` is the tracker on master. Undefined with no step left, no tracker or an unreadable one.
  */
-export function dailyRetroStep(root: string, trunk: string | undefined, now: Date): { day: string; step: 1 | 2 | 3 } | undefined {
+export function dailyRetroStep(root: string, trunk: string | undefined, now: Date): { day: string; step: 1 | 2 | 3; owedDays?: number } | undefined {
   const tracker = readTracker(root);
   if (tracker === undefined || isRefusal(tracker)) return undefined;
   const day = previousUtcDay(now);
   const state = entryProposals(tracker.text, day);
-  if (state === "no entry") return { day, step: 1 };
+  // D-204: the days owed run from the day after the newest entry to the previous day; none when the tracker holds no entry to count from
+  const newest = [...tracker.days].sort().pop();
+  const [ny, nm, nd] = (newest ?? "").split("-").map(Number);
+  const owedDays = newest === undefined || ny === undefined || nm === undefined || nd === undefined ? undefined : Math.round((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1) - Date.UTC(ny, nm - 1, nd)) / 86_400_000);
+  const owed = owedDays === undefined || owedDays < 1 ? {} : { owedDays };
+  if (state === "no entry") return { day, step: 1, ...owed };
   if (state === "empty") return { day, step: 2 };
   return tracker.text === trunk ? undefined : { day, step: 3 };
 }

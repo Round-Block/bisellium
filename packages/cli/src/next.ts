@@ -2530,7 +2530,9 @@ function dailyLine(repo: string, studioAbs: string, studioRel: string, nowMs: nu
   if (at === undefined) return undefined;
   const tracker = `${studioRel}/${DAILY_TRACKER}`;
   const steps = [`a ladder-runner runs: bisellium retro --daily --studio ${studioRel}`, `the qa-lead writes the proposals under "Proposed improvements" in ${tracker}`, `a ladder-runner lands the entry: bisellium land ${tracker} --title 'chore(studio): daily retro ${at.day}' --sella producer --studio ${studioRel}`];
-  return `daily-retro: ${at.day} step ${at.step} of 3: ${steps.slice(at.step - 1).join("; then ")}`;
+  // D-204: owed more than 3 days, the line says so loudly; it still holds nothing
+  const overdue = at.owedDays !== undefined && at.owedDays > 3 ? ` OVERDUE ${at.owedDays} days (does not hold):` : "";
+  return `daily-retro: ${at.day}${overdue} step ${at.step} of 3: ${steps.slice(at.step - 1).join("; then ")}`;
 }
 
 /** W-547: the meanwhile lines beside the wait `d` names (none when the caller acts next): the retro owed, the locks and the spec ahead. */
