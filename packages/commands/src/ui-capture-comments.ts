@@ -53,6 +53,7 @@ export interface UiCaptureComment {
 export type UiCaptureCommentInput = Omit<UiCaptureComment, "version" | "kind" | "id" | "at">;
 export type UiCaptureCommentsRead = { comments: UiCaptureComment[] } | { problems: string[] };
 export type UiCaptureCommentWrite = { ok: true; record: UiCaptureComment } | { ok: false; error: string };
+export type UiCaptureReviewRead = { sets: Array<UiCaptureSet & { comments: UiCaptureComment[] }> } | { problems: string[] };
 
 const sha256 = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
 
@@ -224,4 +225,36 @@ export function appendUiCaptureComment(
   if (existing.comments.length >= 256) return { ok: false, error: "capture set has 256 comments; no more can be added" };
   appendPatronTimeline(root, { ...record });
   return { ok: true, record };
+}
+
+/** Capture sets plus their current bound comments, ready for the local browser and review packet. */
+export function readUiCaptureReview(root: string, currentTree: string): UiCaptureReviewRead {
+  const read = readUiCaptureSets(root, currentTree);
+  if ("problems" in read) return read;
+  const sets: Array<UiCaptureSet & { comments: UiCaptureComment[] }> = [];
+  const problems: string[] = [];
+  for (const set of read.sets) {
+    const comments = readUiCaptureComments(root, set);
+    if ("problems" in comments) problems.push(...comments.problems.map((problem) => `${set.opus}: ${problem}`));
+    else sets.push({ ...set, comments: comments.comments });
+  }
+  return problems.length > 0 ? { problems } : { sets };
+}
+
+/** Re-read and return only a PNG named by the selected set's existing manifest. */
+export function readUiCaptureImage(
+  root: string,
+  currentTree: string,
+  opus: string,
+  name: string,
+): { bytes: Buffer } | { error: string } {
+  const read = readUiCaptureSets(root, currentTree);
+  if ("problems" in read) return { error: read.problems.join("; ") };
+  const set = read.sets.find((candidate) => candidate.opus === opus);
+  if (set === undefined) return { error: "unknown capture set" };
+  const shot = set.shots.find((candidate) => candidate.name === name);
+  if (shot === undefined) return { error: "unknown capture image" };
+  const file = readContainedRegularFile(root, `ci/shots/${opus}/${name}`, "ci", 4 * 1024 * 1024);
+  if ("error" in file || sha256(file.bytes) !== shot.sha256) return { error: "capture image changed; reload" };
+  return { bytes: file.bytes };
 }

@@ -195,6 +195,39 @@ export interface EventRow {
   attrs: Record<string, string | number | boolean>;
 }
 
+export interface UiCaptureComment {
+  version: 1;
+  kind: "ui_capture_comment";
+  id: string;
+  at: string;
+  author: "patron" | "design-lead";
+  opus: string;
+  tree: string;
+  designDigest: string;
+  manifestSha256: string;
+  image: string;
+  imageSha256: string;
+  viewport: { width: number; height: number };
+  selector: string;
+  state: string;
+  pin: { x: number; y: number };
+  body: string;
+}
+
+export interface UiCaptureSet {
+  opus: string;
+  title: string;
+  tree: string;
+  current: boolean;
+  capturedAt: string;
+  designDigest: string;
+  manifestSha256: string;
+  shots: { name: string; width: number; height: number; bytes: number; sha256: string }[];
+  comments: UiCaptureComment[];
+}
+
+export type UiCaptureReviewResponse = { sets: UiCaptureSet[] } | { problems: string[] };
+
 // ── shared helper ────────────────────────────────────────────────────
 
 /** W-501: the screens owe a re-read once a token is saved when they never got their data (no token held, or a read
@@ -344,6 +377,30 @@ export function fetchOpera(filters?: { state?: string; collegium?: string }): Pr
   if (filters?.collegium) params.set("collegium", filters.collegium);
   const qs = params.toString();
   return getJSON(`/api/opera${qs ? `?${qs}` : ""}`);
+}
+
+/** W-488: capture metadata and PNG bytes come from the existing served-e2e manifest, never a second capture path. */
+export function fetchUiCaptureSets(): Promise<UiCaptureReviewResponse> {
+  return getJSON("/api/ui-capture-sets");
+}
+
+export async function fetchUiCaptureImage(opus: string, name: string): Promise<Blob> {
+  const token = getToken();
+  if (token === "") {
+    refuseRead(true);
+    return Promise.reject(401);
+  }
+  const res = await fetch(`/api/ui-capture-image/${encodeURIComponent(opus)}/${encodeURIComponent(name)}`, {
+    headers: { "X-Bisellium-Token": token },
+  });
+  if (res.status === 401) refuseRead(!mountLoaded);
+  if (!res.ok) return Promise.reject(res.status);
+  mountLoaded = true;
+  return res.blob();
+}
+
+export function submitUiCaptureComment(comment: Omit<UiCaptureComment, "version" | "kind" | "id" | "at">): Promise<WriteResult> {
+  return postWrite("/api/ui-capture-comment", comment);
 }
 
 // ── W-065 fetchers ───────────────────────────────────────────────────

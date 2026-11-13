@@ -9,8 +9,8 @@
  * actual dependency cycle). The generated write-auth token is printed here,
  * once, at start.
  */
-import { resolve } from "node:path";
-import { spawn } from "node:child_process";
+import { relative, resolve, sep } from "node:path";
+import { execFileSync, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { startServer, type LadderRead, type StartServerOptions } from "@bisellium/server";
@@ -18,8 +18,16 @@ import { runAnswer, runGreenlight, runBudget, runHandoff } from "@bisellium/comm
 import { runTalk } from "@bisellium/commands/talk.js";
 import { runPause, runResume } from "@bisellium/commands/pause.js";
 import { runDelegate } from "@bisellium/commands/delegate.js";
+import {
+  appendUiCaptureComment,
+  readUiCaptureImage,
+  readUiCaptureReview,
+  type UiCaptureCommentInput,
+} from "@bisellium/commands/ui-capture-comments.js";
 import { checkStudio } from "./check.js";
 import { instant } from "@bisellium/schema";
+import { readManifest } from "@bisellium/adapter-native";
+import { sourceTreeHash } from "@bisellium/shim";
 
 const REAL_RUNNERS: StartServerOptions["runners"] = {
   answer: (args) => runAnswer(args),
@@ -91,6 +99,15 @@ export interface RunServeResult {
 const USAGE = "usage: bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]";
 const NOOP_CLOSE = async (): Promise<void> => {};
 
+/** The same SOURCE tree identity verify binds, excluding officina bookkeeping and declared source exclusions. */
+function captureSourceTree(studioDir: string): string {
+  const repo = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: studioDir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  const studioRel = relative(repo, studioDir);
+  if (studioRel === "" || studioRel.split(sep)[0] === "..") throw new Error("could not establish the capture browser's SOURCE tree");
+  const excludes = [studioRel.split(sep).join("/"), ".bisellium", ...(readManifest(studioDir).source_excludes ?? [])];
+  return `tree:${sourceTreeHash(repo, excludes, "HEAD")}`;
+}
+
 interface ParsedServeArgs {
   studio: string;
   port?: number;
@@ -156,6 +173,11 @@ export async function runServe(args: string[], opts: RunServeOptions = {}): Prom
       checkStudio,
       runners: REAL_RUNNERS,
       readLadder: (id) => readLadderInChild(studioDir, id),
+      captureReview: {
+        read: () => readUiCaptureReview(studioDir, captureSourceTree(studioDir)),
+        image: (opus, name) => readUiCaptureImage(studioDir, captureSourceTree(studioDir), opus, name),
+        comment: (input) => appendUiCaptureComment(studioDir, captureSourceTree(studioDir), input as unknown as UiCaptureCommentInput),
+      },
       token: opts.token ?? randomBytes(24).toString("hex"),
     });
     console.log(`bisellium serve: listening on http://127.0.0.1:${started.port} (studio ${studioDir})`);

@@ -88,6 +88,14 @@ export interface StartServerOptions {
   /** W-129: the wall-clock bound on every read-only git call (and file open) of the per-poll branch-record
    *  refresh. Default 5000. */
   branchGitTimeoutMs?: number;
+  /** W-488: injected capture readers/writer preserve the server→commands dependency inversion. */
+  captureReview?: CaptureReviewService;
+}
+
+export interface CaptureReviewService {
+  read: () => unknown;
+  image: (opus: string, name: string) => { bytes: Buffer } | { error: string };
+  comment: (input: Record<string, unknown>) => { ok: true; record: unknown } | { ok: false; error: string };
 }
 
 export interface StartServerResult {
@@ -535,11 +543,13 @@ const ROUTE_INDEX_HTML = `<!doctype html>
 <li>GET /api/providers?live=</li>
 <li>GET /api/health</li>
 <li>GET /api/completion</li>
+<li>GET /api/ui-capture-sets</li>
+<li>GET /api/ui-capture-image/:opus/:name</li>
 <li>GET /api/timeline/:sella?limit=</li>
 <li>GET /api/events?since=&amp;limit=</li>
 <li>GET /api/receipts?sella=</li>
 <li>GET /api/live (SSE)</li>
-<li>POST /api/answer, /api/greenlight, /api/budget, /api/handoff, /api/talk, /api/pause, /api/resume, /api/delegate (X-Bisellium-Token required)</li>
+<li>POST /api/answer, /api/greenlight, /api/budget, /api/handoff, /api/talk, /api/pause, /api/resume, /api/delegate, /api/ui-capture-comment (X-Bisellium-Token required)</li>
 </ul>
 </body>
 </html>`;
@@ -688,6 +698,7 @@ async function route(
   runners: StartServerOptions["runners"],
   getListing: () => Promise<ListingResult>,
   readLadder: ((id: string) => Promise<LadderRead>) | undefined,
+  captureReview: CaptureReviewService | undefined,
   token: string,
   acceptedOrigins: AcceptedOrigins,
   req: IncomingMessage,
@@ -704,7 +715,7 @@ async function route(
   // ---- writes: token + accepted-origin + application/json required.
   // Loopback (the bind itself) is never sufficient on its own — see
   // checkWriteAuth. --------------------------------------------------------
-  const WRITE_PATHS = new Set(["/api/answer", "/api/greenlight", "/api/budget", "/api/handoff", "/api/talk", "/api/pause", "/api/resume", "/api/delegate"]);
+  const WRITE_PATHS = new Set(["/api/answer", "/api/greenlight", "/api/budget", "/api/handoff", "/api/talk", "/api/pause", "/api/resume", "/api/delegate", "/api/ui-capture-comment"]);
   if (method === "POST" && WRITE_PATHS.has(pathname)) {
     const authStatus = checkWriteAuth(req, token, acceptedOrigins);
     if (authStatus !== undefined) {
@@ -777,6 +788,23 @@ async function route(
   if (method === "GET" && pathname === "/api/health") return sendJson(res, 200, store.api.health(checkStudio));
   if (method === "GET" && pathname === "/api/completion") return sendJson(res, 200, store.api.completion(checkStudio));
 
+  if (method === "GET" && pathname === "/api/ui-capture-sets") {
+    if (captureReview === undefined) return sendError(res, 404, "not found");
+    return sendJson(res, 200, captureReview.read());
+  }
+
+  {
+    const m = /^\/api\/ui-capture-image\/([^/]+)\/([^/]+)$/.exec(pathname);
+    if (method === "GET" && m) {
+      if (captureReview === undefined) return sendError(res, 404, "not found");
+      const read = captureReview.image(decodeURIComponent(m[1]!), decodeURIComponent(m[2]!));
+      if ("error" in read) return sendError(res, 404, "not found");
+      res.writeHead(200, { "Content-Type": "image/png", "Content-Length": String(read.bytes.length), "Cache-Control": "no-store" });
+      res.end(read.bytes);
+      return;
+    }
+  }
+
   {
     const m = /^\/api\/timeline\/([^/]+)$/.exec(pathname);
     if (method === "GET" && m) {
@@ -824,6 +852,14 @@ async function route(
   }
 
   // ---- writes ---------------------------------------------------------
+  if (method === "POST" && pathname === "/api/ui-capture-comment") {
+    if (captureReview === undefined) return sendError(res, 404, "not found");
+    const body = await readJsonBodyOr400(req, res);
+    if (body === undefined) return;
+    const result = await withWriteLock(async () => captureReview.comment(body));
+    return sendJson(res, 200, result.ok ? { ok: true, output: result.record } : { ok: false, exitCode: 1, output: result.error });
+  }
+
   if (method === "POST" && pathname === "/api/answer") {
     const body = await readJsonBodyOr400(req, res);
     if (body === undefined) return;
@@ -1012,7 +1048,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
       // response body instead of the terminal.
       process.stderr.write(`${method} ${url} ${res.statusCode} ${Date.now() - start}ms\n`);
     });
-    route(store, doPoll, withWriteLock, sseHub, opts.checkStudio, opts.runners, getListing, readLadder, token, acceptedOrigins, req, res).catch((e) => serverError(res, e));
+    route(store, doPoll, withWriteLock, sseHub, opts.checkStudio, opts.runners, getListing, readLadder, opts.captureReview, token, acceptedOrigins, req, res).catch((e) => serverError(res, e));
   });
 
   await new Promise<void>((resolvePromise, reject) => {
