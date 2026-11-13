@@ -178,7 +178,8 @@ export function readUiCaptureComments(root: string, set: UiCaptureSet): UiCaptur
       continue;
     }
     const comment = asComment(value)!;
-    if (comment.opus === set.opus && comment.tree === set.tree && comment.designDigest === set.designDigest && comment.manifestSha256 === set.manifestSha256)
+    const shot = set.shots.find((candidate) => candidate.name === comment.image);
+    if (comment.opus === set.opus && comment.tree === set.tree && comment.designDigest === set.designDigest && comment.manifestSha256 === set.manifestSha256 && shot?.sha256 === comment.imageSha256)
       comments.push(comment);
   }
   if (comments.length > 256) problems.push("capture set has more than 256 comments");
@@ -228,8 +229,14 @@ export function appendUiCaptureComment(
 }
 
 /** Capture sets plus their current bound comments, ready for the local browser and review packet. */
-export function readUiCaptureReview(root: string, currentTree: string): UiCaptureReviewRead {
-  const read = readUiCaptureSets(root, currentTree);
+export function readUiCaptureReview(root: string, currentTree: string, opus?: string): UiCaptureReviewRead {
+  const read = opus === undefined
+    ? readUiCaptureSets(root, currentTree)
+    : (() => {
+        if (!OPUS.test(opus) || !TREE.test(currentTree)) return { problems: ["capture review needs a valid opus and current source tree"] } satisfies UiCaptureSetsRead;
+        const one = captureSet(root, opus, currentTree);
+        return "problem" in one ? { problems: [`${opus}: ${one.problem}`] } : { sets: [one] };
+      })();
   if ("problems" in read) return read;
   const sets: Array<UiCaptureSet & { comments: UiCaptureComment[] }> = [];
   const problems: string[] = [];

@@ -26,6 +26,8 @@ import { readSequence } from "../packages/commands/src/verdict.ts";
 import { openStudio, safeItemPath } from "../packages/commands/src/writes.ts";
 import { handoffInputs, sessionHandoffFindings } from "../packages/cli/src/rules/process.ts";
 import { resolveTestBase } from "../packages/cli/src/rules/tests.ts";
+import { readUiCaptureReview } from "../packages/commands/src/ui-capture-comments.ts";
+import { sourceTreeHash } from "@bisellium/shim";
 
 const CHECKOUT = dirname(dirname(fileURLToPath(import.meta.url)));
 const MAIN = join(CHECKOUT, "packages/cli/src/main.ts");
@@ -214,6 +216,20 @@ function uiFact(studio, opus) {
     lines.push(`${images.length}. ${name} — ${viewport} ${width}x900 — judge ${judgment}.`);
   }
   return { text: `${lines.join("\n")}\n`, images };
+}
+
+/** Plain bounded facts from records already matched to this served tree, design digest, manifest and image bytes. */
+export function captureCommentFact(comments) {
+  const lines = [`Capture comments bound to this served set: ${comments.length}`];
+  if (comments.length === 0) return `${lines[0]}\nNo capture comments.\n`;
+  for (const [index, comment] of comments.entries()) {
+    const author = comment.author === "patron" ? "Patron" : "Design lead";
+    lines.push(
+      `${index + 1}. ${author} — ${comment.image} — ${comment.viewport.width}x${comment.viewport.height} — ${comment.selector} — ${comment.state} — pin ${Math.round(comment.pin.x * 100)}%,${Math.round(comment.pin.y * 100)}%`,
+      comment.body,
+    );
+  }
+  return `${lines.join("\n")}\n`;
 }
 
 /** One command's output and exit, as a block of facts.txt. A spawn error, a signal or oversize output is a refusal, never a fact. */
@@ -406,7 +422,22 @@ export function buildPacket(args) {
   if (subject !== undefined) files.set("subject", subject);
   if (phase === "build") {
     const ui = uiFact(studio, opus);
-    files.set("ui.txt", ui.text);
+    if (ui.images.length > 0) {
+      const timeline = readContainedRegularFile(studio, "timeline/patron.jsonl", "timeline", 1024 * 1024);
+      let boundComments = [];
+      if ("error" in timeline && timeline.code !== "ENOENT") refuse(`capture comment timeline is unsafe or unreadable: ${timeline.error}`);
+      if (!("error" in timeline)) {
+        const currentTree = `tree:${sourceTreeHash(repo, [studioRel, ".bisellium", ...(manifest.source_excludes ?? [])], "HEAD")}`;
+        const review = readUiCaptureReview(studio, currentTree, opus);
+        if ("problems" in review) refuse(review.problems.join("; "));
+        const selectedSet = review.sets[0];
+        if (selectedSet === undefined || !selectedSet.current) refuse(`${opus}: served capture does not certify the reviewed source tree`);
+        boundComments = selectedSet.comments;
+      }
+      const comments = captureCommentFact(boundComments);
+      files.set("ui-comments.txt", comments);
+      files.set("ui.txt", `${ui.text}\n${comments}`);
+    } else files.set("ui.txt", ui.text);
     images = ui.images;
   }
 
