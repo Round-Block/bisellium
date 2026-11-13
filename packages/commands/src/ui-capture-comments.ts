@@ -58,11 +58,12 @@ export type UiCaptureReviewRead = { sets: Array<UiCaptureSet & { comments: UiCap
 const sha256 = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
 
 function captureSet(root: string, opus: string, currentTree: string): UiCaptureSet | { problem: string } {
-  const recordFile = readContainedRegularFile(root, `opera/${opus}.md`, "opera");
+  const recordRel = "opera/" + opus + ".md";
+  const recordFile = readContainedRegularFile(root, recordRel, "opera");
   if ("error" in recordFile) return { problem: `opus record is unsafe or unreadable: ${recordFile.error}` };
   let record: NativeRecord;
   try {
-    record = parseFrontMatter(recordFile.bytes.toString("utf8"), `opera/${opus}.md`).data as NativeRecord;
+    record = parseFrontMatter(recordFile.bytes.toString("utf8"), recordRel).data as NativeRecord;
   } catch (error) {
     return { problem: `opus record is unparseable: ${(error as Error).message}` };
   }
