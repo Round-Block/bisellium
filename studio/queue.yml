@@ -5,6 +5,7 @@ queues:
       - { opus: W-512, says: "next refuses out-of-order starts and a lane branch whose Files owned overlap another lane's in-flight opus; opens the lanes (D-182); right after W-610 (lanes-meet-1112)" }
       - { opus: W-610, says: "build review before the full ci; halted until W-630 merges; the ci-run cap is cut to W-632 (D-206)" }
       - { opus: W-630, says: "a missing daily retro never holds work: dailyHold advisory (D-204), the hotfix as its own opus; reuses hotfix/daily-retro-advisory's reviewed commits; first in E3 (D-205, unblock-meet-1113)" }
+      - { opus: W-633, says: "overlap hold reads each opus's branch record: a halted opus with a branch releases its files (overlap-gap-meet-1113, D-206 follow-up); high" }
       - { opus: W-632, says: "ci-run cap counts each run only with its own log; cut from W-610 (D-206); first reds W-610-spec/r6 rows 8-11" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-610 (D-201)" }
       - { opus: W-631, says: "ladder steps run exactly what next prints; prompt templates require the fields verdict and next refuse without (D-206, stepback-meet-1113)" }
