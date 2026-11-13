@@ -199,6 +199,65 @@ export function runWatched(command: string, args: readonly string[], opts: Watch
   });
 }
 
+/** One gate command's outcome as the status line formats it. */
+export interface GateOutcome {
+  timedOut: boolean;
+  timeoutMs: number;
+  error?: { code?: string };
+  status: number | null;
+  signal: string | null;
+}
+
+/**
+ * W-610 (D-198): a gate log's line 3, the one writer of its four forms: `exit code: <n>`, `exit code: (timed out after
+ * <m>m)`, `exit code: (error <code>)` and `exit code: (signal <name>)`. A timeout or any error fails the gate whatever
+ * status the child then exited with.
+ */
+export function gateStatusLine(o: GateOutcome): string {
+  if (o.timedOut) return `exit code: (timed out after ${o.timeoutMs / 60_000}m)`;
+  if (o.error !== undefined) return `exit code: (error ${o.error.code ?? "unknown"})`;
+  return `exit code: ${o.status ?? `(signal ${o.signal ?? "unknown"})`}`;
+}
+
+const GATE_EXIT = /^exit code: (?:(\d+)|\((timed out after \d+(?:\.\d+)?m|error \S+|signal \S+)\))$/;
+
+/** W-610 (D-198): reads one line in any `gateStatusLine` form; passed only for `exit code: 0`; any other line is no form. */
+export function readGateExit(line: string): GateStatus | undefined {
+  const m = GATE_EXIT.exec(line);
+  if (m === null) return undefined;
+  if (m[1] !== undefined) return { passed: m[1] === "0", form: "code" };
+  const head = m[2]!;
+  return { passed: false, form: head.startsWith("timed out") ? "timeout" : head.startsWith("error") ? "error" : "signal" };
+}
+
+// a control character other than tab (a line break above all) in a command would split line 2 over several lines
+const NOT_ONE_LINE = /[\u0000-\u0008\u000a-\u001f]/;
+/**
+ * W-610 (spec review r8 #1): a gate log's line 2, the command on one line. A command holding no control character but
+ * tab is written as before, `command: <cmd>` (the bytes D-198 keeps); any other is `command: json:` and its JSON string,
+ * every line break escaped, so no line of a command is ever a line of the log's head.
+ */
+export function gateCommandLine(command: string): string {
+  return NOT_ONE_LINE.test(command) ? `command: json:${JSON.stringify(command)}` : `command: ${command}`;
+}
+
+export type GateStatus = { passed: boolean; form: "code" | "timeout" | "error" | "signal" };
+/**
+ * W-610 (spec review r8 #1): a gate log's one status field. The head is the lines before the first empty line; exactly
+ * one of them opens `exit code:`, it is line 3, and it is a `gateStatusLine` form. A missing, duplicate, misplaced or
+ * unreadable status field is an error, never a guess.
+ */
+export function readGateStatus(text: string): GateStatus | { error: string } {
+  const lines = text.split("\n");
+  const end = lines.indexOf("");
+  const head = end === -1 ? lines : lines.slice(0, end);
+  const at = head.flatMap((l, i) => (l.startsWith("exit code:") ? [i + 1] : []));
+  if (at.length === 0) return { error: "no status line" };
+  if (at.length > 1) return { error: `${at.length} status lines (lines ${at.join(", ")})` };
+  if (at[0] !== 3) return { error: `the status line is line ${at[0]!}, not 3` };
+  return readGateExit(head[2]!) ?? { error: "line 3 is in no writer form" };
+}
+
 /**
  * localPipeline: runs each command in `repo` with a 30-minute timeout,
  * writes one log per probatio (command, exit code, last 200 lines of
@@ -227,11 +286,7 @@ export const localPipeline: MergePipeline = {
       // any error (a spawn failure, ENOBUFS) fails the gate, whatever status the child then exited with
       const exitCode = timedOut || r.error !== undefined ? null : r.status;
       const output = `${r.stdout}${r.stderr}`;
-      const statusLine = timedOut
-        ? `exit code: (timed out after ${GATE_TIMEOUT_MS / 60_000}m)`
-        : r.error !== undefined
-          ? `exit code: (error ${r.error.code ?? "unknown"})`
-          : `exit code: ${exitCode ?? `(signal ${r.signal ?? "unknown"})`}`;
+      const statusLine = gateStatusLine({ timedOut, timeoutMs: GATE_TIMEOUT_MS, ...(r.error === undefined ? {} : { error: r.error }), status: r.status, signal: r.signal });
       // The tree/certifies header is our own metadata, not part of the
       // command's (untrusted) output — check.ts's probatio.evidence.tree
       // rule reads it back to confirm a gate's log actually mentions the
@@ -239,7 +294,7 @@ export const localPipeline: MergePipeline = {
       // untrusted (they can echo secrets back), so those are redacted;
       // the header line is not.
       const headers = (opts.commandHeaders?.[probatioId] ?? []).filter((line) => /^[a-z][a-z-]*: [\x21-\x7e]+$/.test(line));
-      const log = `certifies: ${certifies}\ncommand: ${redact(command)}\n${statusLine}\n${headers.map((line) => `${line}\n`).join("")}\n${redact(tail(output, LOG_TAIL_LINES))}\n`;
+      const log = `certifies: ${certifies}\n${gateCommandLine(redact(command))}\n${statusLine}\n${headers.map((line) => `${line}\n`).join("")}\n${redact(tail(output, LOG_TAIL_LINES))}\n`;
 
       const logPath = join(opts.logDir, `${opts.opus.id}-${probatioId}-${tree8}.log`);
       writeFileSync(logPath, log);
