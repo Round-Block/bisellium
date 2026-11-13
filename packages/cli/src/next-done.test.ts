@@ -1599,7 +1599,7 @@ test("D-204: a daily retro owed more than 3 days says overdue, loudly, and still
   const over = next(w, [OTHER, ...REAL()]);
   expectOther(over, "branch", "named", "overdue: a signed spec is still named");
   assert.equal(over.status, 0, ran("overdue: exit 0", over));
-  assert.match(line(over).join("\n"), /^daily-retro: \d{4}-\d\d-\d\d OVERDUE 4 days \(does not hold\): step 1 of 3: /, ran("4 days owed: the line says overdue loudly", over));
+  assert.match(line(over).join("\n"), /^daily-retro: \d{4}-\d\d-\d\d OVERDUE 4 days \(does not hold\): step 1 of 3: .+$/, ran("4 days owed: the line says overdue loudly", over));
   const newSpec = next(w, [UNSIGNED, ...W530_BUDGET, ...REAL()]);
   assert.equal(newSpec.first, `next: ${UNSIGNED} spec named`, ran("overdue: a new spec is named too", newSpec));
 });
