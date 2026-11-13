@@ -6,6 +6,8 @@ queues:
       - { opus: W-610, says: "build review before the full ci; halted until W-630 merges; the ci-run cap is cut to W-632 (D-206)" }
       - { opus: W-630, says: "a missing daily retro never holds work: dailyHold advisory (D-204), the hotfix as its own opus; reuses hotfix/daily-retro-advisory's reviewed commits; first in E3 (D-205, unblock-meet-1113)" }
       - { opus: W-624, says: "pre-sign gate runs check on a named branch: an old-base opus's signature is refused (W-503 blocked); right after W-595; next in E3 after W-630 (w503-unblock-meet-1113)" }
+      - { opus: W-635, says: "process (e2-open-meet-1113)" }
+      - { opus: W-636, says: "process, high (e2-open-meet-1113, W-633 follow-up)" }
       - { opus: W-632, says: "ci-run cap counts each run only with its own log; cut from W-610 (D-206); first reds W-610-spec/r6 rows 8-11" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-610 (D-201)" }
       - { opus: W-631, says: "ladder steps run exactly what next prints; prompt templates require the fields verdict and next refuse without (D-206, stepback-meet-1113)" }
@@ -146,7 +148,8 @@ queues:
       - { opus: W-286, says: "a decision's kill clause is evaluated; after W-291 (D-192); process (D-193)" }
   research:
     lanes: { R1: ~ }
-    next: []
+    next:
+      - { opus: W-634, says: "orchestrator context budget: measure first, cheap fixes, graph/retrieval index; Fable leads, Astra challenges (Patron 11-13)" }
   ui:
     lanes: { UI1: ~, UI2: ~ }
     next:
