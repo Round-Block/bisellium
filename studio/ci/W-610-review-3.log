@@ -1,0 +1,24 @@
+# opus: W-610
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1d4bf-81e0-7dc2-bcde-3192fc9b91c6
+# session_reason: resumed reviewer session 01a1d00d ran no command in two turns (failed-to-run); fresh session per lex production 9 step 4
+# outcome: failed
+# at: 2026-11-13T11:58:48.291Z
+# tree: tree:9592340c3131bc736556763796dbd217f629f243
+# brief: briefs/W-610.md blob:fea5f8ecf58a608296c32960a2f032f480d34ca5
+# ticket: {"opus":"W-610","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":"studio","head":"0576b004622fa9f25f2260efbecbc7b154af733a","brief":"fea5f8ecf58a608296c32960a2f032f480d34ca5","at":"2026-11-13T11:58:39.181Z"}
+
+## Findings
+1. blocking — packages/commands/src/light-gates.ts:154 [severity: S1] brief:40 `fullGateRuns` counts qualifying history commits but builds the capped builder’s inputs from currently tracked logs; after a committed deletion, the cap is reached while the deleted failed log is omitted, dispatching a builder without required evidence. Sites are the pipeline gate-log writer, `fullGateRuns`’ history and tracked-file readers, `ciLogRel`, `ciRunsAt`, the cap branch in `deriveNext`, and the capped builder’s inputs; r6 rows 8–11 reproduce the split. [class: review×name-prefix-containment-misclassifies-valid-paths] — check: packages/cli/src/w610.test.ts (r6 rows 8–11)
+2. advisory — studio/bisellium.yml:81 [severity: S3] The comment says `{studio}` supplies the officina path, although the implementation refuses that token and requires `"$BISELLIUM_STUDIO"`; the manifest value and all runtime readers use the correct environment-variable contract, leaving only the comment stale. [class: documentation×configuration-contract-drift] — check: packages/cli/src/w610-texts.test.ts
+
+## Earlier findings
+- ci/W-610-review-2.log #1: closed — packages/commands/src/light-gates.ts:42 `{studio}` is now refused, and `runLightGates` passes the officina path only through `BISELLIUM_STUDIO`; the hostile-path and quoting-context rows cover the fix — check: packages/cli/src/w610.test.ts (`W-610-b8`)
+- ci/W-610-review-2.log #2: closed — packages/commands/src/light-gates.ts:170 `fullGateRuns` maps tracked gate-log names through `ciLogRel`, so capped-builder inputs retain the required `ci/<log>` shape — check: packages/cli/src/w610.test.ts (`W-610-b9` capped-input rows)
+
+## Verdict
+The cap can dispatch a builder without a failed log, so the round fails. Shell output: `0576b004 chore(studio): W-610 gates`.
+VERDICT: FAIL
