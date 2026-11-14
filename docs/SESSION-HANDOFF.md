@@ -43,7 +43,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 ## Queue
 
-**D-181 is the plan, as D-182 changes its lanes and D-183, D-187 and D-188 its head. Read them first. File through `land`: the `check` rule that a UI brief names the signed composition it follows, every difference Patron-ruled; check how a general-purpose agent's edit of this file got past W-290. Audit: ~/.bisellium-evidence/audit-1105/fable/audit.md.**
+**D-181 is the plan, as D-182 changes its lanes and D-183, D-187 and D-188 its head. File through `land`: the `check` rule that a UI brief names the signed composition it follows, every difference Patron-ruled; check how a general-purpose agent's edit of this file got past W-290. Audit: ~/.bisellium-evidence/audit-1105/fable/audit.md.**
 
 Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a new high starts after one in flight. D-194 governs opening E2/E3 (D-201, below).
 
@@ -51,26 +51,31 @@ Greenlit on master (until `process.handoff.queue` reads studio/queue.yml): W-074
 
 Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-644.
 
-D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take product, E3 is the one process lane (W-595 enforces). D-174's items 3 to 7 keep 2026-11-17. W-506 waits in the process lane.
+D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take product, E3 is the process lane (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane.
 
-D-201 (Patron 11-13): keep D-194's one ranked list; W-595 right after W-610. D-204: E2 and UI2 open now (lanes-now-meet-1113).
+D-201 (Patron 11-13): keep D-194's one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
-Lanes now: E1 W-610 (build review before the full ci; lifted on its branch by D-209; round-3 fix round closed (head 03012f70) and its fix check ran (no open path in Files owned, .bisellium/reviews/W-610/fix-3/census.md); next names handoff, then full ci), E2 W-280 (served build drops the ?demo Inbox; unsigned draft), E3 W-644 (qa-lead seat on Codex Sol, split from W-531; greenlit), UI work (queue.yml leaves UI1/UI2 unassigned): W-488 (capture comments; spec review r5 passed; ui-lead r6 awaits reissue); W-503 (Home screen; revision 10 signed, awaits reissue; then Opus UI spec review).
-W-633 (the overlap-hold fix) merged (#1214). Filed 11-13: W-634 (research: orchestrator context budget, retrieval index), W-635 (check flags finished opera left in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643. Details: D-206.
+Lanes now:
+- E1 W-610 (light build review before the full ci): full ci passed; build review round 4 failed and is recorded (157693f9); next sends the class loop (review×name-prefix-containment-misclassifies-valid-paths, rounds 3-4) to the architect: state the limit in its brief and sign again on the branch studio.
+- E2 W-280 (served build drops the ?demo Inbox; unsigned draft).
+- E3 W-644 (qa-lead seat on Codex Sol): r1 signed (QA reviewer now ui-spec-reviewer, Patron default); spec review r2 FAILED (W-179-b1 flips, whitespace model/harness), held on class review×builder-self-review-misses-regression-fixture: leads' call (amend title or file high opus), then architect revises.
+- UI W-503 (Home screen): r12 signed; spec review r13 FAILED (b1 red, broken env), held on class mechanism×red-certifies-wrong-tree; meet-1114 Q4: file greenlit high opus (refuses module-not-found/serve-exited logs), then design lead re-records b1.
+- UI W-488 (capture comments): ui-lead r6 passed; held on file overlap with W-503 until it is done.
+W-633 (the overlap-hold fix) merged (#1214). W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643.
 
-Off the ladder: until W-622 (opus checkouts as local clones), a checkout is `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked opus worktree moves aside and the clone goes at .worktrees/<id>; after each clone commit, `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 is halted (D-181, D-206), tag archive/W-507.
+Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves aside to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
 
-Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Meets: ~/.bisellium-evidence/*-meet-11*/; leads-settled calls need no Patron.
+Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
 
-Session 12: #1215 and #1216 merged (W-644 filed; W-250, the merge group's duplicate hosted suite cut, lifted and retitled; W-280 and W-518, deleting handoff state, retitled). W-633 (the overlap hold reads branch records) is done. The 2026-11-13 daily retro is refused by `retro --daily` on a gate log carrying an exit-code line, which is W-641's scope; it waits on W-641 and never holds work. Ladder gaps 24-33: ~/.bisellium-evidence/W-630-kit/gaps.md.
-Next session first: W-610's step as next names it (after the round-3 fix check: handoff, then the full ci); W-503's Opus UI spec review; W-488's ui-lead record if still pending; W-644's spec.
+Session 13: meet-1114 (~/.bisellium-evidence/all-leads-meet-1114/collated.md) settled: the research lex clause (production lex §12, stashed research-clause-s13) is its own opus after W-644, since `land` refuses a lex path; the red-admission opus above; ops owns SRE. Hosting study (research-production-1114/report.md, Astra astra-check.md) to the Patron (ten open calls); nothing waits. Ladder gaps 35-36: ~/.bisellium-evidence/W-630-kit/gaps.md.
+Next session first: file the two opera from meet-1114 and land their queue lines; W-610's class loop to the architect (state the limit in its brief, sign again on the branch studio); W-644's class call by a leads' meet; W-503 b1 re-record after the red-admission opus is ranked.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
-Open gaps and W-508's done-step lessons: ~/.bisellium-evidence/current-state-until-1106.md ("Added 11-06"); read before any done step.
+Open gaps, W-508 lessons: ~/.bisellium-evidence/current-state-until-1106.md; read before any done step.
 W-510, after W-522 (detail: queue.yml): ~/.bisellium-evidence/pr-debate-1106/brief-r1.md.
 
 Research is its own lane, never alongside D-182's lane unasked.
 
-Off-ladder work reaching the Patron ungated gets a lead's read first; ladder builds keep Codex as the one gate (D-066 C).
-W-467 follows W-503 and takes W-451's Home palette. W-434 also links prototype hash, design digest, source tree, captures, reviews.
+Off-ladder work to the Patron gets a lead's read first; ladder builds keep Codex as the one gate (D-066 C).
+W-467 follows W-503, takes W-451's Home palette. W-434 links prototype hash, design digest, source tree, captures, reviews.
