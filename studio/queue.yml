@@ -8,6 +8,9 @@ queues:
       - { opus: W-645, says: "cause fix, red admission refuses a red log with ERR_MODULE_NOT_FOUND, serve exited, no port or token line, or no declared assertion; high, unblocks W-503 (all-leads-meet-1114 Q4)" }
       - { opus: W-647, says: "cause fix, the pre-sign gate runs every declared-list row against the prototype and refuses a Flips None signature when one flips; high, releases W-644's class hold (w644-class-meet-1114)" }
       - { opus: W-646, says: "production lex research clause, split from W-640 (D-207 item 4); lex text only, may take any free lane (all-leads-meet-1114 Q3, w644-class-meet-1114 Q2)" }
+      - { opus: W-649, says: "a branchless opus's handoff never leaves a tracked edit in main; next and check fail loud on one before a perform; process (main-edits-meet-1114 b, 5/5)" }
+      - { opus: W-650, says: "red admission reads the classifier's whole environment-failure list, after a read enumeration; after W-645; process (w645-questions-meet-1114 b)" }
+      - { opus: W-651, says: "a wrapped Playwright red must show its inner expect failure, after an enumeration of recorded reds; after W-645; process (w645-questions-meet-1114 c)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-610 (D-201)" }
       - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; process (D-193)" }
       - { opus: W-301, says: "console writes via auto-merge PR; E2's first opus (e2-open-meet-1113); held by file overlap with W-503 (w025.css), resumes after; signed r5 kept (w301-hold-meet-1114)" }
