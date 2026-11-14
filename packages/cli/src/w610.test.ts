@@ -340,13 +340,15 @@ row("W-610-b8 a metacharacter officina's light log is admitted with no command r
   }
   // r14 (spec review r13 #1): a committed deletion of a qualifying log refuses (fail closed), its own officina's only
   for (const d of ["a*b", "a[b]"]) {
-    sh(repo, "git", ["rm", "-q", "--", `${d}/ci/${OPUS}-tests-01234567.log`]);
+    sh(repo, "git", ["rm", "-q", "--", `:(literal)${d}/ci/${OPUS}-tests-01234567.log`]);
     sh(repo, "git", ["commit", "-q", "-m", `delete ${d}'s log`]);
     const got = lg.fullGateRuns(repo, d, OPUS, tree);
     assert.ok("error" in got && got.error.includes(`${d}/ci/${OPUS}-tests-01234567.log`) && /deleted in a commit/.test(got.error), `a deleted log of ${d} refuses naming it: ${JSON.stringify(got)}`);
   }
-  assert.ok(!("error" in lg.fullGateRuns(repo, "axb", OPUS, tree)), "a sibling officina's deletions are not its own");
-  assert.equal(lg.officinaRel("", "ci/x.log"), "ci/x.log", "a root officina joins to a relative path");
+  const sibling = lg.fullGateRuns(repo, "axb", OPUS, tree);
+  assert.ok(!("error" in sibling), `a sibling officina's deletions are not its own: ${JSON.stringify(sibling)}`);
+  const rel = lg.officinaRel("", "ci/x.log");
+  assert.equal(rel, "ci/x.log", `a root officina joins to a relative path: ${JSON.stringify(rel)}`);
 });
 
 /** An officina whose worktree manifest has a well-formed `source_excludes` that differs from main's, past the light gates. */
