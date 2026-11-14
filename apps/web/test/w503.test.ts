@@ -11,7 +11,7 @@ function servedRow(behaviour: number): void {
     "--grep",
     title,
   ], { cwd: process.cwd(), encoding: "utf8", timeout: 280_000 });
-  assert.equal(result.status, 0, `served Home behavior ${behaviour} holds: ${result.stdout}${result.stderr}`);
+  assert.equal(result.status, 0, `served Home behavior ${behaviour} holds:\n${result.stdout}${result.stderr}`);
 }
 
 test("W-503-b1 behaviour 1: Home is the default route and first shared navigation entry", { timeout: 300_000 }, () => {
