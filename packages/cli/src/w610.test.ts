@@ -486,6 +486,27 @@ row("W-610-b9 the capped builder's inputs are ci/<log> paths that resolve in the
   assert.match(back.kv.get("ci-runs") ?? "", new RegExp(`^(?:[2-9]|[1-9][0-9]+) at ${sourceTree(w.wt)}$`), ran("the restored log's runs are capped again", back));
   assert.deepEqual(inputsOf(back).filter((i) => i !== `briefs/${OPUS}.md` && !i.includes("#")), logs, ran("the restored log is the input", back));
 });
+row("W-610-b9 a committed deletion restored only in the index still holds: the light gate errors, next holds build, the CLI prints the hold", async () => {
+  const w = passed("w610-b9-index");
+  for (const n of [1, 2]) {
+    writeGates(w, { log: (t) => `certifies: ${t}\ncommand: node -e 1\nexit code: 1\n\nrun ${n}\n`, commit: false });
+    editRecord(w, "wt", (doc) => doc.setIn(["probationes", "tests", "status"], "failed"));
+    commit(w.wt, `studio(${OPUS}): gates failed, run ${n}`);
+  }
+  const log = `studio/ci/${OPUS}-tests-${sourceTree(w.wt).slice(5, 13)}.log`;
+  git(w.wt, ["rm", "-q", "--", log]);
+  commit(w.wt, `studio(${OPUS}): delete the failed log`);
+  // the restoration is staged (the index) and not committed: the committed tree still lacks the log
+  git(w.wt, ["checkout", "HEAD~1", "--", log]);
+  const lg = await import("@bisellium/commands/light-gates.js");
+  const got = lg.fullGateRuns(w.wt, "studio", OPUS, sourceTree(w.wt));
+  assert.ok("error" in got && /deleted in a commit/.test(got.error), `(a) an index-only restoration is still a committed deletion: ${JSON.stringify(got)}`);
+  const held = next(w, [OPUS, ...BUDGET]);
+  expectStep(held, "build", "held", "(b) next holds build, it names no builder for an index-only restoration");
+  assert.ok(held.out.includes(`${OPUS}-tests-`) && /deleted in a commit/.test(held.out), ran("(c) the printed order is the hold naming the deleted log", held));
+  assert.equal(held.kv.get("ci-runs"), undefined, ran("(c) no capped order", held));
+  assert.doesNotMatch(held.out, /bisellium run --sella builder/, ran("(c) no builder order is printed", held));
+});
 row("W-610-b9 a root and a deeper officina's capped inputs keep ci/<log>", async () => {
   const lg = await import("@bisellium/commands/light-gates.js");
   const tree = "tree:0123456789abcdef";
