@@ -1452,6 +1452,8 @@ export function deriveNext(f: Facts): Derived {
     if (gate?.tree !== cur) return hold("pr", `the passed review's tree ${gate?.tree} is not the tip tree ${cur}`);
     // W-610 (w610-proof-meet-1112): at most CI_RUNS_PER_TREE full suites are ordered at one reviewed tree; then a failed ci is a builder's
     const ciRuns = gates !== undefined && !gates.ok ? ciRunsAt(f, id, cur) : { runs: 0, logs: [] };
+    // spec review r13 #1: unreadable runs or a deleted qualifying log hold: never a third ci, never a builder without every failed log
+    if ("error" in ciRuns) return hold("build", `${ciRuns.error}; no ci is ordered and no builder dispatched at the reviewed tree ${cur.slice(0, 17)}`);
     if (gates !== undefined && !gates.ok && ciRuns.runs >= CI_RUNS_PER_TREE)
       return dispatch(f, "build", `the full suite ran ${ciRuns.runs} times at the reviewed tree ${cur.slice(0, 17)} and is not passed (${gates.error}); no further ci is ordered at this tree`, {
         phase: "2",
@@ -3089,9 +3091,9 @@ export async function performLanding(f: { repo: string; studioRel: string }, ctx
 
 /** W-610 (w610-proof-meet-1112): the full suites ordered at one reviewed tree before a failed ci goes to a builder (one rerun for an environment failure). */
 const CI_RUNS_PER_TREE = 2;
-/** W-610: the full ci runs at `tree`: the commits on the worktree's HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded), and those logs; unreadable counts as the cap (fail closed). */
-function ciRunsAt(f: Facts, id: string, tree: string): { runs: number; logs: string[] } {
-  return fullGateRuns(f.wt.dir, f.studioRel, id, tree, CI_RUNS_PER_TREE);
+/** W-610: the full ci runs at `tree`: the commits on the worktree's HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded), and those logs; unreadable history or a committed deletion of such a log is an error (fail closed). */
+function ciRunsAt(f: Facts, id: string, tree: string): { runs: number; logs: string[] } | { error: string } {
+  return fullGateRuns(f.wt.dir, f.studioRel, id, tree);
 }
 
 /** W-610: the light-gate commands for the opus: the main checkout's kept list (bisellium.yml#light_gates) and the test files of the brief committed at the worktree's HEAD, through the one reader admitLightGates also uses. */

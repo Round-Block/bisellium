@@ -145,17 +145,17 @@ export function runLightGates(studioRoot: string, opus: string, commands: string
   }
 }
 
-/** W-610 (fix 1): the full ci runs at `tree` in the officina at `studioRel`: the commits on HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded) and those logs as `ciLogRel` paths. Literal pathspecs and a plain name match, so a glob character in the officina's name or an opus sibling never counts; a run whose log a later commit deleted is not counted; unreadable counts as `cap` (fail closed). */
-export function fullGateRuns(repoDir: string, studioRel: string, opus: string, tree: string, cap = 2): { runs: number; logs: string[] } {
+/** W-610 (fix 1): the full ci runs at `tree` in the officina at `studioRel`: the commits on HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded) and those logs as `ciLogRel` paths. Literal pathspecs and a plain name match, so a glob character in the officina's name or an opus sibling never counts. Fail closed (spec review r13 #1): unreadable history, or any such log the history wrote that is no longer tracked (a committed deletion, of a sole log or of one log of a multi-log run), is an error, never a count. */
+export function fullGateRuns(repoDir: string, studioRel: string, opus: string, tree: string): { runs: number; logs: string[] } | { error: string } {
   const dir = officinaRel(studioRel, "ci");
   const tail = `-${tree.slice(5, 13)}.log`;
   const isFull = (name: string): boolean => name.startsWith(`${opus}-`) && name.endsWith(tail) && name !== `${opus}-light${tail}`;
   const names = (paths: string[]): string[] => paths.filter((p) => p.startsWith(`${dir}/`) && !p.slice(dir.length + 1).includes("/") && isFull(p.slice(dir.length + 1)));
   const log = gitIn(repoDir, ["log", "--format=%x00%H", "--name-only", "-z", "HEAD", "--", literal(dir)]);
   const tracked = gitIn(repoDir, ["ls-files", "-z", "--", literal(dir)]);
-  if (log.status !== 0 || tracked.status !== 0) return { runs: cap, logs: [] };
-  // a run counts only while its log is still tracked: a committed deletion takes the run and its evidence out together, so no counted run lacks its ci/<log>
+  if (log.status !== 0 || tracked.status !== 0) return { error: `the full ci runs at ${tree.slice(0, 17)} cannot be read: the git history or the tracked files of ${dir} (exit ${log.status ?? "none"}, ${tracked.status ?? "none"})` };
   const kept = new Set(names(tracked.stdout.split("\0").filter(Boolean)));
+  const seen = new Set<string>();
   // -z with --name-only: records are NUL separated; a record opening with the marker is a commit, the rest are its paths
   let runs = 0;
   let counted = false;
@@ -164,10 +164,16 @@ export function fullGateRuns(repoDir: string, studioRel: string, opus: string, t
     if (clean === "") continue;
     if (/^[0-9a-f]{40}$/.test(clean)) {
       counted = false;
-    } else if (!counted && kept.has(clean) && names([clean]).length > 0) {
-      counted = true;
-      runs += 1;
+    } else if (names([clean]).length > 0) {
+      seen.add(clean);
+      if (!counted) {
+        counted = true;
+        runs += 1;
+      }
     }
   }
+  // every qualifying log a run wrote stays tracked: a committed deletion would uncount a run or drop a failed log's input
+  const deleted = [...seen].filter((p) => !kept.has(p)).sort();
+  if (deleted.length > 0) return { error: `${deleted.join(", ")} ${deleted.length === 1 ? "was" : "were"} deleted in a commit; a full ci run's gate logs at ${tree.slice(0, 17)} stay tracked (restore ${deleted.length === 1 ? "it" : "them"} from the branch history in a commit)` };
   return { runs, logs: [...kept].map((p) => ciLogRel(p.slice(dir.length + 1))) };
 }
