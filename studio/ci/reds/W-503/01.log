@@ -1,0 +1,96 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-503-b1\s --import tsx apps/web/test/w503.test.ts
+# exit: 1
+# at: 2026-11-14T10:26:48.202Z
+# sella: builder.W-503
+# tree: tree:3fb2ce0dd8cad526ee03f2019ec5feebad546201
+# ticket: {"opus":"W-503","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-503/studio","head":"0baa6e9d0cfdad13f7a13150996660716eb84b63","brief":"4a61cab426b4a8d99cc75394e1f325ede245b198","at":"2026-11-14T10:26:38.695Z"}
+
+TAP version 13
+# Subtest: W-503-b1 behaviour 1: Home is the default route and first shared navigation entry
+not ok 1 - W-503-b1 behaviour 1: Home is the default route and first shared navigation entry
+  ---
+  duration_ms: 8355.919614
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w503.test.ts:2:66'
+  failureType: 'testCodeFailure'
+  error: |-
+    served Home behavior 1 holds:
+    vite v8.3.4 building client environment for production...
+    transforming...
+    ✓ 42 modules transformed.
+    rendering chunks...
+    computing gzip size...
+    dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+    dist/assets/IBMPlexMono-Regular-DMJ8VG8y.woff2       14.70 kB
+    dist/assets/InstrumentSans-Medium-BbzFLZTg.woff2     30.09 kB
+    dist/assets/BricolageGrotesque-Bold-DLoelf7F.woff2   41.34 kB
+    dist/assets/index-ChpI7GEI.css                       46.87 kB │ gzip:  8.47 kB
+    dist/assets/index-BOtlBMD-.js                       306.54 kB │ gzip: 94.21 kB
+    
+    ✓ built in 118ms
+    
+    Running 1 test using 1 worker
+    
+      ✘  1 [chromium] › apps/web/tests-serve/w503.spec.ts:14:1 › W-503-b1 Home is the default route and first shared navigation entry at 1280, 640 and 390 (5.7s)
+    
+    
+      1) [chromium] › apps/web/tests-serve/w503.spec.ts:14:1 › W-503-b1 Home is the default route and first shared navigation entry at 1280, 640 and 390 
+    
+        Error: 1280: bare entry opens Home
+    
+        expect(locator).toBeVisible() failed
+    
+        Locator: getByRole('heading', { name: 'Home', exact: true })
+        Expected: visible
+        Timeout: 5000ms
+        Error: element(s) not found
+    
+        Call log:
+          - 1280: bare entry opens Home getByRole('heading', { name: 'Home', exact: true }) with timeout 5000ms
+          - waiting for getByRole('heading', { name: 'Home', exact: true })
+    
+    
+          18 |     await page.setViewportSize({ width, height: 900 });
+          19 |     await page.goto(`${served.baseURL}/?w503=b1-${width}`);
+        > 20 |     await expect(page.getByRole("heading", { name: "Home", exact: true }), `${width}: bare entry opens Home`).toBeVisible();
+             |                                                                                                               ^
+          21 |     await expect(page.locator(".sidebar__link").first(), `${width}: Home is first in shared navigation`).toHaveAttribute("href", "#/home");
+          22 |     await expect(page.locator('.sidebar__link[href="#/home"]'), `${width}: Home is the current page`).toHaveAttribute("aria-current", "page");
+          23 |     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${width}: Home does not overflow horizontally`).toBeLessThanOrEqual(0);
+            at /home/edckt/agents/bisellium/.worktrees/W-503/apps/web/tests-serve/w503.spec.ts:20:111
+    
+        Error Context: apps/web/test-results/w503-W-503-b1-Home-is-the--262dc-n-entry-at-1280-640-and-390-chromium/error-context.md
+    
+      1 failed
+        [chromium] › apps/web/tests-serve/w503.spec.ts:14:1 › W-503-b1 Home is the default route and first shared navigation entry at 1280, 640 and 390 
+    
+    TAP version 13
+    1..1
+    not ok 1 - chromium › w503.spec.ts › W-503-b1 Home is the default route and first shared navigation entry at 1280, 640 and 390
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    servedRow (/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w503.test.ts:14:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w503.test.ts:18:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8503.054884
