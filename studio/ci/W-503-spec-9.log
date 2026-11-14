@@ -1,0 +1,27 @@
+# opus: W-503
+# phase: spec
+# round: 9
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1ab34-728f-77a3-b14c-41cea2a8a323
+# outcome: passed
+# at: 2026-11-14T00:17:04.766Z
+# tree: tree:7a7ad8333a1b5c6f14b79e6d09bfdf20e5a9d62a
+# brief: briefs/W-503.md blob:8370f31878be0399e4a93949f965035d436fd7c2
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":9,"actor":"architect","studio":".worktrees/W-503/studio","head":"c93e72d34209743ba460065d8c31e6932775d6dc","brief":"8370f31878be0399e4a93949f965035d436fd7c2","at":"2026-11-14T00:16:58.918Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-503-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-503-spec/gate-1113/gate-r9.log
+
+## Findings
+
+1. advisory — D-200's Patron calls are restored without widening the D-175 cut: Needs you uses the signed three-column desktop treatment with uppercase mono labels and explicit `Open`, Work in progress uses proportional active-count bars, headings are white, blocking/high values are red/amber, and the sparse zero-attention card remains mostly blank — check: studio/briefs/W-503.md, apps/web/src/screens/Home.tsx, apps/web/src/components/w025.css, apps/web/tests-serve/w503.spec.ts
+2. advisory — The b1 red-stage wrapper prefixes the actual failing assertion `served Home behavior 1 holds:`; all three fresh red logs fail at their declared assertions, and `reds-host.sh` validates every red through `redFailsAt` before accepting the cumulative greens — check: b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, red-fails-at.mts, reds-host.out, red-replay-check.mts
+3. advisory — The unchanged six-commit prototype applies directly at the accepted rebased opus/W-503 head c93e72d34209743ba460065d8c31e6932775d6dc, produces tree 8f73e0788c213b00a7f0298e01c47505c25581e8, retains sha256 `294ab463792a1eb8576b5818fa52bb74b7784e8f262627b48edce257232c78ba`, and requires no rebuild, screen change or behavior change — check: revision-9/anchor-audit-r9.out, gate-1113/gate-r9.log
+4. advisory — All assertion reds, cumulative greens, pure and served-source mutations (including the one-group span, three-column treatment, signed colours and bars), final focused policy rows, typecheck, build, lint and format checks pass; real `runReady` reads round 1–8 evidence, reports no brief or declared-red problem, and reaches only the absent-ticket boundary — check: reds-host.out, ledger-kills.out, ledger-kills-served.out, gates-proto.out, admission.out
+5. advisory — Ten fresh PNGs have zero horizontal overflow and visibly retain the signed reference's white headings, red/amber values, `Open`, three-column desktop Needs grid and proportional bars; one group spans and resolved attention stays sparse. Relative to W-451's signed round-6 reference, only the ruled D-175 compact cut remains: no eyebrow, Queue, Overall completion or Spend, with newer copy/data/group taxonomy, full-width WIP and the shared high diamond — check: capture-shots.out, shots/, /home/edckt/.bisellium-evidence/W-451-spec/r6/shots/home-full-1280-expanded.png
+6. advisory — The accepted rebase was exhaustively checked against `revision-9/anchor-audit-r9.out`: the shared severity anchors and all four explicit Inbox migration rows are unchanged; the `.board-drawer__ladder` insertion shifts post-series `.home*` selector line positions by 25 while preserving their selector text; the stale W-300-absent citation is corrected to W-300 landed and unconsumed by Home; and the pre-sign gate records 2 passed, 0 deferred and 0 failed — check: revision-9/anchor-audit-r9.out, gate-1113/gate-r9.log
+
+## Verdict
+
+passed
