@@ -58,11 +58,11 @@ D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take p
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 free: W-610 (light build review before the full ci) MERGED #1226 (b6c68917), cleaned up (gaps 54-54b; a stray brief kept in W-610-cleanup-1115/); next: the done performs (commit, then land).
+- E1 free: W-610 (light build review before the full ci) DONE (#1226 merged, #1233 done). .worktrees/W-610-1113 kept detached (an uncommitted brief, backed up in W-610-cleanup-1115/).
 - E2 W-280 (served build drops the ?demo Inbox): branched, ready recorded; next: reds by a Sonnet builder (`next` names builder.W-280).
-- E3 W-648 (bisellium run --cwd): held "overlap with W-610 in flight" until W-610's cleanup/done. W-645 (red admission refuses a wrong-tree red): r4 FAILED 1 blocking (keeps design) -> branch per the roadblock read-out (W-645-fable-read-1115/collated.md); `next` holds it on class tests×one-sided-bound-assertion: eng leads choose title amend or a high opus.
-- UI1 W-503 (Home screen): green rows wait on W-648. UI2 W-488 (comments on captures): split; server half revision 7 drafting (W-488-spec/revision-7/); web half is W-658. W-467 (Officina page) spec drafting ahead (W-467-spec/).
-- Patron owes: may W-467 build on W-451's palette before W-503 (D-175:21)? sign-in before MVP (W-441)?
+- E3 W-648 (bisellium run --cwd): next names branch (overlap lifted). W-645 (red admission refuses a wrong-tree red): r4 FAILED 1 blocking (keeps design) -> branch per the roadblock read-out (W-645-fable-read-1115/collated.md); `next` holds it on class tests×one-sided-bound-assertion: eng leads choose title amend or a high opus.
+- UI1 W-503 (Home screen): green rows wait on W-648. UI2 W-488 (comments on captures): split; server half revision 7 drafted (W-488-spec/revision-7/: overlap with W-503 empty, no design change; to main for the ui-lead sign); web half is W-658. W-467 (Officina page) spec drafted ahead (W-467-spec/, shots/); it builds on W-503's commits, so it follows W-503.
+- Patron owes: sign-in before MVP (W-441)?
 W-633 (the overlap-hold fix) merged (#1214). W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643.
 
 Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves aside to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
@@ -70,7 +70,7 @@ Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `g
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
 
 Session 20: Meets w488-overlap-meet-1115, ui2-lane-meet-1115 (all five + Fable), guard-autopull-meet-1115; W-645 roadblock read-out (Fable + eng leads). Filed W-654..W-658. Gaps 53, 54, 54a.
-Next session first: W-610 done performs; W-648 branch; W-645 class call (eng leads); W-280 builder reds; W-488 r7 and W-467 drafts to ui-lead signing.
+Next session first: W-648 branch perform; W-645 class call (eng leads); W-280 builder reds; W-488 r7 brief to main + ui-lead sign; W-467 to the ui-lead round.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
