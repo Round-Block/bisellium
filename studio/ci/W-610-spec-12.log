@@ -1,0 +1,21 @@
+# opus: W-610
+# phase: spec
+# round: 12
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-14T08:09:17.280Z
+# tree: tree:bc2d056ed2d70820705d3765e6dc404fe78a442d
+# brief: briefs/W-610.md blob:1e28cc8e150e888c8dab98c0858621850a6f1aea
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":12,"actor":"architect","studio":"studio","head":"ea28036f5eec8c46db898e7a25027e391edc7709","brief":"1e28cc8e150e888c8dab98c0858621850a6f1aea","at":"2026-11-14T08:09:02.837Z"}
+
+# W-610 spec signature, limit after build review r4 (architect, claude-opus-5-5)
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-610-spec/promise-ledger-r5.md
+Gate log: /home/edckt/.bisellium-evidence/W-610-spec/r5/gate-r5.log
+
+## Findings
+1. advisory — studio/briefs/W-610.md Input domain row 9: the ci-run cap recognises the append-only form (each run a commit adding its ci/<id>-<gate>-<tree8>.log files, all kept tracked); a committed deletion of a run's every log (one more ci may be ordered) and of one log of a multi-log run (the run counts, the deleted log is not an input) are stated limits: a hand edit of ci/*.log, never by hand, and neither certifies a gate (pr still needs admitCurrentGates at the tree) — check: packages/cli/src/w610.test.ts W-610-b9 rows pin the stated behaviour of both deletion forms
+
+## Verdict
+The round-4 form is outside the stated domain; the limit is now stated in the brief. Not an evidence blocker: no gate passes and no log leaves the branch history.
