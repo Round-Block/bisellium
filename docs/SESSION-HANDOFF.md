@@ -58,10 +58,10 @@ D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take p
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-610 (light build review before the full ci): spec review r15 PASSED; build review r5 FAILED (the round-14 fail-closed code is only in the architect's prototype r7); leads w610-loop-meet-1114 3/3: architect signed r16 unchanged (W-610-spec/r8/signature-r16.md), not recordable: the class-loop hold writes no ticket (gap 41); next: run the clone-side `next` the refusal prints, else a leads' call on a builder fix round applying r7.
+- E1 W-610 (light build review before the full ci): builder fix round applied prototype r7 (red rows b825eb8b, green daf47c55, b9 rows 7/7); fix-check of review 5 at daf47c55: 7 paths closed, 3 open (a deletion restored only in the index counts as kept; census .bisellium/reviews/W-610/fix-5/census.md); leads w610-fix-meet-1114; next: handoff as next prints, then a builder fix round for the 3 paths; behaviour 9's red still to record when next names it.
 - E2 W-280 (served build drops the ?demo Inbox; unsigned draft).
-- E3 W-644 (qa-lead seat on Codex Sol): Codex spec review PASSED, recorded round 4 (main ci/W-644-spec-4.log untracked); branch held on file overlap with W-610.
-- UI W-503 (Home screen): design lead revision 11 re-recorded b1's red where serve starts; signature recorded round 14 (af1fdf39, log committed ac1beec9); Opus UI spec review r15 passed with no findings, record refused for a missing Earlier findings line (gap 42); next: rerun r15 fresh (run-r15.sh fixed).
+- E3 W-644 (qa-lead seat on Codex Sol): unchanged, branch held on file overlap with W-610.
+- UI W-503 (Home screen): spec review r15 passed and recorded, spec perform a09aae66, ui-lead input r16 passed (7adc01d7); builder replays prototype r10 (leads w503-reds-meet-1114 3/3): b1 red recorded (ci/reds/W-503/01.log), b1 green 881d228d; held: green rows need a `--cwd` on `bisellium run` (leads clone-tests-meet-1114 c 5/5; file that opus first; no cd or env -C meanwhile).
 - UI W-488 (capture comments): ui-lead r6 passed; held on file overlap with W-503 until it is done.
 W-633 (the overlap-hold fix) merged (#1214). W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643.
 
@@ -69,8 +69,8 @@ Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `g
 
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
 
-Session 15: Meets: w610-loop-meet-1114 (3/3; architect signed r16 unchanged, not recordable: the class-loop hold writes no ticket). W-645 spec draft ahead (unsigned, W-645-spec/). Research step A sampled one Codex review (system peak 9.3 GB used, 2.7 GB swap); full ci and Playwright capture still owed. Gaps 38-42: W-630-kit/gaps.md.
-Next session first: W-610 clone-side `next` (else a leads' call on a builder fix round applying r7); W-503 per next after the r15 rerun; W-645 signing when next names it; sample the next full ci and Playwright capture.
+Session 16: Meets: w645-questions-meet-1114 (5 leads), w610-fix-meet-1114, w503-reds-meet-1114, clone-tests-meet-1114. Gaps 43-45. W-645 architect revision 3 (unsigned, W-645-spec/, two rows added). Research step A not run (no full ci or Playwright capture this session).
+Next session first: file and build `run --cwd` (clone-tests-meet-1114), then W-503 b1 rows, b2, b3 per W-503-build/builder-brief.md (sync main's ref first: it is behind the clone); W-610 handoff then the builder fix round; W-645 signing when next names it; sample the next full ci and Playwright capture.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
