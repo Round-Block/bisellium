@@ -1,10 +1,10 @@
 queues:
   engineering:
-    lanes: { E1: W-610, E2: W-280, E3: W-644 }
+    lanes: { E1: W-610, E2: W-280, E3: W-648 }
     next:
       - { opus: W-610, says: "build review before the full ci; lifted by D-209 item 3 after W-633 merged; the ci-run cap is cut to W-632 (D-206)" }
       - { opus: W-648, says: "bisellium run --cwd <dir> runs a builder's command in the opus's own .worktrees/<id>, only with --opus; small and high, unblocks W-503's green rows (clone-tests-meet-1114 c, 5/5)" }
-      - { opus: W-644, says: "the qa-lead seat runs on Codex gpt-5.6-sol: one row of studio/bisellium.yml, split from W-531; process, first in E3 after W-633 (D-208 item 6)" }
+      - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114)" }
       - { opus: W-645, says: "cause fix, red admission refuses a red log with ERR_MODULE_NOT_FOUND, serve exited, no port or token line, or no declared assertion; high, unblocks W-503 (all-leads-meet-1114 Q4)" }
       - { opus: W-647, says: "cause fix, the pre-sign gate runs every declared-list row against the prototype and refuses a Flips None signature when one flips; high, releases W-644's class hold (w644-class-meet-1114)" }
       - { opus: W-646, says: "production lex research clause, split from W-640 (D-207 item 4); lex text only, may take any free lane (all-leads-meet-1114 Q3, w644-class-meet-1114 Q2)" }
