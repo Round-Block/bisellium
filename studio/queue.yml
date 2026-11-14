@@ -1,8 +1,9 @@
 queues:
   engineering:
-    lanes: { E1: W-610, E2: W-280, E3: ~ }
+    lanes: { E1: W-610, E2: W-280, E3: W-644 }
     next:
       - { opus: W-610, says: "build review before the full ci; lifted by D-209 item 3 after W-633 merged; the ci-run cap is cut to W-632 (D-206)" }
+      - { opus: W-644, says: "the qa-lead seat runs on Codex gpt-5.6-sol: one row of studio/bisellium.yml, split from W-531; process, first in E3 after W-633 (D-208 item 6)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-610 (D-201)" }
       - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; process (D-193)" }
       - { opus: W-301, says: "console writes via auto-merge PR; E2's first opus (e2-open-meet-1113); held by file overlap with W-503 (w025.css), resumes after; signed r5 kept (w301-hold-meet-1114)" }
@@ -41,7 +42,7 @@ queues:
       - { opus: W-616, says: "process opera name their switch (pinned on in the real studio, loud if missing) and owed proof; done marks unproven; check rule, not memory (w610-proof-meet-1112)" }
       - { opus: W-618, says: "process.checkpoint reads the newest row: cycle minutes first, a spend cell, both from records; after W-616 (memory-enforce-meet-1112)" }
       - { opus: W-613, says: "ci --opus alongside the build review in a scratch checkout, killed on a failed review; follow-up of W-610, right after W-551 (review-order-meet-1112 round 2)" }
-      - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead; qa-lead to gpt-6); right after W-512; W-451, W-503 by one-off exceptions (w590-rank-meet-1112)" }
+      - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead); qa-lead seat split out as W-644 (D-208 item 6); right after W-512 (w590-rank-meet-1112)" }
       - { opus: W-619, says: "next refuses research in a work lane; queue refuses lane ids outside E/UI; split from W-512; process lane (lanes-meet-1112)" }
       - { opus: W-280, says: "Inbox demo out of the served build; E2 while W-301 is held (w301-hold-meet-1114); spec first" }
       - { opus: W-642, says: "W-301's remainder: console writes refuse mistyped opera row ids (D-061 §4, w301-split-meet-1114); after W-301" }
