@@ -1,0 +1,24 @@
+# opus: W-610
+# phase: spec
+# round: 14
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-14T08:36:06.625Z
+# tree: tree:bc2d056ed2d70820705d3765e6dc404fe78a442d
+# brief: briefs/W-610.md blob:e7ffc4b208f579cb3836e946aebb34028a0b4794
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":14,"actor":"architect","studio":"studio","head":"0150773c859af4388c56e93747ae3074236400db","brief":"e7ffc4b208f579cb3836e946aebb34028a0b4794","at":"2026-11-14T08:36:00.450Z"}
+
+# W-610 spec signature, round 14: fail closed on a committed ci-log deletion (architect, claude-opus-5-5)
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-610-spec/r7/promise-ledger-r7.md
+Gate log: /home/edckt/.bisellium-evidence/W-610-spec/r7/gate-r7.log
+
+## Earlier findings
+- ci/W-610-spec-13.log #1: closed — brief:170 (Input domain row 9) is the reviewer's text and the r5 limit is withdrawn: `fullGateRuns` returns an error for unreadable history or any qualifying log its history wrote that is no longer tracked, naming it, and `deriveNext` holds build (no third ci, no capped builder without every failed log) until the log is restored in a commit; brief:34, brief:48, brief:101, brief:128, brief:131, brief:194, brief:200, brief:202 carry it; prototype r7/prototype-r7.mbox over opus/W-610 0150773c, red d6b2a6ec, green c1d1b1e1, 4 of 4 kills — check: packages/cli/src/w610.test.ts (W-610-b9 "the capped builder's inputs are ci/<log> paths that resolve in the worktree officina" holds on deletion of the sole log and releases on restore; W-610-b9 "a capped builder's inputs carry every manifest-valid probatio id's failed log" holds on deletion of one log of a multi-log run)
+
+## Findings
+1. advisory — brief:48: a deletion commit and a restore commit each write the log's path and count as runs, so a restored run's `ci-runs:` can exceed two; an over-count only dispatches the capped builder sooner with every log, the cap's safe side — check: packages/cli/src/w610.test.ts W-610-b9 "the capped builder's inputs are ci/<log> paths that resolve in the worktree officina" (restore asserts the capped builder and at least two runs)
+
+## Verdict
+The deletion class is now refused and held rather than stated as a limit; reused writers, admitCurrentGates, the light admitter, certify, retro and prune are named limits, not promises.
