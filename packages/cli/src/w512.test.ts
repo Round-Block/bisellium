@@ -6,11 +6,11 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { test } from "node:test";
 import { aheadIn } from "./meanwhile.js";
 import { lanePlan, startOrder } from "./queue.js";
-import { BUDGET, MAIN, OPUS, TSX, type World, commit, next, put, ran, world } from "./next-world.test.js";
+import { BUDGET, MAIN, OPUS, SETUP_ENV, TSX, type World, commit, next, put, ran, world } from "./next-world.test.js";
 
 const rec = (id: string, state: string): string => `---\nid: "${id}"\ntitle: "queued ${id}"\nkind: "feature"\ncollegium: "engineering"\nstate: ${state}\nprobationes: {}\n---\nqueued\n`;
 /** A queue.yml with one engineering queue: `lanes` (`E1: W-901` form) and the ranked entries (`W-901!` marks next_ts), committed unless `dirty`. */
@@ -253,4 +253,43 @@ test("W-512-b3 lane walk: a lane dropped after the target is decided drops only 
   const held = next(w, [OPUS, ...BUDGET]);
   assert.equal(held.first, `next: ${OPUS} branch held`, ran("E1 takes the target; E2's walk reaches the unreadable entry, and E3's opus in flight still holds it", held));
   assert.equal(held.kv.get("why"), `${OPUS}'s Files owned overlap with an opus in flight: W-902 in lane E3: \`docs/ADOPTION.md\`; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`, ran("the why names W-902 in lane E3", held));
+});
+
+/** W-633: commit `text` as opera/W-901.md on opus/W-901 alone (undefined: remove it there), as `halt` and `lift` write the branch's record (D-021); master and the main checkout are untouched. */
+function onBranch(w: World, text: string | undefined): void {
+  const env = { ...SETUP_ENV, GIT_INDEX_FILE: join(w.root, "w633.index") };
+  const g = (args: string[], input?: string): string => {
+    const r = spawnSync("git", args, { cwd: w.repo, env, encoding: "utf8", ...(input === undefined ? {} : { input }) });
+    assert.equal(r.status, 0, `fixture git ${args.join(" ")}\n${r.stderr}`);
+    return r.stdout.trim();
+  };
+  const path = `${relative(w.repo, w.studio)}/opera/W-901.md`;
+  g(["read-tree", "opus/W-901"]);
+  if (text === undefined) g(["update-index", "--force-remove", "--", path]);
+  else g(["update-index", "--add", "--cacheinfo", `100644,${g(["hash-object", "-w", "--stdin"], text)},${path}`]);
+  const tree = g(["write-tree"]);
+  g(["update-ref", "refs/heads/opus/W-901", g(["commit-tree", tree, "-p", "opus/W-901", "-m", "studio: W-901's record on its branch"])]);
+}
+
+test("W-633-b1 behaviour 1: an opus halted on its branch releases its files; its branch record is read fail closed", () => {
+  const w = world("w633-b1", "spec");
+  records(w, { "W-901": "building" });
+  queue(w, "E1: W-901, E2: ~", ["W-901", OPUS]);
+  inFlight(w, ["docs/"]);
+  const overlap = `${OPUS}'s Files owned overlap with an opus in flight: W-901 in lane E1: \`docs/ADOPTION.md\`; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`;
+  onBranch(w, rec("W-901", "halted"));
+  const released = next(w, [OPUS, ...BUDGET]);
+  assert.equal(released.first, `next: ${OPUS} branch named`, ran("halted on its branch alone (master's record still building): W-901 releases its files", released));
+  onBranch(w, rec("W-901", "building"));
+  const lifted = next(w, [OPUS, ...BUDGET]);
+  assert.equal(lifted.first, `next: ${OPUS} branch held`, ran("lifted on its branch: W-901 holds its files again", lifted));
+  assert.equal(lifted.kv.get("why"), overlap, ran("lifted: the why names the overlap", lifted));
+  onBranch(w, "no front matter\n");
+  const malformed = next(w, [OPUS, ...BUDGET]);
+  assert.equal(malformed.first, `next: ${OPUS} branch held`, ran("a branch record outside the record domain holds (fail closed)", malformed));
+  assert.equal(malformed.kv.get("why"), `opera/W-901.md on refs/heads/opus/W-901 has no front matter, so W-901's Files owned cannot be checked against ${OPUS}'s (W-633)`, ran("malformed: the why names the record, the ref and the reason", malformed));
+  onBranch(w, undefined);
+  const absent = next(w, [OPUS, ...BUDGET]);
+  assert.equal(absent.first, `next: ${OPUS} branch held`, ran("no record on the branch holds (fail closed)", absent));
+  assert.equal(absent.kv.get("why"), `opera/W-901.md is not a readable blob on refs/heads/opus/W-901, so W-901's Files owned cannot be checked against ${OPUS}'s (W-633)`, ran("absent: the why names the record and the ref", absent));
 });

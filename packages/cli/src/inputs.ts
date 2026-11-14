@@ -25,19 +25,22 @@ const STATE_IDS: readonly string[] = STATES.map((s) => s.id);
 export function loadOpusRecord(studio: string, rel: string, base?: string): InputRead<Dict> {
   const below = walkStudio(studio, base);
   if (below.kind !== "valid") return below;
-  return readInput(rel, () => readContainedRegularFile(studio, rel, "opera"), (bytes) => {
-    let data: unknown;
-    try {
-      data = parseFrontMatter<unknown>(bytes.toString("utf8"), rel).data;
-    } catch {
-      throw new Error("has no front matter");
-    }
-    if (!isDict(data)) throw new Error("front matter must be a mapping");
-    const state = data["state"];
-    if (state === undefined) throw new Error("has no state");
-    if (typeof state !== "string" || !STATE_IDS.includes(state)) throw new Error(`has state ${JSON.stringify(state)}, not one of ${STATE_IDS.join(", ")}`);
-    return data;
-  });
+  return readInput(rel, () => readContainedRegularFile(studio, rel, "opera"), (bytes) => parseOpusRecord(bytes.toString("utf8"), rel));
+}
+
+/** W-558's domain of an opus record, from its text (W-633: also a record read on a ref): a mapping whose `state` is a lifecycle state id; anything else throws its reason. */
+export function parseOpusRecord(text: string, rel: string): Dict {
+  let data: unknown;
+  try {
+    data = parseFrontMatter<unknown>(text, rel).data;
+  } catch {
+    throw new Error("has no front matter");
+  }
+  if (!isDict(data)) throw new Error("front matter must be a mapping");
+  const state = data["state"];
+  if (state === undefined) throw new Error("has no state");
+  if (typeof state !== "string" || !STATE_IDS.includes(state)) throw new Error(`has state ${JSON.stringify(state)}, not one of ${STATE_IDS.join(", ")}`);
+  return data;
 }
 
 export interface Marker {
