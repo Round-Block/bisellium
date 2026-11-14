@@ -44,7 +44,7 @@ import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { laneLines, QUEUE_FILE, readQueue, startOrder, type LaneHeld, type StartOrder } from "./queue.js";
 import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
-import { STEPS, checkCollection, loadMarker, loadOpusRecord, walkReal, walkStudio, type Marker, type Step } from "./inputs.js";
+import { STEPS, checkCollection, loadMarker, loadOpusRecord, parseOpusRecord, walkReal, walkStudio, type Marker, type Step } from "./inputs.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -2585,7 +2585,8 @@ function queueOrder(repo: string, studioAbs: string, studioRel: string, id: stri
 /**
  * W-512 (W-592's lane-start half, D-192): why `f.id` may not branch while an opus in flight has Files owned that overlap its
  * own, or undefined. Its own Files owned are the main checkout's signed brief (`branch` commits it). An opus is in flight
- * once refs/heads/opus/<it> exists and its main record is open (greenlit up to review), whatever queue.yml's lane field
+ * once refs/heads/opus/<it> exists and both its main record and the record committed on that branch are open (greenlit up
+ * to review; W-633: `halt` and `lift` write the branch's record alone, D-021), whatever queue.yml's lane field
  * says (spec r2 S1): every one is read, and `lanes` (every other lane's now, held or taken) only names its lane. Its Files
  * owned are that branch's committed brief (the blob its spec gate judged). Two spans overlap when equal, or when one ends
  * in `/` and the other opens with it; a glob is not expanded. Each read fails closed; a ref with no record is not an opus.
@@ -2605,6 +2606,10 @@ function laneOverlap(f: Facts, lanes: LaneHeld[]): string | undefined {
     const main = laneRecord(f.studioAbs, x, "allowed", f.repo);
     if ("error" in main) return `${recordRel(x)} cannot be read (${main.error}), so ${x}'s Files owned cannot be checked against ${f.id}'s (W-592)`;
     if (main.record === undefined || !CONFLICT_OPEN_STATES.has(main.record["state"] as string)) continue;
+    // W-633: the branch's committed record, read as its brief is; a halt there releases the files, an unreadable one holds
+    const branched = refRecordState(f.repo, ref, f.studioRel, x);
+    if ("error" in branched) return `${branched.error}, so ${x}'s Files owned cannot be checked against ${f.id}'s (W-633)`;
+    if (!CONFLICT_OPEN_STATES.has(branched.state)) continue;
     const theirs = git(f.repo, ["cat-file", "blob", `${ref}:${join(f.studioRel, briefRel(x))}`]);
     if (theirs.error !== undefined || theirs.status !== 0) return `${briefRel(x)} is not a readable blob on ${ref}, so its Files owned cannot be checked against ${f.id}'s (W-592)`;
     const owned = ownedFiles(theirs.stdout);
@@ -2614,6 +2619,18 @@ function laneOverlap(f: Facts, lanes: LaneHeld[]): string | undefined {
   }
   if (hits.length === 0) return undefined;
   return `${f.id}'s Files owned overlap with an opus in flight: ${hits.join("; ")}; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)`;
+}
+
+/** W-633: an opus record's state as committed on `ref` (`<ref>:<studio>/opera/<id>.md`), in the record loader's domain
+ *  (`parseOpusRecord`); an absent or unreadable blob, or a record outside that domain, is an error naming why. */
+function refRecordState(repo: string, ref: string, studioRel: string, id: string): { state: string } | { error: string } {
+  const blob = git(repo, ["cat-file", "blob", `${ref}:${join(studioRel, recordRel(id))}`]);
+  if (blob.error !== undefined || blob.status !== 0) return { error: `${recordRel(id)} is not a readable blob on ${ref}` };
+  try {
+    return { state: parseOpusRecord(blob.stdout, recordRel(id))["state"] as string };
+  } catch (e) {
+    return { error: `${recordRel(id)} on ${ref} ${(e as Error).message}` };
+  }
 }
 
 /** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */
