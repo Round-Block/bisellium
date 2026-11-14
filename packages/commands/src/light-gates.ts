@@ -152,8 +152,9 @@ export function fullGateRuns(repoDir: string, studioRel: string, opus: string, t
   const isFull = (name: string): boolean => name.startsWith(`${opus}-`) && name.endsWith(tail) && name !== `${opus}-light${tail}`;
   const names = (paths: string[]): string[] => paths.filter((p) => p.startsWith(`${dir}/`) && !p.slice(dir.length + 1).includes("/") && isFull(p.slice(dir.length + 1)));
   const log = gitIn(repoDir, ["log", "--format=%x00%H", "--name-only", "-z", "HEAD", "--", literal(dir)]);
-  const tracked = gitIn(repoDir, ["ls-files", "-z", "--", literal(dir)]);
-  if (log.status !== 0 || tracked.status !== 0) return { error: `the full ci runs at ${tree.slice(0, 17)} cannot be read: the git history or the tracked files of ${dir} (exit ${log.status ?? "none"}, ${tracked.status ?? "none"})` };
+  // the committed tree at HEAD, never the index or the working tree: a restoration counts only once a commit makes it (ls-tree takes a plain directory prefix, no pathspec magic)
+  const tracked = gitIn(repoDir, ["ls-tree", "-r", "-z", "--name-only", "--full-name", "HEAD", "--", `${dir}/`]);
+  if (log.status !== 0 || tracked.status !== 0) return { error: `the full ci runs at ${tree.slice(0, 17)} cannot be read: the git history or the committed files of ${dir} (exit ${log.status ?? "none"}, ${tracked.status ?? "none"})` };
   const kept = new Set(names(tracked.stdout.split("\0").filter(Boolean)));
   const seen = new Set<string>();
   // -z with --name-only: records are NUL separated; a record opening with the marker is a commit, the rest are its paths
