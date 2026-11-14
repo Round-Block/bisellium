@@ -1,0 +1,21 @@
+# opus: W-610
+# phase: build
+# round: 5
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1d4bf-81e0-7dc2-bcde-3192fc9b91c6
+# outcome: failed
+# at: 2026-11-14T09:29:39.036Z
+# tree: tree:bc2d056ed2d70820705d3765e6dc404fe78a442d
+# brief: briefs/W-610.md blob:e7ffc4b208f579cb3836e946aebb34028a0b4794
+# ticket: {"opus":"W-610","step":"review","action":"verdict-build","round":5,"actor":"censor","studio":"studio","head":"13b3616eeefa726ad70aa84355fa6da0f66a1d3d","brief":"e7ffc4b208f579cb3836e946aebb34028a0b4794","at":"2026-11-14T09:29:32.728Z"}
+
+## Findings
+1. blocking — packages/commands/src/light-gates.ts:158 [severity: S1] brief:48 The signed brief promises fail-closed behaviour 9, but `fullGateRuns` still intersects history with tracked paths and returns no error for deleted qualifying logs; packages/cli/src/next.ts:1454 consequently has no error-hold path, permitting a third CI or an incomplete capped dispatch. [class: review×name-prefix-containment-misclassifies-valid-paths] — check: packages/cli/src/w610.test.ts (sole-log and multi-log committed deletions must hold without CI or builder dispatch)
+
+## Earlier findings
+- ci/W-610-review-4.log #1: open — finding 1; packages/commands/src/light-gates.ts:158 still lacks the signed brief’s fail-closed deletion handling
+
+## Verdict
+The required head probe returned `13b3616e spec(W-610): re-signed on opus/W-610`; finding 1 remains blocking, so this round fails.
+VERDICT: FAIL
