@@ -145,7 +145,7 @@ export function runLightGates(studioRoot: string, opus: string, commands: string
   }
 }
 
-/** W-610 (fix 1): the full ci runs at `tree` in the officina at `studioRel`: the commits on HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded) and those logs as `ciLogRel` paths. Literal pathspecs and a plain name match, so a glob character in the officina's name or an opus sibling never counts; unreadable counts as `cap` (fail closed). */
+/** W-610 (fix 1): the full ci runs at `tree` in the officina at `studioRel`: the commits on HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded) and those logs as `ciLogRel` paths. Literal pathspecs and a plain name match, so a glob character in the officina's name or an opus sibling never counts; a run whose log a later commit deleted is not counted; unreadable counts as `cap` (fail closed). */
 export function fullGateRuns(repoDir: string, studioRel: string, opus: string, tree: string, cap = 2): { runs: number; logs: string[] } {
   const dir = officinaRel(studioRel, "ci");
   const tail = `-${tree.slice(5, 13)}.log`;
@@ -154,6 +154,8 @@ export function fullGateRuns(repoDir: string, studioRel: string, opus: string, t
   const log = gitIn(repoDir, ["log", "--format=%x00%H", "--name-only", "-z", "HEAD", "--", literal(dir)]);
   const tracked = gitIn(repoDir, ["ls-files", "-z", "--", literal(dir)]);
   if (log.status !== 0 || tracked.status !== 0) return { runs: cap, logs: [] };
+  // a run counts only while its log is still tracked: a committed deletion takes the run and its evidence out together, so no counted run lacks its ci/<log>
+  const kept = new Set(names(tracked.stdout.split("\0").filter(Boolean)));
   // -z with --name-only: records are NUL separated; a record opening with the marker is a commit, the rest are its paths
   let runs = 0;
   let counted = false;
@@ -162,10 +164,10 @@ export function fullGateRuns(repoDir: string, studioRel: string, opus: string, t
     if (clean === "") continue;
     if (/^[0-9a-f]{40}$/.test(clean)) {
       counted = false;
-    } else if (!counted && names([clean]).length > 0) {
+    } else if (!counted && kept.has(clean) && names([clean]).length > 0) {
       counted = true;
       runs += 1;
     }
   }
-  return { runs, logs: names(tracked.stdout.split("\0").filter(Boolean)).map((p) => ciLogRel(p.slice(dir.length + 1))) };
+  return { runs, logs: [...kept].map((p) => ciLogRel(p.slice(dir.length + 1))) };
 }
