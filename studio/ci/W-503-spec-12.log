@@ -1,0 +1,28 @@
+# opus: W-503
+# phase: spec
+# round: 12
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1ab34-728f-77a3-b14c-41cea2a8a323
+# outcome: passed
+# at: 2026-11-14T06:23:30.318Z
+# tree: tree:9754f5e5da1fff55e1f5c68c633c3dcc285deb9b
+# brief: briefs/W-503.md blob:2cdc165718fe240d9402c95224472317198c04f2
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":12,"actor":"architect","studio":".worktrees/W-503/studio","head":"3216130b49a5ac788801302d5a0a546c57584e52","brief":"2cdc165718fe240d9402c95224472317198c04f2","at":"2026-11-14T06:23:23.068Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-503-spec/revision-10/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-503-spec/gate-1113/gate-r10.log
+
+## Findings
+
+1. advisory — D-200's Patron calls remain exact without widening the D-175 cut: Needs you uses the signed three-column desktop treatment with uppercase mono labels and explicit `Open`, Work in progress uses proportional active-count bars, headings are white, blocking/high values are red/amber, and the sparse zero-attention card remains mostly blank — check: revision-10/brief.md, apps/web/src/screens/Home.tsx, apps/web/src/components/w025.css, apps/web/tests-serve/w503.spec.ts
+2. advisory — The b1–b3 red-stage served rows now put `holds:\n` before stdout and stderr, so each exact pin is a stable first line under ordinary and silent npm output; all six fresh red variants fail at their declared assertions — check: revision-10/b1-red-ordinary.log, revision-10/b1-red-silent.log, revision-10/b2-red-ordinary.log, revision-10/b2-red-silent.log, revision-10/b3-red-ordinary.log, revision-10/b3-red-silent.log, revision-10/reds-r10.out
+3. advisory — The six-commit round-10 prototype applies directly at c93e72d34209743ba460065d8c31e6932775d6dc, produces tree c5bb0a6f72deadbe679bcae5e3cfda22cabfb510, and has sha256 `e7037fc83f7b10dcccc59435aa930b7a4491d238f441b6ff572dcb482f45948b` — check: revision-10/apply-check-r10.out, revision-10/final-tree.txt, revision-10/prototype-r10.sha256
+4. advisory — Six independent commit builds, six red variants, three final focused greens and thirteen targeted mutations pass; the pre-sign gate records 2 passed, 0 deferred and 0 failed — check: revision-10/series-builds-r10.out, revision-10/reds-r10.out, revision-10/final-greens-r10.out, revision-10/kills-r10.out, revision-10/kills-r10-tail.out, gate-1113/gate-r10.log
+5. advisory — Ten recaptured shots are byte-identical to round 9, so the repaired row message and strengthened assertions change no screen or layout; the inspected states retain the signed white headings, red/amber values, `Open`, three-column desktop Needs grid, proportional bars, full-card single group and sparse resolved state — check: revision-10/shots-compare-r10.out, revision-10/shots/
+6. advisory — The accepted rebase anchors remain as round 9: all four Inbox migrations and shared severity selectors retain their meaning, the `.board-drawer__ladder` insertion only shifts later selector lines, and landed W-300 remains unconsumed by Home — check: revision-9/anchor-audit-r9.out, revision-10/brief.md
+7. advisory — Revision 10 closes the refused b1 replay diagnosed in `reds-diag-1114.md`: the shared b1–b3 served-row message now places `holds:\n` before stdout and stderr, and the ui-lead round-11 advisory is adopted with 2/1/1 fills at 50%/25%/25% within 1px plus blocking Health's red number and square cue at 1280, 640 and 390; the gate result is 2 passed, 0 deferred and 0 failed — check: reds-diag-1114.md, ui-input-11.md, revision-10/final-greens-r10.out, revision-10/kill-b3-ratios.out, revision-10/kill-b3-health-red.out, revision-10/kill-b3-health-square.out, gate-1113/gate-r10.log
+
+## Verdict
+
+passed
