@@ -1,0 +1,26 @@
+# opus: W-280
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-14T14:29:34.304Z
+# tree: tree:aa17a0784092885f2190e706f6451a6ff8832bcf
+# brief: briefs/W-280.md blob:e35b5f60ad627d4e27c5b4f6430e27aea740275c
+# ticket: {"opus":"W-280","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b407139f8c936b50903f44f7891860e2d345839e","brief":"e35b5f60ad627d4e27c5b4f6430e27aea740275c","at":"2026-11-14T14:29:30.649Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-280-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the cut is D-208 item 3's (4/4): the newItem half is closed by construction and the failed plain read is closed by W-341, so W-280 keeps the served ?demo Inbox and the fixtures in the bundle; Defaults 2 and 3 now record that ruling instead of asking — check: studio/decisions/D-208.md, newitem-probe.out
+2. advisory — the prototype rebased onto master b407139f with no conflict (master moved only under studio/, docs/ and packages/cli, none of them W-280's paths); each red fails by assertion at its declared pin on the stage before it and the replay classifier accepts both — check: s18/red-b1-before.out, s18/red-b2-before.out, s18/red-accept.out
+3. advisory — each row passes on its own stage, and the touched served specs pass whole on the prototype (14 passed) and unflipped on master (12 passed); W-341 and the web policy rows pass unedited — check: s18/proto-b1-stage1.out, s18/proto-b2-stage2.out, s18/touched-serve-proto.out, s18/touched-serve-master-unflipped.out, s18/w341-proto.out, s18/policy-proto.out
+4. advisory — w415.spec.ts and walk.spec.ts also open ?demo in the served console and are not edited: their Inbox visits now read the sample studio's own rows; they assert layout, not the demo petitions, and pass unedited, so they are a stated limit, not named flips — check: s18/demo-readers-proto.out
+5. advisory — typecheck, lint (warnings only), format and both officina checks pass on the prototype; the first studio check ran on the detached tag, where opus.records_unchanged cannot read a branch, and passes on proto/W-280 at the same commit — check: s18/typecheck-proto.out, s18/lint-proto.out, s18/format-proto.out, s18/check-studio.out, s18/check-studio-branch.out, s18/check-sample.out
+6. advisory — no Files owned overlap: W-301's w341.test.ts and harness.ts, W-503's App.tsx, Sidebar.tsx, smoke, auth and answer specs, and W-610's, W-644's and W-648's package.json and CLI files are untouched; no package.json change — check: studio/briefs/W-280.md:65
+7. advisory — the brief passes briefAdmissionProblems and declaredRedProblems; the ledger covers each promise line, each stated limit and every Input domain row — check: s18/admission.out, promise-ledger.md
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-280.md`, master b407139f (prototype.diff, clone proto/W-280).
