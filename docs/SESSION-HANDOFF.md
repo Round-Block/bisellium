@@ -58,9 +58,9 @@ D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take p
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-610 (light build review before the full ci): r5 limit signed r12; Codex spec review r13 FAILED (ci/W-610-spec-13.log, clone untracked): the limit must fail closed (fullGateRuns refuses committed log deletions; deriveNext holds); architect round 14 in flight (W-610-spec/architect-r14-brief.md).
+- E1 W-610 (light build review before the full ci): spec review r13 FAILED the r5 limit (must fail closed); architect r14 SIGNED the fail-closed design (ci/W-610-spec-14.log; clone uncommitted: briefs/W-610.md, ci -13, -14); next: commit + sync main's ref, then Codex spec review r15, the last round.
 - E2 W-280 (served build drops the ?demo Inbox; unsigned draft).
-- E3 W-644 (qa-lead seat on Codex Sol): class hold released by W-647 (w644-class-meet-1114, 5/5); handoff recorded (main's opera/W-644.md modified); architect revising for spec review r2's two blockers, signs r3.
+- E3 W-644 (qa-lead seat on Codex Sol): class hold released by W-647; architect r3 SIGNED (main ci/W-644-spec-3.log untracked; b1 split to w644-seat.test.ts since the ruled text broke W-139-b1); next: Codex spec review r3.
 - UI W-503 (Home screen): class released by W-645; spec perform done (b7bbcc85); next names ui-lead (Astra) input r14; first the design lead (Sol) re-records b1 in a working clone and re-signs.
 - UI W-488 (capture comments): ui-lead r6 passed; held on file overlap with W-503 until it is done.
 W-633 (the overlap-hold fix) merged (#1214). W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643.
@@ -70,7 +70,7 @@ Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `g
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
 
 Session 14: #1220 filed W-645, W-647 (highs), W-646 (research clause). Meets: w644-class-meet-1114, hosting-r2-meet-1114 (round 2 sound with changes 5/5; round 3: measure peaks first, kept sampler research-production-1114/r3a/; then routes and provider seam). Hosting calls to the Patron. Gap 37: W-630-kit/gaps.md.
-Next session first: W-610 r14 signature then spec review r14 (last round); W-644 r3 then spec review; W-503 b1 re-record; attach the r3a sampler to the next full ci.
+Next session first: W-610 commit, ref sync, spec review r15; W-644 spec review r3; W-503 b1 re-record by the design lead; attach the r3a sampler to the next full ci.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
