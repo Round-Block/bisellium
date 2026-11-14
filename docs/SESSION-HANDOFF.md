@@ -51,6 +51,8 @@ Greenlit on master (until `process.handoff.queue` reads studio/queue.yml): W-074
 
 Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-644.
 
+Greenlit on master, filed 11-14: W-645 W-646 W-647.
+
 D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take product, E3 is the process lane (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane.
 
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
@@ -68,7 +70,7 @@ Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `g
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
 
 Session 13: meet-1114 (~/.bisellium-evidence/all-leads-meet-1114/collated.md) settled: the research lex clause (production lex §12, stashed research-clause-s13) is its own opus after W-644, since `land` refuses a lex path; the red-admission opus above; ops owns SRE. Hosting study (research-production-1114/report.md, Astra astra-check.md) to the Patron (ten open calls); nothing waits. Ladder gaps 35-36: ~/.bisellium-evidence/W-630-kit/gaps.md.
-Next session first: file the two opera from meet-1114 and land their queue lines; W-610's class loop to the architect (state the limit in its brief, sign again on the branch studio); W-644's class call by a leads' meet; W-503 b1 re-record after the red-admission opus is ranked.
+Next session first: W-610 re-sign (limit stated in the clone's brief) then build review r5; W-644 spec r3 (W-647 filed); W-503 b1 re-record (W-645 filed).
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
