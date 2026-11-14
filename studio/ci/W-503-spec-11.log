@@ -1,0 +1,27 @@
+# opus: W-503
+# phase: spec
+# round: 11
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1abba-3a26-7073-847c-317f3bdbae78
+# outcome: passed
+# at: 2026-11-14T02:40:03.113Z
+# tree: tree:7a7ad8333a1b5c6f14b79e6d09bfdf20e5a9d62a
+# dispatch_prompt: ci/W-503-ui-prompt-11.md
+# design_digest: sha256:31ee9f1ae27c813ba0bb4f8d4f66eb4402675f3f7a6003a320476b7951876cb7
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":11,"actor":"ui-lead","studio":".worktrees/W-503/studio","head":"33bd898836d30a17e4aaa608bf47c8dd07a8548f","brief":"8370f31878be0399e4a93949f965035d436fd7c2","at":"2026-11-14T02:40:02.347Z"}
+
+## Findings
+
+1. advisory — brief:56 — The agent-written b3 acceptance checks treat equal positive bar widths as proof of proportionality; they would accept full-width bars despite the captured 2/1/1 distribution. Blocking Health’s red number also lacks a served assertion — replace with: “Add a 2/1/1 fixture asserting fill widths of 50%, 25% and 25% of their respective tracks within 1px, plus a blocking-Health fixture asserting a red number and square cue, at all three widths.” — check: apps/web/tests-serve/w503.spec.ts, b3.
+
+## Recommendation
+
+Round-3 #1 remains closed: the prototype excludes done and halted failures and counts each qualifying opus once.
+Round-3 #2 remains closed: the captures retain “Work items with failed gates.”
+Round-3 #3’s two-column remedy is superseded by the Patron-approved three-column treatment at brief:15; the current wrapped titles and combined asks remain readable.
+Round-3 #4 remains closed through the shared high-advisory diamond, and round-6 #1 is now closed by the full-card single-group span shown at both desktop sidebar states.
+Compared with my round-6 pass, the available prototype and full-Home captures preserve readable labels, counts, asks and Open at 1280, 640 and 390, with no visible clipping or lost information.
+The sample bars visibly convey 2/1/1 proportions, and the full-Home round6 capture shows red blocking Health; the advisory strengthens regression coverage without changing the approved look.
+Single-group captures exist only at 1280; narrow single-group rendering was not separately pictured.
+Verdict: passed
