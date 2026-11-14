@@ -1,0 +1,24 @@
+# opus: W-503
+# phase: spec
+# round: 10
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 886113c5-da0d-4121-805b-37beaab11cb0
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed
+# outcome: passed
+# at: 2026-11-14T01:35:06.453Z
+# tree: tree:7a7ad8333a1b5c6f14b79e6d09bfdf20e5a9d62a
+# brief: briefs/W-503.md blob:8370f31878be0399e4a93949f965035d436fd7c2
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":10,"actor":"spec-reviewer","studio":".worktrees/W-503/studio","head":"cf273b1e01f74e9c04602091b58a45df26f5388b","brief":"8370f31878be0399e4a93949f965035d436fd7c2","at":"2026-11-14T01:34:58.936Z"}
+
+## Findings
+1. advisory — brief:56 [severity: S4] The work-summary-is-signed promise says each bar's width is its phase count divided by total active work. b3's only bar fixture has equal counts (`In progress1`, `Verifying1`, `Awaiting review1`, `prototype.mbox:892`), and the only checks are that every bar is wider than zero and that all bars are within 1px of each other (`:895-896`). So a build that sizes bars as count/max, or makes every bar full width, still passes; and no row checks that a blocking Health number is red (only Stuck red, `:889`, and Health amber, `:890`, are checked). Replacement text: keep brief:56 and add to b3 "a second WIP fixture with unequal recorded counts (2/1/1) checks that each bar's width divided by its track's width equals count/total within 1px, and a blocking Health fixture checks that the Health number is red." [class: ui×unstated-limit] — check: none: apps/web/tests-serve/w503.spec.ts should check an unequal-count bar ratio and a red blocking Health number
+2. advisory — brief:83 [severity: S4] Round-8 blocker 1 is closed: brief:83 now pins "served Home behavior 1 holds:", and `b1-red-recorded.log:13` opens the `error: |-` block with that exact text. `redFailsAt` trims that line and compares it to the pin (`brief-admission.ts:422-423`), and the log carries `code: 'ERR_ASSERTION'` (`:75`), so the red is accepted. The b3 pin still matches its recorded log. Replacement text: keep brief:83 as written. [class: evidence×red-not-at-declared-assertion] — check: packages/commands/src/brief-admission.ts redFailsAt
+3. advisory — brief:120 [severity: S4] All four D-200 calls are carried in the brief, the Defaults, the prototype and the captures. Bars: brief:56, brief:124 and `prototype.mbox:1094-1095` and `:1308`. White headings with red or amber numbers: brief:123 and `:886-890`. Round-6 Needs you (uppercase mono labels, Open): brief:121 and `:414-415`, `:574`, `:587`. Sparse empty card stays: brief:123 and `home-none-1280-expanded.png`. Everything else in the delta is anchors and rebase text: head 258816ef, W-300 described as landed and used by the Board drawer only (brief:122), and b3 renamed from plain to signed. The new `Open` and `home-wip__bar` forms carry rejecting expectations. These make sense on the captures, and the Patron accepted the full-Home differences on 2026-11-13, so I did not reopen them. Replacement text: keep brief:120 as written. [class: ui×signed-look-drift] — check: apps/web/tests-serve/w503.spec.ts
+
+## Earlier findings
+- ci/W-503-spec-8.log #1: closed — brief:83 now pins "served Home behavior 1 holds:", and `b1-red-recorded.log:13` opens the error block with exactly that line, which `redFailsAt` accepts (`brief-admission.ts:422-423`).
+
+## Verdict
+The round-8 red blocker is closed and D-200's four calls are in the brief, the Defaults, the prototype and the captures; what remains is advisory (the bar-width and blocking-Health checks are weak), so the build can proceed.
+VERDICT: PASS
