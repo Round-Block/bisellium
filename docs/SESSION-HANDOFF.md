@@ -51,27 +51,26 @@ Greenlit on master (until `process.handoff.queue` reads studio/queue.yml): W-074
 
 Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-644.
 
-Greenlit on master, filed 11-14: W-645 W-646 W-647 W-648; filed 11-15: W-649 W-650 W-651.
+Greenlit on master, filed 11-14: W-645 W-646 W-647 W-648; filed 11-15: W-649 W-650 W-651 W-652 W-653.
 
 D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take product, E3 is the process lane (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane.
 
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-610 (light build review before the full ci): PR #1226 approved, but the merge queue removed it 3x: w610.test.ts:348 fails only in the merge group. Leads w610-mergefail-meet-1114: test-only fix e6c79cce (literal pathspec, messages print got). Its full ci failed on W-310-b1 (guard test, passed in s17; w610 rows passed): diagnose first, then rerun ci, push by the pr perform and check the remote head (gap 49), Patron re-approval, merge.
-- E2 W-280 (served build drops the ?demo Inbox): spec signed r1, Codex r2 PASSED (3 advisories for the builder); next: branch perform (no overlap).
-- E3 W-648 (bisellium run --cwd, the opus's own worktree, only with --opus): spec r2 failed, architect r3 signed, Codex r4 PASSED (ci/W-648-spec-4.log); branch held by overlap with W-610 until it merges, then spec perform, reds, build.
-- E3 waiting: W-644 (qa-lead seat on Codex Sol) takes E3 back first when W-610 merges. W-645 (red admission refuses a wrong-tree red): signed r1; next: Codex spec review (kit W-645-specreview/, ladder-brief-114).
-- UI W-503 (Home screen): unchanged; green rows wait on W-648.
-- UI W-488: unchanged.
+- E1 W-610 (light build review before the full ci): full ci rerun passed at tree 42d8c15b (s18 W-310-b1 fail did not reproduce), Codex review r8 PASSED, PR #1226 on 180cb03a (leased push, gap 49a); waits on the Patron's re-approval, then the merge perform (`next` prints it).
+- E2 W-280 (served build drops the ?demo Inbox): spec passed r2 (3 advisories for the builder); next: branch perform.
+- E3 W-648 (bisellium run --cwd): spec passed r4; branch held by overlap until W-610 merges; then spec perform, branch, reds, build. After it: W-644, then W-641 (daily retro unblock).
+- E3 waiting: W-645 (red admission refuses a wrong-tree red): r2 FAILED 2 blocking, architect revision 4 signed r3 (ci/W-645-spec-3.log, census + gate log); next: Codex spec review r4 (last round).
+- UI W-503 (Home screen): green rows wait on W-648. UI W-488: unchanged.
 W-633 (the overlap-hold fix) merged (#1214). W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643.
 
 Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves aside to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
 
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
 
-Session 18: Meets main-edits-meet-1114 (all five; Patron stash ruling), w610-mergefail-meet-1114. Records #1228. Gaps 49-50. Research A: W-610 actual full ci 6.99 GB peak, swap 2.65 GB, load 12.7, no OOM.
-Next session first: W-310-b1 failure in W-610's ci (diagnose), then W-610 ci, push, merge; W-645 spec review; W-280 branch; file the branchless-handoff opus and W-645's two follow-ups; the stash-check script.
+Session 19: Meets fable-advisor-meet-1115 (all five; Patron: Fable advises on roadmaps, system architecture, roadblocks; no usage credits), retro-meet-1115 (all five + Fable). Records #1230. Gaps 51-52. 4 stashes dropped by sha (stash-check/). Research A: W-610 full ci 9.06 GiB peak, no OOM.
+Next session first: W-610 merge after the Patron's re-approval; W-645 Codex spec review r4; W-280 branch; then W-648 when W-610 merges.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
