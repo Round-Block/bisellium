@@ -56,25 +56,24 @@ D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take p
 
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 right after W-610. D-204: E2 and UI2 open now (lanes-now-meet-1113).
 
-Lanes now: E1 W-610 (build review before the full ci; halted until a Patron ruling lifts it after W-633 merges), E2 W-301 (console writes by auto-merge PR, #1206), E3 W-633 (the overlap hold reads each opus's branch record; building), UI1 W-488 (comment on served UI captures), UI2 W-503 (the Home screen).
-W-633 builds before W-610; W-624 (pre-sign gate checks a named branch) is next in E3. Filed 11-13: W-634 (research: orchestrator context budget, retrieval index), W-635 (check flags finished opera left in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4). Details: D-206.
+Lanes now: E1 W-610 (build review before the full ci; halted until a Patron ruling lifts it after W-633 merges), E2 W-280 (W-301 held behind W-503's w025.css, resumes after), E3 W-633 (built; ci flake rerun), UI1 W-488 (comment on served UI captures; r5 signed), UI2 W-503 (the Home screen; UI spec r10 passed).
+W-633 builds before W-610; W-624 (pre-sign gate checks a named branch) is next in E3. Filed 11-13: W-634 (research: orchestrator context budget, retrieval index), W-635 (check flags finished opera left in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643. Details: D-206.
 
 Off the ladder: until W-622 (opus checkouts as local clones), a checkout is `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked opus worktree moves aside and the clone goes at .worktrees/<id>; after each clone commit, `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 is halted (D-181, D-206), tag archive/W-507.
 
 Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Meets: ~/.bisellium-evidence/*-meet-11*/; leads-settled calls need no Patron.
 
-Session 9 state: W-630 done. W-633 built b1; ci fails only on a missing handoff record (next: `handoff`, commit, rerun ci).
-W-301 r5 signed; W-642 filed; branch held by overlaps (W-503, W-610, W-633). W-503 r9 recorded; next Opus UI spec review r10.
-W-488: reset the gate clone to 2af67f61 and apply prototype-r5.mbox, then resume Sol to sign.
-D-207: index deferred, research per-study; W-639, W-640, W-641 filed. Daily retro 11-13 blocked by W-641.
+Session 10 state: W-633 (ci flake; rerun on a quiet machine, then Sol build review); E2 W-280 (unsigned architect draft; leads' meet: cut the newItem half + retitle, follow-on demo opus) while W-301 holds on W-503's w025.css (w301-hold-meet-1114).
+W-503 r10 passed, next ui-lead input r11; W-488 r5 signed, record pending (`next` names sella ui-architect round 4); qa-lead seat to Sol (D-191 item 1) needs a real PR via W-531 or a split.
+Sol spec-ahead drafts ready for W-624, W-642, W-632, W-467, W-453 (unsigned); W-643 filed (usage line shows week resets and burn rate).
+Next session first: one leads' meet (design lead seated) on queue order from qa-study-1114, qa-audit-study-1114 and remediation-audit-1114 reports; then the Patron's rulings on W-250 (ci short path) and D-181 handoff deletion / W-518.
 
-Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md. D-186: greenlighting goes; W-524 waits for M4.
+Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
 Open gaps and W-508's done-step lessons: ~/.bisellium-evidence/current-state-until-1106.md ("Added 11-06"); read before any done step.
-W-510, after W-522, repairs talk, then the leads' debate on human-approved PRs (~/.bisellium-evidence/pr-debate-1106/brief-r1.md).
-D-184: W-520, after W-531, in the process lane, takes over W-380. Never `prune-scratch.sh`. D-185: then W-521, W-522; a diagnosed flake in an untouched file gets its own opus.
+W-510, after W-522 (detail: queue.yml): ~/.bisellium-evidence/pr-debate-1106/brief-r1.md.
 
-Research is its own lane, never alongside D-182's lane unasked. W-500 Runs screen waits for MVP.
+Research is its own lane, never alongside D-182's lane unasked.
 
-Off-ladder work reaching the Patron ungated gets a lead's read first; ladder builds keep Codex as the one gate (D-066 C). W-073, W-438, W-136 stay halted until M4's exit (D-193).
+Off-ladder work reaching the Patron ungated gets a lead's read first; ladder builds keep Codex as the one gate (D-066 C).
 W-467 follows W-503 and takes W-451's Home palette. W-434 also links prototype hash, design digest, source tree, captures, reviews.
