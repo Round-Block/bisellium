@@ -4,6 +4,9 @@ queues:
     next:
       - { opus: W-610, says: "build review before the full ci; lifted by D-209 item 3 after W-633 merged; the ci-run cap is cut to W-632 (D-206)" }
       - { opus: W-644, says: "the qa-lead seat runs on Codex gpt-5.6-sol: one row of studio/bisellium.yml, split from W-531; process, first in E3 after W-633 (D-208 item 6)" }
+      - { opus: W-645, says: "cause fix, red admission refuses a red log with ERR_MODULE_NOT_FOUND, serve exited, no port or token line, or no declared assertion; high, unblocks W-503 (all-leads-meet-1114 Q4)" }
+      - { opus: W-647, says: "cause fix, the pre-sign gate runs every declared-list row against the prototype and refuses a Flips None signature when one flips; high, releases W-644's class hold (w644-class-meet-1114)" }
+      - { opus: W-646, says: "production lex research clause, split from W-640 (D-207 item 4); lex text only, may take any free lane (all-leads-meet-1114 Q3, w644-class-meet-1114 Q2)" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-610 (D-201)" }
       - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; process (D-193)" }
       - { opus: W-301, says: "console writes via auto-merge PR; E2's first opus (e2-open-meet-1113); held by file overlap with W-503 (w025.css), resumes after; signed r5 kept (w301-hold-meet-1114)" }
@@ -21,7 +24,7 @@ queues:
       - { opus: W-635, says: "process (e2-open-meet-1113)" }
       - { opus: W-636, says: "process, high (e2-open-meet-1113, W-633 follow-up)" }
       - { opus: W-639, says: "cap subagent hand-backs, detail in a file; above W-625 (D-207, w634-meet-1114); process" }
-      - { opus: W-640, says: "a hook enforces each worker's token stop, plus the research lex clause (D-207); process" }
+      - { opus: W-640, says: "a hook enforces each worker's token stop (D-207); the research lex clause is split to W-646; process" }
       - { opus: W-641, says: "daily retro reads a timed-out gate log (gap 12); unblocks the 11-13 retro; process" }
       - { opus: W-627, says: "after a failed-to-run review round, the perform opens a fresh reviewer session instead of resuming; process (W-610 r3 deadlock)" }
       - { opus: W-625, says: "boot context caps and current-state shape: one cap table, SessionStart warning, context --max-tokens; process, after W-595 (boot-context-meet-1113)" }
