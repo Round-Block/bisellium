@@ -13,7 +13,10 @@ queues:
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-610 (D-201)" }
       - { opus: W-631, says: "ladder steps run exactly what next prints; prompt templates require the fields verdict and next refuse without (D-206, stepback-meet-1113)" }
       - { opus: W-638, says: "next prints clone paths and pushes for local-clone opera (W-631 gaps, s7-s8); process (D-193)" }
+      - { opus: W-639, says: "cap subagent hand-backs, detail in a file; above W-625 (D-207, w634-meet-1114); process" }
       - { opus: W-625, says: "boot context caps and current-state shape: one cap table, SessionStart warning, context --max-tokens; process, after W-595 (boot-context-meet-1113)" }
+      - { opus: W-640, says: "a hook enforces each worker's token stop, plus the research lex clause (D-207); process" }
+      - { opus: W-641, says: "daily retro reads a timed-out gate log (gap 12); unblocks the 11-13 retro; process" }
       - { opus: W-627, says: "after a failed-to-run review round, the perform opens a fresh reviewer session instead of resuming; process (W-610 r3 deadlock)" }
       - { opus: W-626, says: "prune merged records, handoff and verify worktrees; never an open PR, unmerged or locked one; process, after W-624 (boot-context-meet-1113)" }
       - { opus: W-629, says: "guard clears an agent's finished background run, so its next background call is not refused; process" }
@@ -32,6 +35,7 @@ queues:
       - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead; qa-lead to gpt-6); right after W-512; W-451, W-503 by one-off exceptions (w590-rank-meet-1112)" }
       - { opus: W-619, says: "next refuses research in a work lane; queue refuses lane ids outside E/UI; split from W-512; process lane (lanes-meet-1112)" }
       - { opus: W-301, says: "console writes via auto-merge PR; E2's first opus (e2-open-meet-1113)" }
+      - { opus: W-642, says: "W-301's remainder: console writes refuse mistyped opera row ids (D-061 §4, w301-split-meet-1114); after W-301" }
       - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), the check half; next's lane-start refusal is in W-512; process (D-193)" }
       - { opus: W-597, says: "each lane's next unclaimed entry gets one spec-ahead draft; sign refuses a stale base; overlap via W-592; process, after W-592 (spec-ahead-lanes-meet-1112)" }
       - { opus: W-611, says: "W-494 guard clears a resumed runner's finished background run; process (retro 11-12)" }

@@ -16,7 +16,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 2. Run: `bash scripts/agent-workspace.sh verify --inside`; `npm run -s bisellium -- next --all --studio studio --repo .` (read-only); `git status --short`; `node ~/.bisellium-evidence/handoff-check.mjs .`.
 3. Roles. A dispatched `ladder-runner` runs every record write (`next --perform`, `verdict`, `review`, `red`, `ready`, `done`, `branch`, `merge`) verbatim; the guard (W-364) refuses main-thread ladder writes; lex §9 step 0's writes go through a ladder-runner (lex fix owed). Engineering: Sonnet builders (background), Opus 5.5 architect, Codex `gpt-5.6-sol` review (D-066 C, D-072). `kind: ui`: Codex Sol drafts and signs, Opus 5.5 reviews spec, Codex `gpt-5.6-terra` builds, and `next` names the build reviewer (D-150 C). `clerk` edits text only.
 4. Known traps (each line opens `Standing:` or `Until W-<n>:`, the opus that retires it; at most 12; `check` refuses a line whose opus is done):
-- Until W-633: the overlap hold reads a halted opus's state from main, so W-610's halt (on its branch, D-206) releases nothing: main's LOCAL ref opus/W-610 is deleted (tag archive/W-610-halt-1113 at 668bb5ca; the clone .worktrees/W-610 keeps the branch); restore it after W-630 merges by the command in ~/.bisellium-evidence/overlap-gap-meet-1113/ref-log.md.
+- Until W-633: the overlap hold reads a halted opus's state from main; main's opus/W-610 ref was restored in session 9 (668bb5ca, tag archive/W-610-halt-1113); W-610 stays halted until a Patron ruling lifts it after W-633 merges.
 - Until W-631: build-review prints no model/prompt; `run --sella builder --opus` fails ci (fresh clone: no node_modules/audit network/master ref): run `run --sella producer --no-worktree … ci --opus <id>` after `npm ci --cache ~/.bisellium-evidence/npm-cache` in the clone; a branch-only opus's packet/verdict/review print main's studio (use the clone's); a runner's write passes the classifier only if its command is in the brief file (gaps.md).
 - Standing: `next` holds a signature or red on a stale handover (a certify host-runner change lands first, W-323 pattern): `npm run -s bisellium -- handoff --opus <id> --sella producer --next … --studio <worktree>/studio`, commit the record. Every record write, the builder's `red` included, needs a `next` before it at the same head. Spec signatures list findings as `n. advisory — … — check: …` or `No findings`.
 - Standing: a ui master `verify` runs from a writable worktree on `verify/<id>-<date>` at master, logs landed by a records PR, with the kept kit ~/.bisellium-evidence/ui-verify-1104/run.sh <opus> <base> <tag>, by a ladder-runner (in a `bisellium run` session, as W-364 requires) — main's studio would take failed records; `verify` refuses a dirty tree; 3 heavy-job slots on trial; no master move during it. A UI ruling's design_digest is the opus's current digest (`currentDesign`), never a review log's.
@@ -56,17 +56,17 @@ D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take p
 
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 right after W-610. D-204: E2 and UI2 open now (lanes-now-meet-1113).
 
-Lanes now: E1 W-610 (build review before the full ci; halted until W-630 merges), E2 W-301 (console writes by auto-merge PR, #1206), E3 W-630 (a missing daily retro never holds work), UI1 W-488 (comment on served UI captures), UI2 W-503 (the Home screen).
-After W-630 merges: W-633 builds before W-610; W-624 (pre-sign gate checks a named branch) is next in E3. Filed 11-13: W-634 (research: orchestrator context budget, retrieval index), W-635 (check flags finished opera left in a queue), W-636 (next reads opus state from branch records). Details: D-206.
+Lanes now: E1 W-610 (build review before the full ci; halted until a Patron ruling lifts it after W-633 merges), E2 W-301 (console writes by auto-merge PR, #1206), E3 W-633 (the overlap hold reads each opus's branch record; building), UI1 W-488 (comment on served UI captures), UI2 W-503 (the Home screen).
+W-633 builds before W-610; W-624 (pre-sign gate checks a named branch) is next in E3. Filed 11-13: W-634 (research: orchestrator context budget, retrieval index), W-635 (check flags finished opera left in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4). Details: D-206.
 
 Off the ladder: until W-622 (opus checkouts as local clones), a checkout is `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked opus worktree moves aside and the clone goes at .worktrees/<id>; after each clone commit, `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 is halted (D-181, D-206), tag archive/W-507.
 
 Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Meets: ~/.bisellium-evidence/*-meet-11*/; leads-settled calls need no Patron.
 
-Session 8 state: W-630 MERGED (#1208); Patron fast-forwards master (sandbox); rerun the merge perform; then W-633 branches and builds.
-W-301 spec r4 FAILED (1 blocking, 1 advisory); record refused (Earlier-findings shape); next: Codex reissues, architect revises (last round).
-W-488 next: design lead signs r5. W-503 gate passed; Sol fixed brief's code anchors in r9; next: producer commits the brief, records the signature.
-W-634 report done; next: leads' meet, then Patron rules. Owed: handoff source_excludes post-W-610; 11-13 retro entry (D-205); land W-637, W-638 + queue lines; the W-634 leads' meet.
+Session 9 state: W-630 done. W-633 built b1; ci fails only on a missing handoff record (next: `handoff`, commit, rerun ci).
+W-301 r5 signed; W-642 filed; branch held by overlaps (W-503, W-610, W-633). W-503 r9 recorded; next Opus UI spec review r10.
+W-488: reset the gate clone to 2af67f61 and apply prototype-r5.mbox, then resume Sol to sign.
+D-207: index deferred, research per-study; W-639, W-640, W-641 filed. Daily retro 11-13 blocked by W-641.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md. D-186: greenlighting goes; W-524 waits for M4.
 
