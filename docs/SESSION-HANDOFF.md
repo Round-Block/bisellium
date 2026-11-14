@@ -58,10 +58,10 @@ D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take p
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-610 (light build review before the full ci): fix round r8 (fullGateRuns reads the committed tree) closed review 5's 3 paths; full ci passed; Codex build review r6 PASSED (ci/W-610-review-6.log); pr refused for a merge commit (gap 48), so the branch was rebased onto master b6cc3d54 (head 038cb185, backup/W-610-pre-rebase-s17 in the clone); full ci passed at the rebased head (gates 34a4175b); Codex build review r7 PASSED (ci/W-610-review-7.log); next: the PR (code-owned prompt: Patron approval), then merge.
-- E2 W-280 (served build drops the ?demo Inbox): unsigned draft at W-280-spec/brief.md; leads lanes-meet-1114 Q2: spec-ahead now; next W-280 not yet run.
-- E3 W-648 (bisellium run --cwd, the opus's own worktree, only with --opus): filed #1225, architect spec r1 signed (main studio/ci/W-648-spec-1.log, untracked); in E3 while W-644 is held (lanes-meet-1114 Q1 3/3); next: Codex spec review per next (spec perform needs main free of tracked edits).
-- E3 waiting: W-644 (qa-lead seat on Codex Sol) takes E3 back first when W-610 merges.
+- E1 W-610 (light build review before the full ci): PR #1226 approved, but the merge queue removed it 3x: w610.test.ts:348 fails only in the merge group. Leads w610-mergefail-meet-1114: test-only fix e6c79cce (literal pathspec, messages print got). Its full ci failed on W-310-b1 (guard test, passed in s17; w610 rows passed): diagnose first, then rerun ci, push by the pr perform and check the remote head (gap 49), Patron re-approval, merge.
+- E2 W-280 (served build drops the ?demo Inbox): spec signed r1, Codex r2 PASSED (3 advisories for the builder); next: branch perform (no overlap).
+- E3 W-648 (bisellium run --cwd, the opus's own worktree, only with --opus): spec r2 failed, architect r3 signed, Codex r4 PASSED (ci/W-648-spec-4.log); branch held by overlap with W-610 until it merges, then spec perform, reds, build.
+- E3 waiting: W-644 (qa-lead seat on Codex Sol) takes E3 back first when W-610 merges. W-645 (red admission refuses a wrong-tree red): signed r1; next: Codex spec review (kit W-645-specreview/, ladder-brief-114).
 - UI W-503 (Home screen): unchanged; green rows wait on W-648.
 - UI W-488: unchanged.
 W-633 (the overlap-hold fix) merged (#1214). W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643.
@@ -70,8 +70,8 @@ Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `g
 
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
 
-Session 17: Meets lanes-meet-1114 (ladder, eng, qa). Gaps 46-48. Research step A: Playwright capture 12 GB peak, W-610's actual full ci 6.5 GiB peak (r3a/, sample-actual.sh on every actual run, the Patron 11-14).
-Next session first: W-610 PR (Patron approval) then merge; W-648 spec review, then build; W-503 green rows once W-648 lands; W-645 signing when next names it; attach r3a/sample-actual.sh to each actual full ci and Playwright capture.
+Session 18: Meets main-edits-meet-1114 (all five; Patron stash ruling), w610-mergefail-meet-1114. Records #1228. Gaps 49-50. Research A: W-610 actual full ci 6.99 GB peak, swap 2.65 GB, load 12.7, no OOM.
+Next session first: W-310-b1 failure in W-610's ci (diagnose), then W-610 ci, push, merge; W-645 spec review; W-280 branch; file the branchless-handoff opus and W-645's two follow-ups; the stash-check script.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
