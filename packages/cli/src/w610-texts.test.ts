@@ -34,6 +34,8 @@ row("W-610-b6 build-review.md and lex production 9 steps 3-4 state review on the
   assert.match(lex, /4\. \*\*Review:\*\* `next` orders review when the light gates/, "lex §9 step 4 orders review on the light gates");
   assert.match(lex, /after a passed review, one `ci --opus` at the reviewed tree/, "lex §9 orders one ci after the pass");
   // the real officina declares a well-formed light_gates, so it takes the new order (absent, it keeps the old one silently)
+  const rawManifest = readFileSync(join(REPO_ROOT, "studio", "bisellium.yml"), "utf8");
+  assert.ok(!rawManifest.includes("{studio}"), "no line of the manifest, a comment included, advertises {studio}");
   const manifest = parse(readFileSync(join(REPO_ROOT, "studio", "bisellium.yml"), "utf8")) as Record<string, unknown>;
   const cmds = lightGateCommands(manifest, "studio", "");
   assert.ok(Array.isArray(cmds) && cmds.length > 0, `studio/bisellium.yml declares a well-formed light_gates: ${JSON.stringify(cmds)}`);

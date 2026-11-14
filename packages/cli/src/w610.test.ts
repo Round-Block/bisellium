@@ -338,6 +338,12 @@ row("W-610-b8 a metacharacter officina's light log is admitted with no command r
     assert.equal(got.runs, 1, `only ${d}'s own log counts, no sibling by glob`);
     assert.equal(got.logs.length, 1, `one log of ${d}'s own`);
   }
+  // fix 3: a committed deletion of the log takes its run with it, so no counted run lacks its evidence
+  for (const d of ["a*b", "a[b]"]) {
+    sh(repo, "git", ["rm", "-q", "--", `${d}/ci/${OPUS}-tests-01234567.log`]);
+    sh(repo, "git", ["commit", "-q", "-m", `delete ${d}'s log`]);
+    assert.deepEqual(lg.fullGateRuns(repo, d, OPUS, tree), { runs: 0, logs: [] }, `a deleted log of ${d} is neither counted nor a missing input`);
+  }
   assert.equal(lg.officinaRel("", "ci/x.log"), "ci/x.log", "a root officina joins to a relative path");
 });
 
@@ -461,6 +467,12 @@ row("W-610-b9 the capped builder's inputs are ci/<log> paths that resolve in the
   const logs = inputs.filter((i) => i !== `briefs/${OPUS}.md` && !i.includes("#"));
   assert.deepEqual(logs, [`ci/${OPUS}-tests-${sourceTree(w.wt).slice(5, 13)}.log`], ran("the failed gate log is a ci/<log> input", capped));
   for (const i of [`briefs/${OPUS}.md`, ...logs]) assert.ok(inputs.includes(i) && existsSync(join(w.wtStudio, i)), ran(`each input is a file under the worktree officina: ${i}`, capped));
+  // fix 3: delete the sole failed log in a commit; the order must not count the run nor name a missing input
+  git(w.wt, ["rm", "-q", "--", `studio/${logs[0]}`]);
+  commit(w.wt, `studio(${OPUS}): delete the failed log`);
+  const gone = next(w, [OPUS, ...BUDGET]);
+  assert.doesNotMatch(gone.kv.get("ci-runs") ?? "", /^[1-9]\d* at/, ran("a deleted log's run, the deletion commit included, is not counted to the cap", gone));
+  for (const i of inputsOf(gone).filter((x) => !x.includes("#"))) assert.ok(existsSync(join(w.wtStudio, i)), ran(`each input still resolves: ${i}`, gone));
 });
 row("W-610-b9 a root and a deeper officina's capped inputs keep ci/<log>", async () => {
   const lg = await import("@bisellium/commands/light-gates.js");
@@ -474,6 +486,9 @@ row("W-610-b9 a root and a deeper officina's capped inputs keep ci/<log>", async
     const got = lg.fullGateRuns(repo, officina, OPUS, tree);
     assert.deepEqual(got, { runs: 1, logs: [`ci/${OPUS}-tests-01234567.log`] }, `the runs and their ci/<log> for officina ${JSON.stringify(officina)}`);
     for (const l of got.logs) assert.ok(existsSync(join(studio, l)), `${l} resolves under officina ${JSON.stringify(officina)}`);
+    sh(repo, "git", ["rm", "-q", "--", `${officina === "" ? "" : `${officina}/`}ci/${OPUS}-tests-01234567.log`]);
+    sh(repo, "git", ["commit", "-q", "-m", "delete the log"]);
+    assert.deepEqual(lg.fullGateRuns(repo, officina, OPUS, tree), { runs: 0, logs: [] }, `a deleted log is neither counted nor a missing input for officina ${JSON.stringify(officina)}`);
   }
 });
 row("W-610-b9 a failed light log's builder input is ci/<id>-light-<8 hex>.log", async () => {
@@ -517,6 +532,13 @@ row("W-610-b9 a capped builder's inputs carry every manifest-valid probatio id's
   const tree8 = sourceTree(w.wt).slice(5, 13);
   assert.deepEqual([...logs].sort(), PROBATIO_IDS.map((g) => `ci/${OPUS}-${g}-${tree8}.log`).sort(), ran("each failed gate log is a ci/<log> input", capped));
   for (const i of logs) assert.ok(existsSync(join(w.wtStudio, i)), ran(`each input is a file under the worktree officina: ${i}`, capped));
+  // fix 3: delete one failed log in a commit; the cap dispatches no order with a missing input
+  git(w.wt, ["rm", "-q", "--", `studio/${logs[0]}`]);
+  commit(w.wt, `studio(${OPUS}): delete one failed log`);
+  const gone = next(w, [OPUS, ...BUDGET]);
+  for (const i of inputsOf(gone).filter((x) => !x.includes("#"))) assert.ok(existsSync(join(w.wtStudio, i)), ran(`each input still resolves: ${i}`, gone));
+  assert.equal(gone.kv.get("ci-runs"), `2 at ${sourceTree(w.wt)}`, ran("the deletion commit is not a third run; the cap counts the two runs whose logs remain", gone));
+  assert.equal(inputsOf(gone).filter((x) => !x.includes("#") && x !== `briefs/${OPUS}.md`).length, PROBATIO_IDS.length - 1, ran("every remaining log is an input", gone));
 });
 row("W-610-b9 every manifest-valid probatio id's runs count to the cap under a nested, a deeper and a root officina", async () => {
   const lg = await import("@bisellium/commands/light-gates.js");
@@ -539,6 +561,9 @@ row("W-610-b9 every manifest-valid probatio id's runs count to the cap under a n
       }
       assert.deepEqual(got, { runs: 2, logs: [`ci/${name}`] }, `two runs of ${gate} and its ci/<log> under officina ${JSON.stringify(officina)}`);
       assert.ok(existsSync(join(studio, `ci/${name}`)), `ci/${name} resolves under officina ${JSON.stringify(officina)}`);
+      sh(repo, "git", ["rm", "-q", "--", `${officina === "" ? "" : `${officina}/`}ci/${name}`]);
+      sh(repo, "git", ["commit", "-q", "-m", "delete the log"]);
+      assert.deepEqual(lg.fullGateRuns(repo, officina, OPUS, tree), { runs: 0, logs: [] }, `a deleted ${gate} log is neither counted nor a missing input under officina ${JSON.stringify(officina)}`);
     }
 });
 row("W-610-b9 ciLogRel takes exactly the manifest-valid probatio ids as the gate", async () => {
