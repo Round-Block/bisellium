@@ -1,0 +1,54 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-633-b1\s --import tsx packages/cli/src/w512.test.ts
+# exit: 1
+# at: 2026-11-14T00:36:01.164Z
+# sella: builder.W-633
+# tree: tree:7fceae93ddc3eb98bd222070eceb2f5fd0a68ada
+# ticket: {"opus":"W-633","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-633/studio","head":"88b190c7feb6b5ec69904a29d11002f95451e181","brief":"82553c5ba0ec6ba5da473929e3bf326c877a23dc","at":"2026-11-14T00:36:00.115Z"}
+
+TAP version 13
+# Subtest: W-633-b1 behaviour 1: an opus halted on its branch releases its files; its branch record is read fail closed
+not ok 1 - W-633-b1 behaviour 1: an opus halted on its branch releases its files; its branch record is read fail closed
+  ---
+  duration_ms: 785.836422
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-633/packages/cli/src/w512.test.ts:46:486'
+  failureType: 'testCodeFailure'
+  error: |-
+    halted on its branch alone (master's record still building): W-901 releases its files
+    --- exit 1
+    --- stdout
+    next: W-900 branch held
+    actor: producer
+    why: W-900's Files owned overlap with an opus in flight: W-901 in lane E1: `docs/ADOPTION.md`; it branches when that opus is done or halted, or when a lead ranks an entry that does not overlap above it and lands that edit (D-192, W-592)
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 branch held'
+    - 'next: W-900 branch named'
+                          ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 branch named'
+  actual: 'next: W-900 branch held'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-633/packages/cli/src/w512.test.ts:282:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 903.191793
