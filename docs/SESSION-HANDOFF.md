@@ -58,19 +58,20 @@ D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take p
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-610 (light build review before the full ci): builder fix round applied prototype r7 (red rows b825eb8b, green daf47c55, b9 rows 7/7); fix-check of review 5 at daf47c55: 7 paths closed, 3 open (a deletion restored only in the index counts as kept; census .bisellium/reviews/W-610/fix-5/census.md); leads w610-fix-meet-1114; next: handoff as next prints, then a builder fix round for the 3 paths; behaviour 9's red still to record when next names it.
-- E2 W-280 (served build drops the ?demo Inbox; unsigned draft).
-- E3 W-644 (qa-lead seat on Codex Sol): unchanged, branch held on file overlap with W-610.
-- UI W-503 (Home screen): spec review r15 passed and recorded, spec perform a09aae66, ui-lead input r16 passed (7adc01d7); builder replays prototype r10 (leads w503-reds-meet-1114 3/3): b1 red recorded (ci/reds/W-503/01.log), b1 green 881d228d; held: green rows need a `--cwd` on `bisellium run` (leads clone-tests-meet-1114 c 5/5; file that opus first; no cd or env -C meanwhile).
-- UI W-488 (capture comments): ui-lead r6 passed; held on file overlap with W-503 until it is done.
+- E1 W-610 (light build review before the full ci): fix round r8 (fullGateRuns reads the committed tree) closed review 5's 3 paths; full ci passed; Codex build review r6 PASSED (ci/W-610-review-6.log); pr refused for a merge commit (gap 48), so the branch was rebased onto master b6cc3d54 (head 038cb185, backup/W-610-pre-rebase-s17 in the clone); full ci passed at the rebased head (gates 34a4175b); Codex build review r7 PASSED (ci/W-610-review-7.log); next: the PR (code-owned prompt: Patron approval), then merge.
+- E2 W-280 (served build drops the ?demo Inbox): unsigned draft at W-280-spec/brief.md; leads lanes-meet-1114 Q2: spec-ahead now; next W-280 not yet run.
+- E3 W-648 (bisellium run --cwd, the opus's own worktree, only with --opus): filed #1225, architect spec r1 signed (main studio/ci/W-648-spec-1.log, untracked); in E3 while W-644 is held (lanes-meet-1114 Q1 3/3); next: Codex spec review per next (spec perform needs main free of tracked edits).
+- E3 waiting: W-644 (qa-lead seat on Codex Sol) takes E3 back first when W-610 merges.
+- UI W-503 (Home screen): unchanged; green rows wait on W-648.
+- UI W-488: unchanged.
 W-633 (the overlap-hold fix) merged (#1214). W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643.
 
 Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves aside to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
 
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
 
-Session 16: Meets: w645-questions-meet-1114 (5 leads), w610-fix-meet-1114, w503-reds-meet-1114, clone-tests-meet-1114. Gaps 43-45. W-645 architect revision 3 (unsigned, W-645-spec/, two rows added). Research step A not run (no full ci or Playwright capture this session).
-Next session first: file and build `run --cwd` (clone-tests-meet-1114), then W-503 b1 rows, b2, b3 per W-503-build/builder-brief.md (sync main's ref first: it is behind the clone); W-610 handoff then the builder fix round; W-645 signing when next names it; sample the next full ci and Playwright capture.
+Session 17: Meets lanes-meet-1114 (ladder, eng, qa). Gaps 46-48. Research step A: Playwright capture 12 GB peak, W-610's actual full ci 6.5 GiB peak (r3a/, sample-actual.sh on every actual run, the Patron 11-14).
+Next session first: W-610 PR (Patron approval) then merge; W-648 spec review, then build; W-503 green rows once W-648 lands; W-645 signing when next names it; attach r3a/sample-actual.sh to each actual full ci and Playwright capture.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
