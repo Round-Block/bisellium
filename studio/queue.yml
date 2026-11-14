@@ -1,6 +1,6 @@
 queues:
   engineering:
-    lanes: { E1: W-610, E2: W-280, E3: W-648 }
+    lanes: { E1: ~, E2: W-280, E3: W-648 }
     next:
       - { opus: W-610, says: "build review before the full ci; lifted by D-209 item 3 after W-633 merged; the ci-run cap is cut to W-632 (D-206)" }
       - { opus: W-648, says: "bisellium run --cwd <dir> runs a builder's command in the opus's own .worktrees/<id>, only with --opus; small and high, unblocks W-503's green rows (clone-tests-meet-1114 c, 5/5)" }
@@ -14,6 +14,9 @@ queues:
       - { opus: W-651, says: "a wrapped Playwright red must show its inner expect failure, after an enumeration of recorded reds; after W-645; process (w645-questions-meet-1114 c)" }
       - { opus: W-652, says: "Fable advisor seat: read-only reads at roadblock, roadmap and architecture triggers, a check rule each, no usage credits; process (Patron 11-15, fable-advisor-meet-1115)" }
       - { opus: W-653, says: "warn-only check: each session RETRO point names where it went (gap, lesson, opus, rule, daily proposal) or none, because; process (retro-meet-1115 d)" }
+      - { opus: W-654, says: "glossary term table moves from instructions.ts to a clerk-kept studio data file; check fails loud on drift (Patron 11-15 yes); process" }
+      - { opus: W-655, says: "harness-written attempt record replaces served-ness scraping in red admission; W-645's follow-up, never holds it (W-645 roadblock read-out 11-15); process" }
+      - { opus: W-656, says: "sync fast-forwards the Patron clone and guard on Patron-approved merges; CODEOWNERS adds /scripts/ /packages/ (Patron 11-15: A; guard-autopull-meet-1115); process" }
       - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-610 (D-201)" }
       - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; process (D-193)" }
       - { opus: W-301, says: "console writes via auto-merge PR; E2's first opus (e2-open-meet-1113); held by file overlap with W-503 (w025.css), resumes after; signed r5 kept (w301-hold-meet-1114)" }
@@ -55,7 +58,7 @@ queues:
       - { opus: W-619, says: "next refuses research in a work lane; queue refuses lane ids outside E/UI; split from W-512; process lane (lanes-meet-1112)" }
       - { opus: W-280, says: "Inbox demo out of the served build; E2 while W-301 is held (w301-hold-meet-1114); spec first" }
       - { opus: W-642, says: "W-301's remainder: console writes refuse mistyped opera row ids (D-061 §4, w301-split-meet-1114); after W-301" }
-      - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), the check half; next's lane-start refusal is in W-512; process (D-193)" }
+      - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), the check half; next's lane-start refusal is in W-512; process (D-193); + queue.lane_starved warn (ui2-lane-meet-1115)" }
       - { opus: W-597, says: "each lane's next unclaimed entry gets one spec-ahead draft; sign refuses a stale base; overlap via W-592; process, after W-592 (spec-ahead-lanes-meet-1112)" }
       - { opus: W-611, says: "W-494 guard clears a resumed runner's finished background run; process (retro 11-12)" }
       - { opus: W-612, says: "verdict --phase spec runs brief.admission before signing; process (retro 11-12)" }
@@ -167,12 +170,14 @@ queues:
     next:
       - { opus: W-634, says: "orchestrator context budget: measure first, cheap fixes, graph/retrieval index; Fable leads, Astra challenges (Patron 11-13)" }
   ui:
-    lanes: { UI1: ~, UI2: ~ }
+    lanes: { UI1: W-503, UI2: W-488 }
     next:
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
-      - { opus: W-488, says: "comment on served UI captures; UI2, no Home files (D-192)" }
+      - { opus: W-488, says: "comment on served UI captures, server half only (split: ui2-lane-meet-1115); UI2 now, no W-503 files" }
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2)" }
       - { opus: W-467, says: "Officina on Home's palette; UI2 after W-488, Officina files (D-192)" }
+      - { opus: W-658, says: "capture review screen, W-488's web half (split); UI2 after W-503 (shares App.tsx)" }
+      - { opus: W-657, says: "screens register without editing shell files (App.tsx, route.ts, nav.ts); UI1 after W-503 (ui2-lane-meet-1115, 5/5)" }
       - { opus: W-504, says: "Home: Completion and Spend row (D-175 piece 4); needs W-439" }
       - { opus: W-453, says: "Home Queue shows the execution lanes with owner labels (D-192)" }
 halted:
