@@ -1,0 +1,63 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-610-b2\s --import tsx packages/cli/src/w610.test.ts
+# exit: 1
+# at: 2026-11-12T13:29:36.527Z
+# sella: builder.W-610
+# tree: tree:61e3716eacd0ea250e2d891bf979658bc12cb85d
+# ticket: {"opus":"W-610","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-610/studio","head":"c2eefd6a3d8fd2b5e49e578947768763a081e62c","brief":"7cfa7e95f14d87f2f2fe0fed88ffe30170ecc096","at":"2026-11-12T13:29:35.481Z"}
+
+TAP version 13
+# Subtest: W-610-b2 review is ordered on the light gates at the tip tree with no full gate log
+not ok 1 - W-610-b2 review is ordered on the light gates at the tip tree with no full gate log
+  ---
+  duration_ms: 1999.853284
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:576'
+  failureType: 'testCodeFailure'
+  error: |-
+    review is ordered on the light gates at the tip tree with no full gate log: review is named on the light gates
+    --- exit 0
+    --- stdout
+    next: W-900 build named
+    actor: producer
+    why: the light gates are not passed at the current source tree
+    head: opus/W-900 5092e1232e4b
+    light-gates: node -e 0 ; node --test-reporter=tap w326.test.mjs ; node --test-reporter=tap w462.test.mjs
+    handoff: builder.W-900 at 2026-10-02T09:00:00.000Z, after the newest red or review log
+    command: from .worktrees/W-900: a ladder-runner runs bisellium next W-900 --perform --expect build (the light gates at this tree, logged and committed alone, chore(studio): W-900 light gates); a failing light gate is a builder's
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 build named'
+    - 'next: W-900 review named'
+                   ^
+    
+    + actual - expected
+    
+    + 'next: W-900 build named'
+    - 'next: W-900 review named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 review named'
+  actual: 'next: W-900 build named'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:25:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2016.115495

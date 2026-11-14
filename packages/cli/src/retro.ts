@@ -18,6 +18,7 @@ import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
+import { readGateStatus } from "@bisellium/pipeline";
 import { createNextRecord, ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { conclusionProblem, patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
@@ -1321,10 +1322,13 @@ function gateFailure(root: string, name: string): GateFailure | undefined | Refu
   const m = GATE_LOG.exec(name)!;
   const file = readContainedRegularFile(root, `ci/${name}`, "ci", LOG_MAX_BYTES);
   if ("error" in file) return { error: `ci/${name}: ${file.error}` };
-  const lines = file.bytes.toString("utf8").split("\n");
-  const exit = lines.slice(0, 5).map((l) => /^exit code: (\d+)$/.exec(l)?.[1]).find((v) => v !== undefined);
-  if (exit === undefined) return { error: `ci/${name}: a gate log carries an "exit code: <n>" line in its head` };
-  if (exit === "0") return undefined;
+  const text = file.bytes.toString("utf8");
+  const lines = text.split("\n");
+  // W-610 (D-198, spec review r8 #1): the head's one status field, line 3, in any form the pipeline writes
+  // (gateStatusLine); `exit code: 0` passes, every other form fails; a missing, duplicate or misplaced field refuses
+  const exit = readGateStatus(text);
+  if ("error" in exit) return { error: `ci/${name}: a gate log carries an "exit code: <n>" line in its head (${exit.error})` };
+  if (exit.passed) return undefined;
   const rows = [...new Set(lines.map((l) => FAILING_ROW.exec(l.trimStart())?.[1]).filter((r): r is string => r !== undefined))].sort();
   const owners = [...new Set(rows.map((r) => /^W-\d+/.exec(r)![0]))].sort();
   return { opus: m[1]!, log: `ci/${name}`, classes: owners.length > 0 ? owners.map((o) => `gate×${o}`) : [`gate×${m[2]!}`], rows };

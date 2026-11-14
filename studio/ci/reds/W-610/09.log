@@ -1,0 +1,315 @@
+# behaviour: 9
+# command: node --test-reporter=tap --test-name-pattern=^W-610-b9\s --import tsx packages/cli/src/w610.test.ts
+# exit: 1
+# at: 2026-11-13T07:07:16.109Z
+# sella: builder.W-610
+# tree: tree:3b38dc117aa2aace332a92e111507f50db6fddcf
+# ticket: {"opus":"W-610","step":"reds","action":"red","round":9,"actor":"builder","studio":".worktrees/W-610/studio","head":"80f192c053cd26ec95f4037f13ae84618ff99a22","brief":"fea5f8ecf58a608296c32960a2f032f480d34ca5","at":"2026-11-13T07:07:13.483Z"}
+
+TAP version 13
+# Subtest: W-610-b9 the capped builder's inputs are ci/<log> paths that resolve in the worktree officina
+not ok 1 - W-610-b9 the capped builder's inputs are ci/<log> paths that resolve in the worktree officina
+  ---
+  duration_ms: 3251.364561
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: |-
+    the capped builder's inputs are ci/<log> paths that resolve in the worktree officina: the failed gate log is a ci/<log> input
+    --- exit 0
+    --- stdout
+    next: W-900 build named
+    actor: builder
+    why: the full suite ran 2 times at the reviewed tree tree:69f8456fd37c and is not passed (W-900: tests is not passed at the current source tree tree:69f8456fd37c; run bisellium ci --opus W-900 in the worktree and commit the record and its gate logs); no further ci is ordered at this tree
+    head: opus/W-900 94787a584d23
+    role: builder
+    sella: builder.W-900
+    boot: bisellium context --sella builder.W-900 --studio studio
+    budget_tokens: 100000
+    phase: 2
+    ci-runs: 2 at tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533
+    inputs: briefs/W-900.md, W-900-tests-69f8456f.log, opera/W-900.md#traditio
+    command: dispatch builder.W-900 (phase 2) through the host seam: bisellium run --sella builder --opus W-900 --studio studio -- <builder command…>
+    health: no step recorded
+    meanwhile: agent wait on a dispatched session (builder, architect or ui-lead): records: file and land records from main: bisellium land <paths> --title <title> --sella producer --studio studio; no edit to the opus's Files owned or its worktree
+    meanwhile-locks: writer none · stash none · heavy 0 of 3 · ahead none
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+    +   'W-900-tests-69f8456f.log'
+    -   'ci/W-900-tests-69f8456f.log'
+      ]
+    
+    + actual - expected
+    
+      [
+    +   'W-900-tests-69f8456f.log'
+    -   'ci/W-900-tests-69f8456f.log'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'ci/W-900-tests-69f8456f.log'
+  actual:
+    0: 'W-900-tests-69f8456f.log'
+  operator: 'deepStrictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:26:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-610-b9 a root and a deeper officina's capped inputs keep ci/<log>
+not ok 2 - W-610-b9 a root and a deeper officina's capped inputs keep ci/<log>
+  ---
+  duration_ms: 58.792297
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: |-
+    a root and a deeper officina's capped inputs keep ci/<log>: the runs and their ci/<log> for officina ""
+    + actual - expected
+    
+      {
+        logs: [
+    +     'W-900-tests-01234567.log'
+    -     'ci/W-900-tests-01234567.log'
+        ],
+        runs: 1
+      }
+    
+    + actual - expected
+    
+      {
+        logs: [
+    +     'W-900-tests-01234567.log'
+    -     'ci/W-900-tests-01234567.log'
+        ],
+        runs: 1
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    runs: 1
+    logs:
+      0: 'ci/W-900-tests-01234567.log'
+  actual:
+    runs: 1
+    logs:
+      0: 'W-900-tests-01234567.log'
+  operator: 'deepStrictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-610-b9 a failed light log's builder input is ci/<id>-light-<8 hex>.log
+ok 3 - W-610-b9 a failed light log's builder input is ci/<id>-light-<8 hex>.log
+  ---
+  duration_ms: 2245.176638
+  type: 'test'
+  ...
+# Subtest: W-610-b9 ciLogRel refuses a name that is not one gate-log file
+not ok 4 - W-610-b9 ciLogRel refuses a name that is not one gate-log file
+  ---
+  duration_ms: 0.890817
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: |-
+    ciLogRel refuses a name that is not one gate-log file: light-gates.ts exports ciLogRel, the one ci log path helper
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-610-b9 a capped builder's inputs carry every manifest-valid probatio id's failed log
+not ok 5 - W-610-b9 a capped builder's inputs carry every manifest-valid probatio id's failed log
+  ---
+  duration_ms: 3426.766123
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: |-
+    a capped builder's inputs carry every manifest-valid probatio id's failed log: each failed gate log is a ci/<log> input
+    --- exit 0
+    --- stdout
+    next: W-900 build named
+    actor: builder
+    why: the full suite ran 2 times at the reviewed tree tree:69f8456fd37c and is not passed (W-900: tests is not passed at the current source tree tree:69f8456fd37c; run bisellium ci --opus W-900 in the worktree and commit the record and its gate logs); no further ci is ordered at this tree
+    head: opus/W-900 b3c778294747
+    role: builder
+    sella: builder.W-900
+    boot: bisellium context --sella builder.W-900 --studio studio
+    budget_tokens: 100000
+    phase: 2
+    ci-runs: 2 at tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533
+    inputs: briefs/W-900.md, W-900-UnitTests-69f8456f.log, W-900-unit-tests-69f8456f.log, W-900-unit.tests-69f8456f.log, W-900-unit_tests-69f8456f.log, opera/W-900.md#traditio
+    command: dispatch builder.W-900 (phase 2) through the host seam: bisellium run --sella builder --opus W-900 --studio studio -- <builder command…>
+    health: no step recorded
+    meanwhile: agent wait on a dispatched session (builder, architect or ui-lead): records: file and land records from main: bisellium land <paths> --title <title> --sella producer --studio studio; no edit to the opus's Files owned or its worktree
+    meanwhile-locks: writer none · stash none · heavy 0 of 3 · ahead none
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+    +   'W-900-UnitTests-69f8456f.log',
+    +   'W-900-unit-tests-69f8456f.log',
+    +   'W-900-unit.tests-69f8456f.log',
+    +   'W-900-unit_tests-69f8456f.log'
+    -   'ci/W-900-UnitTests-69f8456f.log',
+    -   'ci/W-900-light-x-69f8456f.log',
+    -   'ci/W-900-unit-tests-69f8456f.log',
+    -   'ci/W-900-unit.tests-69f8456f.log',
+    -   'ci/W-900-unit_tests-69f8456f.log'
+      ]
+    
+    + actual - expected
+    
+      [
+    +   'W-900-UnitTests-69f8456f.log',
+    +   'W-900-unit-tests-69f8456f.log',
+    +   'W-900-unit.tests-69f8456f.log',
+    +   'W-900-unit_tests-69f8456f.log'
+    -   'ci/W-900-UnitTests-69f8456f.log',
+    -   'ci/W-900-light-x-69f8456f.log',
+    -   'ci/W-900-unit-tests-69f8456f.log',
+    -   'ci/W-900-unit.tests-69f8456f.log',
+    -   'ci/W-900-unit_tests-69f8456f.log'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'ci/W-900-UnitTests-69f8456f.log'
+    1: 'ci/W-900-light-x-69f8456f.log'
+    2: 'ci/W-900-unit-tests-69f8456f.log'
+    3: 'ci/W-900-unit.tests-69f8456f.log'
+    4: 'ci/W-900-unit_tests-69f8456f.log'
+  actual:
+    0: 'W-900-UnitTests-69f8456f.log'
+    1: 'W-900-unit-tests-69f8456f.log'
+    2: 'W-900-unit.tests-69f8456f.log'
+    3: 'W-900-unit_tests-69f8456f.log'
+  operator: 'deepStrictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:26:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-610-b9 every manifest-valid probatio id's runs count to the cap under a nested, a deeper and a root officina
+not ok 6 - W-610-b9 every manifest-valid probatio id's runs count to the cap under a nested, a deeper and a root officina
+  ---
+  duration_ms: 38.258411
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: |-
+    every manifest-valid probatio id's runs count to the cap under a nested, a deeper and a root officina: two runs of unit-tests and its ci/<log> under officina "studio"
+    + actual - expected
+    
+      {
+        logs: [
+    +     'W-900-unit-tests-01234567.log'
+    -     'ci/W-900-unit-tests-01234567.log'
+        ],
+        runs: 2
+      }
+    
+    + actual - expected
+    
+      {
+        logs: [
+    +     'W-900-unit-tests-01234567.log'
+    -     'ci/W-900-unit-tests-01234567.log'
+        ],
+        runs: 2
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    runs: 2
+    logs:
+      0: 'ci/W-900-unit-tests-01234567.log'
+  actual:
+    runs: 2
+    logs:
+      0: 'W-900-unit-tests-01234567.log'
+  operator: 'deepStrictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-610-b9 ciLogRel takes exactly the manifest-valid probatio ids as the gate
+not ok 7 - W-610-b9 ciLogRel takes exactly the manifest-valid probatio ids as the gate
+  ---
+  duration_ms: 39.294856
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: |-
+    ciLogRel takes exactly the manifest-valid probatio ids as the gate: a manifest-valid probatio id is a gate: "unit-tests"
+    + actual - expected
+    
+    + 'refused: ciLogRel is not a function'
+    - 'ci/W-900-unit-tests-01234567.log'
+    
+    + actual - expected
+    
+    + 'refused: ciLogRel is not a function'
+    - 'ci/W-900-unit-tests-01234567.log'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'ci/W-900-unit-tests-01234567.log'
+  actual: 'refused: ciLogRel is not a function'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 1
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9097.520293

@@ -1,0 +1,23 @@
+# opus: W-610
+# phase: spec
+# round: 10
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1cf9a-54f2-7b02-ab5c-6a466d6ddc4d
+# outcome: failed
+# at: 2026-11-13T06:54:47.100Z
+# tree: tree:49f8c5a0301360ea112152691f404befe8d4e327
+# brief: briefs/W-610.md blob:265d98d4eeac73c1e1b71556e28404e6b05c8838
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":10,"actor":"spec-reviewer","studio":".worktrees/W-610/studio","head":"80ee3c40b6274c3192614a7850608ad8d6fb170e","brief":"265d98d4eeac73c1e1b71556e28404e6b05c8838","at":"2026-11-13T06:54:46.314Z"}
+
+## Findings
+1. blocking — brief:170 [severity: S1] Reached through round-8 #2’s class: adding the manifest-valid automated probatio `light` makes `localPipeline` and `runLightGates` target the same `ci/W-<n>-light-<tree>.log`, while `fullGateRuns` always excludes that name; real `next` therefore cannot count or hand on failed `light` probatio runs, and existing cap tests use `light-x`, not exact `light`. Sites are the `localPipeline` and `runLightGates` writers, verify evidence record, and the `admitCurrentGates`, `lightLogRel`/`admitLightGates`, `fullGateRuns`/`ciLogRel`, `ciRunsAt`/capped-input, certify, retro and prune readers or limits. Replace brief:118 with `Promise any-probatio-gate: Synthetic light-gate logs use the reserved \`_light\` gate token, which ID_RE rejects; ciLogRel accepts \`_light\` or every manifest-valid probatio id, including \`light\`, and fullGateRuns excludes only \`_light\`, so two committed failed runs of any probatio are counted and handed to the capped builder as ci/<log> inputs. Pinned by W-610-b9 with exact \`light\` plus the existing ids through capping under nested, deeper and root officinae.` and replace brief:170 with `| 12. A ci log name handed on | one file name W-<n>-<gate>-<8..40 hex>.log, where <gate> is the reserved synthetic token _light or any manifest-valid probatio id, including light; every other form refuses | ciLogRel; fullGateRuns excludes only _light; pinned by W-610-b9 with exact light and the existing ids through failed-run capping under nested, deeper and root officinae |`. [design: changes] [class: gate×writer-reader-drift] — check: packages/cli/src/w610.test.ts (exact probatio id `light` through failed-run capping)
+2. advisory — brief:116 [severity: S2] `gateCommandLine` encodes C0 controls other than tab, not every control character: DEL and C1 controls remain raw, though they cannot create the line-boundary bug. At brief:31, brief:43, brief:87, brief:116, brief:187 and brief:203 replace `control character but tab` or `control character` with `C0 control character except tab`; brief:150 already states the exact range. [class: spec×input-domain-missing-or-unenforceable] — check: none: wording only; brief:150 already exposes the executable regex
+
+## Earlier findings
+- ci/W-610-spec-8.log #1: closed — `gateCommandLine` now encodes multiline commands onto one line and `readGateStatus` requires exactly one valid status at line 3; the real writer/retro row proves `echo start\nexit code: 0` remains failed — check: packages/cli/src/w610-retro.test.ts
+- ci/W-610-spec-8.log #2: closed — the original `ciLogRel` rejection is fixed by the `ID_RE`-equivalent grammar and rows for underscore, dot and uppercase ids through capping; the exact-`light` collision above is a sibling reached through its class — check: packages/cli/src/w610.test.ts
+
+## Verdict
+Revision 5 closes both original blockers but still has one design-changing S1 gate-name collision; required shell probe output was “3c18a444 test(W-610): r8 rows typecheck and a both-ends refusal pattern (pre-sign gate r5)”.
+VERDICT: FAIL

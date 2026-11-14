@@ -1,0 +1,180 @@
+# behaviour: 7
+# command: node --test-reporter=tap --test-name-pattern=^W-610-b7\s --import tsx packages/cli/src/w610-retro.test.ts
+# exit: 1
+# at: 2026-11-13T07:05:19.478Z
+# sella: builder.W-610
+# tree: tree:29d9863e6fbd5f181cbac078b21859fcd2f4566d
+# ticket: {"opus":"W-610","step":"reds","action":"red","round":7,"actor":"builder","studio":".worktrees/W-610/studio","head":"547ec34de17106d2ecb9ee66871097d2098060f7","brief":"fea5f8ecf58a608296c32960a2f032f480d34ca5","at":"2026-11-13T07:05:10.988Z"}
+
+TAP version 13
+# Subtest: W-610-b7 retro --daily reads the real W-563 timeout log as a failed tests gate
+not ok 1 - W-610-b7 retro --daily reads the real W-563 timeout log as a failed tests gate
+  ---
+  duration_ms: 46.062001
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:1:830'
+  failureType: 'testCodeFailure'
+  error: |-
+    retro --daily reads the real W-563 timeout log as a failed tests gate: retro --daily exits 0: exit 2
+    --- stdout
+    
+    --- stderr
+    ci/W-563-tests-90514cbc.log: a gate log carries an "exit code: <n>" line in its head
+    
+    2 !== 0
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:36:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-610-b7 each non-numeric writer form is a failed gate
+not ok 2 - W-610-b7 each non-numeric writer form is a failed gate
+  ---
+  duration_ms: 22.146499
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:1:830'
+  failureType: 'testCodeFailure'
+  error: |-
+    each non-numeric writer form is a failed gate: retro --daily exits 0 over every writer form: exit 2
+    --- stdout
+    
+    --- stderr
+    ci/W-20-tests-00000000.log: a gate log carries an "exit code: <n>" line in its head
+    
+    2 !== 0
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:36:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-610-b7 a head in no writer form still refuses the retro
+ok 3 - W-610-b7 a head in no writer form still refuses the retro
+  ---
+  duration_ms: 49.012318
+  type: 'test'
+  ...
+# Subtest: W-610-b7 every writer form round-trips through the reader
+not ok 4 - W-610-b7 every writer form round-trips through the reader
+  ---
+  duration_ms: 1.969556
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:1:830'
+  failureType: 'testCodeFailure'
+  error: |-
+    every writer form round-trips through the reader: @bisellium/pipeline exports gateStatusLine, the writer's one status-line formatter
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:36:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-610-b7 a multiline command's status-shaped line never stands for the gate's status
+not ok 5 - W-610-b7 a multiline command's status-shaped line never stands for the gate's status
+  ---
+  duration_ms: 0.455389
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:1:830'
+  failureType: 'testCodeFailure'
+  error: |-
+    a multiline command's status-shaped line never stands for the gate's status: @bisellium/pipeline exports gateCommandLine, line 2's one single-line encoder
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:36:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-610-b7 a missing, duplicate or misplaced status field refuses the retro
+not ok 6 - W-610-b7 a missing, duplicate or misplaced status field refuses the retro
+  ---
+  duration_ms: 0.423578
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:1:830'
+  failureType: 'testCodeFailure'
+  error: |-
+    a missing, duplicate or misplaced status field refuses the retro: @bisellium/pipeline exports readGateStatus
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610-retro.test.ts:36:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 1
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 312.714721

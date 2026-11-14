@@ -1,0 +1,21 @@
+# opus: W-610
+# phase: spec
+# round: 15
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1cf9a-54f2-7b02-ab5c-6a466d6ddc4d
+# outcome: passed
+# at: 2026-11-14T09:22:10.006Z
+# tree: tree:bc2d056ed2d70820705d3765e6dc404fe78a442d
+# brief: briefs/W-610.md blob:e7ffc4b208f579cb3836e946aebb34028a0b4794
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":15,"actor":"spec-reviewer","studio":"studio","head":"aee86f24b03cf4e22e70797e94702a8a0e579d7f","brief":"e7ffc4b208f579cb3836e946aebb34028a0b4794","at":"2026-11-14T09:22:05.638Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-610-spec-13.log #1: closed — brief:48, brief:101, brief:170 and brief:194 require fullGateRuns to reject unreadable history or any qualifying-log deletion, deriveNext to hold with no CI or builder, and restoration to release to a complete capped dispatch — check: packages/cli/src/w610.test.ts (W-610-b9 sole-log deletion/restore and multi-log deletion rows)
+
+## Verdict
+Revision r14 closes the deletion blocker; the required shell probe returned `aee86f24 chore(studio): W-610 spec rounds 13 and 14 (fail closed on a committed ci-log deletion)`.
+VERDICT: PASS

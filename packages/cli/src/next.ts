@@ -31,6 +31,7 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } fr
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
+import { admitLightGates, currentLightCommands, fullGateRuns, literal, officinaRel, runLightGates, type LightAdmission } from "@bisellium/commands/light-gates.js";
 import { webBuild, webBuildReason } from "@bisellium/commands/web-build.js";
 import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, terminalHalt, tookLadder, uiReviewSuperseded, unliftableHalt, utcTimestampProblem, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
@@ -97,7 +98,7 @@ const ORIGIN_TRUNK = "refs/remotes/origin/master";
 const HANDOFF = "docs/SESSION-HANDOFF.md";
 /** W-214: the checkpoint's history page; while master keeps it, the done commit carries a row naming the opus. */
 const HISTORY = "docs/design/dossier/progress-body.html";
-const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec", "review", "reds"]);
+const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec", "review", "reds", "build"]);
 /** W-292: the rungs --chain performs in turn (W-312: no mint before review). */
 const CHAIN = new Set<Step>(["review", "pr"]);
 const BEHAVIOURS = "Behaviours to test";
@@ -538,6 +539,8 @@ export interface Facts {
   buildRounds(): { config: BuildReviewConfig; rounds: BuildReviewRound[] } | { error: string };
   /** W-312: the worktree record's automated gates passed at the branch's current source tree (`admitCurrentGates`), or why not */
   gates(): { ok: true } | { ok: false; error: string } | undefined;
+  /** W-610: the light gates passed at the branch's current source tree, their log committed (`admitLightGates`), or why not */
+  lightGates?(): LightAdmission | undefined;
   redFindings(): string[];
   /** W-326: the replay the brief's signed prototype allows, or why not; undefined when the brief names none */
   replay(): Replay | { why: string } | undefined;
@@ -870,6 +873,7 @@ export function gather(repo: string, studioAbs: string, id: string, states: Map<
       return "error" in read ? read : { config: config.config, rounds: read.rounds };
     }),
     gates: memo(() => (usable ? trackedOnly(() => admitCurrentGates(wt.studio, id)) : undefined)),
+    lightGates: memo(() => (usable ? trackedOnly(() => admitLightGates(wt.studio, id)) : undefined)),
     redFindings: memo(() => {
       if (!usable) return [];
       try {
@@ -1031,7 +1035,7 @@ export interface Derived {
   order?: Order;
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
-  act?: "verify" | "certify" | "commit-opus" | "land" | "replay" | "fix-check" | "rewrite" | "rebind";
+  act?: "verify" | "certify" | "commit-opus" | "land" | "replay" | "fix-check" | "rewrite" | "rebind" | "light-gates";
   /** W-233: the action a step ticket would authorise at this derivation (only `refreshTicket` reads it) */
   ticket?: { action: TicketAction; round: number };
   extra: [string, string][];
@@ -1363,37 +1367,43 @@ export function deriveNext(f: Facts): Derived {
     // review; the producer revises the brief (a spec amendment) or reverts the path
     const breach = boundaryBreach(f);
     if (breach !== undefined) return { ...hold("build", breach), uncut: true };
-    // W-312: review needs the branch's own gate logs at this tree (a ladder-runner's `bisellium ci --opus` in a run session, W-541), never a host receipt
+    // W-610 (review-order-meet-1112): review needs the light gates logged at this tree by the light-gates perform (a
+    // ladder-runner's, never the builder's own runs); the full gates (W-312) at this tree admit it too, and are ordered after a pass
     const gates = f.gates();
-    // W-326: with every red the replay's and no required fix standing, the gates need no builder: the producer runs them
-    if (gates !== undefined && !gates.ok && !redo && (fixCheck !== undefined || (fixes.length === 0 && replayed(f, bs, n))))
-      return named(
-        "build",
-        "producer",
-        gates.error,
-        `from .worktrees/${id}: bisellium handoff --opus ${id} --sella producer --next "ready for review" --studio ${f.studioRel}, committed (studio only); then bisellium ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, in the background); then commit the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
+    // an officina that declares no light_gates keeps the W-312 order: the full gates before review (master's texts)
+    const lightOn = (f.manifest as unknown as Record<string, unknown>)["light_gates"] !== undefined;
+    const light = lightOn ? f.lightGates?.() : undefined;
+    const admitted = gates === undefined || gates.ok || light?.ok === true;
+    const lightError = light !== undefined && !light.ok ? light : undefined;
+    const lightOrder = (extra: [string, string][], fullCommand: string): Derived => {
+      if (!lightOn) return named("build", "producer", gates?.ok === false ? gates.error : "the gate evidence cannot be read", fullCommand, extra);
+      const cmds = lightCommands(f, id);
+      if ("error" in cmds) return hold("build", cmds.error);
+      return { ...named("build", "producer", lightError?.error ?? "the light gates are not passed at the current source tree", `from .worktrees/${id}: a ladder-runner runs bisellium next ${id} --perform --expect build (the light gates at this tree, logged and committed alone, chore(studio): ${id} light gates); a failing light gate is a builder's`, [["light-gates", cmds.join(" ; ")], ...extra]), act: "light-gates" };
+    };
+    // W-326: with every red the replay's and no required fix standing, the light gates need no builder: the producer runs them
+    if (!admitted && lightError?.failed === undefined && !redo && (fixCheck !== undefined || (fixes.length === 0 && replayed(f, bs, n))))
+      return lightOrder(
         fixCheck === undefined
           ? [["replayed", `every red of ${id} was recorded by the prototype replay`]]
           : evidence.length === 0
             ? [["fix-check", `no open path at this tree (${fixCheck.census})`]]
             : [["fix-check", `no open path in Files owned at this tree (${fixCheck.census})`], ...evidence],
+        `from .worktrees/${id}: bisellium handoff --opus ${id} --sella producer --next "ready for review" --studio ${f.studioRel}, committed (studio only); then bisellium ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, in the background); then commit the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
       );
     // W-541 (D-189): the builder runs only its touched tests; its handoff after the newest red or review log ends the build,
-    // and the one full suite is a ladder-runner's `ci --opus` in a run session (W-364 refuses it outside one), never the builder's
-    const handedOver = gates !== undefined && !gates.ok && !redo ? builderHandover(f, b) : undefined;
+    // and the light gates are a ladder-runner's perform at that tree, never the builder's (W-610)
+    const handedOver = !admitted && lightError?.failed === undefined && !redo ? builderHandover(f, b) : undefined;
     if (handedOver !== undefined)
-      return named(
-        "build",
-        "producer",
-        gates?.ok === false ? gates.error : "the gate evidence cannot be read",
-        `from .worktrees/${id}: a ladder-runner runs bisellium run --sella producer --no-worktree --studio ${f.studioRel} -- npm run -s bisellium -- ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, once per review round, in the background; W-364 admits it only in a run session); then it commits the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
+      return lightOrder(
         [["handoff", handedOver]],
+        `from .worktrees/${id}: a ladder-runner runs bisellium run --sella producer --no-worktree --studio ${f.studioRel} -- npm run -s bisellium -- ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, once per review round, in the background; W-364 admits it only in a run session); then it commits the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
       );
-    if ((gates !== undefined && !gates.ok) || redo)
-      return dispatch(f, "build", redo ? `review round ${gate?.round} failed at this tree` : gates !== undefined && !gates.ok ? gates.error : "the gate evidence cannot be read", {
+    if (!admitted || redo)
+      return dispatch(f, "build", redo ? `review round ${gate?.round} failed at this tree` : (lightError?.error ?? (gates?.ok === false ? gates.error : "the gate evidence cannot be read")), {
         phase: redo ? "fix" : "2",
         resume: automatedGates(f.manifest, b).some((g) => isDict(b["probationes"]) && isDict(b["probationes"][g]) && b["probationes"][g]["certifies"] !== undefined) || reviewRounds(f).length > 0,
-        inputs: [briefRel(id), ...(redo && gate?.evidence !== undefined ? [gate.evidence] : [])],
+        inputs: [briefRel(id), ...(redo && gate?.evidence !== undefined ? [gate.evidence] : []), ...(lightError?.failed === undefined ? [] : [lightError.failed])],
         extra: [...boundary, ...fixes],
       });
 
@@ -1432,9 +1442,33 @@ export function deriveNext(f: Facts): Derived {
         inputs: [briefRel(id), ...(uiIn === undefined ? [] : [uiIn]), ...rounds.map((r) => `ci/${r.name}`), `ci/reds/${id}/`],
         ...(uiIn === undefined ? {} : { uiInput: uiIn }),
         ...(session === undefined ? {} : { session }),
-        extra: [...(session === undefined ? [] : [["session", session] as [string, string]]), ...fixes, ...evidence],
+        // W-610: a source change after a pass voids it: the next round reviews the change since the passed tree, then ci runs again
+        extra: [...(session === undefined ? [] : [["session", session] as [string, string]]), ...(gate?.status === "passed" && gate.tree !== cur ? [["delta", `since round ${gate.round} passed at ${gate.tree}`] as [string, string]] : []), ...fixes, ...evidence],
       });
     }
+
+    // W-610 (review-order-meet-1112): after a pass at this tree, the one full suite runs at the reviewed tree before pr; a
+    // ci that exits non-zero is a builder's, and its source change voids the pass (the review is no longer current)
+    if (gate?.tree !== cur) return hold("pr", `the passed review's tree ${gate?.tree} is not the tip tree ${cur}`);
+    // W-610 (w610-proof-meet-1112): at most CI_RUNS_PER_TREE full suites are ordered at one reviewed tree; then a failed ci is a builder's
+    const ciRuns = gates !== undefined && !gates.ok ? ciRunsAt(f, id, cur) : { runs: 0, logs: [] };
+    // spec review r13 #1: unreadable runs or a deleted qualifying log hold: never a third ci, never a builder without every failed log
+    if ("error" in ciRuns) return hold("build", `${ciRuns.error}; no ci is ordered and no builder dispatched at the reviewed tree ${cur.slice(0, 17)}`);
+    if (gates !== undefined && !gates.ok && ciRuns.runs >= CI_RUNS_PER_TREE)
+      return dispatch(f, "build", `the full suite ran ${ciRuns.runs} times at the reviewed tree ${cur.slice(0, 17)} and is not passed (${gates.error}); no further ci is ordered at this tree`, {
+        phase: "2",
+        resume: true,
+        inputs: [briefRel(id), ...ciRuns.logs],
+        extra: [["ci-runs", `${ciRuns.runs} at ${cur}`], ...fixes],
+      });
+    if (gates !== undefined && !gates.ok)
+      return named(
+        "build",
+        "producer",
+        gates.error,
+        `from .worktrees/${id}: a ladder-runner runs bisellium run --sella producer --no-worktree --studio ${f.studioRel} -- npm run -s bisellium -- ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, once after the passed review, in the background; W-364 admits it only in a run session); then it commits the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
+        [["reviewed", `round ${gate?.round} at ${gate?.tree}`]],
+      );
 
     // 8 pr, 9 merge
     const p = f.pr();
@@ -1481,7 +1515,8 @@ export function deriveNext(f: Facts): Derived {
         "producer",
         p.kind === "open-stale" ? `PR #${p.pr.number} is OPEN but not on the local tip` : p.kind === "unrelated" ? `a MERGED PR settles nothing: ${p.reason}` : "review is met and no PR exists for the head",
         `bisellium next ${id} --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>`,
-        [],
+        // W-610: the pass, the full gates and the tip are one source tree (source_excludes keep bookkeeping commits out)
+        [["trees", `reviewed ${gate?.tree} = gates ${cur} = tip ${cur}`]],
         p.kind === "open-stale" ? p.pr : undefined,
       );
     }
@@ -3054,6 +3089,31 @@ export async function performLanding(f: { repo: string; studioRel: string }, ctx
   return landHead({ ...ctx, head });
 }
 
+/** W-610 (w610-proof-meet-1112): the full suites ordered at one reviewed tree before a failed ci goes to a builder (one rerun for an environment failure). */
+const CI_RUNS_PER_TREE = 2;
+/** W-610: the full ci runs at `tree`: the commits on the worktree's HEAD that wrote a full gate log `ci/<id>-<gate>-<tree8>.log` (the light log excluded), and those logs; unreadable history or a committed deletion of such a log is an error (fail closed). */
+function ciRunsAt(f: Facts, id: string, tree: string): { runs: number; logs: string[] } | { error: string } {
+  return fullGateRuns(f.wt.dir, f.studioRel, id, tree);
+}
+
+/** W-610: the light-gate commands for the opus: the main checkout's kept list (bisellium.yml#light_gates) and the test files of the brief committed at the worktree's HEAD, through the one reader admitLightGates also uses. */
+function lightCommands(f: Facts, id: string): string[] | { error: string } {
+  return currentLightCommands(f.wt.studio, id);
+}
+
+/** W-610: the light gates, performed at the worktree's HEAD: each command in turn, one log at the tree, committed alone. */
+function performLightGates(f: Facts): StepResult {
+  const cmds = lightCommands(f, f.id);
+  if ("error" in cmds) return heldResult(cmds.error);
+  const run = runLightGates(f.wt.studio, f.id, cmds);
+  if ("error" in run) return heldResult(run.error);
+  const rel = officinaRel(f.studioRel, run.rel);
+  const added = git(f.wt.dir, ["add", "--", literal(rel)]);
+  const committed = added.status === 0 ? git(f.wt.dir, ["commit", "-q", "-m", `chore(studio): ${f.id} light gates`, "-m", "Co-Authored-By: producer (bisellium next) <noreply@anthropic.com>", "--", literal(rel)]) : added;
+  if (committed.status !== 0) return heldResult(`could not commit ${rel}: ${one(committed.stderr)}`);
+  return { ok: run.exitCode === 0, lines: [`light-gates: exit ${run.exitCode}`, `log: ${run.rel}`, `branch: opus/${f.id}`] };
+}
+
 function performReady(f: Facts, d: Derived): StepResult {
   const sella = d.extra.find(([k]) => k === "attributed")?.[1]?.split(" ")[0] ?? f.design;
   const cap = capture(() => runReady([f.id, "--sella", sella, "--studio", f.wt.usable ? f.wt.studio : f.studioAbs]));
@@ -3660,7 +3720,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     }
 
     // W-292: --chain performs review and pr, and no other rung (W-312: no mint before review)
-    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step) && (!a.chain || CHAIN.has(d.step)) && (d.step !== "spec" || d.act !== undefined) && (d.step !== "reds" || d.act === "replay");
+    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step) && (!a.chain || CHAIN.has(d.step)) && (d.step !== "spec" || d.act !== undefined) && (d.step !== "reds" || d.act === "replay") && (d.step !== "build" || d.act === "light-gates");
     // a `pr` that must be created needs --title and --body-file; without them it only names the command
     const needsText = (d: Derived): boolean => d.step === "pr" && d.pr === undefined && (a.title === undefined || a.bodyFile === undefined);
 
@@ -3743,6 +3803,9 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
             break;
           case "ready":
             result = performReady(f, d2);
+            break;
+          case "build":
+            result = performLightGates(f);
             break;
           case "spec":
             result = performOpusSpecCommit(f);

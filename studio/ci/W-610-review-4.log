@@ -1,0 +1,21 @@
+# opus: W-610
+# phase: build
+# round: 4
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1d4bf-81e0-7dc2-bcde-3192fc9b91c6
+# outcome: failed
+# at: 2026-11-14T07:10:39.765Z
+# tree: tree:bc2d056ed2d70820705d3765e6dc404fe78a442d
+# brief: briefs/W-610.md blob:fea5f8ecf58a608296c32960a2f032f480d34ca5
+# ticket: {"opus":"W-610","step":"review","action":"verdict-build","round":4,"actor":"censor","studio":"studio","head":"b4462127bbd4733afa3790160c2fffff800fda1e","brief":"fea5f8ecf58a608296c32960a2f032f480d34ca5","at":"2026-11-14T07:09:55.884Z"}
+
+## Findings
+1. blocking — packages/commands/src/light-gates.ts:158 [severity: S1] brief:40 Reached through ci/W-610-review-3.log #1’s class: intersecting history with HEAD-tracked paths makes a committed deletion erase two completed runs, so `deriveNext` can order a third CI; when each run commit also touched a retained log, the commits still reach the cap while the deleted failed log is absent from `ciRuns.logs`. The added tests assert these invalid outcomes instead of pinning the two-run ceiling and complete failed-log handoff. [class: review×name-prefix-containment-misclassifies-valid-paths] — check: packages/cli/src/w610.test.ts (two failed runs followed by a committed log deletion must neither order another CI nor dispatch without every failed log)
+
+## Earlier findings
+- ci/W-610-review-3.log #1: open — packages/commands/src/light-gates.ts:158 the tracked-path filter does not close the defect: a multi-log run still counts through retained siblings while omitting the deleted failed log, and deleting the sole log erases both committed runs and permits a third CI
+
+## Verdict
+The round-3 cap/evidence blocker remains open and the change violates the two-run ceiling, so this round fails.
+VERDICT: FAIL

@@ -26,6 +26,7 @@ import { WF, instant } from "@bisellium/schema";
 import { admissionLimit, declaredRedProblems, declaredReds, firstFailure, readBriefAdmission, readBriefLimit, readRedOrder, redFailsAt } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
 import { admitCurrentGates } from "./builder-run.js";
+import { admitLightGates } from "./light-gates.js";
 import {
   censorSella,
   effectiveProbationes,
@@ -673,8 +674,9 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
     return { exitCode: 2 };
   }
   if (obligation.kind === "marked") {
+    // W-610: the light gates at the current source tree admit the review too; the full gates follow a pass
     const runAdmission = (opts.gateAdmission ?? admitCurrentGates)(root, opusId);
-    if (!runAdmission.ok) {
+    if (!runAdmission.ok && (opts.gateAdmission !== undefined || !admitLightGates(root, opusId).ok)) {
       console.error(runAdmission.error);
       return { exitCode: 2 };
     }

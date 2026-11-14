@@ -1,0 +1,19 @@
+# opus: W-610
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1cf9a-54f2-7b02-ab5c-6a466d6ddc4d
+# outcome: failed
+# at: 2026-11-13T05:08:08.070Z
+# tree: tree:49f8c5a0301360ea112152691f404befe8d4e327
+# brief: briefs/W-610.md blob:2914c23a770e9e465635444793844fed693a2d22
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-610/studio","head":"80ee3c40b6274c3192614a7850608ad8d6fb170e","brief":"2914c23a770e9e465635444793844fed693a2d22","at":"2026-11-13T05:08:06.438Z"}
+
+## Findings
+1. blocking — brief:164 [severity: S1] A plausible multiline automated command such as `echo start\nexit code: 0` is written raw after `command:`; when that command fails, `gateFailure` selects the command’s status-shaped line before the writer’s real failure line and omits the failed gate from `retro --daily`, while existing tests use single-line commands. Sites are `localPipeline`/`gateStatusLine`, `gateFailure`/`readGateExit`, and the full-gate log path; the unchanged `admitCurrentGates`, `admitLightGates`, served-e2e, `runLightGates`, and certify sites at brief:84 remain exact-line/refusal limits. Replace brief:164 with `| 13. A gate log's status field | exactly one unambiguous gateStatusLine produced separately from a single-line encoding of the command; 0 passes and every other writer form fails | gateFailure/readGateExit refuses a missing, duplicate or ambiguous status field; pinned by W-610-b7, including a multiline command containing a status-shaped line |`. [design: changes] [class: gate×writer-reader-drift] — check: packages/cli/src/w610-retro.test.ts (a failing multiline command containing `exit code: 0`)
+2. blocking — brief:163 [severity: S1] An ordinary valid probatio id such as `unit_tests` passes `manifest.id.format` and is used by `localPipeline` and `verify` in `W-<n>-unit_tests-<tree>.log`, but `ciLogRel` rejects it; `fullGateRuns` therefore throws and real `next` cannot count the failed runs or dispatch the capped builder. Sites are the `localPipeline` filename writer, `verify` evidence record, `admitCurrentGates`, `fullGateRuns`/`ciLogRel`, `lightLogRel`/`admitLightGates`, `ciRunsAt` and builder inputs; retro’s unchanged `GATE_LOG` walk remains the brief:5 limit. Replace brief:163 with `| 12. A ci log name handed on | one file name W-<n>-<gate>-<8..40 hex>.log, where <gate> is light or any manifest-valid probatio id (ID_RE, including uppercase, dot and underscore); every path-bearing or empty form refuses | ciLogRel; pinned by W-610-b9 with lower-hyphen, underscore, dot and uppercase gate ids under nested, deeper and root officinae |`. [design: changes] [class: gate×writer-reader-drift] — check: packages/cli/src/w610.test.ts (valid `unit_tests`, `unit.tests`, and uppercase probatio ids through failed-run capping)
+
+## Verdict
+Revision 4 has two design-changing S1 input-boundary failures; required shell probe output was “80ee3c40 chore(studio): W-610 parked after review round 2”.
+VERDICT: FAIL

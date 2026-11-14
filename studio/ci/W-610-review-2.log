@@ -1,0 +1,23 @@
+# opus: W-610
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1d00d-3884-7273-809c-7a40fb53970e
+# outcome: failed
+# at: 2026-11-12T17:52:07.113Z
+# tree: tree:35d3cf91462ecd28f188bd1e6bdb00bba483ac52
+# brief: briefs/W-610.md blob:3f01550416710d04cd5de80812618ebb35c9010a
+# ticket: {"opus":"W-610","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-610/studio","head":"798015fe22d315a283aa69f4cb7b16ad59a3a225","brief":"3f01550416710d04cd5de80812618ebb35c9010a","at":"2026-11-12T17:48:11.268Z"}
+
+## Findings
+1. blocking — packages/commands/src/light-gates.ts:47 brief:110 Reached through ci/W-610-review-1.log #1’s class: replacing `{studio}` with a pre-quoted shell word is unsafe when the valid command string already quotes the placeholder; double-quoted use preserves literal apostrophes and permits substitutions such as `$()` from the studio path. This reaches both `admitLightGates` and `runLightGates` through `commandsAt`. [severity: S1] [class: review×name-prefix-containment-misclassifies-valid-paths] — check: packages/cli/src/w610.test.ts must exercise `{studio}` inside double-quoted and single-quoted command contexts with whitespace and shell metacharacters
+2. blocking — packages/commands/src/light-gates.ts:156 brief:78 Reached through ci/W-610-review-1.log #1’s class: `fullGateRuns` strips the `ci/` directory from returned log paths, so the capped-CI builder receives bare filenames rather than paths to the failed logs. [severity: S1] [class: review×name-prefix-containment-misclassifies-valid-paths] — check: packages/cli/src/w610.test.ts must assert capped-builder inputs contain `ci/<log>`
+
+## Earlier findings
+- ci/W-610-review-1.log #1: open — packages/commands/src/light-gates.ts:47 still mishandles and can execute metacharacters from studio paths when `{studio}` appears in an already quoted command context
+- ci/W-610-review-1.log #2: closed — packages/commands/src/verdict.ts:72 now derives exclusions from the trusted main manifest and rejects build-review drift, with light, full-gate, and verdict readers routed through that check
+
+## Verdict
+The source-exclusion authorization defect is closed, but shell-path handling remains unsafe and the capped-CI handoff loses its log paths.
+VERDICT: FAIL

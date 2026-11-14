@@ -1,0 +1,22 @@
+# opus: W-610
+# phase: spec
+# round: 13
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1cf9a-54f2-7b02-ab5c-6a466d6ddc4d
+# outcome: failed
+# at: 2026-11-14T08:16:25.157Z
+# tree: tree:bc2d056ed2d70820705d3765e6dc404fe78a442d
+# brief: briefs/W-610.md blob:1e28cc8e150e888c8dab98c0858621850a6f1aea
+# ticket: {"opus":"W-610","step":"spec","action":"verdict-spec","round":13,"actor":"spec-reviewer","studio":"studio","head":"0150773c859af4388c56e93747ae3074236400db","brief":"1e28cc8e150e888c8dab98c0858621850a6f1aea","at":"2026-11-14T08:16:18.042Z"}
+
+## Findings
+1. blocking — brief:169 [severity: S1] The two W-610-b9 rows accurately pin both deletion forms, but they normalize unsafe outcomes: deleting every log permits a third CI, while deleting one log from a multi-log run dispatches the builder without that required failure evidence; branch history is not a resolving builder input, and “Never by hand” does not make an ordinary mistaken deletion fail closed. Sites are the `localPipeline` writer and verify evidence record, `fullGateRuns`’ history and tracked-file readers, `ciLogRel`, `admitCurrentGates`, `ciRunsAt`, `deriveNext`’s cap and capped inputs, with `runLightGates`/`admitLightGates`, certify, retro and prune as stated limits; replace brief:169 with `| 9. Full ci runs at the reviewed tree | fewer than two, or the gates passed; every qualifying run’s gate logs remain tracked, and a committed deletion of any such log is invalid | fullGateRuns refuses unreadable history or any committed deletion of a qualifying log, and deriveNext holds rather than ordering a third ci or dispatching a builder without every failed log; pinned by W-610-b9 for deletion of a sole log and one log of a multi-log run |`. [design: changes] [class: review×name-prefix-containment-misclassifies-valid-paths] — check: packages/cli/src/w610.test.ts (both committed-deletion forms must hold/refuse)
+
+## Earlier findings
+- ci/W-610-spec-10.log #1: closed — brief:32, brief:47, brief:90, brief:120, brief:172, brief:193 and brief:205 cut the exact probatio `light` case from W-610’s promises to W-623, recording its filename collision and non-counting as the limit — check: studio/ci/W-610-spec-11.log
+
+## Verdict
+The requested sed output begins “1. blocking — brief:170 [severity: S1] Reached through round”.
+The deletion limit describes the code and tests truthfully but cannot replace fail-closed handling of missing required evidence; required shell probe output was “0150773c chore(studio): W-610 spec verdict round 12 (limit stated for the round 3-4 class)”.
+VERDICT: FAIL

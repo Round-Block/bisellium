@@ -1,0 +1,19 @@
+# opus: W-610
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1d00d-3884-7273-809c-7a40fb53970e
+# outcome: failed
+# at: 2026-11-12T14:09:11.198Z
+# tree: tree:9cd1dab03636ad2ad0772446bbb2a5a0657fa502
+# brief: briefs/W-610.md blob:7cfa7e95f14d87f2f2fe0fed88ffe30170ecc096
+# ticket: {"opus":"W-610","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-610/studio","head":"49f1cf5f4623cfe2b5a4b62dff75b395001e5811","brief":"7cfa7e95f14d87f2f2fe0fed88ffe30170ecc096","at":"2026-11-12T13:58:08.091Z"}
+
+## Findings
+1. blocking — packages/commands/src/light-gates.ts:37 brief:106 `studioRel` is inserted raw into `sh -c`: whitespace changes argv and shell metacharacters execute; for a repository-root officina, `{studio}` disappears while light-gates.ts:90 and next.ts:3026 produce absolute `/ci/...` paths, and next.ts:3007 also treats officina-name glob characters as pathspec syntax. Sites are `repoOf`, `commandsAt`/`currentLightCommands`/`lightGateCommands`, next’s `lightCommands`/`lightOrder`/`performLightGates`/`ciRunsAt`, `runLightGates`’s shell and log writer, `admitLightGates`’s reader, and `runReview`’s consumer. [severity: S1] [class: review×name-prefix-containment-misclassifies-valid-paths] — check: packages/cli/src/w610.test.ts (root, whitespace, quote, and shell-metacharacter officina paths)
+2. blocking — packages/commands/src/light-gates.ts:51 brief:122 A well-formed worktree `source_excludes` drift is accepted by `repoOf`, so after `next` issues review tickets, an uncommitted extra exclusion can preserve the light-log tree, hide source changes, and let direct `verdict`/`review` writes pass although `next` holds on `buildReviewDrift`. Sites are the main manifest through `gather`/`buildReviewDrift`/`buildRounds`/`reviewedAtTip`; the worktree manifest through `openStudio`/`treeAtCapture`, `repoOf`/`readSourceExcludes`, `runLightGates`/`admitLightGates`/`Facts.lightGates`/`performLightGates`; and the verdict log, light log, and `runReview` record mutation. [severity: S1] [class: mechanism×certification-coverage-not-diff-bound] — check: packages/cli/src/w610.test.ts (well-formed worktree exclusion drift with direct verdict and review)
+
+## Verdict
+The new light-gate path has two fail-open boundaries affecting shell execution and review-record authorization. Both are blocking.
+VERDICT: FAIL

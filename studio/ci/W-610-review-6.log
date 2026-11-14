@@ -1,0 +1,21 @@
+# opus: W-610
+# phase: build
+# round: 6
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1d4bf-81e0-7dc2-bcde-3192fc9b91c6
+# outcome: passed
+# at: 2026-11-14T12:05:16.505Z
+# tree: tree:802093280f4389b1369a15559bd75330c0e4f4f3
+# brief: briefs/W-610.md blob:e7ffc4b208f579cb3836e946aebb34028a0b4794
+# ticket: {"opus":"W-610","step":"review","action":"verdict-build","round":6,"actor":"censor","studio":"studio","head":"14b85ee292d9e7a942dfce978270ee34177ed181","brief":"e7ffc4b208f579cb3836e946aebb34028a0b4794","at":"2026-11-14T12:05:05.448Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-610-review-5.log #1: closed — packages/commands/src/light-gates.ts:177 now detects every qualifying historical log absent from the committed `HEAD` tree and returns an error, while packages/cli/src/next.ts:1456 holds build on that error; packages/cli/src/w610.test.ts pins sole-log deletion, multi-log deletion, index-only restoration, unreadable history, and release after a committed restoration
+
+## Verdict
+The change implements and pins the signed brief’s fail-closed deletion handling, closing the prior blocker.
+VERDICT: PASS

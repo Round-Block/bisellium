@@ -1,0 +1,60 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-610-b4\s --import tsx packages/cli/src/w610.test.ts
+# exit: 1
+# at: 2026-11-12T13:30:33.390Z
+# sella: builder.W-610
+# tree: tree:ea96f718b4c1f39d517ba41b702a8e3dd9504303
+# ticket: {"opus":"W-610","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-610/studio","head":"24994fc38b03faa828326916a364d5fa5d6bf5a2","brief":"7cfa7e95f14d87f2f2fe0fed88ffe30170ecc096","at":"2026-11-12T13:30:32.333Z"}
+
+TAP version 13
+# Subtest: W-610-b4 pr names reviewed tree = gate tree = tip tree and bookkeeping commits keep the pass
+not ok 1 - W-610-b4 pr names reviewed tree = gate tree = tip tree and bookkeeping commits keep the pass
+  ---
+  duration_ms: 3050.121311
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:1:601'
+  failureType: 'testCodeFailure'
+  error: |-
+    pr names reviewed tree = gate tree = tip tree and bookkeeping commits keep the pass: the order names the three trees
+    --- exit 0
+    --- stdout
+    next: W-900 pr named
+    actor: producer
+    why: review is met and no PR exists for the head
+    head: opus/W-900 a09725881717
+    command: bisellium next W-900 --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + undefined
+    - 'reviewed tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533 = gates tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533 = tip tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533'
+    
+    + actual - expected
+    
+    + undefined
+    - 'reviewed tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533 = gates tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533 = tip tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'reviewed tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533 = gates tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533 = tip tree:69f8456fd37cc5343a1e87e7b0f315c54ea4c533'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-610/packages/cli/src/w610.test.ts:25:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3063.199368
