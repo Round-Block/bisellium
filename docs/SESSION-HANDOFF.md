@@ -55,18 +55,15 @@ D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take p
 
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 right after W-610. D-204: E2 and UI2 open now (lanes-now-meet-1113).
 
-Lanes now: E1 W-610 (build review before the full ci; lifted by D-209, the Patron's ruling; its lift record follows this land), E2 W-280 (retitle owed: served `?demo` Inbox and demo fixtures out of the bundle; unsigned draft), E3 the qa-lead seat split opus (to be filed, D-208 item 6, the leads' queue-order ruling), UI1 W-488 (comment on served UI captures; r6 signature ready, record pending), UI2 W-503 (the Home screen; reds replay failed on b1's pin, design lead re-signs). Engineering order follows D-208 item 1, with W-250 (rescoped by D-209 item 1) placed after W-393 (studio/queue.yml).
+Lanes now: E1 W-610 (build review before the full ci; lifted on its branch by D-209; round-3 fix round closed (head 03012f70) and its fix check ran (no open path in Files owned, .bisellium/reviews/W-610/fix-3/census.md); next names handoff, then full ci), E2 W-280 (served build drops the ?demo Inbox; unsigned draft), E3 W-644 (qa-lead seat on Codex Sol, split from W-531; greenlit), UI work (queue.yml leaves UI1/UI2 unassigned): W-488 (capture comments; spec review r5 passed; ui-lead r6 awaits reissue); W-503 (Home screen; revision 10 signed, awaits reissue; then Opus UI spec review).
 W-633 (the overlap-hold fix) merged (#1214). Filed 11-13: W-634 (research: orchestrator context budget, retrieval index), W-635 (check flags finished opera left in a queue), W-636 (next reads opus state from branch records). Filed 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643. Details: D-206.
 
 Off the ladder: until W-622 (opus checkouts as local clones), a checkout is `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked opus worktree moves aside and the clone goes at .worktrees/<id>; after each clone commit, `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 is halted (D-181, D-206), tag archive/W-507.
 
 Filed 11-08/12: W-533 to W-619. Lanes by file overlap (D-192). Meets: ~/.bisellium-evidence/*-meet-11*/; leads-settled calls need no Patron.
 
-Session 11 state: landing now (records PR, Patron approves): studio/queue.yml, D-208 (producer's record of the leads' queue-order meet), D-209 (the Patron's ruling lifting W-610, build review before the full ci, and rescoping W-250, the ci merge-group short-path cut), docs/SESSION-HANDOFF.md.
-After it merges, the runner (with `--sella producer`), in this order: lifts W-250 (ci short path, rescoped) and retitles it; retitles W-280 and W-518 (W-518 carries D-181 item 4's handoff-state deletion); files and greenlights the qa-lead seat split opus (D-208 item 6); then lifts W-610.
-W-488: `next` names its r6 verdict, from signature-r6b-record.md.
-W-503: design lead re-signs for the b1 pin with `holds:\n${stdout}`; W-633's done step stashes the W-488 opera edit by tag around it.
-Daily retro of 2026-11-13 still owed. Next session first: after this records PR merges, the D-209 records runner, then W-488's record and W-633's done.
+Session 12: #1215 and #1216 merged (W-644 filed; W-250, the merge group's duplicate hosted suite cut, lifted and retitled; W-280 and W-518, deleting handoff state, retitled). W-633 (the overlap hold reads branch records) is done. The 2026-11-13 daily retro is refused by `retro --daily` on a gate log carrying an exit-code line, which is W-641's scope; it waits on W-641 and never holds work. Ladder gaps 24-33: ~/.bisellium-evidence/W-630-kit/gaps.md.
+Next session first: W-610's step as next names it (after the round-3 fix check: handoff, then the full ci); W-503's Opus UI spec review; W-488's ui-lead record if still pending; W-644's spec.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
