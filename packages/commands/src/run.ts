@@ -23,6 +23,7 @@ import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, write
 import { pauseWarning } from "./pause.js";
 import { runBuilderCommand } from "./builder-run.js";
 import { runScratch, type ScratchArgs } from "./scratch.js";
+import { safeItemPath } from "./writes.js";
 
 export interface RunOptions {
   /** Pinned clock, for reproducible sessionIds/receipts in tests. */
@@ -68,6 +69,31 @@ function resolveRepoRoot(studioRoot: string, repoFlag: string | undefined): { re
   const r = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: studioRoot, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
   if (r.status !== 0) return { error: `not inside a git repo: ${studioRoot} (pass --repo)` };
   return { repo: resolve(r.stdout.trim()) };
+}
+
+/** W-648: the directory `--cwd` names, when it is the opus's own worktree: `cwdFlag` resolved and realpath'd equals
+ *  `<realpath of the repo>/.worktrees/<opus>` (the id one path segment, by `safeItemPath`'s rule). A `..` or a symlink
+ *  that resolves to it is that directory; anything else is refused. */
+function opusWorktree(studioRoot: string, repoFlag: string | undefined, opus: string, cwdFlag: string): { dir: string } | { error: string } {
+  const resolved = resolveRepoRoot(studioRoot, repoFlag);
+  if ("error" in resolved) return resolved;
+  let repo: string;
+  try {
+    repo = realpathSync(resolved.repo);
+  } catch (e) {
+    return { error: `--cwd: the repository ${resolved.repo} cannot be resolved (${(e as NodeJS.ErrnoException).code ?? "error"})` };
+  }
+  const item = safeItemPath(join(repo, ".worktrees"), opus);
+  if (typeof item !== "string") return { error: `--cwd: ${item.error}` };
+  const expected = item.slice(0, -".md".length);
+  let real: string;
+  try {
+    real = realpathSync(resolve(cwdFlag));
+  } catch (e) {
+    return { error: `--cwd ${cwdFlag} cannot be resolved (${(e as NodeJS.ErrnoException).code ?? "error"})` };
+  }
+  if (real !== expected) return { error: `--cwd ${cwdFlag} is not ${expected}, the worktree of opus ${opus}` };
+  return { dir: real };
 }
 
 /** Consumes the value for `flag` at `args[i]`; a missing value or one that
@@ -262,7 +288,12 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
 
   if (cwdFlag !== undefined && opus === undefined) { console.error(`bisellium run: --cwd needs --opus <id>\n${USAGE}`); return { exitCode: 2 }; }
   // W-648: --cwd names the directory the child runs in; no worktree is leased and no confined clone is built
-  const runCwd = cwdFlag === undefined ? undefined : realpathSync(resolve(cwdFlag));
+  let runCwd: string | undefined;
+  if (cwdFlag !== undefined) {
+    const named = opusWorktree(studioRoot, repoFlag, opus!, cwdFlag);
+    if ("error" in named) { console.error(`bisellium run: ${named.error}`); return { exitCode: 2 }; }
+    runCwd = named.dir;
+  }
 
   if (builderClass && runCwd === undefined) {
     const resolved = resolveRepoRoot(studioRoot, repoFlag);
