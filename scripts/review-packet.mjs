@@ -425,13 +425,15 @@ export function buildPacket(args) {
     if (ui.images.length > 0) {
       const timeline = readContainedRegularFile(studio, "timeline/patron.jsonl", "timeline", 1024 * 1024);
       let boundComments = [];
-      if ("error" in timeline && timeline.code !== "ENOENT") refuse(`capture comment timeline is unsafe or unreadable: ${timeline.error}`);
+      if ("error" in timeline && timeline.code !== "ENOENT")
+        refuse(`capture comment timeline is unsafe or unreadable: ${timeline.error}`);
       if (!("error" in timeline)) {
         const currentTree = `tree:${sourceTreeHash(repo, [studioRel, ".bisellium", ...(manifest.source_excludes ?? [])], "HEAD")}`;
         const review = readUiCaptureReview(studio, currentTree, opus);
         if ("problems" in review) refuse(review.problems.join("; "));
         const selectedSet = review.sets[0];
-        if (selectedSet === undefined || !selectedSet.current) refuse(`${opus}: served capture does not certify the reviewed source tree`);
+        if (selectedSet === undefined || !selectedSet.current)
+          refuse(`${opus}: served capture does not certify the reviewed source tree`);
         boundComments = selectedSet.comments;
       }
       const comments = captureCommentFact(boundComments);
