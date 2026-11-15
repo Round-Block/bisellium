@@ -1,0 +1,24 @@
+# opus: W-488
+# phase: spec
+# round: 11
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1db2f-af3e-7bb0-ad82-743b43152e20
+# outcome: passed
+# at: 2026-11-15T14:38:14.358Z
+# tree: tree:0085147a558a96dcaa85c625f9e74850360d8490
+# brief: briefs/W-488.md blob:fb40ee02fec26cf6e84c34f03d20fbd0032d5da1
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":11,"actor":"architect","studio":".worktrees/W-488/studio","head":"270519a7e3984ab809764a5a1e9b7c12ec64b073","brief":"fb40ee02fec26cf6e84c34f03d20fbd0032d5da1","at":"2026-11-15T14:38:07.050Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-488-spec/revision-7/promise-ledger-r7b.md
+Gate log: /home/edckt/.bisellium-evidence/W-488-spec/revision-7/gate.log
+
+## Findings
+
+No findings
+
+## Verdict
+
+passed — signature round 11 for W-488 revision r8 prepared by the design lead, Codex `gpt-5.6-sol`, seat `ui-architect`, under D-150 C; `/home/edckt/.bisellium-evidence/W-488-spec/revision-8/brief-r8.md` has sha256 `787093ed27ab6be01ecbd8b11056b34ee92d70d26f7aaf7b4dd93493a9f7b884`. The four declared-red pins exactly match the first assertion errors in the recorded red logs, and the corrected WriteResult text describes the existing prototype response contract. The prototype mbox remains unchanged at sha256 `cc61ff8b5ce5ef4d19bed6b4f1eee27e5bb66501522cf6cf235056b4d1a6360e`; the revision-7 promise ledger and pre-sign gate still bind because no behaviour, row, prototype, red log or series content changed, and all seven gate rows exited 0. The authentication served row remains a required build fix and is not added here. DESIGN CHANGE: none. No record write was performed.
+
+VERDICT: PASS

@@ -1,0 +1,24 @@
+# opus: W-488
+# phase: spec
+# round: 12
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: e45aa70a-11f9-4ed4-912b-9df32bd37973
+# session_reason: b84f582a and ab5973ad cannot be resumed (gap 68; claude -p sessions never persist); a fresh session reissued round 12 as keeps-only per W-488-r12-meet-1115
+# outcome: failed
+# at: 2026-11-15T15:20:22.085Z
+# tree: tree:0085147a558a96dcaa85c625f9e74850360d8490
+# brief: briefs/W-488.md blob:fb40ee02fec26cf6e84c34f03d20fbd0032d5da1
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":12,"actor":"spec-reviewer","studio":".worktrees/W-488/studio","head":"270519a7e3984ab809764a5a1e9b7c12ec64b073","brief":"fb40ee02fec26cf6e84c34f03d20fbd0032d5da1","at":"2026-11-15T15:20:13.857Z"}
+
+## Findings
+1. blocking — brief:53 (also brief:43) [severity: S1] This restates ci/W-488-spec-9.log #2, which still stands on the r8 text. brief:53 promises authenticated, append-only comment operations on the injected routes, and brief:43 says the route "uses the existing origin, token and JSON checks". The only thing that backs this is `WRITE_PATHS` gaining `/api/ui-capture-comment` (prototype.mbox:579, gated at :580, today apps/server/src/http.ts:707-714). The only b3 check is a regex over the source, `assert.match(http, /\/api\/ui-capture-comment/)` (prototype.mbox:510). That string also matches the handler (prototype.mbox:611) and the route index (prototype.mbox:562). So dropping the path from `WRITE_PATHS` would keep every row green, and token-less or cross-origin appends to `timeline/patron.jsonl` would go through. The "unpinned" limit at brief:53 names how the test is done; it does not limit authentication. Required build fix. [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: none: a W-488-b3 served request with no X-Bisellium-Token expecting 401 and a foreign Origin expecting 403, with no appended line
+2. advisory — brief:43 [severity: S3] The contract says the route returns `{ error }` "only for the 401/403/404/400 refusals". That list leaves out two refusals the reused write seam also sends with `{ error }`. One is 415 for a non-JSON content type (apps/server/src/http.ts:459, sent at :711-712 through `WRITE_PATHS`, prototype.mbox:579-580). The other is 413 for an oversized body (apps/server/src/http.ts:255). The client is unaffected, because `postWrite` maps every non-ok status other than 401 to a generic error (apps/web/src/api.ts:260-264). Fix: say "`{ error }` for the existing write-seam refusals (400/401/403/404/413/415)". Reached by the class of ci/W-488-spec-9.log #1. [class: spec×promise-contract-not-declared] — check: none: a W-488-b3 served POST with `Content-Type: text/plain` expecting 415 `{ error }`
+
+## Earlier findings
+- ci/W-488-spec-9.log #1: closed — brief:43 now states `{ ok: true, output }` on success and `{ ok: false, exitCode: 1, output }` on a validation refusal, both HTTP 200, which matches the prototype handler (prototype.mbox:616) and `postWrite`'s `WriteResult` (prototype.mbox:700) — check: prototype.mbox
+- ci/W-488-spec-9.log #2: open — restated as this round's finding 1, a required build fix [design: keeps] — check: none: a W-488-b3 served 401/403 row
+
+## Verdict
+The four declared pins each name the row and its first failing assertion exactly: b1 at log line 11-12, and b2, b3 and b4 at `error:` on line 11, all `ERR_ASSERTION`. brief:43's response contract now matches the prototype. Round 9's auth served-row blocker still stands on the r8 text as a keeps-only required build fix, so this reissued round fails.
+VERDICT: FAIL
