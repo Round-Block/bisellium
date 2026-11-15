@@ -9,6 +9,7 @@ queues:
       - { opus: W-641, says: "daily retro reads a timed-out gate log (gap 12), with W-621's first form folded in; E3's next process slot after W-644 (retro-meet-1115 c, 5/5)" }
       - { opus: W-645, says: "cause fix, red admission refuses a red log with ERR_MODULE_NOT_FOUND, serve exited, no port or token line, or no declared assertion; high, unblocks W-503 (all-leads-meet-1114 Q4)" }
       - { opus: W-659, says: "cause fix for the class tests×one-sided-bound-assertion: source-text pins name each reader; rule in tests.ts + spec-draft line; W-645 never waits on it (W-645 class call 11-15); process" }
+      - { opus: W-662, says: "Fresh Claude reviewer sessions by rule: next names a fresh session plus its last verdict log, verdict writes the session reason; closes gaps 66-67; high (reviewer-session-meet-1115, 5/5)" }
       - { opus: W-660, says: "admission refuses a pinned Playwright red (declaredRedProblems passes a one-pin red before reading its command); W-280's follow-up, never holds it (W-280 roadblock call 11-15); process" }
       - { opus: W-647, says: "cause fix, the pre-sign gate runs every declared-list row against the prototype and refuses a Flips None signature when one flips; high, releases W-644's class hold (w644-class-meet-1114)" }
       - { opus: W-646, says: "production lex research clause, split from W-640 (D-207 item 4); lex text only, may take any free lane (all-leads-meet-1114 Q3, w644-class-meet-1114 Q2)" }

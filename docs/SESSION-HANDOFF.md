@@ -51,18 +51,18 @@ Greenlit on master (until `process.handoff.queue` reads studio/queue.yml): W-074
 
 Greenlit on master, continued: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-644.
 
-Greenlit on master, filed 11-14: W-645 W-646 W-647 W-648; filed 11-15: W-649 W-650 W-651 W-652 W-653 W-654 W-655 W-656 W-657 W-658 W-659 W-660.
+Greenlit on master, filed 11-14: W-645 W-646 W-647 W-648; filed 11-15: W-649 W-650 W-651 W-652 W-653 W-654 W-655 W-656 W-657 W-658 W-659 W-660 W-662 (fresh Claude reviewer sessions by rule).
 
 D-193 replaces D-178: entries are product (M4 path) or process; E1 and E2 take product, E3 is the process lane (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane.
 
 D-201 (Patron 11-13): keep D-194's one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-661 (light-gate reader fix): greenlit, takes the lane (W-648 light-gate call 11-15, eng-lead + architect 2/2).
-- E2 W-280 (build drops ?demo Inbox): reds refused (Playwright pin unprovable, gap 56); route (a): brief revision 2 re-signed round 3 (opus/W-280 8b00727c); next: Codex spec review round 4; builder reruns b1's red at 1bf55395. Follow-up W-660.
-- E3 W-648 (bisellium run --cwd): built (d34acb5f, 5 reds, gates green); `next` holds build: light-gate reads Files owned's package.json command span as test path (gap 61); parked as built until W-661 merges (W-648-lightgate-meet-1115). W-645 (red admission refuses a wrong-tree red; class call: W-659, cause fix, high) waits for E1 (W-644 #3 ahead).
-- UI1 W-503 (Home screen): waits on W-648. UI2 W-488 (comments on captures, server half): r7b signature recorded (round 7). W-467 (Officina page): r1b signature recorded (round 1), Patron approved the screens and all four defaults 11-15. Both now need a D-050 Rejected-by form revision (W-488 r7c row 8, W-467 r1c rows 2-7) and re-sign (W-488 round 8, W-467 round 2); gaps 62-63.
-W-633 (overlap-hold fix) merged (#1214). W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in queue), W-636 (next reads state from branch records); 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643.
+- E1 W-661 (light-gate reader fix): spec draft with the architect.
+- E2 W-280 (build drops ?demo Inbox): spec review r4 recorded (d7d20d95); reds blocked on the Patron's permission call for the builder's `bisellium red … -- npx playwright test` command. Follow-up W-660.
+- E3 W-648 (bisellium run --cwd): built (d34acb5f), parked until W-661 merges (gap 61). W-645 (red admission refuses a wrong-tree red) waits for E1 (W-644 ahead).
+- UI1 W-503 (Home screen): waits on W-648. UI2 W-488 (comments on captures, server half): UI spec review r9 FAILED (two [design: keeps] blockers), not recorded; next a fresh reissue with each finding on one line, then record. W-467 (Officina page): review r3 and ui-lead r4 recorded; waits for UI1 behind W-503.
+W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in queue), W-636 (next reads state from branch records); 11-14: W-639, W-640, W-641, W-642 (D-207, D-061 §4), W-643.
 
 Off the ladder: until W-622 (local-clone checkouts): `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves aside to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>` then `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
 
@@ -70,7 +70,8 @@ Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-se
 
 Session 21: W-645-class-meet-1115 (eng leads, file W-659), W-610-1113-call-1115 (ladder lead, remove), W-280-fable-read-1115 (Fable + eng leads, amend, file W-660). Gaps 56-61.
 Session 22: W-648-lightgate-meet-1115 (eng-lead + architect 2/2, file W-661).
-Next: W-488 r7c and W-467 r1c -> record round 8 / round 2 signatures; W-661 spec draft; W-280 spec review r4; 11-14 daily retro.
+Session 23: reviewer-session-meet-1115 (5 leads 5/5, file W-662). Gaps 65-68.
+Next: Patron's permission call on W-280's red command, then its reds; W-488 r9 fresh reissue, then record; W-661 spec draft report; land W-467's r3/r4 logs and W-662; Patron runs `claude auth login` before 11-18.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md.
 
