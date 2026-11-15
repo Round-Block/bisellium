@@ -1,0 +1,27 @@
+# opus: W-648
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-14T11:40:54.355Z
+# tree: tree:0521a3b4d90e9aa9c0f48931494a4831c1b22f12
+# brief: briefs/W-648.md blob:eb6a8c6bc4924370ec66372dd28f2481c47d6e5c
+# ticket: {"opus":"W-648","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b6cc3d545942fbd44cc009145266e717d757d963","brief":"eb6a8c6bc4924370ec66372dd28f2481c47d6e5c","at":"2026-11-14T11:40:48.491Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-648-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the shape is the meet's (clone-tests-meet-1114 c, 5/5): --cwd only with --opus and only <repo>/.worktrees/<id> by realpath; with it no lease and no confined clone, the builder --no-worktree refusal lets the run through (run.ts:284 at w648-s1), the child's cwd is the worktree (run.ts:334) — check: prototype.mbox, proto-b1-green.out
+2. advisory — one row per refusal, as qa asked: no --opus (b2), any other directory, a dot-dot escape, a symlink escaping, a symlinked worktree and an id of two dots (b3), a missing worktree and a file (b4); each exits 2 with no receipt and no child — check: proto-b2-green.out, proto-b3-green.out, proto-b4-green.out
+3. advisory — the red row proving the child's cwd: a node -e child writes its own process.cwd() and b1 asserts it equals the real worktree, for a builder-class and a plain sella, through a symlinked parent and a dot-dot path, on a root holding a space, a quote and a non-ASCII letter — check: packages/commands/src/w648.test.ts at w648-s1, proto-b1-green.out
+4. advisory — each red fails by assertion on master b6cc3d54 with the final rows (w648-t0), at its declared pin; the replay classifier accepts all four and redFailsAt matches each pin — check: red-b1-master.out, red-b2-master.out, red-b3-master.out, red-b4-master.out, red-accept.out, pins.out
+5. advisory — the files that import run.ts or read its usage pass whole and unedited on the prototype (run.test.ts 41 pass, 0 skipped; shim, instance-surfaces, usage, ci-scope); typecheck, lint, format and both officina checks pass; the first officina run caught a one-sided startsWith assertion (test.one_sided), fixed before these runs — check: run-test-proto.out, shim-proto.out, instance-surfaces-proto.out, usage-proto.out, ci-scope-proto.out, typecheck-proto.out, lint-proto.out, format-proto.out, officina-check-proto.out, sample-check-proto.out
+6. advisory — the child under --cwd runs unconfined, not in the disposable confined clone a builder gets without it; that is the ruling's point and is stated as Promise cwd's limit and in Out of scope, with no git-worktree or branch check; the Patron defaults name it — check: none: a stated limit
+7. advisory — package.json's test:suite is also owned by W-610 and W-645; each appends its own command, so a rebase joins the lines; no other overlap with W-610, W-645 or W-503 — check: studio/briefs/W-648.md:53
+8. advisory — the brief passes briefAdmissionProblems and declaredRedProblems (a full brief: run.ts is a risky file); the ledger covers each promise line, each stated limit and every Input domain row; no class of this opus is repeated, so no census is owed — check: admission.out, promise-ledger.md
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-648.md`, master b6cc3d54 (prototype.mbox).

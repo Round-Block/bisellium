@@ -1,0 +1,21 @@
+# opus: W-648
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1da21-2ab4-7f83-b6b1-6ddda558ce2b
+# outcome: passed
+# at: 2026-11-14T14:43:16.733Z
+# tree: tree:aa17a0784092885f2190e706f6451a6ff8832bcf
+# brief: briefs/W-648.md blob:f3b2b9e845a12875e83a3e351fdb48e7ee1d2b8b
+# ticket: {"opus":"W-648","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"b407139f8c936b50903f44f7891860e2d345839e","brief":"f3b2b9e845a12875e83a3e351fdb48e7ee1d2b8b","at":"2026-11-14T14:43:08.922Z"}
+
+## Findings
+1. advisory — brief:49 [severity: S4] The revised test-input rows still omit valid content domains at every affected site: the fixture manifest, b1’s probe value and receipt count/name/JSON, b2–b5’s absent probe and empty receipts, and b5’s lease-directory, worktree-list and branch-list observations; their assertions fail closed. Replace brief:49 with rows stating those exact filesystem domains and their `runCommand`, `realpathSync`, `readFileSync`, `readdirSync`, `JSON.parse`, `assert.equal` and `assert.deepEqual` rejectors, and replace brief:50’s observation domain with “`git worktree list --porcelain` contains `lease-w648` and `git branch --list lease/w648` contains `lease/w648`,” rejected by `assert.match`; the remaining Git setup calls retain exit 0 and `execFileSync` as their boundary. [class: spec×input-domain-missing-or-unenforceable] — check: packages/commands/src/w648.test.ts W-648-b1/W-648-b5
+
+## Earlier findings
+- ci/W-648-spec-2.log #1: closed — run.ts:214 now refuses `--cwd` before the reclaim return, and W-648-b5 covers both `--opus` forms while proving the lease directory, registration and branch remain — check: packages/commands/src/w648.test.ts W-648-b5
+
+## Verdict
+Shell check: “b407139f docs(studio): handoff, session 17 (W-610 review 6 passed and rebased, W-648 signed, E3 lane) (#1227)”; the standing blocker is closed and the remaining fail-closed input-domain omissions are advisory.
+VERDICT: PASS

@@ -1,0 +1,30 @@
+# opus: W-648
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-14T14:40:03.336Z
+# tree: tree:aa17a0784092885f2190e706f6451a6ff8832bcf
+# brief: briefs/W-648.md blob:f3b2b9e845a12875e83a3e351fdb48e7ee1d2b8b
+# ticket: {"opus":"W-648","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"b407139f8c936b50903f44f7891860e2d345839e","brief":"f3b2b9e845a12875e83a3e351fdb48e7ee1d2b8b","at":"2026-11-14T14:39:53.151Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-648-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — `--cwd` belongs to an ordinary command run with `--opus <id>`: `runCommand` now refuses `--cwd does not go with --reclaim` and `--cwd needs --opus <id>` before the reclaim return (run.ts:214-215 at w648-r3-s1, ahead of `reclaimWorktrees` at run.ts:220), and `parseScratch` refuses it in scratch mode (W-474, unchanged); the Input domain row is the reviewer's, pinned by W-648-b2 and W-648-b5 — check: packages/commands/src/w648.test.ts W-648-b5, r3/proto-b5-green.out
+2. advisory — W-648-b5 builds a clean lease on a merged branch (the one a reclaim removes) and asserts, for `--reclaim --opus --cwd`, `--reclaim --cwd` and `--scratch --cwd`, exit 2, the reason, the lease directory, its worktree entry and its branch kept, and no receipt; on master it fails at its pin by assertion, and on revision 1's prototype it fails because the reclaim exited 0 and removed the lease — check: r3/red-b5-master.out, r3/red-b5-proto-r1.out, r3/pins.out, r3/red-accept.out
+3. advisory — the `--no-worktree` token has its Input domain row as the reviewer wrote it, the builder refusal pinned by run.test.ts W-125 behaviour 1 (unchanged) and its let-through by W-648-b1 — check: studio/briefs/W-648.md:41, r3/run-test-proto.out
+4. advisory — the outer test-call row is split into the outer call, the fixture's manifest and filesystem records, its Git setup, and the probe child, the structured-record rows naming the absent, wrong type and unreadable forms; b1 now asserts `assert.equal(receipts(f).length, 1)` for the single receipt — check: packages/commands/src/w648.test.ts W-648-b1, r3/proto-b1-green.out
+5. advisory — the prototype is rebased onto master b407139f (a docs-only move); all five reds fail at their declared pins on master with the final rows (w648-r3-t0); on the prototype w648.test.ts passes 5 of 5, run.test.ts 41 pass 0 skipped, and shim, instance-surfaces, usage and ci-scope pass whole; typecheck, lint, format and both officina checks pass; the brief passes briefAdmissionProblems and declaredRedProblems — check: r3/red-b1-master.out to r3/red-b5-master.out, r3/w648-proto.out, r3/typecheck-proto.out, r3/lint-proto.out, r3/format-proto.out, r3/officina-check-proto.out, r3/sample-check-proto.out, r3/admission.out
+6. advisory — Files owned are unchanged in paths (run.ts, usage.ts, w648.test.ts, package.json); run.ts's entry now names the two refusals before the reclaim return, and w648.test.ts carries rows b1 to b5; `parseScratch` and `reclaimWorktrees` join the reused unchanged code named as a limit (D-076 E) — check: studio/briefs/W-648.md:31, studio/briefs/W-648.md:56
+7. advisory — the repeated class interface×validation-order-masks-errors has its census: every early-return mode of runCommand (scratch, reclaim) against every flag the loop parses, and W-648's two validations against reclaimWorktrees, runBuilderCommand, the lease, the receipt and the spawn; 0 sites in the class; five master flags ignored by --reclaim as on master are limits with a follow-on — check: r3/class-census.py, r3/class-census.out, studio/briefs/W-648.md:11
+
+## Earlier findings
+
+- ci/W-648-spec-2.log #1: closed — run.ts:214-215 at w648-r3-s1 (the `--cwd` refusals before the reclaim return), studio/briefs/W-648.md:43 (the reviewer's row) — check: packages/commands/src/w648.test.ts W-648-b5
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 3 at `studio/briefs/W-648.md`, master b407139f (prototype.mbox; revision 1's kept as prototype-r1.mbox).
