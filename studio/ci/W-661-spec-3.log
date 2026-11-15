@@ -1,0 +1,22 @@
+# opus: W-661
+# phase: spec
+# round: 3
+# sella: architect
+# outcome: passed
+# at: 2026-11-15T16:10:08.383Z
+# tree: tree:d862a313af5662e234bfe1b391a8aeb104c0e780
+# brief: briefs/W-661.md blob:4a555cba1d818ffaa6113c574b44b42aa13eade0
+# ticket: {"opus":"W-661","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-661/studio","head":"bf24a3b9ed59e3f1a8640db0ad92b126fa748363","brief":"4a555cba1d818ffaa6113c574b44b42aa13eade0","at":"2026-11-15T16:10:01.626Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-661-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — brief:41 cites W-610's existing pin `W-610-b8` "a {studio} entry is refused" in the bare form. A kill that fails at exactly that assertion (k9) does not prove it; its composed form "a light_gates entry holding {studio} is refused: a {studio} entry is refused" would be proved. That row already marks the case "unpinned here: a reused path, a stated limit", and the pin is W-610's, so revision 3 leaves it unchanged. It sits outside W-661's twelve pins and the meet's ruling — check: kills.sh (k9), k9.out, pin-dryrun.out (its INFO lines)
+2. advisory — the diff from brief-r3-base.md (the branch brief, blob 87de7d28) touches eight lines only, written by a kept script: the Status line (revision 3, and that it supersedes revision 2) and the twelve `W-661-b1` pins at brief:23 (six), :25, :27 (under its own row title), :42, :43, :44 and :73. declaredReds(rev3, 1) gives one pin, and redFailsAt on red-b1-master.out is true for it and false for revision 1's form. Nine single-line kills of the prototype (w661-s1) were run; on those outputs and the master red, killedPin proves each of the twelve pins on exactly the outputs whose failure is its assertion, and proves revision 1's form of each on none. briefAdmissionProblems (limit 6), declared-reds-check.mts and round 1's admission.mts each give 0 problems. The test commit edbbdc9c, the prototype and the row names are unchanged, so round 1's findings 1-6 stand as signed — check: make-r3.mts, kills.sh, kills.log, k1.out..k9.out, k1.patch..k9.patch, pin-dryrun.mts, pin-dryrun.out, /home/edckt/.bisellium-evidence/W-661-spec/signature-r1.md
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 3 at `studio/briefs/W-661.md` (brief-r3.md, sha256 f4629ef1b55ccf2085b4567f957ad04ec517aa81f646d7bc3a353a761c85cd05), prototype over master 9acf09f1 (prototype.mbox); evidence in `/home/edckt/.bisellium-evidence/W-661-spec/revision-3/`.
+
+VERDICT: PASS

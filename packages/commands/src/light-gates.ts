@@ -1,7 +1,7 @@
 /**
  * W-610 (review-order-meet-1112): the light gates a build review is ordered on, before the one full `ci --opus`. The list
  * is kept in one place, `bisellium.yml#light_gates` (each entry a shell command, run as written with the officina's
- * repo-relative path in `BISELLIUM_STUDIO`, D-196), and the opus's own test files (Files owned paths ending `.test.ts`, `.test.mts` or `.test.mjs`)
+ * repo-relative path in `BISELLIUM_STUDIO`, D-196), and the opus's own test files (Files owned path slots, each bullet's first span (W-661), ending `.test.ts`, `.test.mts` or `.test.mjs`)
  * run one at a time after it (`node --test-reporter=tap`, with `--import tsx` for a TypeScript file). The light-gates perform runs them at the worktree's HEAD and writes one log,
  * `ci/<id>-light-<8 hex>.log`, opening with `certifies: tree:<hash>`, `command: sha256:<hex>` (the shared `commandLine`
  * binding of the exact command sequence) and `exit code: <n>`; `admitLightGates` recomputes the sequence from the main
@@ -12,7 +12,7 @@ import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { bindsCommands, commandLine, isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
-import { ownedFiles } from "./brief-admission.js";
+import { ownedPathSlots } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readContainedRegularFile } from "./opus-model.js";
 import { trustedSource } from "./verdict.js";
@@ -42,7 +42,8 @@ export function lightGateCommands(manifest: Record<string, unknown>, studioRel: 
   const spliced = (raw as string[]).findIndex((c) => c.includes(STUDIO_TOKEN));
   if (spliced !== -1) return { error: `bisellium.yml#light_gates entry ${spliced + 1} holds ${STUDIO_TOKEN}; name the officina path as "$${LIGHT_STUDIO_ENV}" (D-196)` };
   void studioRel;
-  const tests = ownedFiles(briefText).filter((p) => TEST_FILE.test(p));
+  // W-661: only each Files owned bullet's path slot (its first span) is read; a later span is a command or prose, never run
+  const tests = ownedPathSlots(briefText).filter((p) => TEST_FILE.test(p));
   // a test path reaches a shell command line: only a repo-relative path of letters, digits, `_`, `.`, `/` and `-`, no `..`
   const unsafe = tests.filter((p) => !SAFE_PATH.test(p) || p.split("/").includes(".."));
   if (unsafe.length > 0) return { error: `the brief's Files owned names a test path the light gates do not run (${unsafe.join(", ")}): only [A-Za-z0-9_./-], repo-relative, no ..` };

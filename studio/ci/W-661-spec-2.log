@@ -1,0 +1,18 @@
+# opus: W-661
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1df9d-9281-79d3-86c0-d84175256f9e
+# outcome: passed
+# at: 2026-11-15T14:37:24.473Z
+# tree: tree:0085147a558a96dcaa85c625f9e74850360d8490
+# brief: briefs/W-661.md blob:87de7d2802f846f8b0b14c911454687cac36d155
+# ticket: {"opus":"W-661","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"9acf09f102937b042e94a7af1c35adcbd095e8df","brief":"87de7d2802f846f8b0b14c911454687cac36d155","at":"2026-11-15T14:37:17.804Z"}
+
+## Findings
+1. advisory — brief:46 The row combines two reused test calls but names only the dedicated `w610.test.ts` call’s rejection; the changed `briefText` is also consumed by the existing `package.json#test:suite` concurrent call containing all 17 fixture importers. Replace brief:46 with two rows: `| Dedicated W-661 row call: node --test-reporter=tap --import tsx packages/cli/src/w610.test.ts | exits 0 | exit: the named call’s non-zero exit fails the evidence run |` and `| Existing package.json#test:suite concurrent node --test call containing the 17 next-world fixture importers | exits 0 | exit: that call’s non-zero exit fails the script’s && chain |`. [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: brief admission should require each bundled reused call to name its own non-zero-exit refusal
+
+## Verdict
+The spec passes with one advisory input-boundary correction; required shell output: “9acf09f1 docs(studio): handoff, session 23 (W-280 and W-467 reviews recorded, retro 11-14, W-662 filed) (#1238)”.
+VERDICT: PASS
