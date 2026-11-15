@@ -151,7 +151,7 @@ row("W-610-b2 review is ordered on the light gates at the tip tree with no full 
   // a changed Files owned (a new own test file) in the committed brief voids the log too
   const briefRel = `briefs/${OPUS}.md`;
   const brief = readFileSync(join(w.wtStudio, briefRel), "utf8");
-  editWt(w, briefRel, (t) => t.replace("`w462.test.mjs`, ", "`w462.test.mjs`, `w999.test.mjs`, "));
+  editWt(w, briefRel, (t) => t.replace("- `w462.test.mjs`\n", "- `w462.test.mjs`\n- `w999.test.mjs`\n"));
   const owned = admitLightGates(w.wtStudio, OPUS);
   assert.ok(!owned.ok && /not run for the current light-gate commands/.test(owned.error), `a changed Files owned voids the log: ${JSON.stringify(owned)}`);
   assert.equal(direct(w, w.wt, reviewArgs).status, 2, "the review verb refuses it");
@@ -622,4 +622,34 @@ row("W-610-b9 ciLogRel takes exactly the manifest-valid probatio ids as the gate
     if (valid) assert.equal(got, `ci/${name}`, `a manifest-valid probatio id is a gate: ${JSON.stringify(id)}`);
     else assert.match(got, /^refused: ".*" is not one gate-log file name \(W-<n>-<gate>-<8\.\.40 hex>\.log\)$/, `an id manifest.id.format rejects is refused: ${JSON.stringify(id)}`);
   }
+});
+
+// W-661 (studio/briefs/W-661.md): the light gates read only each Files owned bullet's path slot, its first backticked
+// span; a later span on the bullet (a command, prose, a file named in passing) is never a test path. Pure, no fixture.
+const W648_BULLETS = [
+  "## Files owned",
+  "",
+  "- `packages/commands/src/w648.test.ts` (new): rows `W-648-b1` to `W-648-b5`, on a scratch repository; it reads nothing under `studio/`.",
+  "- `package.json`: `node --test-reporter=tap --import tsx packages/commands/src/w648.test.ts` joins `test:suite` after the `w474.test.ts` command (not `test:record`). Nothing else.",
+  "",
+].join("\n");
+row("W-661-b1 a Files owned bullet's later spans are not read as test paths", async () => {
+  const { lightGateCommands } = await import("@bisellium/commands/light-gates.js");
+  const gates = ['x "$BISELLIUM_STUDIO"'];
+  const of = (brief: string): string[] | { error: string } => lightGateCommands({ light_gates: gates }, "studio", brief);
+  const owned = (...bullets: string[]): string => `## Files owned\n\n${bullets.map((b) => `- ${b}\n`).join("")}`;
+  assert.deepEqual(of(W648_BULLETS), [...gates, "node --test-reporter=tap --import tsx packages/commands/src/w648.test.ts"], "W-648's bullets give the manifest gates and one tap line for its test path");
+  assert.deepEqual(of(owned("`a/b.ts`: see `c/d.test.ts`")), gates, "a later span shaped like a safe test path is not run");
+  assert.deepEqual(of(owned("`a/b.ts`: `$(touch PWNED).test.ts`")), gates, "a later span shaped like an unsafe test path is not read");
+  assert.deepEqual(of(owned("`a/one.test.ts`: joins `x`", "`b/two.test.mjs` (new)")), [...gates, "node --test-reporter=tap --import tsx a/one.test.ts", "node --test-reporter=tap b/two.test.mjs"], "each bullet's path slot runs, in order");
+  assert.deepEqual(of(owned("no span here", "prose, then `c/three.test.ts`")), [...gates, "node --test-reporter=tap --import tsx c/three.test.ts"], "the slot is the first span, wherever it sits on the bullet");
+  assert.deepEqual(of("## Files owned\n\n```\n- `x/fenced.test.ts`\n```\n<!-- - `x/hidden.test.ts` -->\n"), gates, "a fenced or commented bullet is not read");
+  for (const bad of ["a b.test.ts", "it's.test.ts", "caf\u00e9.test.ts", "../up.test.ts", "/abs.test.ts", "$(id).test.ts", "x.test.ts; touch pwned.test.ts"]) {
+    const got = of(owned(`\`${bad}\`: joins \`node --test-reporter=tap x.test.ts\``));
+    assert.ok("error" in got && got.error.includes(`(${bad})`), `an unsafe path slot is still refused, by name: ${bad}: ${JSON.stringify(got)}`);
+  }
+});
+row("W-661-b1 ownedFiles still lists every span of a Files owned bullet", async () => {
+  const { ownedFiles } = await import("@bisellium/commands/brief-admission.js");
+  assert.deepEqual(ownedFiles(W648_BULLETS), ["packages/commands/src/w648.test.ts", "W-648-b1", "W-648-b5", "studio/", "package.json", "node --test-reporter=tap --import tsx packages/commands/src/w648.test.ts", "test:suite", "w474.test.ts", "test:record"], "ownedFiles keeps its W-328 meaning");
 });
