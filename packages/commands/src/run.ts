@@ -89,8 +89,8 @@ function opusWorktree(studioRoot: string, repoFlag: string | undefined, opus: st
   let real: string;
   try {
     real = realpathSync(resolve(cwdFlag));
-  } catch (e) {
-    return { error: `--cwd ${cwdFlag} cannot be resolved (${(e as NodeJS.ErrnoException).code ?? "error"})` };
+  } catch {
+    return { error: `--cwd ${cwdFlag} cannot be resolved` };
   }
   if (real !== expected) return { error: `--cwd ${cwdFlag} is not ${expected}, the worktree of opus ${opus}` };
   return { dir: real };
