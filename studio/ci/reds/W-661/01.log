@@ -1,0 +1,67 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-661-b1\s --import tsx packages/cli/src/w610.test.ts
+# exit: 1
+# at: 2026-11-15T22:22:49.172Z
+# sella: builder.W-661
+# tree: tree:d862a313af5662e234bfe1b391a8aeb104c0e780
+# ticket: {"opus":"W-661","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-661/studio","head":"575b065b7fe7c6e24419b772a96becf6dfdf0ed3","brief":"4a555cba1d818ffaa6113c574b44b42aa13eade0","at":"2026-11-15T22:22:43.365Z"}
+
+TAP version 13
+# Subtest: W-661-b1 a Files owned bullet's later spans are not read as test paths
+not ok 1 - W-661-b1 a Files owned bullet's later spans are not read as test paths
+  ---
+  duration_ms: 31.934559
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-661/packages/cli/src/w610.test.ts:1:643'
+  failureType: 'testCodeFailure'
+  error: |-
+    W-661-b1 a Files owned bullet's later spans are not read as test paths: W-648's bullets give the manifest gates and one tap line for its test path
+    + actual - expected
+    
+    + {
+    +   error: "the brief's Files owned names a test path the light gates do not run (node --test-reporter=tap --import tsx packages/commands/src/w648.test.ts): only [A-Za-z0-9_./-], repo-relative, no .."
+    + }
+    - [
+    -   'x "$BISELLIUM_STUDIO"',
+    -   'node --test-reporter=tap --import tsx packages/commands/src/w648.test.ts'
+    - ]
+    
+    + actual - expected
+    
+    + {
+    +   error: "the brief's Files owned names a test path the light gates do not run (node --test-reporter=tap --import tsx packages/commands/src/w648.test.ts): only [A-Za-z0-9_./-], repo-relative, no .."
+    + }
+    - [
+    -   'x "$BISELLIUM_STUDIO"',
+    -   'node --test-reporter=tap --import tsx packages/commands/src/w648.test.ts'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'x "$BISELLIUM_STUDIO"'
+    1: 'node --test-reporter=tap --import tsx packages/commands/src/w648.test.ts'
+  actual:
+    error: "the brief's Files owned names a test path the light gates do not run (node --test-reporter=tap --import tsx packages/commands/src/w648.test.ts): only [A-Za-z0-9_./-], repo-relative, no .."
+  operator: 'deepStrictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-661/packages/cli/src/w610.test.ts:26:13)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-661-b1 ownedFiles still lists every span of a Files owned bullet
+ok 2 - W-661-b1 ownedFiles still lists every span of a Files owned bullet
+  ---
+  duration_ms: 0.549722
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 1
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 55.260081
