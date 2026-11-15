@@ -1,0 +1,26 @@
+# opus: W-488
+# phase: spec
+# round: 13
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1d572-2a1a-7e71-b882-55319725172a
+# outcome: passed
+# at: 2026-11-15T15:24:17.032Z
+# tree: tree:0085147a558a96dcaa85c625f9e74850360d8490
+# dispatch_prompt: ci/W-488-ui-prompt-13.md
+# design_digest: sha256:4cf4edd178a09ba798a985ab967ab79c4e07b91f2b8f2005161ac02e4e1072d3
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":13,"actor":"ui-lead","studio":".worktrees/W-488/studio","head":"2e9d620cb1b8c87761a86a65601708a24f575ab6","brief":"fb40ee02fec26cf6e84c34f03d20fbd0032d5da1","at":"2026-11-15T15:24:08.906Z"}
+
+## Findings
+
+1. advisory — brief:23 — Round-3 findings #1–#6 remain closed in the inherited design: selector containment, image enlargement, time-of-day display, paired numbering, qualified authorship and serving-checkout explanation. Round-10 advisory #1 still holds: the agent-written instruction to defer copy “unchanged” preserves an invitation to place a pin while comments are closed — replace with: “The web half retains the reviewed interactions with this correction: when commenting is closed, replace the placement hint with ‘This capture is read-only. Existing comments remain available.’ Show the placement hint only when commenting is enabled.” — check: shots-r5/capture-390-comments-closed.png and the follow-up brief’s served b1 closed-state row.
+
+2. advisory — brief:23 — Round-10 advisory #2 still holds: copying the numeric date `14/11/26` unchanged retains avoidable interpretation, although time and UTC remain visible. This agent-written formatting choice is not a cited Patron requirement — replace with: “The web half displays comment timestamps as ‘14 Nov 2026, 01:26 UTC’, allowing the timestamp to wrap independently of the author. Preserve validated timestamp parsing without requiring the previous display format.” — check: shots-r5/capture-390-comments.png and the follow-up brief’s served b2 timestamp row.
+
+## Recommendation
+
+Revision 8 adds assertion references and corrects the response contract; it removes no comment information or inherited screen behaviour compared with round 10.
+The WriteResult contract distinguishes acceptance from validation refusal despite both using HTTP 200, so the stated change does not erase the distinction the future screen needs.
+This half ships no screen, and the revision introduces no demonstrated legibility regression; both copy advisories should transfer explicitly to the web half.
+This UI recommendation does not clear round 12’s required authentication test or its advisory about the incomplete refusal-status list.
+Verdict: passed
