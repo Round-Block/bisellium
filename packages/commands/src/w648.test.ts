@@ -138,3 +138,9 @@ test("W-648-b1 behaviour 1: run --opus <id> --cwd <repo>/.worktrees/<id> runs th
   assert.equal(readFileSync(f.probe, "utf8"), f.worktree, "a dot-dot path that resolves to the worktree: the child's cwd is the worktree");
 });
 
+
+test("W-648-b2 behaviour 2: --cwd without --opus is refused", async () => {
+  const f = fixture();
+  await refused(f, "eng-lead", ["--cwd", f.worktree], /--cwd needs --opus <id>/, "--cwd without --opus");
+});
+
