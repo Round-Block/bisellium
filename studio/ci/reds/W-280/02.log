@@ -1,0 +1,62 @@
+# behaviour: 2
+# command: npx playwright test --config=apps/web/playwright.serve.config.ts --grep W-280-b2\s
+# exit: 1
+# at: 2026-11-15T14:29:43.376Z
+# sella: builder.W-280
+# tree: tree:d44b66f2d4de0073fe432ba24e9a950acc2f7231
+# ticket: {"opus":"W-280","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-280/studio","head":"5a98b4a925c0529674c3e33a1b00c63ba68bcc79","brief":"9664cef9c9acacd61a2f83f274899e348c91084b","at":"2026-11-15T14:29:39.078Z"}
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 43 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+dist/assets/IBMPlexMono-Regular-DMJ8VG8y.woff2       14.70 kB
+dist/assets/InstrumentSans-Medium-BbzFLZTg.woff2     30.09 kB
+dist/assets/BricolageGrotesque-Bold-DLoelf7F.woff2   41.34 kB
+dist/assets/index-ChpI7GEI.css                       46.87 kB │ gzip:  8.47 kB
+dist/assets/index-DjdNSZWN.js                       306.35 kB │ gzip: 94.15 kB
+
+✓ built in 131ms
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › apps/web/tests-serve/w280.spec.ts:58:1 › W-280-b2 behaviour 2: the production bundle carries none of the Inbox's demo fixtures (8ms)
+
+
+  1) [chromium] › apps/web/tests-serve/w280.spec.ts:58:1 › W-280-b2 behaviour 2: the production bundle carries none of the Inbox's demo fixtures 
+
+    Error: no bundle file carries a demo fixture
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 8
+
+    - Array []
+    + Array [
+    +   "P-008 in assets/index-DjdNSZWN.js",
+    +   "P-009 in assets/index-DjdNSZWN.js",
+    +   "P-010 in assets/index-DjdNSZWN.js",
+    +   "Approve the Outlook-style Inbox decision layout in assets/index-DjdNSZWN.js",
+    +   "Review inbox keyboard navigation edge case in assets/index-DjdNSZWN.js",
+    +   "Confirm gate-ladder mark alignment at 3px gaps in assets/index-DjdNSZWN.js",
+    + ]
+
+      61 |   const carrying = DEMO_MARKERS.flatMap((marker) =>
+      62 |     files.filter((file) => readFileSync(file, "latin1").includes(marker)).map((file) => `${marker} in ${file.slice(WEB_DIST.length + 1)}`));
+    > 63 |   expect(carrying, "no bundle file carries a demo fixture").toEqual([]);
+         |                                                             ^
+      64 | });
+      65 |
+        at /home/edckt/agents/bisellium/.worktrees/W-280/apps/web/tests-serve/w280.spec.ts:63:61
+
+    Error Context: apps/web/test-results/w280-W-280-b2-behaviour-2--d2292-f-the-Inbox-s-demo-fixtures-chromium/error-context.md
+
+  1 failed
+    [chromium] › apps/web/tests-serve/w280.spec.ts:58:1 › W-280-b2 behaviour 2: the production bundle carries none of the Inbox's demo fixtures 
+
+TAP version 13
+1..1
+not ok 1 - chromium › w280.spec.ts › W-280-b2 behaviour 2: the production bundle carries none of the Inbox's demo fixtures

@@ -1,0 +1,77 @@
+# behaviour: 1
+# command: npx playwright test --config=apps/web/playwright.serve.config.ts --grep W-280-b1\s
+# exit: 1
+# at: 2026-11-15T14:26:47.082Z
+# sella: builder.W-280
+# tree: tree:22a0d9e5462d78b9deb3d358162c670db790f7db
+# ticket: {"opus":"W-280","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-280/studio","head":"d7d20d95c27351e7ace5a09a0bd891522c736131","brief":"9664cef9c9acacd61a2f83f274899e348c91084b","at":"2026-11-15T14:26:38.781Z"}
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+dist/assets/IBMPlexMono-Regular-DMJ8VG8y.woff2       14.70 kB
+dist/assets/InstrumentSans-Medium-BbzFLZTg.woff2     30.09 kB
+dist/assets/BricolageGrotesque-Bold-DLoelf7F.woff2   41.34 kB
+dist/assets/index-ChpI7GEI.css                       46.87 kB │ gzip:  8.47 kB
+dist/assets/index-BOtlBMD-.js                       306.54 kB │ gzip: 94.21 kB
+
+✓ built in 134ms
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › apps/web/tests-serve/w280.spec.ts:33:1 › W-280-b1 behaviour 1: the served Inbox under ?demo shows the studio's own petitions, and a failed read under it invents none (996ms)
+
+
+  1) [chromium] › apps/web/tests-serve/w280.spec.ts:33:1 › W-280-b1 behaviour 1: the served Inbox under ?demo shows the studio's own petitions, and a failed read under it invents none 
+
+    Error: ?demo shows the same petitions as the plain Inbox
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  9
+    + Received  + 12
+
+      Array [
+    -   "eng-lead
+    - 17 Sept
+    - Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new…
+    - Inbox decision, Human gate",
+    -   "Board
+    - –
+    - Seasonal event framework
+    - Greenlight
+    - Opens Board drawer",
+    +   "architect
+    + 27 Oct
+    + Approve the Outlook-style Inbox decision layout
+    + Inbox decision",
+    +   "builder-a
+    + 25 Oct
+    + Review inbox keyboard navigation edge case
+    + Inbox decision",
+    +   "censor
+    + 20 Oct
+    + Confirm gate-ladder mark alignment at 3px gaps
+    + Inbox decision",
+      ]
+
+      39 |
+      40 |   await page.goto(`${served.baseURL}/?demo#/inbox`);
+    > 41 |   expect(await rowTexts(page), "?demo shows the same petitions as the plain Inbox").toEqual(own);
+         |                                                                                     ^
+      42 |   const shown = await page.locator(".inbox").innerText();
+      43 |   for (const marker of DEMO_MARKERS) expect(shown, `no demo petition is shown: ${marker}`).not.toContain(marker);
+      44 |
+        at /home/edckt/agents/bisellium/.worktrees/W-280/apps/web/tests-serve/w280.spec.ts:41:85
+
+    Error Context: apps/web/test-results/w280-W-280-b1-behaviour-1--8b271--read-under-it-invents-none-chromium/error-context.md
+
+  1 failed
+    [chromium] › apps/web/tests-serve/w280.spec.ts:33:1 › W-280-b1 behaviour 1: the served Inbox under ?demo shows the studio's own petitions, and a failed read under it invents none 
+
+TAP version 13
+1..1
+not ok 1 - chromium › w280.spec.ts › W-280-b1 behaviour 1: the served Inbox under ?demo shows the studio's own petitions, and a failed read under it invents none

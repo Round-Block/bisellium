@@ -1,0 +1,20 @@
+# opus: W-280
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1da77-bba9-77a3-9331-08660c58f74a
+# outcome: passed
+# at: 2026-11-15T02:18:55.891Z
+# tree: tree:22a0d9e5462d78b9deb3d358162c670db790f7db
+# brief: briefs/W-280.md blob:9664cef9c9acacd61a2f83f274899e348c91084b
+# ticket: {"opus":"W-280","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-280/studio","head":"8b00727c1c695015c84a3d70133c05e9a8f837f7","brief":"9664cef9c9acacd61a2f83f274899e348c91084b","at":"2026-11-15T02:18:45.321Z"}
+
+## Findings
+1. advisory — brief:55 [severity: S3] The table covers only the route fixture, omitting the `inboxDemo.ts` derivation and `Inbox.tsx` dynamic-import reader; brief:69 specifies no rejection path, so an import failure leaves `refreshingRef` true. Replace brief:55 with rows naming the three `DEV_*` shapes, a specified validator before derivation/routing, and `refreshInbox` catching import or validation rejection to show the error state and clear refreshing. [class: spec×input-domain-missing-or-unenforceable] — check: none: add rejected-dev-import and invalid-fixture tests
+2. advisory — brief:54 [severity: S4] The Input domain still omits the reused `globalSetup` build and `startServed` subprocess boundaries named at brief:77. Replace brief:54 with rows naming `globalSetup`’s build—exit zero valid and `globalSetup` throws otherwise—`startServed`’s serve call—startup and readiness valid, with `startServed` rejecting spawn, early-exit, timeout, or readiness failure—and the dist-tree read, where `bundleFiles`/`readFileSync` throw on unreadable entries and `W-280-b2` rejects markers. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+3. advisory — brief:32 [severity: S2] The promise, repeated at brief:79 and implemented by `W-280-b1`’s marker loop, rejects correct behavior if a studio’s own pending petition legitimately reuses a fixture ID or subject. Replace brief:32 with a promise that `?demo` rows equal plain-Inbox rows and no fixture substitution occurs, limited to allowing legitimate studio rows to reuse marker strings; delete the marker-absence clause from brief:79 and its loop from `apps/web/tests-serve/w280.spec.ts`. [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/tests-serve/w280.spec.ts
+
+## Verdict
+At `8b00727c`, the brief retains three advisory corrections, none of which blocks the build.
+VERDICT: PASS
