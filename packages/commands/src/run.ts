@@ -13,7 +13,7 @@
  * by a signal) · 2 usage error (bad flags, missing "--", empty command,
  * unknown/undeclared sella, not a studio).
  */
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -38,7 +38,7 @@ export interface RunResult {
 const GIT_TIMEOUT_MS = 30_000;
 
 const USAGE =
-  "usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>\n" +
+  "usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id> [--cwd <dir>]] [--keep] -- <cmd…>\n" +
   "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n" +
   "       bisellium run --scratch <dir> [--repo <dir>] [--base <ref>] -- <cmd…>";
 
@@ -130,6 +130,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   let keep = false;
   let reclaim = false;
   let opus: string | undefined;
+  let cwdFlag: string | undefined;
   let sepIndex = -1;
 
   for (let i = 0; i < args.length; i++) {
@@ -139,6 +140,12 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
       const r = takeValue(args, ++i, "--opus");
       if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
       opus = r.value;
+      continue;
+    }
+    if (a === "--cwd") {
+      const r = takeValue(args, ++i, "--cwd");
+      if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
+      cwdFlag = r.value;
       continue;
     }
     if (a === "--sella") {
@@ -237,7 +244,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
     }
     sella = minted;
     builderOpus = opusForMint;
-    if (noWorktree) {
+    if (noWorktree && cwdFlag === undefined) {
       console.error("bisellium run: builder-class execution cannot use --no-worktree; a disposable confined clone is mandatory");
       return { exitCode: 2 };
     }
@@ -253,7 +260,10 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   const warning = pauseWarning(studioRoot);
   if (warning) console.error(warning);
 
-  if (builderClass) {
+  // W-648: --cwd names the directory the child runs in; no worktree is leased and no confined clone is built
+  const runCwd = cwdFlag === undefined ? undefined : realpathSync(resolve(cwdFlag));
+
+  if (builderClass && runCwd === undefined) {
     const resolved = resolveRepoRoot(studioRoot, repoFlag);
     if ("error" in resolved) { console.error(`bisellium run: ${resolved.error}`); return { exitCode: 2 }; }
     const studioRelative = relative(resolved.repo, studioRoot);
@@ -276,7 +286,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   }
 
   let worktree: Awaited<ReturnType<WorktreeProvider["acquire"]>> | undefined;
-  if (!noWorktree) {
+  if (!noWorktree && runCwd === undefined) {
     const resolved = resolveRepoRoot(studioRoot, repoFlag);
     if ("error" in resolved) { console.error(`bisellium run: ${resolved.error}`); return { exitCode: 2 }; }
     const provider = opts.provider ?? selectProvider();
@@ -287,7 +297,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
       return { exitCode: 1 };
     }
   }
-  const cwd = worktree?.path ?? studioRoot;
+  const cwd = runCwd ?? worktree?.path ?? studioRoot;
 
   const startedAt = now;
   const sessionId = makeSessionId(startedAt);
