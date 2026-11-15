@@ -1,0 +1,23 @@
+# opus: W-488
+# phase: spec
+# round: 7
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1db2f-af3e-7bb0-ad82-743b43152e20
+# session_reason: the design lead's revision-7 sign session replaces the round-4 spec session: r7b re-sign after the r7 admission refusal (gap 58)
+# outcome: passed
+# at: 2026-11-15T01:35:33.650Z
+# tree: tree:982d3561780540b502bd30ae15b32e0abce3a7fb
+# brief: briefs/W-488.md blob:3445273eb1336faf9e620e7c56176f4853abe5bd
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":"studio","head":"cb73981cd01012cbc7c677887d9b5bdd0a0dd68d","brief":"3445273eb1336faf9e620e7c56176f4853abe5bd","at":"2026-11-15T01:35:26.954Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-488-spec/revision-7/promise-ledger-r7b.md
+Gate log: /home/edckt/.bisellium-evidence/W-488-spec/revision-7/gate.log
+
+## Findings
+
+No findings
+
+## Verdict
+
+passed — signature round 7b for W-488 revision 7b prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C; `/home/edckt/.bisellium-evidence/W-488-spec/revision-7/brief-r7b.md` has sha256 `b85bcb96190a624f218a11a70094b0ca3362f1baf6b5e3da51096b31892a003b`, the prototype mbox remains unchanged at sha256 `cc61ff8b5ce5ef4d19bed6b4f1eee27e5bb66501522cf6cf235056b4d1a6360e`, and the pre-sign gate at base `b6c6891744b05ab639138720adf45a62b75f5f42` still binds because no prototype row or series content changed; all seven gate rows exited 0. DESIGN CHANGE: none. No record write was performed.

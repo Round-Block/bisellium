@@ -1,0 +1,35 @@
+# opus: W-488
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1d572-2a1a-7e71-b882-55319725172a
+# outcome: revise
+# at: 2026-11-13T15:08:55.422Z
+# tree: dirty:7a7ad8333a1b5c6f14b79e6d09bfdf20e5a9d62a
+# dispatch_prompt: ci/W-488-ui-prompt-3.md
+# design_digest: sha256:e8beac3a38e6c66b671a444b8aef9ca9c6116cf8ec933859615f8e01bac4ae01
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"d21107b898868228c0f1c2568b4e764af28f667b","brief":"8c705c912975dedc9e480261b866cec4167d124a","at":"2026-11-13T15:08:48.197Z"}
+
+## Findings
+
+1. blocking — brief:99 — S1 holds: the 390px **Capture set** select loses its right border and arrow, hiding the affordance for switching sets. This is a usability defect, not merely an evidence discrepancy — replace with: “At 390px, constrain the Capture set select within the content margins, keeping its arrow and both borders visible. Preserve the complete selected opus title in wrapping text below when it cannot fit inside the control.” — check: apps/web/tests-serve/w488.spec.ts, b3 control containment assertion and refreshed capture-390-comments.png.
+
+2. blocking — brief:56 — The agent-written no-overflow criterion does not ensure readable capture content: the 1280px image shrinks to approximately 358px at 390 and 608px at 640; its text becomes unreadable. Even 1280 with the sidebar expanded makes inspection difficult. The prototype provides no enlargement control — replace with: “Keep the fitted image as an overview and provide ‘Actual size’ and ‘Fit image’ controls. Actual size permits scrolling inside the image region without page overflow; pins retain their image-relative positions.” — check: apps/web/tests-serve/w488.spec.ts, b3 image enlargement, scrolling and pin correspondence at all three widths.
+
+3. advisory — brief:48 — The review missed timestamp information loss: comment headers show only `2026-11-13`, and the prototype deliberately removes the time of day. Same-day notes and corrections therefore have indistinguishable displayed timestamps — replace with: “Display each comment’s date and time, including timezone, in readable text that can wrap independently of the author.” — check: CaptureReview.tsx in prototype.mbox and a served row containing two same-day comments.
+
+4. advisory — brief:17 — DIRECTION §4.3’s agent-written rule “Numbered markers appear nowhere else” makes no sense for this screen: matching numbers are what connect the captured image to its comments. The visible numbering should remain — replace with: “Numbered image pins and matching comment-row numbers are permitted because they identify the same annotation; retain this correspondence at every width.” — check: docs/design/DIRECTION.md §4.3 and the four captures containing comments.
+
+5. advisory — brief:74 — Review advisory 4 holds as an attribution concern: the visible Author selector permits choosing either identity, while recorded headers present that choice without qualification. The prototype confirms self-declared authorship; the captures do not establish a wrong attribution — replace with: “Label the control ‘Comment as’ and explain ‘Author is selected by the person recording the comment; identity is not verified.’” — check: CaptureReview.tsx in prototype.mbox and capture-1280-expanded-none.png.
+
+6. advisory — brief:17 — Review advisory 5 identifies a useful operating-context clarification, but the supplied captures show only a current set. Its blanket claim that a master checkout makes every set older is too broad: matching source trees determine eligibility — replace with: “‘Current’ means matching the source tree of the checkout serving this studio. For an older set, show ‘Comments are closed here. Open this capture in a checkout matching its certified source tree to comment.’” — check: apps/web/tests-serve/w488.spec.ts, b1 current/older states.
+
+## Recommendation
+
+The visible comment bodies and authors are legible at 1280, and the portions shown at 640 and 390 wrap sensibly; content below the screenshot boundary is not evidence of clipping.
+The narrow captures do not establish readability of the remaining comments or form, and there are no narrow no-comment captures or pre-change captures to support those comparisons.
+Review advisories 2 and 3 remain supported by the prototype’s missing image-hash comparison and skipped unparseable records, but neither is demonstrated visually by these captures.
+Review advisory 6 likewise holds in the prototype’s all-or-nothing listing, image-read and append paths; these successful captures do not demonstrate its failure screen.
+The architect can address the selector and image-legibility defects within the existing capture-and-comment layout, without a new design.
+Verdict: revise
