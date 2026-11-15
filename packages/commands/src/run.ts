@@ -260,6 +260,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   const warning = pauseWarning(studioRoot);
   if (warning) console.error(warning);
 
+  if (cwdFlag !== undefined && opus === undefined) { console.error(`bisellium run: --cwd needs --opus <id>\n${USAGE}`); return { exitCode: 2 }; }
   // W-648: --cwd names the directory the child runs in; no worktree is leased and no confined clone is built
   const runCwd = cwdFlag === undefined ? undefined : realpathSync(resolve(cwdFlag));
 
