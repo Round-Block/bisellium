@@ -144,3 +144,26 @@ test("W-648-b2 behaviour 2: --cwd without --opus is refused", async () => {
   await refused(f, "eng-lead", ["--cwd", f.worktree], /--cwd needs --opus <id>/, "--cwd without --opus");
 });
 
+
+test("W-648-b3 behaviour 3: --cwd naming any other directory is refused", async () => {
+  const f = fixture();
+  const not = /--cwd .* is not .*\.worktrees\/W-901/;
+  await refused(f, "builder", ["--opus", OPUS, "--no-worktree", "--cwd", join(f.repo, ".worktrees", OTHER)], not, "another opus's worktree");
+  await refused(f, "builder", ["--opus", OPUS, "--no-worktree", "--cwd", f.repo], not, "the main checkout");
+  await refused(f, "builder", ["--opus", OPUS, "--no-worktree", "--cwd", `${f.worktree}/../..`], not, "a dot-dot escape");
+  mkdirSync(join(f.worktree, "sub"));
+  await refused(f, "builder", ["--opus", OPUS, "--no-worktree", "--cwd", join(f.worktree, "sub")], not, "a directory inside the worktree");
+  const outside = join(f.root, "outside");
+  mkdirSync(outside);
+  symlinkSync(outside, join(f.repo, ".worktrees", "escape"));
+  await refused(f, "builder", ["--opus", OPUS, "--no-worktree", "--cwd", join(f.repo, ".worktrees", "escape")], not, "a symlink escaping the worktree");
+  // the worktree itself a symlink to elsewhere: its realpath is not <repo>/.worktrees/<id>
+  const g = fixture({ worktree: false });
+  const away = join(g.root, "away");
+  mkdirSync(away);
+  symlinkSync(away, g.worktree);
+  await refused(g, "builder", ["--opus", OPUS, "--no-worktree", "--cwd", g.worktree], /--cwd .* is not .*\.worktrees\/W-901/, "a symlinked worktree");
+  // an opus id that is not one path segment names no worktree
+  await refused(f, "eng-lead", ["--opus", "..", "--cwd", f.repo], /--cwd: invalid id/, "an opus id of two dots");
+});
+
