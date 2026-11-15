@@ -1,9 +1,10 @@
 queues:
   engineering:
-    lanes: { E1: ~, E2: W-280, E3: W-648 }
+    lanes: { E1: W-661, E2: W-280, E3: W-648 }
     next:
       - { opus: W-610, says: "build review before the full ci; lifted by D-209 item 3 after W-633 merged; the ci-run cap is cut to W-632 (D-206)" }
       - { opus: W-648, says: "bisellium run --cwd <dir> runs a builder's command in the opus's own .worktrees/<id>, only with --opus; small and high, unblocks W-503's green rows (clone-tests-meet-1114 c, 5/5)" }
+      - { opus: W-661, says: "the light-gate reader reads only each Files-owned bullet's path span, so a command span no longer holds a built opus; high, unblocks W-648 and W-644 (W-648 light-gate call 11-15, 2/2); process" }
       - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114)" }
       - { opus: W-641, says: "daily retro reads a timed-out gate log (gap 12), with W-621's first form folded in; E3's next process slot after W-644 (retro-meet-1115 c, 5/5)" }
       - { opus: W-645, says: "cause fix, red admission refuses a red log with ERR_MODULE_NOT_FOUND, serve exited, no port or token line, or no declared assertion; high, unblocks W-503 (all-leads-meet-1114 Q4)" }
