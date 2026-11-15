@@ -1,0 +1,27 @@
+# opus: W-661
+# phase: spec
+# round: 1
+# sella: architect
+# outcome: passed
+# at: 2026-11-15T14:29:24.329Z
+# tree: tree:0085147a558a96dcaa85c625f9e74850360d8490
+# brief: briefs/W-661.md blob:87de7d2802f846f8b0b14c911454687cac36d155
+# ticket: {"opus":"W-661","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"9acf09f102937b042e94a7af1c35adcbd095e8df","brief":"87de7d2802f846f8b0b14c911454687cac36d155","at":"2026-11-15T14:29:18.315Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-661-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the call's open point is settled as every later span, not only spaced ones: spaced-only would still run W-648's `w474.test.ts` and W-644's `w644.test.ts` from the root (183 unspaced later test spans, 89 naming no file, in 58 briefs); over 305 briefs 91 change, 22 leave the error (W-648 and W-644 among them), none goes to an error, and ownedFiles differs on none — check: census.mts, census.out
+2. advisory — one exported reader, ownedPathSlots (each real Files owned bullet's first span), shares ownedBulletSpans with ownedFiles, which keeps its W-328 output; lightGateCommands swaps one import and one call, and SAFE_PATH, TEST_FILE, realLines, admitLightGates, runLightGates and next's hold are reused unchanged, named as limits (D-076 E) — check: prototype.mbox, census.out
+3. advisory — behaviour 1's red fails by assertion on master 9acf09f1 with the final rows (tag w661-t0) at its declared pin, "W-648's bullets give the manifest gates and one tap line for its test path", master returning the error that names the command span; both W-661-b1 rows pass on the prototype (w661-s1) — check: reds.sh, red-b1-master.out, proto-b1-green.out
+4. advisory — the next-world fixture's mid-bullet test files are split onto their own bullets (spans and order unchanged) and W-610-b2's one edit adds its new test file as a bullet; w610.test.ts passes 24/24 and the 17 files that import the fixture, with the fixture itself, pass 348/348 as test:suite runs them — check: w610-proto.out, next-suite-proto.out
+5. advisory — typecheck, lint, format, brief-admission.test.ts, w610-texts.test.ts and the sample officina check pass on the prototype; the studio officina check in the clone fails on master and the prototype alike on one clone-only blocking finding (opus.records_unchanged: no current branch in the detached clone); the prototype adds one advisory only, process.tdd on its source-only commit, from the staged test/source split — check: gates.sh, gates-status.out, officina-check-proto.out, officina-check-master.out
+6. advisory — W-661's own brief gives the same light-gate sequence through master's reader and the prototype's, and its light gates pass; next-world.test.ts is a fixture module with 0 rows, so its light line proves only that it loads — check: own-brief.out, own-light.out
+7. advisory — the brief passes the read-only admission (readBriefAdmission with the D-050 Rejected-by rule, promiseLedgerProblems with the forms and hostile-form rules, evidence citations, red commands opening `bisellium red W-661 --behaviour 1`, the class census) with 0 problems; the ledger covers each promise line, each stated limit and every Input domain row — check: admission.mts, admission.out, promise-ledger.md
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-661.md`, master 9acf09f1 (prototype.mbox).
+
+VERDICT: PASS
