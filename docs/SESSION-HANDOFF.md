@@ -52,23 +52,23 @@ Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-18
 
 Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-644.
 
-Also, filed 11-14: W-645 W-646 W-647 W-648; 11-15: W-649 W-650 W-651 W-652 W-653 W-654 W-655 W-656 W-657 W-658 W-659 W-660 W-662 (fresh Claude reviewer sessions by rule).
+Also, filed 11-14: W-645 W-646 W-647 W-648; 11-15: W-649 W-650 W-651 W-652 W-653 W-654 W-655 W-656 W-657 W-658 W-659 W-660 W-662 (fresh Claude reviewer sessions by rule); 11-16: W-663 W-664.
 
 D-193 replaces D-178: product (M4 path) or process entries; E1 and E2 take product, E3 is process (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201 (Patron 11-13): one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-661 (light-gate reader fix): spec signed r1, Codex review r2 PASS (main, untracked); next: branch.
-- E2 W-280 (build drops ?demo Inbox): reds b1/b2, built, light gates and build review r1 PASSED; full ci running (W-280-review/ci-r1.log); next per `next`. Follow-up W-660.
+- E1 W-661 (light-gate reader fix): revision 3 re-signed (round 3); next: Codex spec delta review round 4, then the builder reruns red b1.
+- E2 W-280 merged #1240 (worktree cleanup held: busy mount, rerun in a fresh session); next: E2 entry per queue.yml.
 - E3 W-648 (bisellium run --cwd): built (d34acb5f), parked until W-661 merges (gap 61). W-645 (wrong-tree red refused) waits for E1 (W-644 ahead).
-- UI1 W-503 (Home screen): waits on W-648. UI2 W-488 (comments on captures, server half): branch opus/W-488 (270519a7); ready refused (W-473 pins); re-signed r11; delta Opus review r12 PASSED (fresh session ab5973ad, 1 S3 advisory; verdict ~/.bisellium-evidence/W-488-specreview/r12/verdict.md): record it next with --session-reason, then `--perform --expect spec`, then ready; spec-9 #1-#2 are required build fixes. W-467 (Officina page): review r3 and ui-lead r4 recorded; waits for UI1 behind W-503.
+- UI1 W-503 (Home screen): waits on W-648. UI2 W-488 (comments on captures, server half): built (reds 01-04 from the signed series, Terra's auth fix 17fa04b6, handover d4ed99b6); next: light gates, then Opus UI build review, full ci, PR. W-467 (Officina page): review r3 and ui-lead r4 recorded; waits for UI1 behind W-503.
 W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in queue), W-636 (next reads branch records); 11-14: W-639 W-640 W-641 W-642 (D-207, D-061 §4) W-643.
 
 Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>`, `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
 
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
 Sessions 21-23 meets: W-645-class-meet-1115 (W-659), W-610-1113-call-1115, W-280-fable-read-1115 (W-660), W-648-lightgate-meet-1115 (W-661), reviewer-session-meet-1115 (W-662); gaps 56-68.
-Session 24: classifier-red-meet-1115 (5 leads: npm-run form, file the allowlisted-form opus), W-488-ready-meet-1115 (design leads + producer ruling (a): one delta review round). Gaps 69-71.
-Next: W-280 ci then `next`; W-488 r12, spec perform, ready; W-661 branch; file the allowlisted-form opus, widen W-612, file the review-ceiling lex fix (all in this records PR).
+Session 25: W-488-r12-meet-1115 (production leads: keeps-only FAIL reissue), W-661-red-meet-1115 (eng leads: composed pins, revision 3). Gaps 72-76.
+Next: W-661 review r4; W-488 light gates and build review; W-280 cleanup; W-662 spec when `next` allows.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md. Open gaps, W-508 lessons: current-state-until-1106.md (same dir); read before any done step. W-510, after W-522 (queue.yml): ~/.bisellium-evidence/pr-debate-1106/brief-r1.md. Research is its own lane, never in D-182's lane unasked.
 

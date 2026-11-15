@@ -1,6 +1,6 @@
 queues:
   engineering:
-    lanes: { E1: W-661, E2: W-280, E3: W-648 }
+    lanes: { E1: W-661, E2: W-645, E3: W-648 }
     next:
       - { opus: W-610, says: "build review before the full ci; lifted by D-209 item 3 after W-633 merged; the ci-run cap is cut to W-632 (D-206)" }
       - { opus: W-648, says: "bisellium run --cwd <dir> runs a builder's command in the opus's own .worktrees/<id>, only with --opus; small and high, unblocks W-503's green rows (clone-tests-meet-1114 c, 5/5)" }
@@ -10,9 +10,12 @@ queues:
       - { opus: W-645, says: "cause fix, red admission refuses a red log with ERR_MODULE_NOT_FOUND, serve exited, no port or token line, or no declared assertion; high, unblocks W-503 (all-leads-meet-1114 Q4)" }
       - { opus: W-659, says: "cause fix for the class tests×one-sided-bound-assertion: source-text pins name each reader; rule in tests.ts + spec-draft line; W-645 never waits on it (W-645 class call 11-15); process" }
       - { opus: W-662, says: "Fresh Claude reviewer sessions by rule: next names a fresh session plus its last verdict log, verdict writes the session reason; closes gaps 66-67; high (reviewer-session-meet-1115, 5/5)" }
+      - { opus: W-663, says: "agent orders print the allowlisted npm run -s bisellium form, not the bare binary; + guard row; after W-280 (merged); high (classifier-red-meet-1115 c, 5/5); process" }
+      - { opus: W-612, says: "every gate runs one brief admission, a read-only admit verb, and a sign-time replay of reds and Promise pins; high (W-488-ready-meet-1115 d, W-661-red-meet-1115 e); process" }
       - { opus: W-660, says: "admission refuses a pinned Playwright red (declaredRedProblems passes a one-pin red before reading its command); W-280's follow-up, never holds it (W-280 roadblock call 11-15); process" }
       - { opus: W-647, says: "cause fix, the pre-sign gate runs every declared-list row against the prototype and refuses a Flips None signature when one flips; high, releases W-644's class hold (w644-class-meet-1114)" }
       - { opus: W-646, says: "production lex research clause, split from W-640 (D-207 item 4); lex text only, may take any free lane (all-leads-meet-1114 Q3, w644-class-meet-1114 Q2)" }
+      - { opus: W-664, says: "production lex: review ceiling counts rounds per signature, one delta round after a post-sign edit; low (W-488-r12-meet-1115 d); lex text, any free lane" }
       - { opus: W-649, says: "a branchless opus's handoff never leaves a tracked edit in main; next and check fail loud on one before a perform; process (main-edits-meet-1114 b, 5/5)" }
       - { opus: W-650, says: "red admission reads the classifier's whole environment-failure list, after a read enumeration; after W-645; process (w645-questions-meet-1114 b)" }
       - { opus: W-651, says: "a wrapped Playwright red must show its inner expect failure, after an enumeration of recorded reds; after W-645; process (w645-questions-meet-1114 c)" }
@@ -60,12 +63,10 @@ queues:
       - { opus: W-613, says: "ci --opus alongside the build review in a scratch checkout, killed on a failed review; follow-up of W-610, right after W-551 (review-order-meet-1112 round 2)" }
       - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead); qa-lead seat split out as W-644 (D-208 item 6); right after W-512 (w590-rank-meet-1112)" }
       - { opus: W-619, says: "next refuses research in a work lane; queue refuses lane ids outside E/UI; split from W-512; process lane (lanes-meet-1112)" }
-      - { opus: W-280, says: "Inbox demo out of the served build; E2 while W-301 is held (w301-hold-meet-1114); spec first" }
       - { opus: W-642, says: "W-301's remainder: console writes refuse mistyped opera row ids (D-061 §4, w301-split-meet-1114); after W-301" }
       - { opus: W-592, says: "check refuses lane opera whose Files owned overlap (queue.lane_collision), the check half; next's lane-start refusal is in W-512; process (D-193); + queue.lane_starved warn (ui2-lane-meet-1115)" }
       - { opus: W-597, says: "each lane's next unclaimed entry gets one spec-ahead draft; sign refuses a stale base; overlap via W-592; process, after W-592 (spec-ahead-lanes-meet-1112)" }
       - { opus: W-611, says: "W-494 guard clears a resumed runner's finished background run; process (retro 11-12)" }
-      - { opus: W-612, says: "verdict --phase spec runs brief.admission before signing; process (retro 11-12)" }
       - { opus: W-614, says: "next names the dispatched seat, not a fixed architect, on a spec order; process (w590-rank-meet-1112)" }
       - { opus: W-331, says: "next.ts split; debt slot, first (balance-meet-1112: lets two next.ts opera run at once)", next_ts: true }
       - { opus: W-605, says: "certify's replay and the pr rung's rewrite check read fix-round reds; split-first (W-323); high, after W-551 (w551-gate-meet-1112)" }
