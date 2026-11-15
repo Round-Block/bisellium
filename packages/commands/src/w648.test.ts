@@ -175,3 +175,31 @@ test("W-648-b4 behaviour 4: --cwd for a worktree that does not exist is refused"
   await refused(f, "builder", ["--opus", OPUS, "--no-worktree", "--cwd", f.worktree], /--cwd .* is not a directory/, "a file where the worktree would be");
 });
 
+
+test("W-648-b5 behaviour 5: --cwd with --reclaim or --scratch is refused before any lease is touched", async () => {
+  const f = fixture();
+  // a clean lease on a merged branch: the one a reclaim would remove
+  const lease = join(f.repo, ".bisellium", "worktrees", "lease-w648");
+  const git = (cwd: string, a: string[]): string => execFileSync("git", a, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  git(f.repo, ["worktree", "add", "-q", "-b", "lease/w648", lease]);
+  const leaseKept = (what: string): void => {
+    assert.equal(existsSync(lease), true, `${what}: the lease directory is not removed`);
+    assert.match(git(f.repo, ["worktree", "list", "--porcelain"]), /lease-w648/, `${what}: the lease stays registered`);
+    assert.match(git(f.repo, ["branch", "--list", "lease/w648"]), /lease\/w648/, `${what}: the lease branch is not deleted`);
+    assert.deepEqual(receipts(f), [], `${what}: no receipt is written`);
+  };
+  const withOpus = await run(["--reclaim", "--studio", f.studio, "--repo", f.repo, "--opus", OPUS, "--cwd", f.worktree]);
+  assert.match(withOpus.errors.join("\n"), /--cwd does not go with --reclaim/, "--cwd with --reclaim: the refusal names why");
+  assert.equal(withOpus.exitCode, 2, "--cwd with --reclaim and --opus: exits 2");
+  leaseKept("--cwd with --reclaim and --opus");
+  const bare = await run(["--reclaim", "--studio", f.studio, "--repo", f.repo, "--cwd", f.worktree]);
+  assert.match(bare.errors.join("\n"), /--cwd does not go with --reclaim/, "--cwd with --reclaim, no --opus: the refusal names why");
+  assert.equal(bare.exitCode, 2, "--cwd with --reclaim, no --opus: exits 2");
+  leaseKept("--cwd with --reclaim, no --opus");
+  // scratch mode refuses it in its own parse (W-474, unchanged)
+  const scratch = await run(["--scratch", join(f.root, "scratch"), "--repo", f.repo, "--cwd", f.worktree, "--", ...probeCmd(f.probe)]);
+  assert.match(scratch.errors.join("\n"), /--cwd does not go with --scratch/, "--cwd with --scratch: the refusal names why");
+  assert.equal(scratch.exitCode, 2, "--cwd with --scratch: exits 2");
+  assert.equal(existsSync(f.probe), false, "--cwd with --scratch: the child does not run");
+  leaseKept("--cwd with --scratch");
+});
