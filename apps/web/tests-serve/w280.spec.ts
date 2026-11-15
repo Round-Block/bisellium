@@ -4,8 +4,10 @@
  * like any other visit, and a failed read under it invents nothing (W-077, W-341). The demo fixtures stay a
  * vite-dev aid (`npm run dev`, apps/web/tests/smoke.spec.ts) and leave the production bundle.
  */
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { startServed, type ServedInstance } from "./harness.js";
+import { startServed, WEB_DIST, type ServedInstance } from "./harness.js";
 
 /** Strings only the Inbox's demo fixtures carry: their ids and subjects. */
 const DEMO_MARKERS = [
@@ -30,6 +32,11 @@ async function rowTexts(page: Page): Promise<string[]> {
   return page.locator(".inbox__row").allInnerTexts();
 }
 
+function bundleFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+    entry.isDirectory() ? bundleFiles(join(dir, entry.name)) : [join(dir, entry.name)]);
+}
+
 test("W-280-b1 behaviour 1: the served Inbox under ?demo shows the studio's own petitions, and a failed read under it invents none", async ({ page }) => {
   served = await startServed("w280-b1");
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -46,4 +53,12 @@ test("W-280-b1 behaviour 1: the served Inbox under ?demo shows the studio's own 
   await page.reload();
   await expect(page.locator('.shell__status[data-state="error"]'), "a failed read under ?demo is the error state").toHaveText("Could not load the inbox.");
   await expect(page.locator(".inbox__row"), "a failed read under ?demo invents no petition").toHaveCount(0);
+});
+
+test("W-280-b2 behaviour 2: the production bundle carries none of the Inbox's demo fixtures", () => {
+  const files = bundleFiles(WEB_DIST);
+  expect(files.some((file) => file.endsWith(".js")), "the served bundle is built (global-setup)").toBe(true);
+  const carrying = DEMO_MARKERS.flatMap((marker) =>
+    files.filter((file) => readFileSync(file, "latin1").includes(marker)).map((file) => `${marker} in ${file.slice(WEB_DIST.length + 1)}`));
+  expect(carrying, "no bundle file carries a demo fixture").toEqual([]);
 });
