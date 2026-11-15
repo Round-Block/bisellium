@@ -5,11 +5,25 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
+import { startServer, type StartServerOptions } from "@bisellium/server";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
 const MODULE = join(ROOT, "packages/commands/src/ui-capture-comments.ts");
 const PNG_SOURCE = join(ROOT, "studio/ci/shots/W-499/board-390.png");
+const SAMPLE_STUDIO = join(ROOT, "examples/sample-studio");
 const TREE = `tree:${"1".repeat(40)}`;
+const TOKEN = "w488-comment-token";
+
+const NOOP_RUNNERS: StartServerOptions["runners"] = {
+  answer: () => ({ exitCode: 0 }),
+  greenlight: () => ({ exitCode: 0 }),
+  budget: () => ({ exitCode: 0 }),
+  handoff: () => ({ exitCode: 0 }),
+  talk: async () => ({ exitCode: 0 }),
+  pause: async () => ({ exitCode: 0 }),
+  resume: async () => ({ exitCode: 0 }),
+  delegate: () => ({ exitCode: 0 }),
+};
 
 function fixture(opera: string[] = ["W-1"]): string {
   const root = mkdtempSync(join(tmpdir(), "w488-"));
@@ -163,6 +177,81 @@ test("W-488-b3 behaviour 3: three injected local routes preserve bounded capture
   assert.match(serve, /readUiCaptureReview/, "serve injects the current checkout's bounded metadata reader");
   assert.match(serve, /readUiCaptureImage/, "serve injects the manifest-bound immutable image reader");
   assert.match(serve, /appendUiCaptureComment/, "serve injects the append-only comment writer");
+});
+
+test("W-488-b3 served: pins the comment route's auth before timeline append", async () => {
+  const root = mkdtempSync(join(tmpdir(), "w488-served-"));
+  cpSync(SAMPLE_STUDIO, root, { recursive: true });
+  mkdirSync(join(root, "briefs"), { recursive: true });
+  mkdirSync(join(root, "opera"), { recursive: true });
+  const shots = join(root, "ci/shots/W-1");
+  mkdirSync(shots, { recursive: true });
+  cpSync(PNG_SOURCE, join(shots, "board-390.png"));
+  const image = readFileSync(join(shots, "board-390.png"));
+  writeFileSync(join(shots, "manifest.txt"), `shots: 1 ci/shots/W-1\nshot: board-390.png 390x900 ${image.length}\n`);
+  writeFileSync(join(root, "briefs/W-1.md"), "# W-1\n\nCapture fixture.\n");
+  writeFileSync(
+    join(root, "opera/W-1.md"),
+    `---\nid: "W-1"\ntitle: "Capture W-1"\nkind: "ui"\nstate: review\nspec: "briefs/W-1.md"\nprobationes:\n  served-e2e:\n    status: passed\n    certifies: ${TREE}\n    at: 2026-11-13T01:02:03.000Z\n---\n`,
+  );
+
+  const { appendUiCaptureComment, readUiCaptureImage, readUiCaptureSets } = await captureModule();
+  const listed = readUiCaptureSets(root, TREE);
+  assert.ok("sets" in listed, "the served fixture has one current capture set");
+  const set = listed.sets[0]!;
+  const shot = set.shots[0]!;
+  const body = {
+    author: "patron",
+    opus: set.opus,
+    tree: set.tree,
+    designDigest: set.designDigest,
+    manifestSha256: set.manifestSha256,
+    image: shot.name,
+    imageSha256: shot.sha256,
+    viewport: { width: shot.width, height: shot.height },
+    selector: ".board__card",
+    state: "settled",
+    pin: { x: 0.5, y: 0.5 },
+    body: "A valid comment must not append without route auth.",
+  };
+  const timeline = join(root, "timeline/patron.jsonl");
+  const before = existsSync(timeline) ? readFileSync(timeline, "utf8") : "";
+  const server = await startServer({
+    studioDir: root,
+    port: 0,
+    once: true,
+    now: new Date("2026-11-13T02:03:04.000Z"),
+    token: TOKEN,
+    checkStudio: () => ({ ok: true, blocks: 0, advisories: 0, findings: [] }),
+    runners: NOOP_RUNNERS,
+    listModels: () => Promise.resolve([]),
+    captureReview: {
+      read: () => readUiCaptureSets(root, TREE),
+      image: (opus, name) => readUiCaptureImage(root, TREE, opus, name),
+      comment: (input) => appendUiCaptureComment(root, TREE, input as Parameters<typeof appendUiCaptureComment>[2]),
+    },
+  });
+  const endpoint = `http://127.0.0.1:${server.port}/api/ui-capture-comment`;
+  try {
+    const missingToken = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    assert.equal(missingToken.status, 401, "a valid comment without X-Bisellium-Token is refused");
+    assert.equal(existsSync(timeline) ? readFileSync(timeline, "utf8") : "", before, "the missing-token refusal appends no timeline line");
+
+    const foreignOrigin = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-bisellium-token": TOKEN, origin: "https://foreign.example" },
+      body: JSON.stringify(body),
+    });
+    assert.equal(foreignOrigin.status, 403, "a valid comment from a foreign Origin is refused");
+    assert.equal(existsSync(timeline) ? readFileSync(timeline, "utf8") : "", before, "the foreign-origin refusal appends no timeline line");
+  } finally {
+    await server.close();
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("W-488-b4 behaviour 4: only comments bound to the reviewed capture set feed the one review gate", async () => {
