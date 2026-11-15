@@ -1343,3 +1343,82 @@ Hand-written by the clerk on the qa-lead's order (leads' meet unblock-meet-1113,
 - The D-204 hotfix (dailyHold advisory; PR #1199 was refused by certify because its branch is not an opus) becomes its own opus, first in E3, reusing its reviewed commits with fresh reds and a fresh review. Owner: eng-lead.
 - W-621 (retro --daily reports an unparseable log instead of refusing) follows soon after, so this hand entry does not repeat past 11-13. Owner: ops-lead.
 - The gate-log reader fix stays in W-610. Owner: eng-lead.
+
+### 2026-11-14
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-610 | 3256 | 9 | S1 13 |
+| W-630 | 767 | 0 |  |
+| W-633 | 924 | 0 |  |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-301 | spec | 4 | failed | 493 | spec×input-domain-missing-or-unenforceable S1 |
+| W-301 | spec | 5 | passed | 33 |  |
+| W-488 | spec | 4 | passed | 790 |  |
+| W-488 | spec | 5 | passed | 23 |  |
+| W-488 | spec | 6 | passed | 102 |  |
+| W-610 | review | 4 | failed | 1152 | review×name-prefix-containment-misclassifies-valid-paths S1 |
+| W-610 | review | 5 | failed | 139 | review×name-prefix-containment-misclassifies-valid-paths S1 |
+| W-610 | review | 6 | passed | 156 |  |
+| W-610 | review | 7 | passed | 28 |  |
+| W-610 | review | 8 | passed | 244 |  |
+| W-610 | spec | 12 | passed | 1506 |  |
+| W-610 | spec | 13 | failed | 7 | review×name-prefix-containment-misclassifies-valid-paths S1 |
+| W-610 | spec | 14 | passed | 20 |  |
+| W-610 | spec | 15 | passed | 46 |  |
+| W-633 | review | 1 | passed | - |  |
+| W-644 | spec | 1 | passed | - |  |
+| W-644 | spec | 2 | failed | 8 | review×builder-self-review-misses-regression-fixture S1, spec×input-domain-missing-or-unenforceable S1 |
+| W-644 | spec | 3 | passed | 103 |  |
+| W-644 | spec | 4 | passed | 31 |  |
+| W-645 | spec | 1 | passed | - |  |
+| W-645 | spec | 2 | failed | 83 | mechanism×red-certifies-wrong-tree S1, mechanism×red-certifies-wrong-tree S1 |
+| W-645 | spec | 3 | passed | 49 |  |
+| W-645 | spec | 4 | failed | 18 | tests×one-sided-bound-assertion S1 |
+
+- LOOP W-610 review: class review×name-prefix-containment-misclassifies-valid-paths, rounds 3-4 (minutes since previous round: r3 1087, r4 1152)
+- LOOP W-610 review: any class, rounds 1-5 (minutes since previous round: r1 -, r2 223, r3 1087, r4 1152, r5 139)
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| none | | | |
+
+Classes in more than one opus, 2026-11-01..2026-11-14:
+- class gate×W-339 seen in 2 opera: W-463, W-487
+- class gate×tests seen in 7 opera: W-364, W-494, W-502, W-509, W-558, W-563, W-572
+- class interface×validation-order-masks-errors seen in 2 opera: W-543, W-547
+- class review×evidence-backfilled-or-absent seen in 6 opera: W-300, W-413, W-488, W-495, W-502, W-541
+- class review×fail-open-on-malformed-records-patched-per-site seen in 4 opera: W-525, W-547, W-558, W-563
+- class security×symlink-parent-write-escape seen in 2 opera: W-542, W-543
+- class spec×input-domain-missing-or-unenforceable seen in 11 opera: W-227, W-298, W-301, W-452, W-525, W-530, W-547, W-558, W-573, W-610, W-644
+- class spec×input-without-named-rejector seen in 2 opera: W-489, W-495
+- class spec×promise-unattainable-under-accepted-domain seen in 15 opera: W-227, W-298, W-333, W-452, W-489, W-494, W-495, W-498, W-501, W-509, W-512, W-525, W-543, W-547, W-604
+- class tests×one-sided-bound-assertion seen in 3 opera: W-487, W-604, W-645
+- class tests×ruled-case-uncovered seen in 7 opera: W-364, W-495, W-496, W-525, W-542, W-547, W-608
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-227, W-501
+- class tests×tests-that-agree-with-the-bug seen in 2 opera: W-487, W-543
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-487, W-508
+
+#### Owed cause fixes
+
+- OWED class gate×W-339 (W-463, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class gate×tests (W-364, W-494, W-502, W-509, W-558, W-563, W-572): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class tests×one-sided-bound-assertion (W-487, W-604, W-645): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- gate×tests×owed (7 opera, last W-563; still no `gate×` lesson in studio/lessons/, the same gap as the 11-11 entry): covered by W-596 "Handoff refuses without a passing pre-handoff gate" (greenlit, studio/queue.yml:72). A dispatched clerk files one gate×tests lesson with `addressed_by: "W-596"` in the next records PR, so the OWED line can clear. Owner: eng-lead.
+- gate×W-339×owed (W-463, W-487; no `gate×` lesson): covered by W-533 "Retro owes gate failures by row and recurrences" (greenlit, studio/queue.yml:112, behind the freeze). The same clerk files a gate×W-339 lesson with `addressed_by: "W-533"`. Owner: eng-lead.
+- tests×one-sided-bound-assertion×owed (W-487, W-604, W-645 spec r4, ci/W-645-spec-4.log): covered by W-659 "Cause fix (high): tests×one-sided-bound-assertion, source-text pins" (greenlit, studio/queue.yml:11). Its lessons still name halted opera (studio/lessons/L-034.md:7 and L-066.md:7 `"W-138"`, L-115.md:8 `"W-201"`, all halted): restamp L-115 to `"W-659"` in the next records PR. Owner: eng-lead.
+- review×name-prefix-containment-misclassifies-valid-paths×loop (W-610 review r3-r5 and spec r13, five failed review rounds, r4 1152 min after r3; ci/W-610-review-4.log:14 and -5.log:14, both packages/commands/src/light-gates.ts:158): the class's only lesson, studio/lessons/L-147.md:8, names W-224 (halted), and it is seen in W-215 too (L-147.md:5). File a high cause fix naming the class: one shared component-aware containment test, plus a census that refuses a second hand-written one. The r3 deadlock wait is covered by W-627 "Fresh review session after a blind resume" (greenlit, queue.yml:41). Owner: eng-lead.
+- verdict×signature-refused-after-passed-gate (gaps.md 58 W-488 r7 and 59 W-467 r1: pre-sign gate passed, verdict refused at admission; 63(b) W-467 r1b passed the verdict but `next` refused D-050; current-state.md:20 RETRO s21 (1)): covered by W-612 "Spec verdict runs brief admission first" (greenlit, queue.yml:67). Widen it so the pre-sign gate, `verdict` and `next` run the same read-only admission, D-050 rule included, and rank it into the process lane ahead of the next kind-ui sign. Owner: eng-lead.
+- next×reviewer-session-gone (gaps.md 65: `next W-488` named ui-spec-reviewer session a680e8a2 for round 9, `claude -p --resume` found no such conversation; the same happened at round 5 with e92bde8c; 63(a): no `--session-reason` printed when the session changes): fold into W-627 (greenlit, queue.yml:41). `next` checks the session exists before naming it, and otherwise prints a fresh session with its `--session-reason`. Red: a gone session id makes `next` print the fresh-session line. Owner: eng-lead.
+- prompt×first-reviewer-round-packet-no-prompt (gaps.md 66: at W-467 round 3, the reviewer's first round after two signatures, review-packet.mjs wrote only subject and facts.txt, no prompt.md, and a copied kit exited 3; the prompt came from studio/prompts/spec-review.md): nothing in studio/queue.yml names it. File it: on a reviewer's first round the packet writes prompt.md from spec-review.md, or `next` names that source. Red: a round-3 first-review packet without prompt.md fails. Owner: ops-lead.
+- workflow×newer-reader-holds-signed-brief (gaps.md 56: W-280's pinned Playwright reds refused by `red`; gaps.md 61: W-648 build held by the light-gate reader taking a command span as a test path; current-state.md:20 RETRO s21 (2)): covered by W-660 "Admission refuses a pinned Playwright red" (greenlit, queue.yml:12) and W-661 "Cause fix (high): light gates read path spans" (greenlit, E1 head, queue.yml:7). Owner: eng-lead.
+- spec×input-domain-missing-or-unenforceable (W-301 spec r4 S1, W-644 spec r2 S1; 11 opera): none new, because the class is not owed and W-393 (greenlit, queue.yml:27) is its admission cause fix. Owner: design lead.
