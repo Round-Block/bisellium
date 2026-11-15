@@ -1,0 +1,18 @@
+# opus: W-280
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1dfa0-d5c9-7490-83f6-3fed78533709
+# outcome: passed
+# at: 2026-11-15T14:36:19.693Z
+# tree: tree:a7afeb72be60aafe8be5140194f8926de7d468e8
+# brief: briefs/W-280.md blob:9664cef9c9acacd61a2f83f274899e348c91084b
+# ticket: {"opus":"W-280","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-280/studio","head":"10c6d987d100294c74609b4071a2f90113c6ff53","brief":"9664cef9c9acacd61a2f83f274899e348c91084b","at":"2026-11-15T14:33:39.561Z"}
+
+## Findings
+1. advisory — apps/web/tests-serve/w280.spec.ts:50 The marker-negative assertions reject correct behavior when a legitimate studio petition or unrelated bundled text reuses a fixture ID or subject; row equality already proves `?demo` did not substitute fixtures. Sites: declarations at brief:32, brief:34, brief:79, and brief:83; fixture writer `apps/web/src/screens/inboxDemo.ts:12`; readers through `apps/web/src/screens/Inbox.tsx:156` and `apps/web/tests-serve/inbox-demo.ts:8`; duplicated marker reader `apps/web/tests-serve/w280.spec.ts:13`; false-positive assertions at `apps/web/tests-serve/w280.spec.ts:50` and `apps/web/tests-serve/w280.spec.ts:61`. — check: apps/web/tests-serve/w280.spec.ts: add legitimate marker-reuse cases and assert fixture provenance rather than global string absence [severity: S2] [class: spec×promise-unattainable-under-accepted-domain]
+
+## Verdict
+The implementation matches Files owned and the intended product behavior; both reds and the light-gate evidence are valid. The over-broad regression assertions are advisory because the product fix itself is correct.
+VERDICT: PASS
