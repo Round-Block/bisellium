@@ -1,0 +1,36 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-648-b5\s --import tsx packages/commands/src/w648.test.ts
+# exit: 1
+# at: 2026-11-15T00:50:09.350Z
+# sella: builder.W-648
+# tree: tree:b2b54b46218fb0a731f5dd59e4d7ebbc8d343ba4
+# ticket: {"opus":"W-648","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-648/studio","head":"35f99cbd399a6e1c8fcc77a2fe277ee73e231b45","brief":"f3b2b9e845a12875e83a3e351fdb48e7ee1d2b8b","at":"2026-11-15T00:50:06.817Z"}
+
+TAP version 13
+# Subtest: W-648-b5 behaviour 5: --cwd with --reclaim or --scratch is refused before any lease is touched
+not ok 1 - W-648-b5 behaviour 5: --cwd with --reclaim or --scratch is refused before any lease is touched
+  ---
+  duration_ms: 115.209783
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-648/packages/commands/src/w648.test.ts:1:7035'
+  failureType: 'testCodeFailure'
+  error: '--cwd with --reclaim: the refusal names why'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: "removed /tmp/claude-1000/w648 'ü'-vQSmm5/repo/.bisellium/worktrees/lease-w648 (branch lease/w648) — merged"
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-648/packages/commands/src/w648.test.ts:192:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 123.055089
