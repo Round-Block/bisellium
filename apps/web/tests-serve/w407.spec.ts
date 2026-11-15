@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { startServed, type ServedInstance } from "./harness.js";
+import { routeInboxDemo } from "./inbox-demo.js";
 
 test.setTimeout(120_000);
 let served: ServedInstance | undefined;
@@ -20,7 +21,8 @@ function contrast(foreground: string, background: string): number {
 }
 
 async function openInbox(page: Page, width: number, tag: string, demo = true): Promise<void> {
-  if (!demo) {
+  if (demo) await routeInboxDemo(page);
+  else {
     await page.unroute("**/api/officina");
     await page.unroute("**/api/opera");
     await page.route("**/api/officina", (route) => route.fulfill({ json: {
@@ -31,7 +33,7 @@ async function openInbox(page: Page, width: number, tag: string, demo = true): P
   }
   served = await startServed(tag, { now: FIXED_NOW });
   await page.setViewportSize({ width, height: 900 });
-  await page.goto(`${served.baseURL}/${demo ? "?demo" : ""}#/inbox`);
+  await page.goto(`${served.baseURL}/#/inbox`);
   await page.locator("#token-prompt-input").fill(served.token);
   await page.locator(".token-prompt__submit").click();
   await expect(page.locator(".token-prompt")).toBeHidden();

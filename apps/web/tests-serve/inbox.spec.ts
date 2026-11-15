@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { startServed } from "./harness.js";
+import { routeInboxDemo } from "./inbox-demo.js";
 
 async function signIn(page: import("@playwright/test").Page, baseURL: string, token: string): Promise<void> {
   await page.goto(`${baseURL}/#/inbox`);
@@ -16,7 +17,8 @@ test("W-345-b1 typing shortcut characters in the reason keeps the petition and s
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, output: "recorded" }) });
   });
   try {
-    await page.goto(`${served.baseURL}/?demo=1#/inbox`);
+    await routeInboxDemo(page);
+    await signIn(page, served.baseURL, served.token);
     const first = page.locator(".inbox__item").first();
     await expect(first).toHaveAttribute("data-focused", "true");
     const reason = page.locator(".inbox__input-ratio");
@@ -44,7 +46,8 @@ test("W-345-b2 two same-turn answers issue one request", async ({ page }) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, output: "recorded" }) });
   });
   try {
-    await page.goto(`${served.baseURL}/?demo=1#/inbox`);
+    await routeInboxDemo(page);
+    await signIn(page, served.baseURL, served.token);
     await page.locator(".inbox__input-ratio").fill("one recorded reason");
     await page.evaluate(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "1" }));
@@ -62,7 +65,8 @@ test("W-345-b2 two same-turn answers issue one request", async ({ page }) => {
 test("W-345-b3 moving between petitions never carries one reason into another", async ({ page }) => {
   const served = await startServed("w345-b3");
   try {
-    await page.goto(`${served.baseURL}/?demo=1#/inbox`);
+    await routeInboxDemo(page);
+    await signIn(page, served.baseURL, served.token);
     const rows = page.locator(".inbox__row");
     const reason = page.locator(".inbox__input-ratio");
     await reason.fill("reason for P-008 only");
