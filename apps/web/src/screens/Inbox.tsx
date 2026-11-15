@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type JSX } from "react";
 import { fetchInbox, fetchOfficina, fetchOpera, submitAnswer, type InboxResponse, type OfficinaResponse, type OpusEntry } from "../api.js";
-import { DEV_DATA, DEV_OFFICINA, DEV_OPERA } from "./inboxDemo.js";
 import { InboxView, liveSelectedAttentionItem } from "./InboxView.js";
 import {
   answerOptions,
@@ -154,9 +153,12 @@ export function Inbox({ onStatus, onNeedsYouCount, onAttentionLoaded, onOpenBoar
       setLoaded(true);
       setReadFailed(false);
     };
-    if (demo) {
-      settle(DEV_OFFICINA, DEV_OPERA, DEV_DATA);
-      refreshingRef.current = false;
+    // W-280: the fixtures load only under vite dev; a production build drops this branch and never emits inboxDemo.ts.
+    if (import.meta.env?.DEV === true && demo) {
+      void import("./inboxDemo.js").then(({ DEV_OFFICINA, DEV_OPERA, DEV_DATA }) => {
+        settle(DEV_OFFICINA, DEV_OPERA, DEV_DATA);
+        refreshingRef.current = false;
+      });
       return;
     }
     void Promise.all([fetchOfficina(), fetchOpera(), fetchInbox()])
