@@ -167,3 +167,11 @@ test("W-648-b3 behaviour 3: --cwd naming any other directory is refused", async 
   await refused(f, "eng-lead", ["--opus", "..", "--cwd", f.repo], /--cwd: invalid id/, "an opus id of two dots");
 });
 
+
+test("W-648-b4 behaviour 4: --cwd for a worktree that does not exist is refused", async () => {
+  const f = fixture({ worktree: false });
+  await refused(f, "builder", ["--opus", OPUS, "--no-worktree", "--cwd", f.worktree], /--cwd .* does not exist/, "a missing worktree");
+  writeFileSync(f.worktree, "not a directory\n");
+  await refused(f, "builder", ["--opus", OPUS, "--no-worktree", "--cwd", f.worktree], /--cwd .* is not a directory/, "a file where the worktree would be");
+});
+
