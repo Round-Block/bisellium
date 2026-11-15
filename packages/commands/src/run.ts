@@ -210,6 +210,10 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
 
   const studioRoot = resolve(studio);
 
+  // W-648: --cwd belongs to an ordinary command run with --opus <id>; refused before the reclaim return touches a lease
+  if (cwdFlag !== undefined && reclaim) { console.error(`bisellium run: --cwd does not go with --reclaim\n${USAGE}`); return { exitCode: 2 }; }
+  if (cwdFlag !== undefined && opus === undefined) { console.error(`bisellium run: --cwd needs --opus <id>\n${USAGE}`); return { exitCode: 2 }; }
+
   if (reclaim) {
     const resolved = resolveRepoRoot(studioRoot, repoFlag);
     if ("error" in resolved) { console.error(`bisellium run --reclaim: ${resolved.error}`); return { exitCode: 2 }; }
@@ -288,7 +292,6 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   const warning = pauseWarning(studioRoot);
   if (warning) console.error(warning);
 
-  if (cwdFlag !== undefined && opus === undefined) { console.error(`bisellium run: --cwd needs --opus <id>\n${USAGE}`); return { exitCode: 2 }; }
   // W-648: --cwd names the directory the child runs in; no worktree is leased and no confined clone is built
   let runCwd: string | undefined;
   if (cwdFlag !== undefined) {
