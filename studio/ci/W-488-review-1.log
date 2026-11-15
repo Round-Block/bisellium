@@ -1,0 +1,31 @@
+# opus: W-488
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-opus-5-5
+# session: 3c256e2e-54d5-41a6-8963-e648bcafe0ab
+# outcome: passed
+# at: 2026-11-15T23:14:08.118Z
+# tree: tree:7dee6c690178ad40824029f29f695daae7684720
+# ui_input: ci/W-488-spec-13.log
+# design_digest: sha256:4cf4edd178a09ba798a985ab967ab79c4e07b91f2b8f2005161ac02e4e1072d3
+# ticket: {"opus":"W-488","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-488/studio","head":"949a417303046572e45c7cb9186a714350ab493c","brief":"fb40ee02fec26cf6e84c34f03d20fbd0032d5da1","at":"2026-11-15T23:13:58.240Z"}
+
+## Findings
+1. advisory — packages/commands/src/ui-capture-comments.ts:203 `appendUiCaptureComment` reads `input.viewport.width` before `commentProblem` runs. An authenticated POST whose `viewport` is missing or `null` therefore throws, and the server answers 500 `{ error: "internal error" }` instead of the brief:43 refusal `{ ok:false, exitCode:1, output }`. Nothing is appended, so the write still fails closed. brief:72 makes "absent or wrong type" a limit, so this is not blocking. The same uncaught-throw-to-500 path has three more sites: apps/server/src/http.ts:800, where `decodeURIComponent` throws on a malformed `%` (for example `/api/ui-capture-image/W-1/%E0`), which brief:72 also lists as a limit; and packages/cli/src/serve.ts:105, where `captureSourceTree`'s `git rev-parse` throws outside a repository, on all three injected routes. Fix: run `commentProblem` on the input before comparing bindings, and catch decode errors as 404. [severity: S3] [class: spec×input-without-named-rejector] — check: none: a W-488-b3 served POST without `viewport` expecting HTTP 200 `{ok:false,exitCode:1}` and no new timeline line, plus a GET of `/api/ui-capture-image/W-1/%E0` expecting 404
+2. advisory — packages/commands/src/ui-capture-comments.ts:217 The record copies the caller's `viewport` and `pin` objects whole, so extra nested keys pass `commentProblem` and are stored. With a valid token, a pin such as `{x,y,pad:"…1.5 MB"}` gets past the field limits brief:51 promises ("one bounded record"). It also pushes `timeline/patron.jsonl` over the 1 MiB read cap, which then shuts every later comment append and every UI build-review packet for this studio, not just the bad record. This needs a token and extra keys are an unlisted form under brief:70, so it is an advisory. Fix: rebuild `{ x, y }` and `{ width, height }` from the validated values. Readers reached: `readUiCaptureComments` (line 161) and `scripts/review-packet.mjs:426`. [severity: S3] [class: review×unredacted-writes-to-tracked-files] — check: none: a W-488-b2 case appending a pin with an extra key and asserting the stored `record.pin` deepEquals `{x,y}`
+3. advisory — studio/ci/shots/W-488/*.png and manifest.txt are on the branch, although brief:35 excludes "committed PNGs and `studio/ci/shots/`". They are the served-e2e gate's own output for a kind-ui opus (the certificate is in studio/ci/W-488-served-e2e-7dee6c69.log), not files written by hand. The source diff outside studio/ is exactly the seven Files owned. The brief's wording should say that gate-produced shots are allowed. [severity: S4] [class: spec×stale-citation-residue] — check: none: a brief-admission rule that separates gate-written `ci/shots/<opus>/` from owned paths
+4. advisory — docs/ARCHITECTURE.md:225 describes the `#/captures[/<opus>]` console route as if it reads the capture sets now, but brief:23 moves that route to the web half and this opus does not mount it. The read-path mermaid `posts` node also leaves out `/ui-capture-comment`. [severity: S4] [class: docs×architecture-graph-not-regenerated] — check: none: a docs check that every route in http.ts's ROUTE_INDEX_HTML appears in the ARCHITECTURE read-path graph
+
+## UI input disposition
+The authoritative ui-lead input is ci/W-488-spec-13.log, which passed. Its two copy advisories (the closed-state placement hint and the timestamp format) belong to the deferred web half, so neither affects this server-half verdict. The eight images were not attached to this turn. I read them myself from studio/ci/shots/W-488/ in the stated order:
+- **Inbox:** the 1280 view has a clear hierarchy, with the reason input and the four record actions reachable; at 390 the queue is legible and nothing is clipped.
+- **Board:** the 1280 view has clear column and gate marks and scrolls horizontally with a cue; at 390 there are column tabs plus a "Waiting on you" carousel with a next control.
+- **Seats:** both widths group the seats and label the controls, and the phone view stacks with adequate touch spacing.
+- **Officina:** both widths show the work-in-flight panels before budget, and the dense values wrap.
+
+None of these screens changes in this opus; its only web change is api.ts types and helpers. I found no regression, and the images did not change the verdict.
+
+## Verdict
+All four behaviours are covered by their rows and pass at the certified tree (light gates and the full suite at 7dee6c69). Each red 01–04 fails by `ERR_ASSERTION` with the exact header. The single "ENOENT" in red 02 is inside the TAP diagnostic's printed source (line 108, `code === "ENOENT"`), not a runtime error. The source diff is exactly the Files owned. Required fix ci/W-488-spec-12.log #1 is closed: the served "W-488-b3 served" row asserts 401 without a token and 403 for a foreign Origin, each with an unchanged timeline, and fix-mutation.out shows that dropping the route from `WRITE_PATHS` turns it red by assertion (200 !== 401). Every finding is advisory.
+VERDICT: PASS
