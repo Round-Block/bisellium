@@ -13,7 +13,7 @@
  * by a signal) · 2 usage error (bad flags, missing "--", empty command,
  * unknown/undeclared sella, not a studio).
  */
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync, realpathSync, statSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -73,7 +73,7 @@ function resolveRepoRoot(studioRoot: string, repoFlag: string | undefined): { re
 
 /** W-648: the directory `--cwd` names, when it is the opus's own worktree: `cwdFlag` resolved and realpath'd equals
  *  `<realpath of the repo>/.worktrees/<opus>` (the id one path segment, by `safeItemPath`'s rule). A `..` or a symlink
- *  that resolves to it is that directory; anything else is refused. */
+ *  that resolves to it is that directory and must exist as one; anything else is refused. */
 function opusWorktree(studioRoot: string, repoFlag: string | undefined, opus: string, cwdFlag: string): { dir: string } | { error: string } {
   const resolved = resolveRepoRoot(studioRoot, repoFlag);
   if ("error" in resolved) return resolved;
@@ -89,10 +89,12 @@ function opusWorktree(studioRoot: string, repoFlag: string | undefined, opus: st
   let real: string;
   try {
     real = realpathSync(resolve(cwdFlag));
-  } catch {
-    return { error: `--cwd ${cwdFlag} cannot be resolved` };
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    return { error: code === "ENOENT" ? `--cwd ${cwdFlag} does not exist` : `--cwd ${cwdFlag} cannot be resolved (${code ?? "error"})` };
   }
   if (real !== expected) return { error: `--cwd ${cwdFlag} is not ${expected}, the worktree of opus ${opus}` };
+  if (!statSync(real).isDirectory()) return { error: `--cwd ${cwdFlag} is not a directory` };
   return { dir: real };
 }
 
