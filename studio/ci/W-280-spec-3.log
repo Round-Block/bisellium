@@ -1,0 +1,23 @@
+# opus: W-280
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-15T00:54:28.713Z
+# tree: tree:22a0d9e5462d78b9deb3d358162c670db790f7db
+# brief: briefs/W-280.md blob:9664cef9c9acacd61a2f83f274899e348c91084b
+# ticket: {"opus":"W-280","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-280/studio","head":"f019e6abe62a5330e0b717ace6787d32720c0bb3","brief":"9664cef9c9acacd61a2f83f274899e348c91084b","at":"2026-11-15T00:54:21.042Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-280-spec/r2-amend/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 2 deletes only the two "Declared failing assertion: pinned by `W-280-bN` ..." lines (rev-1 brief:82, :87) and sets the Status line to revision 2; `runRed` refuses a declared pin `redFailsAt` cannot prove, and the served TAP reporter prints only `not ok <n> - <title>`, so a Playwright red's pin can never be proven; the red prose (brief:81, :85) stays as the stated failure text, the W-182/W-442/W-446 form; no product, design, promise, row or Files owned change — check: git diff 1bf55395 741f7e61 -- studio/briefs/W-280.md, packages/commands/src/lifecycle.ts:1186, apps/web/tests-serve/tap-reporter.ts:47, /home/edckt/.bisellium-evidence/W-280-fable-read-1115/read.md
+2. advisory — the red commands are unchanged, so row b1's commit 1bf55395 stands and the builder re-runs each red with the brief's command on its own fresh `next` ticket; the rev-1 prototype evidence (s18/red-b1-before.out, s18/red-b2-before.out, s18/red-accept.out) still holds the stated failure text — check: studio/briefs/W-280.md:81, studio/briefs/W-280.md:85, /home/edckt/.bisellium-evidence/W-280-spec/s18/red-accept.out
+3. advisory — the promise ledger is the round-1 ledger re-cited on revision 2's line numbers by the kept ledger-r2.py (lines after rev-1 :82 move up one, after :87 up two); the admission (briefAdmissionProblems, declaredRedProblems, the promise ledger, evidence citations, red commands, class census, pre-sign gate) prints no problem on the committed brief — check: /home/edckt/.bisellium-evidence/W-280-spec/r2-amend/ledger-r2.py, /home/edckt/.bisellium-evidence/W-280-spec/r2-amend/admission.out
+4. advisory — stated limit (D-076 E): reused, unchanged code this re-sign leans on is not re-proven: `declaredRedProblems` still passes any one-pin red without reading its command (brief-admission.ts:933), so the admission cannot itself show a Playwright pin is gone; the follow-on "Admission refuses a pinned Playwright red" is eng-lead's to file — check: packages/commands/src/brief-admission.ts:933
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 2 at `studio/briefs/W-280.md` (blob 9664cef9c9acacd61a2f83f274899e348c91084b, sha256 57776d52d5b0d584ef048b96600f62689aa1df06fc1c4a40b3418e956e7a7adb), opus/W-280 741f7e61.
