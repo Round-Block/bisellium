@@ -737,16 +737,27 @@ function ownedBullets(real: string[]): number {
   return n;
 }
 
-/** W-328 (D-106 A): every backticked span on a bullet line (as `ownedBullets` counts them) of every real `## Files owned`
- *  section, to the next real `^## `, a leading `./` dropped. Prose, fenced and commented lines are not read. */
-export function ownedFiles(briefText: string): string[] {
+/** The backticked spans of each bullet line (as `ownedBullets` counts them) of every real `## Files owned` section, to
+ *  the next real `^## `, one list per bullet in brief order, a leading `./` dropped. Prose, fenced and commented lines are not read. */
+function ownedBulletSpans(briefText: string): string[][] {
   let owned = false;
-  const out: string[] = [];
+  const out: string[][] = [];
   for (const line of realLines(briefText)) {
     if (/^## /.test(line)) owned = line.trim() === "## Files owned";
-    else if (owned && /^ {0,3}[-*+] +\S/.test(line)) for (const [, span] of line.matchAll(/`([^`]+)`/g)) out.push(span!.replace(/^\.\//, ""));
+    else if (owned && /^ {0,3}[-*+] +\S/.test(line)) out.push([...line.matchAll(/`([^`]+)`/g)].map(([, span]) => span!.replace(/^\.\//, "")));
   }
   return out;
+}
+
+/** W-328 (D-106 A): every backticked span on a bullet line of every real `## Files owned` section (`ownedBulletSpans`, flat). */
+export function ownedFiles(briefText: string): string[] {
+  return ownedBulletSpans(briefText).flat();
+}
+
+/** W-661: each Files owned bullet's path slot, its first backticked span (`ownedBulletSpans`); a bullet with no span has
+ *  none. A later span on the bullet (a command, prose, a file named in passing) is not a slot. */
+export function ownedPathSlots(briefText: string): string[] {
+  return ownedBulletSpans(briefText).flatMap((spans) => spans.slice(0, 1));
 }
 
 /** The brief's form with its error, if any. An excluded light brief is `{ light: true, error }`: it is checked as light
