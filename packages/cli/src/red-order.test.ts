@@ -937,3 +937,36 @@ test("W-645-b5 behaviour 5: the served config and the served harness are the one
     assert.equal(wrongTreeRed(`  error: ${printed}`), W645_EXITED, `the harness's startup-failure message is the exit line the judge refuses: ${rel}`);
   }
 });
+
+/** The stated limit's input: a served location whose directory segment holds an earlier served location and a terminator,
+ *  then a helper's frame; in the list reporter's, an absolute frame's and a parenthesised frame's forms. */
+const W645_LIMIT = "tests-serve/a.spec.ts:3:1)b/helper.ts:12:5";
+function w645LimitForms(): { form: string; text: string; at: string }[] {
+  const abs = `${join(REPO, "apps", "web")}/${W645_LIMIT}`;
+  return [
+    { form: "list", text: `  ✘  1 [chromium] › ${W645_LIMIT} › a row`, at: `[chromium] › ${W645_LIMIT} › W-900-b1 a served row` },
+    { form: "absolute", text: `    at ${abs}`, at: `    at ${abs}` },
+    { form: "parenthesised", text: `    at f (${abs})`, at: `    at f (${abs})` },
+  ];
+}
+
+test("W-645-b5 stated limit (direct): a served location inside a directory segment is refused, fails closed", async () => {
+  const { wrongTreeRed } = (await import("@bisellium/commands/red-tree.js")) as W645Served;
+  for (const row of w645LimitForms())
+    assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${row.text}\n`), undefined, `the limit's input is refused with a reason in the ${row.form} form: ${JSON.stringify(row.text)}`);
+});
+
+test("W-645-b5 stated limit (red): a served location inside a directory segment is refused, fails closed", () => {
+  const fx = w645Fixture("w645-b5-limit-red");
+  for (const row of w645LimitForms()) {
+    const r = fx.red("at", row.at);
+    assert.equal(r.status, 1, `the limit's input is refused by red in the ${row.form} form: stderr ${JSON.stringify(r.stderr)}`);
+    assert.equal(r.written, false, `and writes no log in the ${row.form} form`);
+  }
+});
+
+test("W-645-b5 stated limit (spec signature): a served location inside a directory segment is refused, fails closed", () => {
+  const fx = w645Fixture("w645-b5-limit-cited");
+  for (const row of w645LimitForms())
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line: row.at }).length, 1, `a cited red with the limit's input is refused at the spec signature in the ${row.form} form`);
+});
