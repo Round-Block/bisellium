@@ -9,6 +9,10 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const THEME = resolve(HERE, "..", "src", "themes", "dracula.css");
 const TOKENS = resolve(HERE, "..", "src", "tokens.css");
 
+function stripCssComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
 const ROLE_NAMES = [
   "color-surface-page",
   "color-surface-panel",
@@ -40,7 +44,7 @@ const ROLE_NAMES = [
 ] as const;
 
 function declarations(css: string): Map<string, string> {
-  const uncommented = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const uncommented = stripCssComments(css);
   const root = /:root\s*{([^}]*)}/s.exec(uncommented)?.[1] ?? "";
   return new Map(
     [...root.matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/gi)].map((match) => [match[1]!, match[2]!.trim().toLowerCase()]),
@@ -49,7 +53,7 @@ function declarations(css: string): Map<string, string> {
 
 test("W-675-b1 behaviour 1: Dracula defines the complete meaning-based role set", () => {
   assert.equal(existsSync(THEME), true, "apps/web/src/themes/dracula.css exists");
-  const theme = readFileSync(THEME, "utf8");
+  const theme = stripCssComments(readFileSync(THEME, "utf8"));
   const declared = declarations(theme);
   const actualRoles = [...declared.keys()].filter((name) => name.startsWith("color-")).sort();
   assert.deepEqual(actualRoles, [...ROLE_NAMES].sort(), "Dracula declares every role once and no undeclared role");
@@ -104,7 +108,7 @@ test("W-675-b2 behaviour 2: compatibility aliases retain values while colour aut
       const path = resolve(dir, entry.name);
       if (entry.isDirectory()) walk(path);
       else if (entry.name.endsWith(".css")) {
-        const text = readFileSync(path, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+        const text = stripCssComments(readFileSync(path, "utf8"));
         const sourcePath = path.slice(src.length + 1);
         const theme = sourcePath.startsWith("themes/");
         if (!theme) {

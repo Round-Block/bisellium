@@ -27,6 +27,10 @@ const read = (rel: string): string => {
     return "";
   }
 };
+
+function stripCssComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, "");
+}
 async function load(rel: string): Promise<Record<string, unknown>> {
   try {
     return (await import(resolve(WEB, rel))) as Record<string, unknown>;
@@ -201,6 +205,7 @@ test("W-341-b6 behaviour 6: the served states suite drives every served cell at 
   assert.equal(policy["AXE_DISABLED_RULES"], undefined, "no axe rule is disabled, colour contrast included");
   assert.deepEqual(Object.keys((policy["PHONE_UNREACHABLE"] ?? {}) as object), [], "every served state is reachable at phone width");
   const roots = [read("src/themes/dracula.css"), read("src/tokens.css")]
+    .map(stripCssComments)
     .map((source) => /:root\s*\{([^}]*)\}/.exec(source)?.[1] ?? "")
     .join("\n");
   const token = (name: string): string => {

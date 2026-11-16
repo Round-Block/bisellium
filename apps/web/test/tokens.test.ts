@@ -10,8 +10,13 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const css = readFileSync(resolve(HERE, "..", "src", "tokens.css"), "utf8");
-const themeCss = readFileSync(resolve(HERE, "..", "src", "themes", "dracula.css"), "utf8");
+
+function stripCssComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+const css = stripCssComments(readFileSync(resolve(HERE, "..", "src", "tokens.css"), "utf8"));
+const themeCss = stripCssComments(readFileSync(resolve(HERE, "..", "src", "themes", "dracula.css"), "utf8"));
 const direction = readFileSync(resolve(HERE, "..", "..", "..", "docs", "design", "DIRECTION.md"), "utf8");
 const componentCss = readFileSync(resolve(HERE, "..", "src", "components", "w025.css"), "utf8");
 const officinaSource = readFileSync(resolve(HERE, "..", "src", "screens", "Officina.tsx"), "utf8");

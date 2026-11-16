@@ -11,9 +11,14 @@ import { BoardView } from "../src/screens/BoardView.js";
 
 const NOW = new Date("2026-11-02T12:00:00Z").getTime();
 const css = readFileSync("apps/web/src/components/w025.css", "utf8");
+
+function stripCssComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
 const colourSources = [
-  readFileSync("apps/web/src/themes/dracula.css", "utf8"),
-  readFileSync("apps/web/src/tokens.css", "utf8"),
+  stripCssComments(readFileSync("apps/web/src/themes/dracula.css", "utf8")),
+  stripCssComments(readFileSync("apps/web/src/tokens.css", "utf8")),
 ].join("\n");
 const tokenExpression = (name: string): string => {
   const value = colourSources.match(new RegExp(`--${name}\\s*:\\s*([^;]+)`))?.[1]?.trim();

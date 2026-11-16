@@ -10,12 +10,17 @@ const read = (path: string): string => {
   try { return readFileSync(resolve(HERE, "..", path), "utf8"); }
   catch { return ""; }
 };
+
+function stripCssComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
 const screen = read("src/screens/Officina.tsx");
 const nav = read("src/lib/nav.ts");
 const route = read("src/lib/route.ts");
 const work = read("src/lib/officinaWork.ts");
 const css = read("src/components/w025.css");
-const tokens = read("src/tokens.css");
+const tokens = stripCssComments(read("src/tokens.css"));
 const burn = read("src/lib/burn.ts");
 const burnBar = read("src/components/BurnBar.tsx");
 const direction = read("../../docs/design/DIRECTION.md");
