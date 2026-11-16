@@ -1,0 +1,20 @@
+# opus: W-648
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1da21-2ab4-7f83-b6b1-6ddda558ce2b
+# outcome: failed
+# at: 2026-11-14T13:02:14.850Z
+# tree: tree:aa17a0784092885f2190e706f6451a6ff8832bcf
+# brief: briefs/W-648.md blob:eb6a8c6bc4924370ec66372dd28f2481c47d6e5c
+# ticket: {"opus":"W-648","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"b407139f8c936b50903f44f7891860e2d345839e","brief":"eb6a8c6bc4924370ec66372dd28f2481c47d6e5c","at":"2026-11-14T13:02:09.507Z"}
+
+## Findings
+1. blocking — brief:40 [severity: S1] [design: keeps] A plausible operator mistake—passing `--cwd` to the real CLI caller’s `bisellium run --reclaim`—reaches `reclaimWorktrees` and exits 0 before the `--cwd`/`--opus` validation, potentially deleting leases; no test catches it. The same argv input is refused by `parseScratch`, validated before receipt/spawn on the ordinary path, but ignored by the reclaim path; replace brief:40 with `| The mode and \`--opus\` relationship for \`--cwd\` | \`--cwd\` occurs only in an ordinary command run and with \`--opus <id>\`; it is invalid with \`--reclaim\` or \`--scratch\` | \`parseScratch\` refuses it in scratch mode; \`runCommand\` refuses it before the reclaim return when reclaim is set or opus is absent; pinned by \`W-648-b2\` |`. [class: interface×validation-order-masks-errors] — check: packages/commands/src/w648.test.ts W-648-b2 must cover reclaim with `--cwd`, both with and without `--opus`, and prove no reclaim mutation
+2. advisory — brief:38 [severity: S4] The changed `--no-worktree` reader lacks an Input-domain row: the parser sets it, the builder branch conditionally refuses it, and the lease branch consumes it; malformed forms already fail closed through `runCommand`. Replace brief:38 with the existing separator followed by `| The \`--no-worktree\` token | zero or more exact \`--no-worktree\` tokens before \`--\`; for a builder-class run it is accepted only after valid \`--cwd\` selects its opus worktree, while non-builders retain the existing meaning | \`runCommand\` refuses malformed tokens and builder-class use without valid \`--cwd\` before any receipt, lease or child |`. [class: spec×input-without-named-rejector] — check: none: brief.input.changed-reader-census
+3. advisory — brief:45 [severity: S4] The outer Node-call row omits every added test boundary: the fixture manifest; temporary-root, probe, receipt-list and receipt-JSON reads; five Git setup calls; and the four successful probe subprocesses, although their throwing readers and assertions mostly fail closed. Replace brief:45 with separate rows naming the outer test call, manifest/filesystem records and `realpathSync`/`readFileSync`/`readdirSync`/`JSON.parse`/`assert`, `git init`, both `git config` calls, `git add`, `git commit` and `execFileSync`, plus the probe `node -e` call and `runCommand`/`assert.equal`; specify `assert.equal(receipts.length, 1)` for the promised single receipt. [class: spec×input-domain-missing-or-unenforceable] — check: packages/commands/src/w648.test.ts W-648-b1
+
+## Verdict
+Shell check: “b407139f docs(studio): handoff, session 17 (W-610 review 6 passed and rebased, W-648 signed, E3 lane) (#1227)”; the reclaim validation-order gap blocks the build while the two fail-closed census omissions are advisory.
+VERDICT: FAIL

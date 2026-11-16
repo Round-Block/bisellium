@@ -13,7 +13,7 @@
  * by a signal) · 2 usage error (bad flags, missing "--", empty command,
  * unknown/undeclared sella, not a studio).
  */
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync, statSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -23,6 +23,7 @@ import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, write
 import { pauseWarning } from "./pause.js";
 import { runBuilderCommand } from "./builder-run.js";
 import { runScratch, type ScratchArgs } from "./scratch.js";
+import { safeItemPath } from "./writes.js";
 
 export interface RunOptions {
   /** Pinned clock, for reproducible sessionIds/receipts in tests. */
@@ -38,7 +39,7 @@ export interface RunResult {
 const GIT_TIMEOUT_MS = 30_000;
 
 const USAGE =
-  "usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>\n" +
+  "usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id> [--cwd <dir>]] [--keep] -- <cmd…>\n" +
   "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n" +
   "       bisellium run --scratch <dir> [--repo <dir>] [--base <ref>] -- <cmd…>";
 
@@ -68,6 +69,33 @@ function resolveRepoRoot(studioRoot: string, repoFlag: string | undefined): { re
   const r = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: studioRoot, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
   if (r.status !== 0) return { error: `not inside a git repo: ${studioRoot} (pass --repo)` };
   return { repo: resolve(r.stdout.trim()) };
+}
+
+/** W-648: the directory `--cwd` names, when it is the opus's own worktree: `cwdFlag` resolved and realpath'd equals
+ *  `<realpath of the repo>/.worktrees/<opus>` (the id one path segment, by `safeItemPath`'s rule). A `..` or a symlink
+ *  that resolves to it is that directory and must exist as one; anything else is refused. */
+function opusWorktree(studioRoot: string, repoFlag: string | undefined, opus: string, cwdFlag: string): { dir: string } | { error: string } {
+  const resolved = resolveRepoRoot(studioRoot, repoFlag);
+  if ("error" in resolved) return resolved;
+  let repo: string;
+  try {
+    repo = realpathSync(resolved.repo);
+  } catch (e) {
+    return { error: `--cwd: the repository ${resolved.repo} cannot be resolved (${(e as NodeJS.ErrnoException).code ?? "error"})` };
+  }
+  const item = safeItemPath(join(repo, ".worktrees"), opus);
+  if (typeof item !== "string") return { error: `--cwd: ${item.error}` };
+  const expected = item.slice(0, -".md".length);
+  let real: string;
+  try {
+    real = realpathSync(resolve(cwdFlag));
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    return { error: code === "ENOENT" ? `--cwd ${cwdFlag} does not exist` : `--cwd ${cwdFlag} cannot be resolved (${code ?? "error"})` };
+  }
+  if (real !== expected) return { error: `--cwd ${cwdFlag} is not ${expected}, the worktree of opus ${opus}` };
+  if (!statSync(real).isDirectory()) return { error: `--cwd ${cwdFlag} is not a directory` };
+  return { dir: real };
 }
 
 /** Consumes the value for `flag` at `args[i]`; a missing value or one that
@@ -130,6 +158,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   let keep = false;
   let reclaim = false;
   let opus: string | undefined;
+  let cwdFlag: string | undefined;
   let sepIndex = -1;
 
   for (let i = 0; i < args.length; i++) {
@@ -139,6 +168,12 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
       const r = takeValue(args, ++i, "--opus");
       if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
       opus = r.value;
+      continue;
+    }
+    if (a === "--cwd") {
+      const r = takeValue(args, ++i, "--cwd");
+      if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
+      cwdFlag = r.value;
       continue;
     }
     if (a === "--sella") {
@@ -174,6 +209,10 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   }
 
   const studioRoot = resolve(studio);
+
+  // W-648: --cwd belongs to an ordinary command run with --opus <id>; refused before the reclaim return touches a lease
+  if (cwdFlag !== undefined && reclaim) { console.error(`bisellium run: --cwd does not go with --reclaim\n${USAGE}`); return { exitCode: 2 }; }
+  if (cwdFlag !== undefined && opus === undefined) { console.error(`bisellium run: --cwd needs --opus <id>\n${USAGE}`); return { exitCode: 2 }; }
 
   if (reclaim) {
     const resolved = resolveRepoRoot(studioRoot, repoFlag);
@@ -237,7 +276,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
     }
     sella = minted;
     builderOpus = opusForMint;
-    if (noWorktree) {
+    if (noWorktree && cwdFlag === undefined) {
       console.error("bisellium run: builder-class execution cannot use --no-worktree; a disposable confined clone is mandatory");
       return { exitCode: 2 };
     }
@@ -253,7 +292,15 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   const warning = pauseWarning(studioRoot);
   if (warning) console.error(warning);
 
-  if (builderClass) {
+  // W-648: --cwd names the directory the child runs in; no worktree is leased and no confined clone is built
+  let runCwd: string | undefined;
+  if (cwdFlag !== undefined) {
+    const named = opusWorktree(studioRoot, repoFlag, opus!, cwdFlag);
+    if ("error" in named) { console.error(`bisellium run: ${named.error}`); return { exitCode: 2 }; }
+    runCwd = named.dir;
+  }
+
+  if (builderClass && runCwd === undefined) {
     const resolved = resolveRepoRoot(studioRoot, repoFlag);
     if ("error" in resolved) { console.error(`bisellium run: ${resolved.error}`); return { exitCode: 2 }; }
     const studioRelative = relative(resolved.repo, studioRoot);
@@ -276,7 +323,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   }
 
   let worktree: Awaited<ReturnType<WorktreeProvider["acquire"]>> | undefined;
-  if (!noWorktree) {
+  if (!noWorktree && runCwd === undefined) {
     const resolved = resolveRepoRoot(studioRoot, repoFlag);
     if ("error" in resolved) { console.error(`bisellium run: ${resolved.error}`); return { exitCode: 2 }; }
     const provider = opts.provider ?? selectProvider();
@@ -287,7 +334,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
       return { exitCode: 1 };
     }
   }
-  const cwd = worktree?.path ?? studioRoot;
+  const cwd = runCwd ?? worktree?.path ?? studioRoot;
 
   const startedAt = now;
   const sessionId = makeSessionId(startedAt);

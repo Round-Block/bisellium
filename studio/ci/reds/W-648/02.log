@@ -1,0 +1,38 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-648-b2\s --import tsx packages/commands/src/w648.test.ts
+# exit: 1
+# at: 2026-11-15T00:48:45.265Z
+# sella: builder.W-648
+# tree: tree:ed9568df3535f98009a87dcab1df91d934e7568a
+# ticket: {"opus":"W-648","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-648/studio","head":"84bf9ed2b7770250d2c0394aa462f91e3a012df8","brief":"f3b2b9e845a12875e83a3e351fdb48e7ee1d2b8b","at":"2026-11-15T00:48:40.198Z"}
+
+TAP version 13
+# Subtest: W-648-b2 behaviour 2: --cwd without --opus is refused
+not ok 1 - W-648-b2 behaviour 2: --cwd without --opus is refused
+  ---
+  duration_ms: 149.82551
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-648/packages/commands/src/w648.test.ts:1:5144'
+  failureType: 'testCodeFailure'
+  error: '--cwd without --opus: the refusal names why'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-648/packages/commands/src/w648.test.ts:104:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-648/packages/commands/src/w648.test.ts:144:3)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 155.945197
