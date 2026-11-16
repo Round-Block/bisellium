@@ -2,6 +2,9 @@ queues:
   engineering:
     lanes: { E1: W-661, E2: W-645, E3: W-648 }
     next:
+      - { opus: W-666, says: "Patron answers carry a signed receipt (key outside agent reads); guard refuses unsigned, forged, replayed or agent-authored writes; high, first of D-211's order (console-only-meet-1116)" }
+      - { opus: W-669, says: "Host job (launch service) runs git worktree prune for sandbox-held .git/worktrees/<id> dirs; cleanup never waits on a Patron rm; high, gaps 60/80 (D-211)" }
+      - { opus: W-668, says: "Boot reader consumes each Patron answer once (verified receipt or forge-authored reply); Patron-only steps refuse without one; D-211's order, after W-666/W-667" }
       - { opus: W-610, says: "build review before the full ci; lifted by D-209 item 3 after W-633 merged; the ci-run cap is cut to W-632 (D-206)" }
       - { opus: W-648, says: "bisellium run --cwd <dir> runs a builder's command in the opus's own .worktrees/<id>, only with --opus; small and high, unblocks W-503's green rows (clone-tests-meet-1114 c, 5/5)" }
       - { opus: W-661, says: "the light-gate reader reads only each Files-owned bullet's path span, so a command span no longer holds a built opus; high, unblocks W-648 and W-644 (W-648 light-gate call 11-15, 2/2); process" }
@@ -186,6 +189,7 @@ queues:
       - { opus: W-657, says: "screens register without editing shell files (App.tsx, route.ts, nav.ts); UI1 after W-503 (ui2-lane-meet-1115, 5/5)" }
       - { opus: W-504, says: "Home: Completion and Spend row (D-175 piece 4); needs W-439" }
       - { opus: W-453, says: "Home Queue shows the execution lanes with owner labels (D-192)" }
+      - { opus: W-667, says: "Console Inbox lists every wait (rulings, screens, PR approvals) with forge deep links; PR approval stays code-owner review; D-211, after the receipt opus W-666" }
 halted:
   - { opus: W-073, says: "reply from the Board drawer; until the freeze ends and it is re-ranked (D-174)" }
   - { opus: W-136, says: "live activity on the Board; until the freeze ends and it is re-ranked (D-174)" }
