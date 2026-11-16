@@ -745,3 +745,16 @@ test("W-645-b3 behaviour 3: a served red with no port and token line is refused"
   assert.equal(fx.red("served-line", both).status, 0, "a served red whose every start read its port and token records");
   assert.deepEqual(fx.cited({ name: "red.out", mode: "served-line", line: both }), [], "a cited served red whose every start read its port and token has no problem");
 });
+
+test("W-645-b4 behaviour 4: a cited red that lacks the brief's declared assertion is refused at the spec signature", () => {
+  const fx = w645Fixture("w645-b4");
+  const r = fx.red("other");
+  assert.equal(r.status, 1, `a red failing at another assertion is refused (W-473): stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "and writes no log");
+  assert.deepEqual(
+    fx.cited({ name: "red.out", mode: "other" }),
+    ['behaviour 1\'s genuine red declares pinned by `W-900-b1` "the declared assertion", and no cited red output recording its command fails at it: cite the red that does, or record it again'],
+    "a cited red that lacks the brief's declared assertion is refused at the spec signature",
+  );
+  assert.deepEqual(fx.cited({ name: "other.out", mode: "other" }, { name: "red.out", mode: "plain" }), [], "one cited red failing at the declared assertion is the red; another run may fail elsewhere");
+});
