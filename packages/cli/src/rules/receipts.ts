@@ -7,7 +7,9 @@
  * time within the window before the stamp. A stamp with no receipt is unsigned; the officina's unsigned stamps, listed
  * and hashed by `unsignedDigest`, must equal `patron_receipts.floor` (the answers recorded before receipts), so a new
  * unsigned stamp, or an edit to an old one, blocks. A receipt keyed by no stamp blocks. An officina naming no keys gets
- * one advisory while any petitio holds a Patron stamp.
+ * one advisory while any petitio holds a Patron stamp. W-666 r3: with keys named, a petitio source that does not read (an
+ * unlistable petitiones/, a symlinked, non-regular or unreadable entry, front matter that does not parse as a mapping,
+ * `receipts` not a mapping) blocks, never is skipped, so no unread stamp escapes the rule.
  */
 import { instant } from "@bisellium/schema";
 import { parseReceipt, patronStamps, questionDigest, readPetitioReceipts, readReceiptPolicy, receiptProblem, stampedReply, unsignedDigest } from "@bisellium/commands/patron-receipt.js";
@@ -28,6 +30,7 @@ export function checkReceipts(root: string, opts: RuleOpts): Finding[] {
   const read = readPetitioReceipts(root);
   const unsigned: string[] = [];
   const spent = new Set<string>();
+  if (policy !== undefined) for (const p of read.problems) add("block", p.where, p.message);
   for (const { where, id, body, receipts } of read.records) {
     const stamps = patronStamps(body, patronId);
     if (policy === undefined) {
