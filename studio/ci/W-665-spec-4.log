@@ -1,0 +1,21 @@
+# opus: W-665
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e22b-7e86-7862-b59a-058961032493
+# outcome: passed
+# at: 2026-11-16T05:18:51.520Z
+# tree: tree:5192946f86780c7b84b939646c54515020a666df
+# brief: briefs/W-665.md blob:1dbc842b5877c324bb92109c8c6f98e2a8e6ccb7
+# ticket: {"opus":"W-665","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"a9f1ed6e1fa572fba20229106cfaa976330090f6","brief":"1dbc842b5877c324bb92109c8c6f98e2a8e6ccb7","at":"2026-11-16T05:18:45.828Z"}
+
+## Earlier findings
+- ci/W-665-spec-2.log #1: closed — `validatedBranchKind` now guards the build-order and review-perform reads; W-665-b3 proves a non-native kind selects neither gates nor reviewer and blocks interrupted-round completion
+
+## Findings
+No findings
+
+## Verdict
+The required shell check printed “a9f1ed6e chore(studio): W-488 master verify at 1159917e; W-555 and six greenlit records ranked (w555-meet-1116); W-669 spec review r2 (#1255)”; the blocker and both advisories are closed, and the revision opens no new blocker.
+VERDICT: PASS

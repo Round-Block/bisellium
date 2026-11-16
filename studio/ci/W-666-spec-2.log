@@ -1,0 +1,20 @@
+# opus: W-666
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e2a8-1a7d-71a2-a229-30538a7b7015
+# outcome: failed
+# at: 2026-11-16T05:13:35.131Z
+# tree: tree:5192946f86780c7b84b939646c54515020a666df
+# brief: briefs/W-666.md blob:acd898448d885fb24b3716066cc729a1f420eb8e
+# ticket: {"opus":"W-666","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"a9f1ed6e1fa572fba20229106cfaa976330090f6","brief":"acd898448d885fb24b3716066cc729a1f420eb8e","at":"2026-11-16T05:13:27.271Z"}
+
+## Findings
+1. blocking — brief:58 [severity: S1] [design: changes] In a normal clone without the gitignored timeline, an accidentally malformed petitio front matter is skipped by `answerReceipt`/`spentNonces`, allowing an otherwise valid recorded receipt to be replayed; the affected sites are `runAnswer` writing nonce truth to the petitio and timeline, and `answerReceipt` reading both while skipping malformed timeline lines, petitio fronts, and receipt maps. Replace brief:58 with: “The receipt’s nonce and time, plus every recorded-nonce source read by `answer`: the timeline may be absent, but every present line must parse; `petitiones/` must be listable and every `.md` entry must be a contained, regular, readable file with parseable front matter and `receipts` absent or a mapping; any source error is refused before writing by `answerReceipt`.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w666.test.ts: a malformed recorded-nonce source must refuse a replay
+2. blocking — brief:59 [severity: S1] [design: changes] A plausibly symlinked petitio is followed by the existing `safeFront` and `checkPaths` readers but skipped by `checkReceipts`, so a configured `check` can miss its unsigned or invalid Patron stamp; directory-list failures are likewise swallowed by all three paths. Replace brief:59 with: “A petitio’s `receipts` front matter and stamp lines, read by `check`: `petitiones/` must be listable and every `.md` entry a contained, regular, readable file with parseable front matter; `checkReceipts` adds a `patron.receipt` block for any listing, containment, read, front-matter, or receipt-shape failure, as well as every missing, invalid, replayed, or unkeyed receipt.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w666.test.ts: a symlinked and an unlistable petitio source must block
+3. advisory — brief:49 [severity: S2] The route does not answer 400 for verifier refusals: only its request-shape checks do, while `writeResponse` returns HTTP 200 with `ok: false` and `exitCode: 2`. Replace brief:49 with: “A rejection fails closed: `answer` exits 2 with `answer refused: <reason>` and writes nothing; `check` adds a `patron.receipt` block finding; the route answers 400 for body-shape errors, while an `answer` verifier refusal returns HTTP 200 with `{ ok: false, exitCode: 2, output }`.” [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/w666.test.ts: pin both route response classes
+
+## Verdict
+Repository identity was “1159917e docs(studio): handoff, session 29 (D-212, D-213 landed; W-669 signed; W-648 spec r6) (#1254)”; the signed brief has two design-changing fail-open input boundaries.
+VERDICT: FAIL
