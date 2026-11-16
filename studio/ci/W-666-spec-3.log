@@ -1,0 +1,30 @@
+# opus: W-666
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T08:31:20.224Z
+# tree: tree:02365f4bc33dae366ad327da6b7c1222346b6cd8
+# brief: briefs/W-666.md blob:bb2b9fb5672939798e5b781bcea805d27c5b0324
+# ticket: {"opus":"W-666","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"923a12334c68f45af40026fb71ce9f90516fc9b5","brief":"bb2b9fb5672939798e5b781bcea805d27c5b0324","at":"2026-11-16T08:31:13.322Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-666-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-666-spec/gate-r3.log
+
+## Findings
+
+1. advisory — Codex r2 finding 1 closed: `answer` reads every recorded-nonce source through one strict path, `readPetitioReceipts` (an unlistable or symlinked petitiones/, a symlinked, non-regular or unreadable entry, front matter that does not parse as a mapping, `receipts` not a mapping) and a strict `spentNonces` (an unparseable or non-object timeline line, a recorded receipt of the wrong shape), each refused before writing; the verdict's replacement text is adopted at brief:61 with a stricter receipt-shape clause, and brief:65 no longer lets a bad line spend nothing — check: brief:61, brief:65, red-b4-master.out, r3/k16.out, r3/k17.out, r3/k18.out, r3/k22.out, r3/k23.out, r3/k26.out
+2. advisory — Codex r2 finding 2 closed: `checkReceipts` reads the petitiones through the same `readPetitioReceipts` and, with keys named, blocks every source problem it returns, so a symlinked petitio or an unlistable petitiones/ can no longer hide a stamp; unconfigured, it blocks nothing and keeps its one advisory (a stated limit, brief:47) — check: brief:62, red-b5-master.out, r3/k19.out, r3/k20.out, r3/k24.out
+3. advisory — Codex r2 finding 3 adopted verbatim at brief:51; brief:64 and Promise route name both classes, pinned through the real `answer` runner by `W-666-b6` (400 for a string receipt; HTTP 200 `{ ok: false, exitCode: 2, output }` for an agent-signed receipt) — check: brief:51, brief:64, red-b6-master.out, r3/k21.out, r3/k25.out
+4. advisory — the brief asked a red per new boundary; the brief admission caps behaviours at 6 (brief_behaviour_limit) and an exception needs a design-magister decision, so the seven boundaries are three rows (b4 answer sources, b5 check sources, b6 route classes), each red on master 11fd1299 by assertion at its first boundary, and every boundary assertion is proven by its own one-hunk kill — check: r3/admission.out, red-b4-master.out, red-b5-master.out, red-b6-master.out, r3/kills.log
+5. advisory — the series is rebased onto master 11fd1299 (no source path moved since fbf91879): tags w666-t3 (rows b1-b6, red) and w666-s3 (source); all six rows red on master at their declared pins and green on the prototype; 26 kills each fail their pinned row by assertion; pin-dryrun-r3 ALL PASS; declared-reds-check, the brief admission and the ledger replica 0 problems — check: reds-r3.sh, red-b1-master.out..red-b6-master.out, r3/w666-proto.out, kills-r3.py, r3/pin-dryrun.out, r3/declared-reds-check.out, r3/admission.out, r3/ledger-check.out
+6. advisory — the touched test files pass one at a time over the revision-3 source (19 files; check.test.ts on the clone's named branch, its detached-HEAD run failing only on the clone-only `opus.records_unchanged` finding revision 1 saw); the fixture census rerun on revision 3 lists the same one owned flip (W-163-b6) and the same must-stay-green rows, none unnamed; the read enumeration is unchanged — check: r3/tests-status.out, r3/check2-proto.out, fixture-census.md, fixture-census-r1.md, r3/census.out
+7. advisory — the five Patron calls of revision 1 stand unchanged and none is load-bearing for the verifier half; a receipt deleted from every record can be replayed inside its 15-minute window, a stated limit — check: brief:46, brief:154 to brief:158
+8. advisory — class census for the repeated class spec×input-domain-missing-or-unenforceable (r2 findings 1 and 2): the kept `class-census.py` reads every Input domain row (accepted domain, rejector present in the w666-s3 source, each pin's assertion verbatim in its W-666 row, or unpinned with a stated limit) and maps every input read and refusal the prototype adds (diff 11fd1299..w666-s3, source only) to the row that declares it: 13 rows, 104 sites, 0 gaps. Its first run found four undeclared cases, now declared as text-only edits (no line moved, no pin, row or prototype changed): an answer with no `--receipt` under named keys and any `--receipt` in an officina naming none (brief:56), and the manifest's `patron` id that finds the stamps plus a non-ISO stamp instant with a recorded receipt (brief:62), the last two not pinned by a row, stated limits; the admission and ledger replicas give the same output as r3 — check: class-census.py, class-census.out, brief:56, brief:62, brief:160, r3/admission.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 3 with its class census at `studio/briefs/W-666.md` (brief.md), prototype over master 11fd1299 (prototype.mbox); evidence in `/home/edckt/.bisellium-evidence/W-666-spec/`.
+
+VERDICT: PASS
