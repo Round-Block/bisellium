@@ -1,0 +1,30 @@
+# opus: W-665
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T04:01:01.680Z
+# tree: tree:82a7bb5bcec7c5035c0a416d7a7415d393b30c52
+# brief: briefs/W-665.md blob:1dbc842b5877c324bb92109c8c6f98e2a8e6ccb7
+# ticket: {"opus":"W-665","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"fbf9187910b79bcc57bc1ca7a93e046327bc7e88","brief":"1dbc842b5877c324bb92109c8c6f98e2a8e6ccb7","at":"2026-11-16T04:00:55.189Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-665-spec/revision-2/promise-ledger.md
+
+## Findings
+
+1. advisory — round 2's advisory #2 (brief:31) is taken: Promise deadline now reads as Codex wrote it, with validateClaudeTimeout (specified, packages/shim/src/harness/claude-code.ts:133) called by start and resume before the temp dir and the spawn, a RangeError naming timeoutMs for 0, -1, 1.5, NaN, Infinity, 2^53, a string and null; behaviour 4 (W-665-b4, packages/shim/test/harness.test.ts) fails on master at "a positive timeoutMs bounds the claude call" and passes on the prototype; the Input domain row brief:50 names its domain and rejector — check: revision-2/red-b4-master.out, revision-2/red-b4-proto.out
+2. advisory — round 2's advisory #3 (brief:52) is taken: the outer-test row, now brief:55, names every added fixture reader and writer Codex listed (HOME/PATH, the claude stub's stdin/argv/cwd, codex-reply.json with claudeSession, claude-calls.jsonl, the manifest and ci directory, the shot paths, the packet prompt, review logs, the gate record) and harness.test.ts's b4 stub directory, PATH and spawns.log, with its forms and limit — check: revision-2/admission.out
+3. advisory — validatedBranchKind's hold flips two existing rows that pinned master's reading of a non-native kind (W-312-b1's "a record kind outside the vocabulary" case, master's build named with the gate configuration's reason; W-377-b1's kind loop, that reason as underlying); the first whole next-group run on the prototype failed exactly those two (348 of 350), both are now flipped, owned and named in Acceptance, and Codex's second fixture census lists them with no unnamed flip — check: revision-2/next-group-proto.out, revision-2/next-touched-proto.out, revision-2/fixture-census.md
+4. advisory — the after-regather model check reuses reviewSteps' one validated read (asked) instead of a second read: a kind ui record retyped during the turn is refused first by verdict's UI-only flag check (existing, unchanged) and then by the next derivation, so a second reader would be unreachable; stated as the brief:49 limit and the census's kind limit — check: revision-2/classloop/class-census.out
+5. advisory — the series is rebuilt from master fbf91879 (W-488's server half merged since round 1) by the kept revision-2/scripts/rebuild.sh: the four reds fail by assertion on master at their declared pins and pass on the prototype; the pin dry-run passes 43 of 43, declared-reds-check prints 0 problems, the read-only admission 0 problems, and the class census for spec×input-domain-missing-or-unenforceable claims all 32 read sites with no gap; typecheck, lint, format:check, both officina checks and the harness group pass — check: revision-2/pin-dryrun.out, revision-2/gates2-status.out, revision-2/rebuild.log
+
+## Earlier findings
+
+- ci/W-665-spec-2.log #1: closed — every changed kind read goes through validatedBranchKind (packages/cli/src/next.ts:2827, isNativeOpusKind): the build rung holds before uiOrder and the light gates (packages/cli/src/next.ts:1379) and reviewSteps holds before the packet, the call or any record (packages/cli/src/next.ts:2902), the after-regather check reusing that read (packages/cli/src/next.ts:3005); brief:49 is Codex's row with its forms and limit; W-665-b3 in packages/cli/src/next-review.test.ts fails on master at "a non-native kind is not ordered the light gates" and proves on the prototype that neither light gates nor a reviewer is selected, at the build rung and at an interrupted round's finish
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 2 at `studio/briefs/W-665.md` (revision-2/brief-r2.md, sha256 82b403a934e8fef1af4495bf7db91f1887474a1bc5a109fc9b9e284d78ba8530), prototype over master fbf91879 (prototype.mbox, sha256 2ae92ac0ecfe2581ab1406f3590efb9f3c8e0be9478acf621673d271047b4c5f, clone tag w665-r2-s1 ef3772aa); evidence in `/home/edckt/.bisellium-evidence/W-665-spec/revision-2/`.
+
+VERDICT: PASS

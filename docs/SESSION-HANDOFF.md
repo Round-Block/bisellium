@@ -52,14 +52,13 @@ Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-18
 
 Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-644.
 
-Also, filed 11-14: W-645 W-646 W-647 W-648; 11-15: W-649 W-650 W-651 W-652 W-653 W-654 W-655 W-656 W-657 W-658 W-659 W-660 W-662 (fresh Claude reviewer sessions by rule); 11-16: W-663 W-664 W-665 (kind-ui build review gets screenshots and Opus reviewer); 11-16 (s27): W-666 W-667 W-668 W-669.
+Also, filed 11-14: W-645 W-646 W-647 W-648; 11-15: W-649 W-650 W-651 W-652 W-653 W-654 W-655 W-656 W-657 W-658 W-659 W-660 W-662 (fresh Claude reviewer sessions by rule); 11-16: W-663 W-664 W-665 (kind-ui build review gets screenshots and Opus reviewer); 11-16 (s27): W-666 W-667 W-668 W-669; 11-16 (s28): W-670 W-671 W-672.
 
 D-193 replaces D-178: product (M4 path) or process entries; E1 and E2 take product, E3 is process (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201 (Patron 11-13): one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-665 spec signed, Codex review r2 to record; E2 W-645 not started; E3 W-648 light gates next (kit ready).
-- UI1 W-503; UI2 W-488 merged #1247, cleanup held on a sandbox-held dir (Patron rm, then ladder-brief-205.md); spec-ahead W-662 held.
-Spec-ahead: W-662 signed spec r1 (untracked brief and ci/W-662-spec-1.log in main); next: Codex Sol spec review round 2.
+- E1 W-666 signed (Codex spec review next); E2 W-645 not started; E3 W-648 review passed, full ci next.
+- UI1 W-503; UI2 W-488 done owed (master verify rerun: tests timed out under load); spec-ahead W-665 signed r3 (leads route a further review: 2-round cap), W-669 drafting, W-662 held.
 W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in queue), W-636 (next reads branch records); 11-14: W-639 W-640 W-641 W-642 (D-207, D-061 §4) W-643.
 
 Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>`, `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
@@ -68,7 +67,8 @@ Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-se
 Sessions 21-23 meets: W-645-class-meet-1115 (W-659), W-610-1113-call-1115, W-280-fable-read-1115 (W-660), W-648-lightgate-meet-1115 (W-661), reviewer-session-meet-1115 (W-662); gaps 56-68.
 Session 26: W-488-review-fable-read-1116 + W-488-review-meet-1116 (eng+qa: full ci before a kind-ui review; W-665). Gaps 77-78.
 Session 27: launch-cap-meet-1116, headless-meet-1116, console-only-meet-1116 (D-211), W-488-codeql-fable-read-1116; gaps 80-82.
-Next: W-488 cleanup + done (row 244) after the Patron's rm; record W-665 spec review r2; W-648 light gates (ladder-brief-204.md); confirm #1246/#1250 merged and the Patron pulled; W-666 and W-669 spec drafts as next names them.
+Session 28: lanes-queue-meet-1116 (Patron: first opus small no-schema; lane model end state, endstate-design.md); gaps 83-88.
+Next: W-648 full ci then pr/merge/done; W-488 master verify rerun with a fresh tag, then done (row 244); W-666 Codex spec review; W-665 leads route review r3; W-669 spec sign; present endstate-design.md's Patron calls; file the small no-schema first opus; apply the census merges by a kept script.
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md. Open gaps, W-508 lessons: current-state-until-1106.md (same dir); read before any done step. W-510, after W-522 (queue.yml): ~/.bisellium-evidence/pr-debate-1106/brief-r1.md. Research is its own lane, never in D-182's lane unasked.
 

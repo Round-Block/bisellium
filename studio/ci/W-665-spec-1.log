@@ -1,0 +1,28 @@
+# opus: W-665
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T02:07:54.570Z
+# tree: tree:81309e7e2147ce6a67d398be8c2a0576d2962fe3
+# brief: briefs/W-665.md blob:83bdc5487b8daa618b2e282f0413689d38d85257
+# ticket: {"opus":"W-665","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"d0b833c593e891ef27987db3776523c6b55dc106","brief":"83bdc5487b8daa618b2e282f0413689d38d85257","at":"2026-11-16T02:07:48.765Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-665-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — of the meet's two routes the brief takes the full ci before a kind ui review, not a new manifest verb: the full ci is the one manifest writer next already sanctions, a kind ui opus pays it once per reviewed tree either way, and after a pass at that tree pr follows with no second ci; every other kind keeps W-610's light-gate order (W-610-b1..b5 pass unedited) — check: brief.md, next-group-proto.out
+2. advisory — the kind ui review perform runs Claude Opus 5.5 through the existing claude-code adapter's start every round, never a resume, so it needs none of W-662's unbuilt mechanics: a later round's new session is recorded with the existing --session-reason; W-662's order text and self-written reason are stated limits, and both opera edit packages/cli/src/next.ts (W-665 the build rung and reviewSteps, W-662 reviewSession and the order lines) and packages/cli/src/next-review.test.ts (W-665 its stub and rows, W-662 laterPrompt) — check: prototype.mbox, /home/edckt/agents/bisellium/studio/briefs/W-662.md
+3. advisory — claude takes no image argument, so the perform appends each screenshot's absolute path to the packet's prompt.md in attachment order; the reviewer reading every image is a stated limit, and ui.txt's "codex -i order" wording is the packet's, unchanged — check: prototype.mbox, red-b2-proto.out
+4. advisory — both reds fail by assertion on master with the final rows (w665-t0) at their declared pins, "a kind ui opus is not ordered the light gates" (master orders the light gates) and "a kind ui round runs claude" (master calls codex); both rows pass on the prototype (w665-s1); the pin dry-run proves each declared pin on its master red and not on the prototype, and finds every promise and Input domain pin as a row label, the TAP error's first line, or W-610's composed form — check: scripts/reds.sh, red-b1-master.out, red-b2-master.out, red-b1-proto.out, red-b2-proto.out, pin-dryrun.mts, pin-dryrun.out
+5. advisory — Codex's fixture census lists three flips, W-340-b2, W-274-b1's UI case and W-124 behaviour 6 (next-ladder.test.ts, a kind ui fixture with a passed served-e2e gate and no manifest), all named in Acceptance and owned; the first gates run failed only W-124 behaviour 6 before its fixture wrote the manifest; every other kind ui perform row passes unedited on the claude stub — check: fixture-census.md, run1/next-group-proto.out, next-group-proto.out
+6. advisory — on the prototype the next test group passes 349/349, the shim harness, containment, provider-portability, talk-boundary, harness-env and tick files pass with the adapter honouring timeoutMs, and typecheck, lint, format:check and both officina checks pass; no lex, prompt or .claude file is touched, so nothing is code-owned — check: scripts/gates.sh, gates-status.out, harness-proto.out
+7. advisory — the brief passes the read-only admission (readBriefAdmission, promiseLedgerProblems with its forms and hostile-form rules), briefAdmissionProblems at limit 6 and declared-reds-check.mts with 0 problems; the ledger covers each promise line, each stated limit and every Input domain row — check: admission.mts, admission.out, pin-dryrun.out, promise-ledger.md
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-665.md` (brief.md, sha256 a954e9c5d19b595b13d838151aa81ff361f1c0022b76db1482d6a1a62f0df3d2), prototype over master 81d3de2d (prototype.mbox).
+
+VERDICT: PASS
