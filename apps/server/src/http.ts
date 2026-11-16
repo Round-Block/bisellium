@@ -32,7 +32,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { ladderQueue, type LadderRead } from "./ladder.js";
 import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { GantryEvent } from "@bisellium/schema";
@@ -143,6 +144,7 @@ type ErrorCode =
   | "Content-Type must be application/json"
   | "item cannot be combined with since"
   | "petitio and reply are required strings"
+  | "receipt must be a JSON object"
   | "opus is required"
   | "period, collegium and tokens are required"
   | "opus, sella and next are required"
@@ -869,11 +871,28 @@ async function route(
       sendError(res, 400, "petitio and reply are required strings");
       return;
     }
+    // W-666: the Patron's signed receipt travels with the answer, whatever the transport; `answer` verifies it. The route
+    // only carries it: written to a fresh private temp file, named by --receipt, removed once the write returns.
+    const receipt = body["receipt"];
+    if (receipt !== undefined && (receipt === null || typeof receipt !== "object" || Array.isArray(receipt))) {
+      sendError(res, 400, "receipt must be a JSON object");
+      return;
+    }
     const args = ["--petitio", petitio, reply, "--studio", store.studioDir];
     if (body["askBack"] === true) args.push("--ask-back");
     if (body["charterGap"] === true) args.push("--charter-gap");
-    const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runners.answer(args))));
-    return writeResponse(res, result.exitCode, stdout, stderr);
+    const receiptDir = receipt === undefined ? undefined : mkdtempSync(join(tmpdir(), "bisellium-receipt-"));
+    try {
+      if (receiptDir !== undefined) {
+        const path = join(receiptDir, "receipt.json");
+        writeFileSync(path, JSON.stringify(receipt), { mode: 0o600, flag: "wx" });
+        args.push("--receipt", path);
+      }
+      const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runners.answer(args))));
+      return writeResponse(res, result.exitCode, stdout, stderr);
+    } finally {
+      if (receiptDir !== undefined) rmSync(receiptDir, { recursive: true, force: true });
+    }
   }
 
   if (method === "POST" && pathname === "/api/greenlight") {
