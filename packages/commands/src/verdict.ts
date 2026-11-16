@@ -10,6 +10,7 @@ import { gateLogProblems } from "./presign-gate.js";
 import { CLASS_TAG, censusProblems, repeatedClasses } from "./class-census.js";
 import { codexHome, codexModels, sessionRan, validTurnRan, type TurnRan } from "./codex-run.js";
 import { ensureRealDirectory } from "./ids.js";
+import { wrongTreeRed } from "./red-tree.js";
 import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { USAGE } from "./usage.js";
@@ -860,7 +861,8 @@ function recordedCommand(text: string): string | undefined | { error: string } {
  * (`redCommand`, the replay's own reader: a shell passes them unchanged), and the evidence its genuine red cites
  * (`redEvidence`), each resolved as a quoted claim's citation is (`citedFile`), must include a file whose header records its
  * command (`recordedCommand`), and every file recording one must record those words, space-joined, exactly; a citation that
- * names no readable file is a problem of its own, and stands for the missing record. ponytail: the
+ * names no readable file is a problem of its own, and stands for the missing record. W-645: every file recording a
+ * command is judged by `wrongTreeRed` (a problem each). ponytail: the
  * working directory, the environment and whether the header was written by the run it heads are not compared.
  */
 export function redReplayProblems(brief: string, id: string): string[] {
@@ -888,6 +890,8 @@ export function redReplayProblems(brief: string, id: string): string[] {
         recorded++;
         if (ran !== written)
           problems.push(`behaviour ${k}'s genuine red command is \`${written}\`, and ${cited.file} records \`${ran}\`: write the command the evidence ran, or run the red again with the written command`);
+        const wrongTree = wrongTreeRed(read.text);
+        if (wrongTree !== undefined) problems.push(`${head}, and ${cited.file} ${wrongTree}`);
       }
     }
     if (recorded === 0 && problems.length === before)
