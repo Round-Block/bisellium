@@ -32,8 +32,10 @@ export function servedLine(port: number, attempt: string): string {
 const SERVED_START = /^[ \t]*bisellium serve: attempt (\d+\.\d+) starting[ \t]*\r?$/gm;
 const SERVED_READY = /^[ \t]*bisellium serve: attempt (\d+\.\d+) listening on port \d+, write-auth token read[ \t]*\r?$/gm;
 /** A served spec's location, as Playwright's list reporter (relative) and a stack frame (absolute) print it: any file under
- *  `tests-serve/`, at any depth, that Playwright's default testMatch (`**\/*.@(spec|test).?(c|m)[jt]s?(x)`) discovers. */
-const SERVED_SPEC = /(?:^|[\s/])(tests-serve\/(?:[^\s/:]+\/)*[^\s/:]+\.(?:spec|test)\.[cm]?[jt]sx?:\d+:\d+)/m;
+ *  `tests-serve/`, at any depth, that Playwright's default testMatch (`**\/*.@(spec|test).?(c|m)[jt]s?(x)`) discovers. A path
+ *  segment is any run of characters but a separator or a line break (a space, a colon, a parenthesis, a non-ASCII letter) and
+ *  never holds a `:<line>:<col>` of its own, so a helper's frame is not read into a later spec location on its line. */
+const SERVED_SPEC = /(?:^|[\s/])(tests-serve\/(?:(?:(?!:\d+:\d+)[^/\r\n])+\/)*(?:(?!:\d+:\d+)[^/\r\n])+\.(?:spec|test)\.[cm]?[jt]sx?:\d+:\d+)/m;
 /** The served harness's startup failure, as `startServed` and `board.spec.ts` word it: `serve exited (<code>) before printing port/token`. */
 const SERVE_EXITED = /(?<![\p{L}\p{M}\p{N}_])serve exited \([^)\r\n]*\) before printing port\/token(?![\p{L}\p{M}\p{N}_])/u;
 

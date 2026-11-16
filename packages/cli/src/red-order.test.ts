@@ -792,6 +792,20 @@ test("W-645-b5 behaviour 5: the served config and the served harness are the one
       }
   assert.equal(judged, 144, "each suffix, each depth and each writer's form judged");
   assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, "harness.ts")}:12:5\n`), undefined, "a helper module under the testDir is no served spec");
+  // review r1 #1: a path segment is any character but a separator (a space, a colon, a parenthesis, a non-ASCII letter), in both
+  // writers' forms, through the judge, `red` and the spec signature; a helper under such a directory is still no spec
+  const odd = ["a b", "a:b", "a (1)", "é ü", "a  b/c d"];
+  for (const seg of odd) {
+    for (const form of [`  ✘  1 [chromium] › ${dir}/${seg}/w900.spec.ts:3:1 › a row`, `    at ${join(REPO, "apps", "web", dir, seg, "w900.spec.ts")}:12:5`, `    at f (${join(REPO, "apps", "web", dir, seg, "w900.spec.ts")}:12:5)`])
+      assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${form}\n`), undefined, `a served spec under a directory named ${JSON.stringify(seg)} is judged: ${JSON.stringify(form)}`);
+    assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, seg, "helper.ts")}:12:5\n`), undefined, `a helper module under a directory named ${JSON.stringify(seg)} is no served spec`);
+  }
+  assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, "a b", "helper.ts")}:12:5 in w900.spec.ts:3:1\n`), undefined, "a helper's frame followed by another location on its line is no served spec");
+  const spaced = `[chromium] › ${dir}/a b/w900.spec.ts:3:1 › W-900-b1 a served row`;
+  const spacedRed = fx.red("at", spaced);
+  assert.equal(spacedRed.status, 1, `a served red under a directory with a space is refused: stderr ${JSON.stringify(spacedRed.stderr)}`);
+  assert.equal(spacedRed.written, false, "and writes no log");
+  assert.equal(fx.cited({ name: "red.out", mode: "at", line: spaced }).length, 1, "a cited served red under a directory with a space is refused at the spec signature");
   // the behaviour: the served harness's two lines, at their source
   const files = ["apps/web/tests-serve/harness.ts", "apps/web/tests-serve/board.spec.ts"];
   const sources = files.map((rel) => ({ rel, src: readFileSync(join(REPO, rel), "utf8") }));
