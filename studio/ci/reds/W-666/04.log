@@ -1,0 +1,68 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-666-b4\s --import tsx packages/cli/src/w666.test.ts
+# exit: 1
+# at: 2026-11-16T16:08:41.814Z
+# sella: builder.W-666
+# tree: tree:a0a88af9e6c66b45252402d8d1f4f2bde1120c3d
+# ticket: {"opus":"W-666","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-666/studio","head":"5a3ba9779962bab718ac95a0f61d22533222050b","brief":"bb2b9fb5672939798e5b781bcea805d27c5b0324","at":"2026-11-16T16:08:38.629Z"}
+
+TAP version 13
+# Subtest: W-666-b4 answer refuses when a recorded-nonce source does not read
+not ok 1 - W-666-b4 answer refuses when a recorded-nonce source does not read
+  ---
+  duration_ms: 27.016971
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:11:2652'
+  failureType: 'testCodeFailure'
+  error: |-
+    a malformed timeline line refuses the answer
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:290:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-666-b4 an inaccessible timeline refuses with the reader's reason
+not ok 2 - W-666-b4 an inaccessible timeline refuses with the reader's reason
+  ---
+  duration_ms: 9.140316
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:11:4513'
+  failureType: 'testCodeFailure'
+  error: |-
+    an inaccessible timeline gives the reader's refusal
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:308:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 50.779744
