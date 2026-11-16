@@ -34,9 +34,11 @@ const SERVED_READY = /^[ \t]*bisellium serve: attempt (\d+\.\d+) listening on po
 /** A served spec's location, as Playwright's list reporter (relative) and a stack frame (absolute) print it: `tests-serve/`,
  *  any number of `/`-terminated segments of any characters but `/` (a space, a colon, a coordinate-shaped `:<line>:<col>`, a parenthesis,
  *  a non-ASCII letter, a line break), and a final `<name>.<spec|test>.<[cm][jt]s[x]>:<line>:<col>` anchored at the location's end:
- *  end of line, `)` (a parenthesised frame) or ` › ` (the list reporter's next column). The name holds no file location of its
- *  own (`.ts:<line>:<col>`), so a helper's frame (`helper.ts:12:5 in w900.spec.ts:3:1`) is not read into a later spec location. */
-const SERVED_SPEC = /(?:^|[\s/])(tests-serve\/(?:[^/]+\/)*(?:(?!\.[cm]?[jt]sx?:\d+:\d+)[^/])+?\.(?:spec|test)\.[cm]?[jt]sx?:\d+:\d+)(?=[ \t]*\r?$|\)| › )/m;
+ *  end of line, `)` (a parenthesised frame) or ` › ` (the list reporter's next column). The coordinate is the rightmost one before
+ *  a terminator and the path is everything from `tests-serve/` to it: a coordinate-shaped run inside the path is stem text, so
+ *  `a.ts:3:1.spec.ts:7:2` is one spec, and a helper's frame (`helper.ts:12:5 in w900.spec.ts:3:1`) is one served spec too (fail
+ *  closed). A path not ending in the spec suffix is no served location. */
+const SERVED_SPEC = /(?:^|[\s/])(tests-serve\/(?:[^/]+\/)*[^/]+?\.(?:spec|test)\.[cm]?[jt]sx?:\d+:\d+)(?=[ \t]*\r?$|\)| › )/m;
 /** The served harness's startup failure, as `startServed` and `board.spec.ts` word it: `serve exited (<code>) before printing port/token`. */
 const SERVE_EXITED = /(?<![\p{L}\p{M}\p{N}_])serve exited \([^)\r\n]*\) before printing port\/token(?![\p{L}\p{M}\p{N}_])/u;
 
