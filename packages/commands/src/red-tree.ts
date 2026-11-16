@@ -37,8 +37,9 @@ const SERVED_READY = /^[ \t]*bisellium serve: attempt (\d+\.\d+) listening on po
  *  end of line, `)` (a parenthesised frame) or ` › ` (the list reporter's next column). The coordinate is the rightmost one before
  *  a terminator and the path is everything from `tests-serve/` to it: a coordinate-shaped run inside the path is stem text, so
  *  `a.ts:3:1.spec.ts:7:2` is one spec, and a helper's frame (`helper.ts:12:5 in w900.spec.ts:3:1`) is one served spec too (fail
- *  closed). A path not ending in the spec suffix is no served location. */
-const SERVED_SPEC = /(?:^|[\s/])(tests-serve\/(?:[^/]+\/)*[^/]+?\.(?:spec|test)\.[cm]?[jt]sx?:\d+:\d+)(?=[ \t]*\r?$|\)| › )/m;
+ *  closed). A path not ending in the spec suffix is no served location. The stem may be empty (`.spec.ts` is a served spec) and
+ *  `spec|test` matches in any case, as Playwright's testMatch does (minimatch `nocase`); the extension stays case-sensitive. */
+const SERVED_SPEC = /(?:^|[\s/])(tests-serve\/(?:[^/]+\/)*[^/]*?\.(?i:spec|test)\.[cm]?[jt]sx?:\d+:\d+)(?=[ \t]*\r?$|\)| › )/m;
 /** The served harness's startup failure, as `startServed` and `board.spec.ts` word it: `serve exited (<code>) before printing port/token`. */
 const SERVE_EXITED = /(?<![\p{L}\p{M}\p{N}_])serve exited \([^)\r\n]*\) before printing port\/token(?![\p{L}\p{M}\p{N}_])/u;
 
