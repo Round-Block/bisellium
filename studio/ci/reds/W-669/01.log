@@ -1,0 +1,53 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-669-b1\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-11-16T08:23:37.286Z
+# sella: builder.W-669
+# tree: tree:46bda1b33cb529a9e5ca3865f8d79b3d22d40a1b
+# ticket: {"opus":"W-669","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-669/studio","head":"259a75c9af06e54d6453c7a01b541d14abd1612d","brief":"332ad9803e7e9394b1ee2533653813d17574d6fb","at":"2026-11-16T08:23:33.032Z"}
+
+TAP version 13
+# Subtest: W-669-b1 behaviour 1: a held admin directory does not hold cleanup: the checkout gone and git no longer listing it, cleanup deletes both branches, names the directory, and next moves on to done; any other worktree remove failure still holds
+not ok 1 - W-669-b1 behaviour 1: a held admin directory does not hold cleanup: the checkout gone and git no longer listing it, cleanup deletes both branches, names the directory, and next moves on to done; any other worktree remove failure still holds
+  ---
+  duration_ms: 2799.901942
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-669/packages/cli/src/next.test.ts:11:334'
+  failureType: 'testCodeFailure'
+  error: |-
+    a held admin directory: the local branch is deleted
+    --- exit 1
+    --- stdout
+    next: W-900 cleanup held
+    worktree: held (git worktree remove refused (no --force): error: failed to delete '/tmp/claude-1000/w124-w669-b1-StgqYy/repo/.git/worktrees/W-900': Device or resource busy)
+    why: git worktree remove refused (no --force): error: failed to delete '/tmp/claude-1000/w124-w669-b1-StgqYy/repo/.git/worktrees/W-900': Device or resource busy
+    next-step: cleanup
+    usage: Claude unread (no status-line file); Codex unread (no session log holds a week rate_limits)
+    cost: Claude week unread, Codex week unread over 11.0 h since the first spec signature
+    
+    --- stderr
+    
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-669/packages/cli/src/next.test.ts:794:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2838.41923
