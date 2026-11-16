@@ -1,0 +1,21 @@
+# opus: W-669
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e29b-8456-7363-88d8-f2ca8810fa3a
+# outcome: passed
+# at: 2026-11-16T11:30:54.371Z
+# tree: tree:975054b425ca899a41d1d0d47340febce9eb6918
+# brief: briefs/W-669.md blob:3882b5a60dcae0e8df24a94b783c32f1d2659af8
+# ticket: {"opus":"W-669","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-669/studio","head":"59684a69cbe0c9f50c68646433319b90f9cf1b29","brief":"3882b5a60dcae0e8df24a94b783c32f1d2659af8","at":"2026-11-16T11:30:48.314Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-669-spec-2.log #1: closed — brief:80 adopts the required replacement, and `fix-r1/next.out:1,81-102`, `next-done.out:1,246-252`, `w369.out:1,42-48`, and `containment.out:1,97-105` show tree-bound, exit-0 passes after the final test edit.
+
+## Verdict
+The changed acceptance claim now has fresh evidence bound to the final tested tree, and the added class census accounts for the earlier stale-evidence class.
+VERDICT: PASS
