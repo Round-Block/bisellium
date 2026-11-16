@@ -7,7 +7,7 @@ queues:
       - { opus: W-668, says: "Boot reader consumes each Patron answer once (verified receipt or forge-authored reply); Patron-only steps refuse without one; D-211's order, after W-666/W-667" }
       - { opus: W-648, says: "bisellium run --cwd <dir> runs a builder's command in the opus's own .worktrees/<id>, only with --opus; small and high, unblocks W-503's green rows (clone-tests-meet-1114 c, 5/5)" }
       - { opus: W-665, says: "kind ui: next orders the full ci (served-e2e shots) before the build review, and the review perform runs Claude Opus (D-150 C); gaps 77-78; high (W-488-review-meet-1116)" }
-      - { opus: W-555, says: "FIRST end-state opus, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; advisory lanes; one no-lane count line; Greenlit list goes [absorbs W-478]", next_ts: true }
+      - { opus: W-555, says: "FIRST end-state opus, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; advisory lanes; one no-lane count line; Greenlit list goes [absorbs W-478]", folded: [W-478], next_ts: true }
       - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114)" }
       - { opus: W-641, says: "daily retro reads a timed-out gate log (gap 12), with W-621's first form folded in; E3's next process slot after W-644 (retro-meet-1115 c, 5/5) [absorbs W-533]" }
       - { opus: W-645, says: "cause fix, red admission refuses a red log with ERR_MODULE_NOT_FOUND, serve exited, no port or token line, or no declared assertion; high, unblocks W-503 (all-leads-meet-1114 Q4)" }

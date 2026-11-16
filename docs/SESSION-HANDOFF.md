@@ -22,7 +22,7 @@ Current state only, after CLAUDE.md. Rules: lex `production.md`.
 - Standing: records land by `npm run -s bisellium -- land <path>... --title <text> --sella producer` from main on master (W-509, docs/NEXT.md), by a ladder-runner. A code-owned path in it: `land` arms the queue and the Patron's approval sends it in (W-523); a rerun after the merge absorbs the files. A new opus record lands with its Queue line; `npm run -s check -- studio --repo .` first. Push-notify the Patron at every wait. Prompts with backticks go in a kept file.
 - Standing: the Patron runs `git -C ~/agents/bisellium pull --ff-only origin master` after a merged `.claude/` change; restore what a failed pull applied. Code-owner review gates `.github/`, `.claude/`, `studio/leges/`, `studio/decisions/`, `studio/bisellium.yml`, `studio/prompts/`, `docs/ADOPTION.md`, `scripts/ci-certify.mjs`, `scripts/ci-certificate.mjs`; a push dismisses approval: `gh pr edit <n> --add-reviewer edckt`.
 - Standing: a build verdict's `## Earlier findings` names only the previous round's findings; a Ruling never pairs with it (the same session reissues). Spec review: ≤2 rounds. A fresh reviewer or ui-lead session needs `--session-reason`; a ui-lead verdict after a revise needs `## Earlier findings` lines (W-410-spec/ui-input-6-reissue.sh, by a ladder-runner). A subagent refused on a kept record script stops, reports.
-- Standing: `--expect pr --body-file` takes a file under the repo or `$TMPDIR`; `--expect spec` is two performs; Tracked edits in main block the spec and merge performs: `git stash push -m <tag> -- <paths>`, rerun, `git stash apply <sha>`; drop a stash only by sha, after a kept script shows its changes in tree or master (Patron 11-14). Land a branchless opus's handoff promptly. When `next` names `git -C <main> pull --ff-only origin master`, run it; no spec review while a perform stashes main (it reviews the scaffold, W-499 r14 void).
+- Standing: `--expect pr --body-file` takes a file under the repo or `$TMPDIR`; `--expect spec` is two performs; Tracked edits in main block the spec and merge performs: `git stash push -m <tag> -- <paths>`, rerun, `git stash apply <sha>`; drop a stash only by sha, after a kept script shows its changes in tree/master (Patron 11-14). No tracked record edit left in main: the guard's master sync refuses over it (gap 103); land it now. When `next` names `git -C <main> pull --ff-only origin master`, run it; no spec review while a perform stashes main (it reviews the scaffold, W-499 r14 void).
 - Until W-372: the orchestrator waits on isInMergeQueue (a queued PR shows no auto-merge request); a merge perform printing `QUEUE_TIMEOUT` on a still-queued PR reruns with `--poll-ms 20000 --max-polls 150`; the ladder-runner enqueues with `--max-polls 2`.
 - Until W-283: publish refused for a newer live version: read the live page, merge, publish; status republish reads the whole saved live page. Done reads certify's certificate from its check run (W-370, W-396); with none, uses the artifact host, named once if refused (no wildcard or settings edit).
 - Until W-371: a Codex UI builder gets `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'`, edits only, and a ladder-runner commits, takes `next`, records each red. `worktree add -b` needs `--no-track`; a subagent stays in turn while its background run goes.
@@ -54,23 +54,22 @@ Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-
 
 Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672.
 
-Also, 11-16 (s30): D-212, D-213 landed; D-214 (Patron yes to W-488's captures, tree 5192946f) lands by kit 231 on the Patron's approval.
+Also, 11-16 (s30): D-212, D-213 landed; D-215 (Patron: W-467 re-specced onto bare master while W-503 parks) lands with this handoff.
 
 D-193 replaces D-178: product (M4 path) or process entries; E1 and E2 take product, E3 is process (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201 (Patron 11-13): one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-666 r2 FAIL recorded, W-414 title amended; architect needs a handoff record first (stale handover), revises, signs r3, Codex r4 (last). W-669 spec ahead of E1, branch held (r2 FAIL, blocker a build fix). E2 W-645 not started. E3 W-648 handoff a2aece36, light gates (kit 229), build review r2, full ci, pr, merge, done. W-665 spec ahead of E3, r4 PASS, branches when E3 frees; then W-555 (architect's part B prototype; signs when next names it).
-- UI1 W-503. UI2 W-488 verify PASS, D-214 landing, then done (kit 230 E1-E6). W-662 held.
+- E1 W-666 r3 revised, pre-sign gate owed (heavy), then verdict r3 + Codex r4 (last); W-669 spec ahead, branch held. E2 W-645 branches now (W-648 merged #1259); W-668 spec draft part A done, 10 questions to a leads' meet. E3 W-648 MERGED (#1259), done owed; W-665 branches next.
+- UI1 W-503 parked (D-215); W-467 re-spec onto bare master FAILED to launch (gap 104: codex bwrap /tmp/.git), diagnose then rerun ~/.bisellium-evidence/W-467-spec/remaster/run.sh. UI2 W-488 verify rerun (kit 235) then done x2 at once, nothing landing between (eng-lead read ~/.bisellium-evidence/W-488-verify-read-1116/eng-lead.md). W-662 held.
+- W-555 not signed (no lane); W-646 carries the D-213 cap wording (lexcap-meet-1116).
 W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in queue), W-636 (next reads branch records); 11-14: W-639 W-640 W-641 W-642 (D-207, D-061 §4) W-643.
 
 Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>`, `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
 
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
-Sessions 21-27 meets and gaps 56-82: see ~/.bisellium-evidence/current-state.md.
-Session 28: lanes-queue-meet-1116 (Patron: first opus small no-schema; lane model end state, endstate-design.md); gaps 83-88.
-Session 29: endstate-meet-1116 rerun on Opus + collated + Patron-ruled; w665-w666-meet-1116; merge-verify.md (census); gaps 89-92.
-Session 30: w555-meet-1116 (four seats, collated); W-648-lightgate-read-1116; gaps 92b, 93-98.
-Next: Patron approves the D-214 records PR (#1256); a runner reruns kit 231's land; W-488 done (kit 230 E); W-648 light gates (kit 229) once the W-555 architect frees the heavy slot; W-666 revision r3; W-555 signature; D-213 lex fix needs an opus (gap 95).
+Sessions 21-30 meets and gaps 56-98: see ~/.bisellium-evidence/current-state.md.
+Session 31: lexcap-meet-1116, ui-lanes-meet-1116 (Patron: re-spec W-467 now, D-215); W-488-verify-read-1116; gaps 100-103.
+Next: heavy order W-467 re-spec -> W-666 pre-sign gate -> W-488 verify then done; W-645 branch (E2) and W-665 branch (E3) now; W-648 done; W-668 leads' meet; every status reply carries a lane table (gap 101).
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md. Open gaps, W-508 lessons: current-state-until-1106.md (same dir); read before any done step. W-510, after W-522 (queue.yml): ~/.bisellium-evidence/pr-debate-1106/brief-r1.md. Research is its own lane, never in D-182's lane unasked.
 
