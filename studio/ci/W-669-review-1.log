@@ -1,0 +1,19 @@
+# opus: W-669
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1e3df-b9ad-7690-ae62-e807893b66bc
+# outcome: failed
+# at: 2026-11-16T10:26:13.868Z
+# tree: tree:975054b425ca899a41d1d0d47340febce9eb6918
+# brief: briefs/W-669.md blob:332ad9803e7e9394b1ee2533653813d17574d6fb
+# ticket: {"opus":"W-669","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-669/studio","head":"8177e9da767b9ecb82160c42dc6a34e19e6ad1e1","brief":"332ad9803e7e9394b1ee2533653813d17574d6fb","at":"2026-11-16T10:26:08.395Z"}
+
+## Findings
+1. blocking — studio/briefs/W-669.md:80 [severity: S1] The required spec-2 finding #1 fix was not made: brief:80 still cites `next-proto.out` and `gates-status.out`, which predate the final assertion, instead of the mandated final-prototype evidence. Sites: the stale claim at brief:80; stale artifacts `/home/edckt/.bisellium-evidence/W-669-spec/{next-proto.out,gates-status.out}`; reader `/home/edckt/.bisellium-evidence/W-669-spec/promise-ledger.md:36`; acknowledgement `/home/edckt/.bisellium-evidence/W-669-spec/signature-r1.md:10`; required-fix writer `studio/ci/W-669-spec-2.log:14`; and the uncited fresh build-tree substitute `studio/ci/W-669-light-975054b4.log:1,1482` — check: none: reject acceptance evidence that predates the final test edit and require its final source-tree identity [class: review×evidence-backfilled-or-absent]
+
+## Verdict
+The implementation behaviours and reds are consistent, but the explicitly required evidence correction remains unresolved, so round 1 fails.
+
+VERDICT: FAIL
