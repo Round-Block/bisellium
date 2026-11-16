@@ -1,0 +1,47 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-645-b4\s --import tsx packages/cli/src/red-order.test.ts
+# exit: 1
+# at: 2026-11-16T08:25:29.498Z
+# sella: builder.W-645
+# tree: tree:1d36bdf7fd176ef1da3d1ea9b2de4a16ed0fcf77
+# ticket: {"opus":"W-645","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-645/studio","head":"576143cad4946835b3cdb3831f4abf2ef2243915","brief":"bf76ecf3d51af16ac50ba196b9a4c2e855673502","at":"2026-11-16T08:25:26.317Z"}
+
+TAP version 13
+# Subtest: W-645-b4 behaviour 4: a cited red that lacks the brief's declared assertion is refused at the spec signature
+not ok 1 - W-645-b4 behaviour 4: a cited red that lacks the brief's declared assertion is refused at the spec signature
+  ---
+  duration_ms: 821.463013
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-645/packages/cli/src/red-order.test.ts:93:297'
+  failureType: 'testCodeFailure'
+  error: |-
+    a cited red that lacks the brief's declared assertion is refused at the spec signature
+    + actual - expected
+    
+    + []
+    - [
+    -   'behaviour 1\'s genuine red declares pinned by `W-900-b1` "the declared assertion", and no cited red output recording its command fails at it: cite the red that does, or record it again'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'behaviour 1\'s genuine red declares pinned by `W-900-b1` "the declared assertion", and no cited red output recording its command fails at it: cite the red that does, or record it again'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-645/packages/cli/src/red-order.test.ts:754:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 844.021483
