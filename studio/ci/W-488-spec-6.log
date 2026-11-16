@@ -1,0 +1,31 @@
+# opus: W-488
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1d572-2a1a-7e71-b882-55319725172a
+# outcome: passed
+# at: 2026-11-14T06:24:22.851Z
+# tree: tree:0330bbc6da47e6b0c0b6987bec755e5b5852aec9
+# dispatch_prompt: ci/W-488-ui-prompt-6.md
+# design_digest: sha256:fed46a717d48daea108588bd1541fad37474f009c709d830ea768a27e3546683
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"a77a49b748f5f6bce7650f0658ecc4938426079d","brief":"df8e058feb790c528417656dbf31b1a96d1535fc","at":"2026-11-14T06:24:15.342Z"}
+
+## Findings
+
+1. advisory — brief:54 — All six recorded round-3 findings are closed: #1 the select retains its borders and arrow with the full title below; #2 Actual size makes image text readable; #3 timestamps include time and UTC; #4 paired numbers remain, justified by brief:62; #5 “Comment as” explains unverified identity; #6 the older-set notice explains closure and the matching-checkout requirement. Round 5 advisory 1 still holds: “Click the image to place a pin” invites an action whose comment cannot be recorded. Change this copy in this opus — replace with: “This capture is read-only. Existing comments remain available.” Show the pin-placement hint only when commenting is enabled — check: shots-r5/capture-390-comments-closed.png and apps/web/tests-serve/w488.spec.ts, b1 older-state copy.
+
+2. advisory — brief:98 — Round 5 advisory 2 merits a change in this opus. The displayed timestamp is legible and restores the previously missing time, but numeric dates with a two-digit year require interpretation. The agent-written requirement to reuse the reviewed formatter is not a sound reason to preserve this presentation; no cited Patron ruling requires it — replace with: “Display comment timestamps as ‘14 Nov 2026, 01:26 UTC’, allowing the timestamp to wrap independently of the author. Reuse validated timestamp parsing without requiring its existing display format.” — check: shots-r5/capture-390-comments.png, capture-1280-expanded-comments.png and apps/web/tests-serve/w488.spec.ts, b2 timestamp rendering.
+
+## Earlier findings
+
+- ci/W-488-spec-3.log #1: closed — shots-r5/capture-390-comments.png and capture-390-none.png show both select borders and its arrow within the content margins, with the complete selected title wrapping below.
+- ci/W-488-spec-3.log #2: closed — shots-r5/capture-390-actual-size-comments.png shows readable enlarged image text within the image region; the fitted captures retain visible Fit image and Actual size controls, and promise-ledger-r6.md records the b3 internal-scroll and pin-coordinate checks.
+
+## Recommendation
+
+No earlier finding remains open; the revision preserves the existing layout while restoring image inspection, timestamp information and clear attribution.
+The closed-set notice is prominent enough that its contradictory hint is advisory, and the current timestamp retains the information needed to distinguish comments by time.
+Visible comment text and controls remain legible; the narrow captures do not show every comment or the complete form, so they cannot establish readability below their boundaries.
+These copy refinements need no new design, and the supplied captures show no remaining blocking defect.
+Verdict: passed

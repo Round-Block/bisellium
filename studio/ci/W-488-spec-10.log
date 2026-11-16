@@ -1,0 +1,26 @@
+# opus: W-488
+# phase: spec
+# round: 10
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1d572-2a1a-7e71-b882-55319725172a
+# outcome: passed
+# at: 2026-11-15T14:16:53.614Z
+# tree: tree:0085147a558a96dcaa85c625f9e74850360d8490
+# dispatch_prompt: ci/W-488-ui-prompt-10.md
+# design_digest: sha256:3d4192629cfff00f5cb46c7b027c2366a5814fdde3f8794168758ceeaa332a63
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":10,"actor":"ui-lead","studio":"studio","head":"9acf09f102937b042e94a7af1c35adcbd095e8df","brief":"99297f36336be3b5a3797ead5f336433c880a0e4","at":"2026-11-15T14:16:42.954Z"}
+
+## Findings
+
+1. advisory — brief:23 — Round-3 findings remain closed in the inherited screen design: #1 selector containment, #2 image enlargement, #3 time-of-day display, #4 paired numbering, #5 qualified authorship and #6 serving-checkout explanation. Round-6 advisory #1 remains open, as round 9 advisory #3 confirms: the agent-written instruction to defer copy “unchanged” would preserve a pin-placement invitation on a closed capture — replace with: “The web half inherits the reviewed interactions with these copy corrections: when commenting is closed, replace the pin-placement hint with ‘This capture is read-only. Existing comments remain available.’ Show the placement hint only when commenting is enabled.” — check: shots-r5/capture-390-comments-closed.png and the follow-up brief’s served b1 closed-state row.
+
+2. advisory — brief:23 — Round-6 advisory #2 remains open: inheriting copy “unchanged” also preserves the numeric date `14/11/26`. The time and UTC remain available, but the presentation still requires interpretation; preserving this agent-written formatting choice is not a Patron requirement — replace with: “The web half displays comment timestamps as ‘14 Nov 2026, 01:26 UTC’, allowing the timestamp to wrap independently of the author. Preserve validated timestamp parsing without requiring the previous display format.” — check: shots-r5/capture-390-comments.png, capture-1280-expanded-comments.png and the follow-up brief’s served b2 timestamp row.
+
+## Recommendation
+
+The split preserves the specified information and screen behaviours for the follow-up, but delays the Patron’s browser workflow: this server half alone provides no screen for browsing captures or placing comments.
+The brief should explicitly transfer both copy corrections alongside the inherited design; neither requires a new design or blocks this screenless half on UI grounds.
+Revision 7 introduces no demonstrated legibility regression, and the old captures remain evidence of the inherited screen rather than a newly delivered interface.
+This UI recommendation does not clear round 9’s response-contract and authentication-test blockers.
+Verdict: passed

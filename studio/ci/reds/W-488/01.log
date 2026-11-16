@@ -1,0 +1,42 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-488-b1\s --import tsx apps/web/test/w488.test.ts
+# exit: 1
+# at: 2026-11-15T15:28:06.434Z
+# sella: builder.W-488
+# tree: tree:daef097d06b641598eeebcdb179729f71e3a3a9f
+# ticket: {"opus":"W-488","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-488/studio","head":"9d6369003b9033d53953ed43746427cc63021f53","brief":"fb40ee02fec26cf6e84c34f03d20fbd0032d5da1","at":"2026-11-15T15:28:00.034Z"}
+
+TAP version 13
+# Subtest: W-488-b1 behaviour 1: the browser lists only bounded capture manifests with their certified source tree
+not ok 1 - W-488-b1 behaviour 1: the browser lists only bounded capture manifests with their certified source tree
+  ---
+  duration_ms: 2.198822
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-488/apps/web/test/w488.test.ts:18:245'
+  failureType: 'testCodeFailure'
+  error: |-
+    the existing served-e2e manifest has one bounded capture-set reader
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-488/apps/web/test/w488.test.ts:39:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17.283367

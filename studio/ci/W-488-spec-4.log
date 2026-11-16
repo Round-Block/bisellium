@@ -1,0 +1,34 @@
+# opus: W-488
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1d4bd-8eec-76f2-94ad-508199ac9854
+# outcome: passed
+# at: 2026-11-14T04:19:15.102Z
+# tree: tree:3e3b8350c0fe91d6cb66c9085da2dbddcb9ea0d8
+# brief: briefs/W-488.md blob:df8e058feb790c528417656dbf31b1a96d1535fc
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"0c473fe23ad595929f9cfda32991b80c237e2fcb","brief":"df8e058feb790c528417656dbf31b1a96d1535fc","at":"2026-11-14T04:19:08.509Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-488-spec/promise-ledger-r6.md
+Gate log: /home/edckt/.bisellium-evidence/W-488-spec/r5/gate.log
+
+## Findings
+
+1. advisory — The producer's W-563 gate names base `2af67f61eb24219753ef61d21cffc25396a0040f`, series sha256 `03bcc7267bb42b65abceed74e2db3eabfb89f91da118d45f9687688c32d0c9c4` and tree `49be6392a549e9d71349d2c2aa52fe768b1cc744`; its series digest equals the Prototype line in the signed brief and the produced mbox, all seven owed rows exited 0, and the runner exited 0 — check: /home/edckt/.bisellium-evidence/W-488-spec/r5/gate.log and /home/edckt/.bisellium-evidence/W-488-spec/r5/gate.run.log
+2. advisory — The fixture census constraints remain intact: W-047 behaviour 4 keeps its exact path and date-parse inventories by using contained path helpers and the reviewed browser timestamp formatter, while W-366-b2 keeps its single purple heading-role selector by reusing the established title roles — check: /home/edckt/.bisellium-evidence/W-488-spec/fixture-census.md and /home/edckt/.bisellium-evidence/W-488-spec/gates-proto-r5.out
+3. advisory — Review-round-2 advisories are closed: b4 checks image name and image-byte hash before review input; b2 rejects an unparseable line naming `ui_capture_comment`; the author is expressly self-declared and unverified; b1 defines Current against the serving checkout; and one invalid admitted capture set refuses the whole list by the stated all-or-nothing limit — check: /home/edckt/.bisellium-evidence/W-488-spec/proto-repo/apps/web/test/w488.test.ts and /home/edckt/.bisellium-evidence/W-488-spec/brief-r5.md
+4. advisory — The remaining UI advice is closed: b2 displays UTC time of day and labels the author control `Comment as`; b1 displays `Comments are closed here.` for an older tree; and the brief treats paired pin/comment numbers as a narrow semantic exception to DIRECTION 4.3 because they join an exact image point to its comment rather than express hierarchy — check: /home/edckt/.bisellium-evidence/W-488-spec/gates-proto-r5.out and /home/edckt/.bisellium-evidence/W-488-spec/brief-r5.md
+5. advisory — Four revision Genuine reds are headed by their exact Node TAP commands, fail by assertion with `not ok 1 - W-488-bN` at their red stages, preserve earlier rows at later stages, and pass together at the final tree; all seventeen series commits independently build the web bundle, mutation kills are accepted, and admission, promise-ledger and red-evidence checks pass — check: /home/edckt/.bisellium-evidence/W-488-spec/reds-r5.out, /home/edckt/.bisellium-evidence/W-488-spec/series-builds.txt, /home/edckt/.bisellium-evidence/W-488-spec/kills.out, /home/edckt/.bisellium-evidence/W-488-spec/admission-r5.out, /home/edckt/.bisellium-evidence/W-488-spec/ledger-check-r5.out and /home/edckt/.bisellium-evidence/W-488-spec/red-evidence-check-r5.out
+6. advisory — The inspected Patron captures show zero and three comments at every ruled width, expanded and collapsed 1280 layouts, a 390 actual-size image scrolled inside its region, and the closed older-tree state with no page overflow: `capture-1280-expanded-none.png`, `capture-1280-expanded-comments.png`, `capture-1280-collapsed-comments.png`, `capture-640-200pct-none.png`, `capture-640-200pct-comments.png`, `capture-390-none.png`, `capture-390-comments.png`, `capture-390-actual-size-comments.png`, `capture-390-comments-closed.png` — check: /home/edckt/.bisellium-evidence/W-488-spec/capture-shots-r5.out and /home/edckt/.bisellium-evidence/W-488-spec/shots-r5/
+7. advisory — Revision 5 was refused because the repeated `review×evidence-backfilled-or-absent` class had no class-census line; revision 6 adds exactly one well-formed line backed by a 20-site census of every explicit evidence-bearing line, every site names an existing producing command or file, and no Acceptance claim required correction — check: /home/edckt/.bisellium-evidence/W-488-spec/r6/class-census.py and /home/edckt/.bisellium-evidence/W-488-spec/r6/class-census.out
+
+## Earlier findings
+
+- ci/W-488-spec-2.log #1: closed — the 390px capture selector now stays within 16px content margins with both borders and its arrow visible, and the complete selected title wraps below it — check: `W-488-b1 capture sets remain honest when absent, many, older, slow or failed at 1280, 640 and 390` and /home/edckt/.bisellium-evidence/W-488-spec/shots-r5/capture-390-none.png
+- ci/W-488-spec-3.log #1: closed — the same 390px served row asserts selector containment and complete-title text, while the inspected narrow captures show the full control and wrapping title — check: /home/edckt/.bisellium-evidence/W-488-spec/gates-proto-r5.out and /home/edckt/.bisellium-evidence/W-488-spec/shots-r5/capture-390-comments.png
+- ci/W-488-spec-3.log #2: closed — Fit image preserves an overview; Actual size renders the 1280px image in an internal scroll region at 1280, 640 and 390 without page overflow, and normalized pins retain their image-relative coordinates — check: `W-488-b3 image pins and comments stay contained with the sidebar expanded and collapsed at 1280, then at 640 and 390` and /home/edckt/.bisellium-evidence/W-488-spec/shots-r5/capture-390-actual-size-comments.png
+
+## Verdict
+
+passed — signature round 4 revision 6 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `/home/edckt/.bisellium-evidence/W-488-spec/brief-r6.md` sha256 `322ffcd22fb2403a5b7d5e6e62be215d5616e730bd22de7052ccf31b2cdb32b3`; the class census covers 20 evidence sites, the unchanged pre-sign gate's seven owed rows pass against the unchanged prototype digest, all review findings are closed or answered, prototype mbox sha256 is `03bcc7267bb42b65abceed74e2db3eabfb89f91da118d45f9687688c32d0c9c4`, and no record write or lifecycle command was performed.

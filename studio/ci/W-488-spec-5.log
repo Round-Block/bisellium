@@ -1,0 +1,24 @@
+# opus: W-488
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a680e8a2-6f25-4777-b3c5-c9121cf61194
+# session_reason: the round-2 reviewer session e92bde8c no longer exists (No conversation found); a fresh session of the same reviewer read its round-2 verdict
+# outcome: passed
+# at: 2026-11-14T04:42:25.187Z
+# tree: tree:bdbee55a82a21926100f41145bc121125cb91aca
+# brief: briefs/W-488.md blob:df8e058feb790c528417656dbf31b1a96d1535fc
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"e5c795017b9a05c3512f868d45cc42697503b419","brief":"df8e058feb790c528417656dbf31b1a96d1535fc","at":"2026-11-14T04:42:16.174Z"}
+
+## Findings
+1. advisory — shots-r5/capture-390-comments-closed.png (brief:54) `[severity: S3]` The older, closed set still shows "Click the image to place a pin." directly under "Comments are closed here." The two lines contradict each other, and a reader can't tell whether clicking does anything. Replacement: hide the hint, or swap it for "Pins can't be placed on an older capture." whenever the form is disabled. [class: spec×promise-contract-not-declared] — check: none: a served b1 row that expects no "Click the image to place a pin." text in the older state
+2. advisory — shots-r5/capture-390-comments.png (brief:56) `[severity: S3]` The time of day is shown as `14/11/26 01:26 UTC`. The numeric day/month/year order is ambiguous to a reader; DIRECTION's plain-English rule prefers an unambiguous date such as `14 Nov 2026, 01:26 UTC`. The brief names the existing reviewed formatter (brief:117), so this is not a defect of this opus. [class: spec×promise-contract-not-declared] — check: none: a b2 served row that asserts a month name in the comment time
+3. advisory — brief:17/131 `[severity: S2]` This partly carries round 2's advisory #5. The brief now says Current means the tree of the checkout serving this browser. It still doesn't tell the Patron that in practice this means running `serve` from the opus worktree at its certified HEAD, and that their master clone will show every in-flight set as older. Replacement: add that clause to Defaults 3. [class: spec×promise-unattainable-under-accepted-domain] — check: none
+
+## Earlier findings
+- ci/W-488-spec-2.log #1: closed — The 390 capture set select is fixed and recaptured. capture-shots-r5.out:20 records `select=16,358` at 390, so it starts 16px in and ends at 374px, inside a 16px margin. shots-r5/capture-390-comments.png and capture-390-comments-closed.png show both borders and the arrow, with the full title wrapped below. The served b1 row "the 390px capture selector keeps both borders and its arrow" (brief:54) pins it, and the acceptance line (brief:122) now names what was actually inspected.
+
+## Verdict
+The round-2 blocker is closed with recaptured evidence that matches what the screen shows. The round-2 advisories on image-byte binding, unparseable lines, self-declared author and all-or-nothing listing are now stated and pinned (ui-capture-comments.ts:172 and :183 back them). Only advisories remain.
+VERDICT: PASS

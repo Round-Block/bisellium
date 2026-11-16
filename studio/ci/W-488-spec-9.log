@@ -1,0 +1,25 @@
+# opus: W-488
+# phase: spec
+# round: 9
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: b84f582a-2632-4590-af58-0a823840a294
+# session_reason: the round-5 reviewer session a680e8a2 cannot be resumed (No conversation found: a sandboxed claude -p persists no session); a fresh session of the same reviewer read its round-5 verdict and re-checked the brief
+# outcome: failed
+# at: 2026-11-15T14:12:38.090Z
+# tree: tree:0085147a558a96dcaa85c625f9e74850360d8490
+# brief: briefs/W-488.md blob:99297f36336be3b5a3797ead5f336433c880a0e4
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":9,"actor":"spec-reviewer","studio":"studio","head":"9acf09f102937b042e94a7af1c35adcbd095e8df","brief":"99297f36336be3b5a3797ead5f336433c880a0e4","at":"2026-11-15T14:12:30.731Z"}
+
+## Findings
+1. blocking — brief:43 The brief says `POST /api/ui-capture-comment` "returns `{ ok: true, record }`, or the existing `{ error }` refusal shape". The prototype handler does something else. It always answers HTTP 200: `{ ok: true, output: result.record }` on success, or `{ ok: false, exitCode: 1, output: result.error }` on refusal (prototype.mbox:616). That is the existing `WriteResult` shape, and `submitUiCaptureComment` reads it through `postWrite` (prototype.mbox:699-700). `{ error }` comes only from `sendError`, which this route uses for its 404 (prototype.mbox:612) and the shared auth refusals. The deferred web half is built against this interface and no row checks it, so a builder could follow either the brief or the prototype. Replacement: name `WriteResult` as the contract, meaning `ok`/`output`/`exitCode`, HTTP 200 on a validation refusal, and `{ error }` only for 400/401/403/404. [design: keeps] [class: spec×promise-contract-not-declared] — check: none: a W-488-b3 served request that asserts the exact JSON body of one accepted and one refused comment
+
+2. blocking — brief:53 (also brief:43) The new route appends records to `timeline/patron.jsonl`, and the promise says the existing token and origin checks guard it. Only the prototype code backs that, where `WRITE_PATHS` gains `/api/ui-capture-comment` (prototype.mbox:579). The only b3 check is `assert.match(http, /\/api\/ui-capture-comment/)` (prototype.mbox:510), a regex over the source. That string also appears in the handler (prototype.mbox:611) and in the route index (prototype.mbox:562). So dropping the path from `WRITE_PATHS` would keep every row green while token-less or cross-origin appends went through. No server test walks every write path (apps/server/test has no such loop), and kills.out has no auth mutation. The "unpinned" limit names how the test is done. It does not limit authentication, so this record-write security promise is neither guaranteed nor limited. Replacement: one `startServer` row that POSTs without a token (expects 401) and with a foreign Origin (expects 403), then asserts the timeline is unchanged. [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: none: a W-488-b3 served request with no `X-Bisellium-Token` expecting 401 and no appended line
+
+3. advisory — brief:23 [severity: S3] The split note defers the copy "unchanged". The follow-up would then inherit two things raised in round 5 (ci/W-488-spec-5.log #1, #2) and again by ui-lead (ci/W-488-spec-6.log). One is the closed-state hint "Click the image to place a pin." shown under "Comments are closed here.". The other is the ambiguous numeric date `14/11/26`. The follow-up brief should take those replacements instead of "unchanged". [class: spec×promise-contract-not-declared] — check: none: the follow-up's served b1/b2 rows for the closed-state hint and a month-name timestamp
+
+4. advisory — brief:49/51 [severity: S2] Two promise clauses have no cited pin. In capture-set-identity, "refuses the entire list" is asserted by "one malformed declared set fails the whole listing closed" (prototype.mbox:73), but the brief doesn't cite that assertion. In immutable-bound-comment, "changed image bytes … refuse" on append has no b2 assertion: every b2 append sends the matching `imageSha256` (prototype.mbox:244, :264), so the "capture image changed; reload before commenting" branch (prototype.mbox:450-451) never runs, and kills.out has no such mutation. [class: spec×promise-unattainable-under-accepted-domain] — check: none: a b2 assertion that a mismatched `imageSha256` or viewport is refused with "capture image changed; reload before commenting"
+
+## Verdict
+The server-half split works, and its input domain names every record it reads, each with one rejecting function that fails closed. Two things still fail the round: the comment route's stated response shape contradicts the prototype, and its authorisation promise rests only on a source regex that would stay green if the path were dropped from `WRITE_PATHS`.
+VERDICT: FAIL

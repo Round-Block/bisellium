@@ -221,6 +221,16 @@ For a UI opus, the build-review packet admits a bounded matrix of desktop and
 phone served screenshots, one pair per route of the reviewed tree's navigation table, and the Codex harness attaches those
 exact files in named order; packet construction is the fail-closed visual-evidence seam.
 
+W-488 adds no capture producer. The unlisted `#/captures[/<opus>]` console route
+reads the same bounded `ci/shots/<opus>/manifest.txt` and PNGs through injected
+`GET /api/ui-capture-sets` and `GET /api/ui-capture-image/:opus/:name` readers.
+Authenticated `POST /api/ui-capture-comment` appends a bounded
+`ui_capture_comment` to the existing Patron timeline only while its source-tree,
+design, manifest and image hashes still match. `review-packet.mjs` re-reads that
+binding and includes the comments beside the existing images in the sole build
+review packet; Playwright assertions, `served-e2e` and the review gate are
+unchanged.
+
 ## 4. Console read path
 
 ```mermaid
@@ -231,7 +241,7 @@ flowchart TD
   log[(".bisellium/events.jsonl")]
   snaps[(".bisellium/snapshots/&lt;source&gt;.json")]
   idx[(".bisellium/index/index.db (SQLite)")]
-  reads["GET /api/officina /opera /inbox /acta<br/>/aerarium /providers /health<br/>GET /api/completion<br/>GET /api/opus/:id/ladder"]
+  reads["GET /api/officina /opera /inbox /acta<br/>/aerarium /providers /health<br/>GET /api/completion /ui-capture-sets<br/>GET /api/opus/:id/ladder /ui-capture-image/:opus/:name"]
   events["GET /api/events"]
   live["GET /api/live (SSE)"]
   posts["POST /api/answer /greenlight /budget<br/>/handoff /talk /pause /resume<br/>X-Bisellium-Token + no-Origin"]

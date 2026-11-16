@@ -1,0 +1,23 @@
+# opus: W-488
+# phase: spec
+# round: 1
+# sella: ui-architect
+# outcome: passed
+# at: 2026-11-13T14:23:02.350Z
+# tree: tree:7a7ad8333a1b5c6f14b79e6d09bfdf20e5a9d62a
+# brief: briefs/W-488.md blob:8c705c912975dedc9e480261b866cec4167d124a
+# ticket: {"opus":"W-488","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"d21107b898868228c0f1c2568b4e764af28f667b","brief":"8c705c912975dedc9e480261b866cec4167d124a","at":"2026-11-13T14:22:56.587Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-488-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-488-spec/r4/gate.log
+
+## Findings
+
+1. advisory — The fixture census found six new W-047 behaviour 4 raw `.md` template sites; the production record path remains inside `readContainedRegularFile`, the served fixtures now pass fixed record names, and the exact 56-entry inventory stays green without changing its rule — check: /home/edckt/.bisellium-evidence/W-488-spec/fixture-census.md and /home/edckt/.bisellium-evidence/W-488-spec/containment-census-r2.out
+2. advisory — The fixture census found two new W-366-b2 purple consumers; Capture review now reuses the established page-title and panel-heading token roles, so the exact accent-consumer inventory stays green without changing its rule — check: /home/edckt/.bisellium-evidence/W-488-spec/fixture-census.md and /home/edckt/.bisellium-evidence/W-488-spec/token-role-r2.out
+3. advisory — Revision 2 was refused because each Genuine red cited no evidence recording its command; each command now cites its existing headed red log on the same brief line, and the verdict red-command evidence check passes — check: /home/edckt/.bisellium-evidence/W-488-spec/red-evidence-check.out and /home/edckt/.bisellium-evidence/W-488-spec/admission-r3.out
+4. advisory — Revision 3 was refused because the signature transcript had no pre-sign Gate log; the W-563 gate ran all seven owed rows, and all seven passed with none deferred or failed — check: /home/edckt/.bisellium-evidence/W-488-spec/r4/gate.log
+
+## Verdict
+
+passed — signature round 4 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-488.md` sha256 `d69aa270fca08cae01e2a631bf8c69cc24099369e4655abefdd7d5d28c260cb2`; all four Genuine red commands cite their headed recorded outputs, the pre-sign gate's seven owed rows pass, both pre-existing design constraints remain green, prototype mbox sha256 is `a9f43c58e1d359a9d4190f0fd749608b815e1d31d73f8377a29261e3cc952f42`, and no record write, `next` or `verdict` was performed.
