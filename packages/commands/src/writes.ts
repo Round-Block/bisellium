@@ -18,7 +18,7 @@
  * workflow telemetry).
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, unlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, lstatSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
 import { isBuilderClassSeat, parseFrontMatter, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
@@ -28,6 +28,7 @@ import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
 import { createNextRecord, ensureRealDirectory } from "./ids.js";
 import { readContainedRegularFile, readRecordAt } from "./opus-model.js";
 import { autoGrant } from "./auto-greenlight.js";
+import { parseReceipt, questionDigest, readPetitioReceipts, readReceiptPolicy, receiptProblem, spentNonces, RECEIPT_MAX_BYTES, type AnswerFacts, type Receipt } from "./patron-receipt.js";
 
 export interface WriteOptions {
   /** Pinned clock, for reproducible timestamps/events in tests — same
@@ -747,11 +748,11 @@ export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult
 // ---------------------------------------------------------------------------
 
 const ANSWER_USAGE =
-  "usage: bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]";
+  "usage: bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--receipt <path>] [--studio <dir>] [--now <iso>]";
 
 export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult {
   const parsed = parseFlags(args, {
-    valued: ["--petitio", "--opus", "--studio", "--now"],
+    valued: ["--petitio", "--opus", "--receipt", "--studio", "--now"],
     boolean: ["--ask-back", "--charter-gap"],
   });
   if ("error" in parsed) {
@@ -806,6 +807,7 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
 
   let firstLine = "";
   let petitioRawBefore: string;
+  let questionBody = "";
   try {
     const petitioFile = readContainedRegularFile(root, `petitiones/${petitioId}.md`, "petitiones");
     if ("error" in petitioFile) throw new Error(petitioFile.error);
@@ -813,6 +815,7 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
     const split = splitFront(petitioRawBefore);
     if (!split) throw new Error("missing front matter");
     firstLine = split.body.trim().split("\n")[0] ?? "";
+    questionBody = split.body;
   } catch (e) {
     console.error(`could not read ${petitioPath}: ${(e as Error).message}`);
     return { exitCode: 2 };
@@ -837,6 +840,20 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
   }
 
   const newState = askBack ? "awaiting_reply" : "resolved";
+
+  // W-666: an officina that names Patron keys takes a Patron answer only with a receipt the Patron signed for exactly
+  // this answer; checked before anything is written, so a refusal leaves the petitio and the timeline untouched.
+  const receipt = answerReceipt(root, manifest, values.get("--receipt"), {
+    petitio: petitioId,
+    question: questionDigest(questionBody),
+    option: reply,
+    mode: askBack ? "ask-back" : "resolve",
+    charter_gap: charterGap,
+  }, now);
+  if (receipt !== undefined && "error" in receipt) {
+    console.error(`answer refused: ${receipt.error}`);
+    return { exitCode: 2 };
+  }
 
   // The acta directory is checked before anything is written: a symlinked acta/ refuses with the petitio untouched.
   let actaDir: string | undefined;
@@ -866,6 +883,8 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
         doc.setIn(["to"], askTo);
       }
       doc.setIn(["state"], newState);
+      // W-666: the receipt is recorded on the petitio, keyed by this answer's stamp instant
+      if (receipt !== undefined) doc.setIn(["receipts", now.toISOString()], doc.createNode(receipt.receipt));
       // The key petitio.opus (check.ts:575) already validates.
       if (opusId) doc.setIn(["opus"], opusId);
       return `${body}\n\n[stated] ${now.toISOString()} ${patronId}: ${reply}`;
@@ -892,6 +911,7 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
       ...(opusId ? { opus: opusId } : {}),
       ask_back: askBack,
       charter_gap: charterGap,
+      ...(receipt !== undefined ? { receipt: receipt.receipt } : {}),
     });
   } catch (e) {
     try {
@@ -918,6 +938,40 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
 
   console.log(`${petitioId}: ${newState}`);
   return { exitCode: 0 };
+}
+
+/** W-666: the receipt that authorizes this answer: undefined when the officina names no Patron keys and no --receipt is
+ *  given (the answer is unsigned, as before; the patron.receipt rule says so); otherwise the verified receipt, or why
+ *  there is none. The file is a regular file of at most RECEIPT_MAX_BYTES at the path given, read whole. */
+function answerReceipt(root: string, manifest: Manifest, path: string | undefined, facts: AnswerFacts, now: Date): { receipt: Receipt } | { error: string } | undefined {
+  const policy = readReceiptPolicy(manifest);
+  if (policy === undefined) return path === undefined ? undefined : { error: "bisellium.yml names no patron_receipts keys, so --receipt cannot be checked" };
+  if ("error" in policy) return policy;
+  if (path === undefined) return { error: "patron receipt required: bisellium.yml names patron_receipts keys, and this answer has no --receipt" };
+  let text: string;
+  try {
+    const st = lstatSync(path);
+    if (!st.isFile() || st.size > RECEIPT_MAX_BYTES) return { error: `patron receipt ${path} is not a regular file of at most ${RECEIPT_MAX_BYTES} bytes` };
+    text = readFileSync(path, "utf8");
+  } catch {
+    return { error: `patron receipt ${path} is unreadable` };
+  }
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return { error: "patron receipt is not valid JSON" };
+  }
+  const receipt = parseReceipt(raw);
+  if ("error" in receipt) return receipt;
+  // every nonce a recorded receipt has spent: the timeline's, and each petitio's recorded receipts (the committed record)
+  let recorded = "";
+  const file = readContainedRegularFile(root, "timeline/patron.jsonl", "timeline");
+  if (!("error" in file)) recorded = file.bytes.toString("utf8");
+  const spent = spentNonces(recorded, readPetitioReceipts(root).records);
+  if ("error" in spent) return spent;
+  const problem = receiptProblem(receipt, policy, facts, now, spent);
+  return problem === undefined ? { receipt } : { error: problem };
 }
 
 // ---------------------------------------------------------------------------

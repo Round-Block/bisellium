@@ -320,7 +320,7 @@ survives `git clone`, is the permanent home.
 ```bash
 npm run bisellium -- handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
 npm run bisellium -- emit '{"name":"workflow.custom","attrs":{"k":"v"}}' [--studio <dir>] [--now <iso>]
-npm run bisellium -- answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+npm run bisellium -- answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--receipt <path>] [--studio <dir>] [--now <iso>]
 npm run bisellium -- greenlight <opus> [--auto | --decline <reason>] [--studio <dir>] [--now <iso>]
 npm run bisellium -- budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
 ```

@@ -1038,6 +1038,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/writes.ts:runAnswer:writeFileSync#1", disposition: "contained", why: "acta/<date>-<slug>.md in a real acta/ checked by ensureRealDirectory before any write" },
   { key: "packages/commands/src/writes.ts:runAnswer:writeFileSync#2", disposition: "contained", why: "restores the petitio bytes just read through readContainedRegularFile; editOpusFrontMatter checked its directory" },
   { key: "packages/commands/src/writes.ts:runAnswer:unlinkSync#1", disposition: "contained", why: "removes the acta this call created in the real acta/ it checked" },
+  { key: "packages/commands/src/writes.ts:answerReceipt:readFileSync#1", disposition: "outside", why: "W-666: the receipt file --receipt names, outside the officina: lstat as a regular file of at most RECEIPT_MAX_BYTES, read once, never written" },
   { key: "packages/commands/src/writes.ts:runGreenlight:writeFileSync#1", disposition: "contained", why: "restores the opus bytes just read through readContainedRegularFile; editOpusFrontMatter checked its directory" },
   { key: "packages/commands/src/writes.ts:runBudget:writeFileSync#1", disposition: "contained", why: "aerarium/<period>.yml in a real aerarium/ checked by ensureRealDirectory; the period is matched against YYYY-Www" },
   { key: "packages/commands/src/writes.ts:runBudget:writeFileSync#2", disposition: "contained", why: "restores the aerarium bytes read through readContainedRegularFile" },
