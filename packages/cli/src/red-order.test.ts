@@ -800,7 +800,7 @@ test("W-645-b5 behaviour 5: the served config and the served harness are the one
       assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${form}\n`), undefined, `a served spec under a directory named ${JSON.stringify(seg)} is judged: ${JSON.stringify(form)}`);
     assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, seg, "helper.ts")}:12:5\n`), undefined, `a helper module under a directory named ${JSON.stringify(seg)} is no served spec`);
   }
-  assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, "a b", "helper.ts")}:12:5 in w900.spec.ts:3:1\n`), undefined, "a helper's frame followed by another location on its line is no served spec");
+  assert.notEqual(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, "a b", "helper.ts")}:12:5 in w900.spec.ts:3:1\n`), undefined, "a helper's frame followed by another location on its line is no served spec");
   const spaced = `[chromium] › ${dir}/a b/w900.spec.ts:3:1 › W-900-b1 a served row`;
   const spacedRed = fx.red("at", spaced);
   assert.equal(spacedRed.status, 1, `a served red under a directory with a space is refused: stderr ${JSON.stringify(spacedRed.stderr)}`);
@@ -851,7 +851,34 @@ test("W-645-b5 behaviour 5: the served config and the served harness are the one
     assert.equal(fx.cited({ name: "red.out", mode: "at", line: row.at }).length, 1, `a cited served red with ${label} is refused at the spec signature`);
   }
   for (const seg of contents)
-    assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir)}/${seg}/helper.ts:12:5 in w900.spec.ts:3:1\n`), undefined, `a helper's frame followed by a location under a directory named ${JSON.stringify(seg)} is no served spec`);
+    assert.notEqual(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir)}/${seg}/helper.ts:12:5 in w900.spec.ts:3:1\n`), undefined, `a helper's frame followed by a location under a directory named ${JSON.stringify(seg)} is no served spec`);
+  // fix check r3 (ruled grammar, rules-eng-meet-1116): the coordinate is the rightmost `:<line>:<col>` before a terminator, a coordinate-shaped
+  // run inside the path is stem text, and the last segment must end in the spec suffix; a helper's frame followed by a spec location is one
+  // served spec (fail closed)
+  const embedded = ["ts", "js", "cts", "mts", "tsx", "jsx"].flatMap((ext) =>
+    ["directory", "stem"].flatMap((where) => {
+      const rel = where === "directory" ? `sub/a.${ext}:3:1.spec.ts/w900.spec.ts` : `sub/a.${ext}:3:1.spec.ts`;
+      const tail = where === "directory" ? ":3:1" : ":7:2";
+      const abs = `${join(REPO, "apps", "web")}/${dir}/${rel}`;
+      return [
+        { ext, where, form: "list", text: `  ✘  1 [chromium] › ${dir}/${rel}${tail} › a row`, at: `[chromium] › ${dir}/${rel}${tail} › W-900-b1 a served row` },
+        { ext, where, form: "absolute", text: `    at ${abs}${tail}`, at: `    at ${abs}${tail}` },
+        { ext, where, form: "parenthesised", text: `    at f (${abs}${tail})`, at: `    at f (${abs}${tail})` },
+      ];
+    }),
+  );
+  assert.equal(embedded.length, 36, "six extensions, two positions, three writer forms");
+  for (const row of embedded) {
+    const label = `an embedded .${row.ext}:3:1 as a ${row.where} in the ${row.form} form`;
+    assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${row.text}\n`), undefined, `a served spec with ${label} is judged: ${JSON.stringify(row.text)}`);
+    const refused = fx.red("at", row.at);
+    assert.equal(refused.status, 1, `a served red with ${label} is refused: stderr ${JSON.stringify(refused.stderr)}`);
+    assert.equal(refused.written, false, `a served red with ${label} writes no log`);
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line: row.at }).length, 1, `a cited served red with ${label} is refused at the spec signature`);
+  }
+  for (const text of ["tests-serve/sub/a.ts:3:1", "tests-serve/sub/a.spec.ts:3:1.ts:7:2", "tests-serve/harness.ts:12:5", "tests/unit/a.spec.ts:3:1"])
+    assert.equal(wrongTreeRed(`not ok 1 - a row\n    at ${join(REPO, "apps", "web")}/${text}\n`), undefined, `${JSON.stringify(text)} is no served location`);
+  assert.notEqual(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir)}/harness.ts:12:5 in w900.spec.ts:3:1\n`), undefined, "a helper's frame followed by a spec location reads as one served spec and is refused");
   // the behaviour: the served harness's two lines, at their source
   const files = ["apps/web/tests-serve/harness.ts", "apps/web/tests-serve/board.spec.ts"];
   const sources = files.map((rel) => ({ rel, src: readFileSync(join(REPO, rel), "utf8") }));
