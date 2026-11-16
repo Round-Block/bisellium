@@ -1,0 +1,24 @@
+# opus: W-666
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e2a8-1a7d-71a2-a229-30538a7b7015
+# outcome: failed
+# at: 2026-11-16T09:39:11.364Z
+# tree: tree:51f8690d6ce39e3ef275f32cfa422b554c5d25b4
+# brief: briefs/W-666.md blob:bb2b9fb5672939798e5b781bcea805d27c5b0324
+# ticket: {"opus":"W-666","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"b5cda44397e8f7ba5543d35d5486e8e6e3719b1c","brief":"bb2b9fb5672939798e5b781bcea805d27c5b0324","at":"2026-11-16T09:39:06.527Z"}
+
+## Findings
+1. blocking — packages/commands/src/writes.ts:970 [severity: S1] [design: keeps] Reached by ci/W-666-spec-2.log #1’s class: `brief:65` promises that an unreadable timeline refuses, but `answerReceipt` treats every `lstatSync` error as absence, skips nonce validation, and leaves `appendPatronTimeline` to return generic `answer failed`; a plausible inaccessible `timeline/` therefore gives the answer caller the wrong refusal. Replace the catch with ENOENT-only absence and return the contained-reader error for every other failure. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w666.test.ts
+2. advisory — studio/briefs/W-666.md:47 [severity: S2] Reached by ci/W-666-spec-2.log #2’s class: the no-key promise overstates coverage because `checkReceipts` ignores `readPetitioReceipts` problems, while the unchanged `safeList`/`safeFront` path does not necessarily make `petitio.parse` name an unlistable or symlinked source. Replace the line with “An officina naming no keys counts stamps from petitiones that the existing `petitio.parse` reader accepts for its one advisory and blocks nothing.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w666.test.ts
+
+## Earlier findings
+- ci/W-666-spec-2.log #1: closed — `readPetitioReceipts` and `spentNonces` now return source problems instead of skipping malformed fronts, receipt maps, timeline lines, or recorded receipts, with the b4 cases recorded in packages/cli/src/w666.test.ts.
+- ci/W-666-spec-2.log #2: closed — configured `checkReceipts` now converts every `readPetitioReceipts` source problem into a blocking diagnostic, and b5 covers a symlinked petitio and a non-directory petitiones path.
+
+## Verdict
+The exact round-2 defects are repaired, but the changed timeline reader still fails open at its promised source-validation boundary.
+
+VERDICT: FAIL
