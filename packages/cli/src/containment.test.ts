@@ -522,6 +522,7 @@ const PINNED_A: string[] = [
   "packages/commands/src/lifecycle.ts:patronDecisionProblem:decisions#1",
   "packages/commands/src/lifecycle.ts:runWaive:opera#1",
   "packages/commands/src/lifecycle.ts:runAmend:opera#1",
+  "packages/commands/src/run.ts:opusWorktree:.worktrees#1",
   "packages/commands/src/verdict.ts:readSequence:ci#1",
   "packages/commands/src/verdict.ts:runVerdict:opera#1",
   "packages/commands/src/verify.ts:runVerify:opera#1",
