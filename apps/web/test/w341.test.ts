@@ -184,7 +184,7 @@ function contrast(a: string, b: string): number {
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
 
-test("W-341-b6 behaviour 6: the served states suite drives every served cell at both widths with an axe scan, every rule on, over a palette whose contrast is computed from tokens.css", async () => {
+test("W-341-b6 behaviour 6: the served states suite drives every served cell at both widths with an axe scan, every rule on, over the resolved Dracula theme", async () => {
   const m = await matrix();
   const spec = read("tests-serve/states.spec.ts");
   const policy = await load("tests-serve/states-policy.ts");
@@ -200,10 +200,20 @@ test("W-341-b6 behaviour 6: the served states suite drives every served cell at 
   assert.deepEqual(drivers, m.servedCells().map((c) => `${c.screen}:${c.state}`).sort(), "exactly one driver per served cell");
   assert.equal(policy["AXE_DISABLED_RULES"], undefined, "no axe rule is disabled, colour contrast included");
   assert.deepEqual(Object.keys((policy["PHONE_UNREACHABLE"] ?? {}) as object), [], "every served state is reachable at phone width");
-  const root = /:root\s*\{([^}]*)\}/.exec(read("src/tokens.css"))?.[1] ?? "";
+  const roots = [read("src/themes/dracula.css"), read("src/tokens.css")]
+    .map((source) => /:root\s*\{([^}]*)\}/.exec(source)?.[1] ?? "")
+    .join("\n");
   const token = (name: string): string => {
-    const value = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6});`).exec(root)?.[1];
-    assert.ok(value, `tokens.css declares --${name} as a six-digit hex`);
+    const resolveToken = (current: string, seen = new Set<string>()): string | undefined => {
+      assert.equal(seen.has(current), false, `--${current} does not form an alias cycle`);
+      const value = new RegExp(`--${current}:\\s*([^;]+);`).exec(roots)?.[1]?.trim();
+      const alias = /^var\(--([a-z0-9-]+)\)$/i.exec(value ?? "")?.[1];
+      if (alias === undefined) return value;
+      seen.add(current);
+      return resolveToken(alias, seen);
+    };
+    const value = resolveToken(name);
+    assert.match(value ?? "", /^#[0-9a-f]{6}$/i, `the Dracula theme resolves --${name} to six-digit hex`);
     return value!;
   };
   for (const bg of ["surface", "wash"]) {

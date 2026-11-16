@@ -34,31 +34,31 @@
   font-display: block;
 }
 
-/* apps/web/src/tokens.css — W-024. DIRECTION.md §3: the thirteen colour values
- * and seven space values are mandatory and exact. Type scale is declared
- * directly on elements (DIRECTION.md leaves that choice to the builder). */
+/* apps/web/src/tokens.css — W-024/W-675. Legacy colour names remain as
+ * compatibility aliases while consumers move to meaning-based theme roles.
+ * Type and spacing remain shared across themes. */
 :root {
-  --ink: #f8f8f2;
-  --ink-2: #c6c9d8;
-  --ink-3: #9ea4c4;
-  --rule: #44475a;
-  --wash: #343746;
-  --verdigris: #3fb9a3;
-  --amber: #ffb86c;
-  --ok: #50fa7b;
-  --bad: #ff5555;
+  --ink: var(--color-text-primary);
+  --ink-2: var(--color-text-secondary);
+  --ink-3: var(--color-text-muted);
+  --rule: var(--color-surface-selected);
+  --wash: var(--color-surface-panel);
+  --verdigris: var(--color-action-primary);
+  --amber: var(--color-state-warning-indicator);
+  --ok: var(--color-state-success-indicator);
+  --bad: var(--color-state-error-indicator);
   /* Patron 2026-10-28: one severity vocabulary for Officina Health and W-427 Inbox. */
-  --severity-blocking: var(--bad);
-  --severity-blocking-text: color-mix(in srgb, var(--severity-blocking) 75%, var(--ink));
-  --severity-high: var(--amber);
-  --severity-low: #6272a4;
-  --accent-cyan: #8be9fd;
-  --accent-pink: #ff79c6;
-  --accent-purple: #bd93f9;
-  --accent-yellow: #f1fa8c;
-  --surface: #282a36;
-  --transparent: transparent;
-  --shadow-drawer: rgba(0, 0, 0, 0.45);
+  --severity-blocking: var(--color-severity-blocking-indicator);
+  --severity-blocking-text: var(--color-severity-blocking-text);
+  --severity-high: var(--color-severity-high-indicator);
+  --severity-low: var(--color-severity-low-indicator);
+  --accent-cyan: var(--color-link);
+  --accent-pink: var(--color-category);
+  --accent-purple: var(--color-heading);
+  --accent-yellow: var(--color-project);
+  --surface: var(--color-surface-page);
+  --transparent: var(--color-surface-transparent);
+  --shadow-drawer: var(--color-shadow-overlay);
 
   --font-display: "Bricolage Grotesque", sans-serif;
   --font-body: "Instrument Sans", sans-serif;

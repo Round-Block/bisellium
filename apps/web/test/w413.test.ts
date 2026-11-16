@@ -11,10 +11,13 @@ import { BoardView } from "../src/screens/BoardView.js";
 
 const NOW = new Date("2026-11-02T12:00:00Z").getTime();
 const css = readFileSync("apps/web/src/components/w025.css", "utf8");
-const tokens = readFileSync("apps/web/src/tokens.css", "utf8");
+const colourSources = [
+  readFileSync("apps/web/src/themes/dracula.css", "utf8"),
+  readFileSync("apps/web/src/tokens.css", "utf8"),
+].join("\n");
 const tokenExpression = (name: string): string => {
-  const value = tokens.match(new RegExp(`--${name}\\s*:\\s*([^;]+)`))?.[1]?.trim();
-  assert.ok(value, `tokens.css declares --${name}`);
+  const value = colourSources.match(new RegExp(`--${name}\\s*:\\s*([^;]+)`))?.[1]?.trim();
+  assert.ok(value, `the Dracula theme or tokens.css declares --${name}`);
   return value;
 };
 const tokenValue = (name: string): string => {
@@ -96,7 +99,7 @@ test("W-413-b1 behaviour 1: every column has separate total and blocked rows", (
   const activeBlockedRule = /\.board__column-blocked--active\s*{([^}]*)}/.exec(css)?.[1] ?? "";
   const activeBlockedColour = /color:\s*([^;]+);/.exec(activeBlockedRule)?.[1]?.trim();
   assert.equal(activeBlockedColour, "var(--severity-blocking-text)", "a positive blocked header count uses the scheme's text-safe blocking treatment");
-  assert.equal(tokenExpression("severity-blocking-text"), "color-mix(in srgb, var(--severity-blocking) 75%, var(--ink))", "the text-safe blocking token derives from the shared severity red and theme ink");
+  assert.equal(tokenValue("severity-blocking-text"), "color-mix(in srgb, var(--color-severity-blocking-indicator) 75%, var(--color-text-primary))", "the text-safe blocking alias resolves to the theme's derived severity role");
   const blocking = tokenValue("severity-blocking");
   const darkBlockingText = mixedChannels(blocking, tokenValue("ink"), 0.75);
   const lightBlockingText = mixedChannels("#c14738", "#16211e", 0.75);

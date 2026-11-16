@@ -82,7 +82,7 @@ test("W-408-b4 behaviour 4: Health is two detailed disclosures with one verdigri
   assert.doesNotMatch(screen, /healthStamp|officina__as-of|Last tick/, "generated and as-of stamps are absent");
   assert.match(css, /\.officina__health-row > summary\s*{[^}]*font-size:\s*13px[^}]*font-weight:\s*400/s, "health summaries use the page row type");
   assert.match(css, /\.officina__health-row > summary::before\s*{[^}]*content:\s*"\\25B8"[^}]*}[^]*\.officina__health-row\[open\] > summary::before\s*{[^}]*content:\s*"\\25BE"/s, "health summaries show changing disclosure indicators");
-  assert.match(tokens, /--severity-blocking:\s*var\(--bad\)[^]*--severity-high:\s*var\(--amber\)[^]*--severity-low:\s*#6272a4/s, "Health and W-427 share one severity token set");
+  assert.match(tokens, /--severity-blocking:\s*var\(--color-severity-blocking-indicator\)[^]*--severity-high:\s*var\(--color-severity-high-indicator\)[^]*--severity-low:\s*var\(--color-severity-low-indicator\)/s, "Health and W-427 share one semantic severity role set");
   assert.match(screen, /SeverityCue level="blocking"[^]*SeverityCue level="high"[^]*level=\{loadedHealth\.due\.length > 0 \? "low" : "normal"\}/, "block, advisory/high, due/low and normal all map explicitly");
   assert.match(screen, /Severity is available only in aggregate\.[^]*officina__rule-family[^]*<span>\{row\.label\}<\/span>/, "unclassified rule families carry no invented severity cue");
   assert.match(css, /severity-cue--blocking[^]*severity-blocking[^]*severity-cue--high[^]*severity-high[^]*severity-cue--normal[^]*border-radius:\s*50%[^]*severity-cue--low[^]*severity-low[^]*clip-path/s, "every severity colour has a distinct shape cue");

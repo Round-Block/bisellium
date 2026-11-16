@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(resolve(HERE, "..", "src", "tokens.css"), "utf8");
+const themeCss = readFileSync(resolve(HERE, "..", "src", "themes", "dracula.css"), "utf8");
 const direction = readFileSync(resolve(HERE, "..", "..", "..", "docs", "design", "DIRECTION.md"), "utf8");
 const componentCss = readFileSync(resolve(HERE, "..", "src", "components", "w025.css"), "utf8");
 const officinaSource = readFileSync(resolve(HERE, "..", "src", "screens", "Officina.tsx"), "utf8");
@@ -23,12 +24,26 @@ const check = (name: string, ok: boolean, detail = "") => {
   if (!ok) failed++;
 };
 
-const rootMatch = /:root\s*{([^}]*)}/.exec(css);
-const root = rootMatch?.[1] ?? "";
+const tokenRoot = /:root\s*{([^}]*)}/.exec(css)?.[1] ?? "";
+const themeRoot = /:root\s*{([^}]*)}/.exec(themeCss)?.[1] ?? "";
+const root = `${themeRoot}\n${tokenRoot}`;
+
+function rawToken(name: string): string | undefined {
+  return new RegExp(`--${name}\\s*:\\s*([^;]+)\\s*;`, "i").exec(root)?.[1]?.trim();
+}
+
+function resolvedToken(name: string, seen = new Set<string>()): string | undefined {
+  assert.equal(seen.has(name), false, `--${name} does not form an alias cycle`);
+  const value = rawToken(name);
+  if (value === undefined) return undefined;
+  const alias = /^var\(--([a-z0-9-]+)\)$/i.exec(value)?.[1];
+  if (alias === undefined) return value;
+  seen.add(name);
+  return resolvedToken(alias, seen);
+}
 
 function hasVar(name: string, value: string): boolean {
-  const re = new RegExp(`--${name}\\s*:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`, "i");
-  return re.test(root);
+  return resolvedToken(name)?.toLowerCase() === value.toLowerCase();
 }
 
 const d101Colors: [string, string][] = [
@@ -71,9 +86,9 @@ for (const [name, value] of spaces) {
 }
 
 function token(name: string): string {
-  const value = new RegExp(`--${name}\\s*:\\s*(#[0-9a-f]{6})\\s*;`, "i").exec(root)?.[1];
-  assert.ok(value, `tokens.css declares a six-digit --${name}`);
-  return value;
+  const value = resolvedToken(name);
+  assert.match(value ?? "", /^#[0-9a-f]{6}$/i, `the Dracula theme resolves --${name} to six-digit hex`);
+  return value!;
 }
 
 function luminance(hex: string): number {
@@ -90,8 +105,8 @@ function contrast(foreground: string, background: string): number {
 test("W-361-b1 behaviour 1: the fixed dark palette meets its computed text and component contrast floors", () => {
   const actual = Object.fromEntries(d101Colors.map(([name]) => [name, token(name).toUpperCase()]));
   assert.deepEqual(actual, Object.fromEntries(d101Colors), "tokens.css carries D-100 A as amended by D-101 A exactly");
-  assert.match(root, /--surface\s*:\s*#282a36\s*;/i, "surface is Dracula background");
-  assert.match(root, /--shadow-drawer\s*:\s*rgba\(0,\s*0,\s*0,\s*0\.45\)\s*;/i, "the drawer uses the darker alpha shadow");
+  assert.equal(token("surface").toLowerCase(), "#282a36", "surface resolves to Dracula background");
+  assert.match(themeRoot, /--dracula-shadow\s*:\s*rgb\(0 0 0 \/ 45%\)\s*;/i, "the theme owns the darker alpha shadow");
 
   const backgrounds = ["surface", "wash"];
   const textTokens = ["ink", "ink-2", "ink-3", "verdigris", "amber", "ok"];
@@ -290,8 +305,10 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
   assert.match(cssRule(".seats__row select option"), /background\s*:\s*var\(--surface\)/, "seat options declare the dark surface");
   assert.match(cssRule(".board__project-select option"), /background\s*:\s*var\(--surface\)/, "Board project options declare the dark surface");
 
-  assert.match(root, /--severity-blocking\s*:\s*var\(--bad\)[^]*--severity-high\s*:\s*var\(--amber\)[^]*--severity-low\s*:\s*#6272a4/s, "the shared W-408/W-427 severity tokens are declared once");
-  const severity = { blocking: token("bad"), high: token("amber"), low: token("severity-low") };
+  assert.equal(resolvedToken("severity-blocking"), token("bad"), "blocking resolves to the shared error indicator");
+  assert.equal(resolvedToken("severity-high"), token("amber"), "high resolves to the shared warning indicator");
+  assert.equal(resolvedToken("severity-low")?.toLowerCase(), "#6272a4", "low resolves to recorded Dracula current line");
+  const severity = { blocking: token("severity-blocking"), high: token("severity-high"), low: token("severity-low") };
   for (const background of ["surface", "wash"] as const) {
     for (const level of ["blocking", "high"] as const) {
       const ratio = contrast(severity[level], token(background));
@@ -380,7 +397,7 @@ function sourceColourLiterals(): string[] {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const file = resolve(dir, entry.name);
       if (entry.isDirectory()) walk(file);
-      else if (entry.name.endsWith(".css") && entry.name !== "tokens.css") {
+      else if (entry.name.endsWith(".css") && !file.includes(`${resolve(HERE, "..", "src", "themes")}/`)) {
         for (const value of literals(readFileSync(file, "utf8"), false)) out.push(`${file.slice(src.length + 1)}: ${value}`);
       } else if (entry.name.endsWith(".tsx")) {
         for (const value of inlineStyleLiterals(readFileSync(file, "utf8"))) out.push(`${file.slice(src.length + 1)}: ${value}`);
@@ -391,14 +408,14 @@ function sourceColourLiterals(): string[] {
   return out.sort();
 }
 
-test("W-339-b1 behaviour 1: web source outside tokens.css contains no hard-coded CSS colour or direct TSX inline colour", () => {
+test("W-339-b1 behaviour 1: web source outside themes contains no hard-coded CSS colour or direct TSX inline colour", () => {
   const forms = literals("#abc #abcd #abcdef #abcdef12 rgb(1 2 3) rgba(1,2,3,.4) hsl(1 2% 3%) hsla(1,2%,3%,.4) hwb(1 2% 3%) lab(1 2 3) lch(1 2 3) oklab(1 2 3) oklch(1 2 3) color(display-p3 1 0 0) color-mix(in srgb, red, blue) device-cmyk(0 0 0 1) light-dark(white, black) rebeccapurple transparent", false);
   assert.equal(forms.length, 23, "hex, every CSS colour function family, named colours and transparent are recognised");
   assert.deepEqual(literals("var(--red) currentColor white-space: nowrap; /* red #fff rgb(0 0 0) */", false), [], "CSS block comments, tokens, currentColor and property names are not literals");
   assert.deepEqual(literals('.x{background:url("https://cdn/x");color:red}', false), ["red"], "a quoted https URL cannot hide a later colour");
   assert.deepEqual(literals(".x{background:url(https://cdn/x);color:red}", false), ["red"], "an unquoted https URL cannot hide a later colour");
   assert.deepEqual(inlineStyleLiterals('<div style={{ note: "https://cdn/x", color: "red", // blue\n backgroundColor: "white" }} />'), ["red", "white"], "direct TSX inline styles strip JavaScript line comments quote-aware");
-  assert.deepEqual(sourceColourLiterals(), [], "move every reported literal to tokens.css");
+  assert.deepEqual(sourceColourLiterals(), [], "move every reported literal to themes/*.css");
 });
 
 process.exitCode = failed ? 1 : 0;
