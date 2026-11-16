@@ -306,7 +306,8 @@ test("W-543-b2 behaviour 2: launch refuses a malformed allow list; the shipped a
   for (const e of unitEntries) assert.doesNotMatch(e, agentWrites, "no PATH entry of the service is in a folder an agent writes");
   assert.deepEqual(unitLines.filter((l) => /^(?:Exec[A-Za-z]*|Environment[A-Za-z]*|PassEnvironment|UnsetEnvironment)=/.test(l)).map((l) => l.split("=")[0]), ["Environment", "ExecStart"], "the service runs one command and sets no other environment");
   assert.doesNotMatch(unit, /agents\/bisellium|\.bisellium-evidence/, "the service names no agent-writable folder");
-  assert.ok(readFileSync(join(REPO, ".claude", "refresh", "bisellium-launch.timer"), "utf8").split("\n").includes("OnCalendar=*-*-* 23,00,01,02,03,04,05,06:00,30:00 Asia/Singapore"), "the timer has a calendar");
+  assert.ok(readFileSync(join(REPO, ".claude", "refresh", "bisellium-launch.timer"), "utf8").split("\n").includes("OnCalendar=*-*-* *:00,30:00 Asia/Singapore"), "the timer fires every 30 minutes all day");
+  assert.deepEqual(JSON.parse(readFileSync(join(REPO, ".claude", "refresh", "launch.json"), "utf8")).cap, { starts: 4, hours: 6 }, "the shipped cap is 4 starts per 6 hours");
 });
 
 test("W-543-b3 behaviour 3: launch refuses while anything runs in the agent clone: a live session (its own lock, or a claude there) or background work, its own parents not counted", async () => {
