@@ -267,3 +267,45 @@ test("W-666-b3 the console's answer route forwards the receipt", async () => {
     await server.close();
   }
 });
+
+// W-666 r3: every recorded-nonce source `answer` reads must read, or the answer is refused before anything is written; a
+// source skipped as "spends nothing" would let its receipt be replayed.
+/** An officina naming one Patron key, with `source` written into it, answered A-1 with a fresh valid receipt. */
+function answerOver(tag: string, source: (dir: string) => void): { dir: string; r: { code: number; err: string } } {
+  const patron = ed();
+  const dir = officina(tag, [patron.pub]);
+  source(dir);
+  const r = answer(["--petitio", "A-1", "Ship both.", "--studio", dir, "--now", NOW, "--receipt", receiptFile(dir, receiptOf(patron, payload()))]);
+  return { dir, r };
+}
+const A2 = (dir: string): string => join(dir, "petitiones", "A-2.md");
+const A2_RAW = (): string => readFileSync(join(SAMPLE, "petitiones", "A-2.md"), "utf8");
+
+test("W-666-b4 answer refuses when a recorded-nonce source does not read", () => {
+  const timelineOf = (text: string) => (d: string): void => {
+    mkdirSync(join(d, "timeline"), { recursive: true });
+    writeFileSync(join(d, "timeline", "patron.jsonl"), text);
+  };
+  const { dir, r } = answerOver("b4", timelineOf('{"role":"patron"}\n{not json\n'));
+  assert.equal(r.code === 2 && r.err.includes("answer refused: timeline/patron.jsonl line 2 does not parse"), true, "a malformed timeline line refuses the answer");
+  assert.equal(petitio(dir), A1_BODY_RAW(), "a malformed timeline line leaves the petitio untouched");
+  const shape = answerOver("b4-shape", timelineOf('{"role":"patron","receipt":{"payload":{}}}\n'));
+  assert.equal(shape.r.code === 2 && shape.r.err.includes("timeline/patron.jsonl line 1: patron receipt shape"), true, "a timeline receipt of the wrong shape refuses the answer");
+  const front = answerOver("b4-front", (d) => writeFileSync(A2(d), "---\nid: A-2\nstate: [unclosed\n---\nA question.\n"));
+  assert.equal(front.r.code === 2 && front.r.err.includes("answer refused: petitiones/A-2.md front matter does not parse as a mapping"), true, "a malformed petitio front refuses the answer");
+  assert.equal(petitio(front.dir), A1_BODY_RAW(), "a malformed petitio front leaves the petitio untouched");
+  const list = answerOver("b4-list", (d) => writeFileSync(A2(d), A2_RAW().replace("\n---\n", "\nreceipts: [one, two]\n---\n")));
+  assert.equal(list.r.code === 2 && list.r.err.includes("answer refused: petitiones/A-2.md receipts must be a mapping"), true, "a non-mapping receipts refuses the answer");
+  const recorded = answerOver("b4-recorded", (d) => writeFileSync(A2(d), A2_RAW().replace("\n---\n", '\nreceipts: { "2026-11-01T00:00:00.000Z": { key: x } }\n---\n')));
+  assert.equal(recorded.r.code === 2 && recorded.r.err.includes("petitiones/A-2.md receipt 2026-11-01T00:00:00.000Z: patron receipt shape"), true, "a recorded receipt of the wrong shape refuses the answer");
+});
+
+// D-086 A (spec review round 4, finding 1): only an absent timeline is no timeline; one that cannot be read (here `timeline`
+// is a file, so lstat of timeline/patron.jsonl fails with ENOTDIR) refuses the answer with the reader's own reason, never
+// the generic `answer failed`.
+test("W-666-b4 an inaccessible timeline refuses with the reader's reason", () => {
+  const { dir, r } = answerOver("b4-inaccessible", (d) => writeFileSync(join(d, "timeline"), "not a directory\n"));
+  assert.equal(r.code === 2 && r.err.includes("answer refused: timeline/patron.jsonl:"), true, "an inaccessible timeline gives the reader's refusal");
+  assert.equal(r.err.includes("answer failed"), false, "an inaccessible timeline is not the generic answer failed");
+  assert.equal(petitio(dir), A1_BODY_RAW(), "an inaccessible timeline leaves the petitio untouched");
+});
