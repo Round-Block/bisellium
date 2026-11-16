@@ -166,7 +166,8 @@ queues:
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
       - { opus: W-488, says: "comment on served UI captures, server half only (split: ui2-lane-meet-1115); UI2 now, no W-503 files" }
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2)" }
-      - { opus: W-467, says: "Officina on Home's palette; UI2 after W-488, Officina files (D-192)" }
+      - { opus: W-674, says: "Dracula spec scan for what the console lacks, then steps across every screen; its draft sets heading and link colours before W-467 signs (Patron 11-16)" }
+      - { opus: W-467, says: "Officina on Home's palette; UI2 after W-488, Officina files (D-192) ; signs after W-674's draft sets heading and link roles" }
       - { opus: W-658, says: "capture review screen, W-488's web half (split); UI2 after W-503 (shares App.tsx)" }
       - { opus: W-657, says: "screens register without editing shell files (App.tsx, route.ts, nav.ts); UI1 after W-503 (ui2-lane-meet-1115, 5/5)" }
       - { opus: W-504, says: "Home: Completion and Spend row (D-175 piece 4); needs W-439" }
