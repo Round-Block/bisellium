@@ -826,6 +826,32 @@ test("W-645-b5 behaviour 5: the served config and the served harness are the one
     assert.equal(fx.red("at", line).status, 1, `a served red for a spec named ${JSON.stringify(file)} is refused`);
     assert.equal(fx.cited({ name: "red.out", mode: "at", line }).length, 1, `a cited served red for a spec named ${JSON.stringify(file)} is refused at the spec signature`);
   }
+  // fix check r2 (the class): the cross product of segment contents, positions (a directory, the spec file's stem) and writer forms
+  // (the list reporter's relative path, an absolute frame, a parenthesised frame), each through the judge, `red` and the spec
+  // signature; a helper's frame followed by a location is no spec under any directory content
+  const contents = ["plain", "a b", "a:b", "a:3:1", "a:3:1 b", "a:3:1\tb", "a\nb", "a\rb", "a\r\nb", 'a"b\'c', "é ü", "a›b", "a)b"];
+  const table = contents.flatMap((seg) =>
+    ["directory", "stem"].flatMap((where) => {
+      const rel = where === "directory" ? `${seg}/w900.spec.ts` : `sub/${seg}.spec.ts`;
+      const abs = `${join(REPO, "apps", "web")}/${dir}/${rel}`;
+      return [
+        { seg, where, form: "list", text: `  ✘  1 [chromium] › ${dir}/${rel}:3:1 › a row`, at: `[chromium] › ${dir}/${rel}:3:1 › W-900-b1 a served row` },
+        { seg, where, form: "absolute", text: `    at ${abs}:12:5`, at: `    at ${abs}:12:5` },
+        { seg, where, form: "parenthesised", text: `    at f (${abs}:12:5)`, at: `    at f (${abs}:12:5)` },
+      ];
+    }),
+  );
+  assert.equal(table.length, 78, "thirteen segment contents, two positions, three writer forms");
+  for (const row of table) {
+    const label = `${JSON.stringify(row.seg)} as a ${row.where} in the ${row.form} form`;
+    assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${row.text}\n`), undefined, `a served spec with ${label} is judged: ${JSON.stringify(row.text)}`);
+    const tabled = fx.red("at", row.at);
+    assert.equal(tabled.status, 1, `a served red with ${label} is refused: stderr ${JSON.stringify(tabled.stderr)}`);
+    assert.equal(tabled.written, false, `a served red with ${label} writes no log`);
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line: row.at }).length, 1, `a cited served red with ${label} is refused at the spec signature`);
+  }
+  for (const seg of contents)
+    assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir)}/${seg}/helper.ts:12:5 in w900.spec.ts:3:1\n`), undefined, `a helper's frame followed by a location under a directory named ${JSON.stringify(seg)} is no served spec`);
   // the behaviour: the served harness's two lines, at their source
   const files = ["apps/web/tests-serve/harness.ts", "apps/web/tests-serve/board.spec.ts"];
   const sources = files.map((rel) => ({ rel, src: readFileSync(join(REPO, rel), "utf8") }));

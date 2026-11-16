@@ -31,13 +31,12 @@ export function servedLine(port: number, attempt: string): string {
  *  indented); the attempt is group 1. */
 const SERVED_START = /^[ \t]*bisellium serve: attempt (\d+\.\d+) starting[ \t]*\r?$/gm;
 const SERVED_READY = /^[ \t]*bisellium serve: attempt (\d+\.\d+) listening on port \d+, write-auth token read[ \t]*\r?$/gm;
-/** A served spec's location, as Playwright's list reporter (relative) and a stack frame (absolute) print it: any file under
- *  `tests-serve/`, at any depth, that Playwright's default testMatch (`**\/*.@(spec|test).?(c|m)[jt]s?(x)`) discovers, read
- *  from the right (the trailing `:<line>:<col>`). A path segment is any run of characters but a separator (a space, a colon,
- *  a parenthesis, a non-ASCII letter, a line break), and may hold a `:<line>:<col>` of its own only when a path character
- *  follows it directly, so a helper's frame (`helper.ts:12:5 in ...`) is not read into a later spec location on its line. */
-const SERVED_SEG = String.raw`(?:(?!:\d+:\d+)[^/]|:\d+:\d+(?!\d)(?=[^\s)\]:,;'"]))+`;
-const SERVED_SPEC = new RegExp(String.raw`(?:^|[\s/])(tests-serve/(?:${SERVED_SEG}/)*${SERVED_SEG}\.(?:spec|test)\.[cm]?[jt]sx?:\d+:\d+)`, "m");
+/** A served spec's location, as Playwright's list reporter (relative) and a stack frame (absolute) print it: `tests-serve/`,
+ *  any number of `/`-terminated segments of any characters but `/` (a space, a colon, a coordinate-shaped `:<line>:<col>`, a parenthesis,
+ *  a non-ASCII letter, a line break), and a final `<name>.<spec|test>.<[cm][jt]s[x]>:<line>:<col>` anchored at the location's end:
+ *  end of line, `)` (a parenthesised frame) or ` › ` (the list reporter's next column). The name holds no file location of its
+ *  own (`.ts:<line>:<col>`), so a helper's frame (`helper.ts:12:5 in w900.spec.ts:3:1`) is not read into a later spec location. */
+const SERVED_SPEC = /(?:^|[\s/])(tests-serve\/(?:[^/]+\/)*(?:(?!\.[cm]?[jt]sx?:\d+:\d+)[^/])+?\.(?:spec|test)\.[cm]?[jt]sx?:\d+:\d+)(?=[ \t]*\r?$|\)| › )/m;
 /** The served harness's startup failure, as `startServed` and `board.spec.ts` word it: `serve exited (<code>) before printing port/token`. */
 const SERVE_EXITED = /(?<![\p{L}\p{M}\p{N}_])serve exited \([^)\r\n]*\) before printing port\/token(?![\p{L}\p{M}\p{N}_])/u;
 
