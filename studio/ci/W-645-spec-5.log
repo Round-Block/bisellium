@@ -1,0 +1,39 @@
+# opus: W-645
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T10:34:43.808Z
+# tree: tree:c8770b6c95d520f6d82e5e17486140684522529c
+# brief: briefs/W-645.md blob:5a268ce843d73a8924bed65927da85dcbd2221df
+# ticket: {"opus":"W-645","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-645/studio","head":"ca35177107c850874ff8841b3bf9b57c90ee74f8","brief":"5a268ce843d73a8924bed65927da85dcbd2221df","at":"2026-11-16T10:34:37.214Z"}
+
+# W-645 spec signature, studio/briefs/W-645.md revision 5 (engineering architect), spec round 5
+
+Brief: `studio/briefs/W-645.md` (revision 5, spec round 5, amendment commit ca351771 on opus/W-645; identical to `/home/edckt/.bisellium-evidence/W-645-spec/r4/brief.md`), prototype built at master e55eff28, prototype `/home/edckt/.bisellium-evidence/W-645-spec/r4/prototype.mbox` (red 95a3b399, b4's implementation 089ab62f, green ad45b295).
+
+Verdict: passed — studio/briefs/W-645.md revision 5, spec round 5, signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C); no round 6 and no round ruling (w645-round-meet-1116 Q1).
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-645-spec/r4/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-645-spec/r4/gate.log
+
+## Findings
+
+1. advisory — revision 5 is b5-call.md's option (c), upheld by w645-round-meet-1116 Q2: row b5 (whose declared pin duplicated b3's) is folded into the harness row as its guards, old behaviour 6 is behaviour 5 with old b6's declared pin, and there is no behaviour 6; rows b1 .. b4, their reds (studio/ci/reds/W-645/01 .. 04) and commits 57e40b21 .. 8e94fb15 are untouched, and the amendment commit ca351771 touches only studio/briefs/W-645.md and the b5/b6 block of packages/cli/src/red-order.test.ts (every assertion message word for word) — check: /home/edckt/.bisellium-evidence/W-645-spec/r4/make-row.py, /home/edckt/.bisellium-evidence/W-645-spec/r4/make-brief.py
+2. advisory — the merged row fails at its declared pin "the served harness prints the judge's port and token line" at b4's implementation (r4-b4, which is 8e94fb15's tree with the amended row), its guards passing first; on master it fails at its first guard "a served red under the served config's testDir is refused", since b3's pattern is not on master, so b5-call E5's "on b4's implementation and on master: its guards pass" and E4's "all five fail on master at their pins" were written true to the runs instead (brief:118, brief:123); the b4-tree red is the one the build records — check: /home/edckt/.bisellium-evidence/W-645-spec/r4/red-b4-b5.out, /home/edckt/.bisellium-evidence/W-645-spec/r4/red-master-b5.out
+3. advisory — rows b1 .. b4 fail on master at their pins at red commit 95a3b399 and all five pass at green ad45b295, re-run under r4/, never copied from r3/ — check: /home/edckt/.bisellium-evidence/W-645-spec/r4/rows.log
+4. advisory — row b5 catches ten drifts, revision 4's eight plus round 4 #1's two (board.spec.ts's success guard or exit guard reading the outer token), and the ledger's twelve kills (one non-test source file, one hunk each) fail their pinned rows; brief:65's is wholelog, since its token-guard pins read test-directory text a kill may not mutate, so board.spec.ts's two guards are the row's mutations; all re-run at ad45b295 — check: /home/edckt/.bisellium-evidence/W-645-spec/r4/mutations.log, /home/edckt/.bisellium-evidence/W-645-spec/r4/kills.log
+5. advisory — the prototype moved from master 2dff3030 to e55eff28: behaviours 1 .. 4 are opus/W-645's own source at 8e94fb15, and harness.ts and board.spec.ts are revision 4's green unchanged (master did not touch either); the touched files whole, typecheck, lint, format, both officina checks and the served w300 and board specs pass, and on the real served output every one of 26 starts has its line while dropping one is refused naming that attempt — check: /home/edckt/.bisellium-evidence/W-645-spec/r4/series.log, /home/edckt/.bisellium-evidence/W-645-spec/r4/full.log, /home/edckt/.bisellium-evidence/W-645-spec/r4/served-judge.out
+6. advisory — edits beyond E1-E7's text, each forced by the regeneration: evidence paths r3/ -> r4/, the Prototype and read-enumeration lines, brief:40's "the rows read" -> "the row reads", brief:76's "Row b5 reads", brief:80's "fails `W-645-b5`", the read enumeration's brief set (W-610 merged; the W-503 branch brief and the main checkout's eight uncommitted briefs), whose result is unchanged (W-503 r11 and W-227 only) — check: /home/edckt/.bisellium-evidence/W-645-spec/r4/make-brief.py, /home/edckt/.bisellium-evidence/W-645-spec/r4/readers.out
+7. advisory — the build review's round 1 checks E1-E7 and round 4's #1 as named items (the split gate does not carry required fixes, collated Q1); the worktree's studio/opera/W-645.md edit (building, a spec probatio, a ready ticket at 08:21Z) is CLI bookkeeping left uncommitted and unedited, for the orchestrator — check: /home/edckt/.bisellium-evidence/W-645-spec/r4/preexisting-worktree.diff
+8. advisory — the first signing at f7890fec was refused (exit 2) before any write: tests×one-sided-bound-assertion is a repeated class of this opus (round 4's #1, S1, and other opera's findings) and the brief named no census for it; the amendment commit, amended before any other write to ca351771, adds that census (each W-645 row's two bounds, the token guards' mutations) and regenerates mechanism×red-certifies-wrong-tree's under r4/ (b6 folded into b5, round 4's advisory #4 a limit); the second, at ca351771, was refused (exit 2) for want of a cited pre-sign gate log, so the gate ran on the series at tree 71918b8e (every row exit 0) and is cited above — check: /home/edckt/.bisellium-evidence/W-645-spec/r4/class-census-one-sided.out, /home/edckt/.bisellium-evidence/W-645-spec/r4/gate.log, /home/edckt/.bisellium-evidence/W-645-spec/r4/class-census-wrong-tree.out, /home/edckt/.bisellium-evidence/W-645-spec/r4/census-probe.out
+
+## Earlier findings
+
+- ci/W-645-spec-4.log #1: closed — the attempt-local token guard, retargeted from W-645-b6 to W-645-b5: brief:116 holds round 4's text word for word ("the row extracts that local token identifier and asserts that tokenMatch assigns it and both the success and exit guards read it rather than the outer token; changing either guard to the outer token fails the row"); pinned by W-645-b5 "the scrape assigns the attempt's own token", "the success guard reads the attempt's own token" and "the exit guard reads the attempt's own token" (brief:65); the plausible typo `attemptPort !== undefined && token !== undefined` fails the row, as does its exit-guard twin (/home/edckt/.bisellium-evidence/W-645-spec/r4/mutation-board-success-token.out, /home/edckt/.bisellium-evidence/W-645-spec/r4/mutation-board-exit-token.out, /home/edckt/.bisellium-evidence/W-645-spec/r4/green-b5.out:6)
+- ci/W-645-spec-4.log #3: closed — retargeted from W-645-b6 to W-645-b5: brief:65 is the serve child's stdout row round 4 asked for, after brief:64, its rejecter the startup Promise (error, premature exit, timeout; no servedLine for that attempt) whose guards read the attempt's own token, pinned by W-645-b5's three token-guard assertions and by W-645-b3 "a served red whose second start never read its port and token is refused" (the consequence: an attempt with no line of its own is refused), killed by the wholelog kill; the error and timeout rejections are existing, unchanged code (a stated limit in the ledger) (/home/edckt/.bisellium-evidence/W-645-spec/r4/promise-ledger.md, /home/edckt/.bisellium-evidence/W-645-spec/r4/kills/wholelog.out)
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), signed brief `studio/briefs/W-645.md` (revision 5, spec round 5), prototype at master e55eff28 (r4/prototype.mbox).
