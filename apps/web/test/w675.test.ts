@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
@@ -118,4 +119,13 @@ test("W-675-b2 behaviour 2: compatibility aliases retain values while colour aut
   walk(src);
   assert.deepEqual(violations, [], "no authored colour literal exists outside themes/*.css");
   assert.deepEqual(paletteLeaks, [], "no Dracula palette variable is consumed outside its theme");
+});
+
+test("W-675-b3 behaviour 3: every shipped screen resolves aliases through Dracula at the capture matrix", { timeout: 300_000 }, () => {
+  const result = spawnSync(
+    "npx",
+    ["playwright", "test", "--config=apps/web/playwright.serve.config.ts", "--grep", "W-675-b3\\s"],
+    { cwd: process.cwd(), encoding: "utf8", timeout: 280_000 },
+  );
+  assert.equal(result.status, 0, `served pixel-identity matrix holds:\n${result.stdout}${result.stderr}`);
 });
