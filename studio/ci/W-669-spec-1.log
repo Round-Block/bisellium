@@ -1,0 +1,29 @@
+# opus: W-669
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T04:21:51.976Z
+# tree: tree:d6b5665f077e63ee5fafea81e7d133140c34efd0
+# brief: briefs/W-669.md blob:332ad9803e7e9394b1ee2533653813d17574d6fb
+# ticket: {"opus":"W-669","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"c1ba7ad8caf76485d40a5b939dafb2b7f077c778","brief":"332ad9803e7e9394b1ee2533653813d17574d6fb","at":"2026-11-16T04:21:47.307Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-669-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — trigger: the unsandboxed prune is W-369's installed sync (launch.ts:409, the SessionStart hook, the PostToolUse hook on `<git common dir>/bisellium/sync`), which already runs `git worktree prune -v` from the installed guard's copy outside the sandbox; cleanup now writes that request file, so no new host job, script or install is specced and no Patron call is needed; a Codex or cron run that no Claude Code hook sees waits for the next SessionStart or launch, a stated limit — check: reads.out, brief:17, brief:27, w369-proto.out, w543 rows named in fixture-census.md
+2. advisory — the prototype's first gate run flipped W-163-b6 (containment.test.ts:1279) because a refactor moved the sync file's `writeFileSync` out of `requestSync`; the write was moved back into `requestSync` (new text and line parameters; `fastForwardSync` and `pruneSync` call it), the green commit amended, and every gate rerun green; the first run is kept — check: run1/containment-proto.out, run1/gates-status.out, gates-status.out, containment-proto.out
+3. advisory — reds and pins: both reds fail on master by assertion at their declared pins (b1 at next.test.ts:794 "a held admin directory: the local branch is deleted", b2 at next.test.ts:816 "a held admin directory: the installed guard's sync is requested"), each pin is the TAP error's first line, neither proves the other's output, and all 19 brief pins are verbatim assertion messages of their own rows; declared-reds-check.mts and briefAdmissionProblems give 0 problems — check: red-b1-master.out, red-b2-master.out, pin-dryrun.mts, pin-dryrun.out
+4. advisory — the sandbox is simulated: `heldAdminGit` runs the real removal, remakes `commondir` and `config.worktree` without `gitdir` and prints git's EBUSY line, which matches gap 80's record; the main checkout holds two such admin directories today as 0-byte stubs a live sandbox remade (W-488, W-661), unlisted by git and read by neither cleanup nor next, a stated limit — check: reads.out, brief:23, brief:33
+5. advisory — `adminDirOf`'s rejection of a `.git` file naming a path outside `<common dir>/worktrees/` is unreachable through git (its removal refuses such a file before deleting anything), so it is unpinned defence in depth; every failed removal it would affect holds — check: brief:32, brief:42
+6. advisory — kills: four one-hunk mutations of integrate.ts on w669-s1 each fail a pinned row at a pinned assertion (k1 b1 at "a held admin directory: the local branch is deleted", k2 b1 at "a failed remove that keeps the checkout: the worktree line says held", k2 b2 at "a cleanup that holds asks no sync", k3 b1 at "a failed remove that leaves the entry listed: the worktree line says held", k4 b2 at "a held admin directory: the installed guard's sync is requested"); to make k3 provable the test commit gained one assertion in the listed case, after which both reds were rerun on master at the same pins and both rows rerun green; the whole-file runs of next.test.ts and the other gates predate that one added assertion and were not repeated — check: scripts/kills.sh, kills/kills.log, kills/k1.patch..k4.patch, kills/*-b?.out, red-b1-master.out, proto-b1-green.out, run1/
+7. advisory — fixture census lists no flips and no unnamed rows; every must-stay-green file reaching the changed paths passes whole on the prototype, and no code-owned path is touched (prototype.mbox: integrate.ts and next.test.ts only) — check: fixture-census.md, census-green-status.out, gates-status.out, prototype.mbox
+8. advisory — the shell-text surface: brief:42, brief:44 and brief:46 each say their path is never given to a shell, and now name how a shell operator, a control character and a reserved word in it are handled, each a stated limit (passed or compared as is, never read by a shell; on brief:42 a newline gives no directory, since `adminDirOf` matches one `gitdir:` line, and the failed removal holds); W-586 (busy admin directories retried later) folds into this opus inside its signed scope, with no brief change — check: admission-before.out (refused, the three rows), admission-after.out (no gaps), scripts/admission.mts, clone/packages/cli/src/integrate.ts:1390
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-669.md` (brief.md, sha256 3da160fbeeeaeac401f959d68a610bd839d5751da067a64eea516923b29f3b95), prototype over master fbf91879 (prototype.mbox, tags w669-t0 and w669-s1 in clone/); evidence in `/home/edckt/.bisellium-evidence/W-669-spec/`.
+
+VERDICT: PASS
