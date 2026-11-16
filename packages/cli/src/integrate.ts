@@ -367,6 +367,10 @@ function patronStop(repo: string, target: string, hold: (reason: string, tail?: 
  *  here is for a reader. The line says whether it was asked. */
 const fastForwardSync = (repo: string, target: string): string =>
   requestSync(repo, `${target}\n`, "sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)");
+/** W-669: asks the same sync for its `git worktree prune -v`, which runs outside the sandbox and so deletes an admin
+ *  directory the sandbox's mounts hold here. The file's text is for a reader; the sync reads only that it exists. */
+const pruneSync = (repo: string, admin: string): string =>
+  requestSync(repo, `prune ${admin}\n`, `sync: requested; the installed guard's sync runs git worktree prune outside the sandbox when this call returns, which deletes ${admin} (W-369, W-669)`);
 /** W-369, W-669: writes the request file `<git common dir>/bisellium/sync` the installed guard's PostToolUse hook answers;
  *  `said` is the line when it was written. */
 function requestSync(repo: string, text: string, said: string): string {
@@ -1258,6 +1262,7 @@ export function cleanup(ctx: Ctx): StepResult {
       const kept = heldAdmin(repo, id, admin);
       if (kept === undefined) return stop("worktree", `git worktree remove refused (no --force): ${why(removed)}`);
       out.push(`worktree: ran (the checkout is removed; its admin directory ${kept} is held (${why(removed)}), as a sandbox's read-only mounts hold it; git no longer lists it, so the branch steps go on)`);
+      out.push(pruneSync(repo, kept));
     }
   }
 
