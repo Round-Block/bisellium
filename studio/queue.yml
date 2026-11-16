@@ -8,6 +8,7 @@ queues:
       - { opus: W-612, says: "one brief admission at every gate; read-only admit lists every reader's problems at once with stable rule ids, writes nothing; sign-time red/pin replay; high; process (D-221) [absorbs W-647]" }
       - { opus: W-679, says: "cause fix spec×fix-opens-new-surface: judge briefs state Recognises/every other form/limit/safe error at admission and in the draft prompt; spec r1 runs them (D-221); high; process" }
       - { opus: W-680, says: "cause fix review×fix-round-census-misses-reachable-paths: a ui spec signature runs the fixture census and names every reader of each owned path (W-675 r3); high; process" }
+      - { opus: W-681, says: "overlap hold names only what releases it (done or halted), row pins the text; small; w675-hold-meet-1116 Q2 3/3, D-222; process" }
       - { opus: W-554, says: "meet verb asks relevant leads with why; seats boot as real sellae, context refuses unknown; design seat = ui-lead Astra; check refuses a cited meet missing one; process top (Patron 11-16)" }
       - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead); qa-lead seat split out as W-644 (D-208 item 6); right after W-512 (w590-rank-meet-1112)" }
       - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114)" }
@@ -165,12 +166,17 @@ queues:
     lanes: { R1: ~ }
     next:
       - { opus: W-634, says: "orchestrator context budget: measure first, cheap fixes, graph/retrieval index; Fable leads, Astra challenges (Patron 11-13)" }
+  retro:
+    # daily retro lane, owner qa-lead (the Patron 11-16; daily-retro-lane-meet-1116): session cron 09:04 SGT until W-682's host cron lands; never holds or fills a work lane (D-204)
+    lanes: { RT1: ~ }
+    next:
+      - { opus: W-682, says: "qa-lead: host cron (W-669 shape) persists the daily retro run; next OVERDUE from the first missed day, check names the date; never blocks (Patron 11-16)", folded: [W-486] }
   ui:
     lanes: { UI1: W-503, UI2: W-675 }
     next:
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
-      - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2)" }
-      - { opus: W-675, says: "W-674's first child: Dracula theme layer (roles by meaning), old token names as aliases, w025.css untouched, pixel-identical; UI2 now, then W-467 re-signs on roles (D-217 item 8)" }
+      - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2) — HALTED by D-222 (W-675 first; resumes after W-675, W-648, W-645 merge)" }
+      - { opus: W-675, says: "W-674's first child: Dracula theme layer (roles by meaning), old token names as aliases, w025.css untouched, pixel-identical; UI2, then W-467 re-signs on roles (D-217 item 8) — branch next (D-222)" }
       - { opus: W-674, says: "Dracula spec scan for what the console lacks, then steps across every screen; its draft sets heading and link colours before W-467 signs (Patron 11-16)" }
       - { opus: W-467, says: "Officina on Home's palette; UI2 after W-675, Officina files (D-192) ; signs after W-674's draft sets heading and link roles" }
       - { opus: W-658, says: "capture review screen, W-488's web half (split); UI2 after W-503 (shares App.tsx)" }
@@ -197,7 +203,6 @@ cut:
 deferred:
   - { opus: W-500, says: "Runs screen and its theatre view: after MVP (Patron 2026-11-05); status in its record" }
   - { opus: W-441, says: "sign-in and welcome-back summary: after MVP (Patron 2026-11-15)" }
-  - { opus: W-486, says: "The application schedules the retro, which proposes improvements (D-188: stays deferred)" }
   - { opus: W-524, says: "remove the greenlit state and greenlight verb; after M4 (D-186, D-187)" }
   - { opus: W-515, says: "a bounded discussion across vendor seats: no pilot ruled (D-182)" }
   - { opus: W-281, says: "milestone exits can be met (milestones.shape refuses a needs: exit); not end-state path (w555-meet-1116)" }
