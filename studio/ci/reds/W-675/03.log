@@ -1,18 +1,18 @@
 # behaviour: 3
 # command: node --test-reporter=tap --test-name-pattern=^W-675-b3\s --import tsx apps/web/test/w675.test.ts
 # exit: 1
-# at: 2026-11-16T15:29:14.033Z
-# sella: ui-architect
-# tree: tree:da3544767be24f503c77379231da913260281e9d
-# ticket: {"opus":"W-675","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-675/studio","head":"3cf7f4138a7ed0b66f69dae006fa369c07ad9912","brief":"0b74a25b6317e6780ab294538b537fdcc57ab282","at":"2026-11-16T15:29:13.997Z"}
+# at: 2026-11-16T16:10:37.560Z
+# sella: builder.W-675
+# tree: tree:360cc9caaabc30fe162970b222401cddd74bc8f9
+# ticket: {"opus":"W-675","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-675/studio","head":"6bc278d3b202677a440e7818289b73a42aba2e42","brief":"0b74a25b6317e6780ab294538b537fdcc57ab282","at":"2026-11-16T16:10:34.656Z"}
 
 TAP version 13
 # Subtest: W-675-b3 behaviour 3: every shipped screen resolves aliases through Dracula at the capture matrix
 not ok 1 - W-675-b3 behaviour 3: every shipped screen resolves aliases through Dracula at the capture matrix
   ---
-  duration_ms: 9291.713748
+  duration_ms: 2435.66251
   type: 'test'
-  location: '/home/edckt/agents/bisellium/.worktrees/W-675/apps/web/test/w675.test.ts:1:4584'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-675/apps/web/test/w675.test.ts:1:4692'
   failureType: 'testCodeFailure'
   error: |-
     served pixel-identity matrix holds:
@@ -28,37 +28,30 @@ not ok 1 - W-675-b3 behaviour 3: every shipped screen resolves aliases through D
     dist/assets/index-CpRKNB_k.css                       47.24 kB │ gzip:  8.44 kB
     dist/assets/index-DNUTItFV.js                       304.51 kB │ gzip: 93.27 kB
     
-    ✓ built in 117ms
+    ✓ built in 119ms
     
     Running 1 test using 1 worker
     
-      ✘  1 [chromium] › apps/web/tests-serve/w675.spec.ts:66:1 › W-675-b3 every shipped screen resolves legacy aliases through Dracula at every capture row (5.8s)
+      ✘  1 [chromium] › apps/web/tests-serve/w675.spec.ts:66:1 › W-675-b3 every shipped screen resolves legacy aliases through Dracula at every capture row (564ms)
     
     
       1) [chromium] › apps/web/tests-serve/w675.spec.ts:66:1 › W-675-b3 every shipped screen resolves legacy aliases through Dracula at every capture row 
     
-        Error: inbox 1280 expanded is ready
+        Error: inbox 1280 expanded: --color-surface-page
     
-        expect(locator).toBeVisible() failed
+        expect(received).toBe(expected) // Object.is equality
     
-        Locator: locator('.inbox__row').first()
-        Expected: visible
-        Timeout: 5000ms
-        Error: element(s) not found
+        Expected: "#282a36"
+        Received: ""
     
-        Call log:
-          - inbox 1280 expanded is ready locator('.inbox__row').first() with timeout 5000ms
-          - waiting for locator('.inbox__row').first()
-    
-    
-          74 |       await page.evaluate((sidebar) => localStorage.setItem("bisellium.sidebar", sidebar), row.sidebar);
-          75 |       await page.goto(`${served.baseURL}/?w675=${entry.route}-${row.width}-${row.sidebar}#/${entry.route}`);
-        > 76 |       await expect(page.locator(READY_SELECTORS[entry.route]).first(), `${entry.route} ${row.width} ${row.sidebar} is ready`).toBeVisible();
-             |                                                                                                                               ^
-          77 |       await page.evaluate(() => document.fonts.ready);
-          78 |
-          79 |       const names = [...Object.keys(EXPECTED), ...Object.keys(ALIASES), ...Object.values(ALIASES)];
-            at /home/edckt/agents/bisellium/.worktrees/W-675/apps/web/tests-serve/w675.spec.ts:76:127
+          88 |       }, [...new Set(names)]);
+          89 |       for (const [role, value] of Object.entries(EXPECTED)) {
+        > 90 |         expect(values[role], `${entry.route} ${row.width} ${row.sidebar}: --${role}`).toBe(value);
+             |                                                                                       ^
+          91 |       }
+          92 |       for (const [legacy, role] of Object.entries(ALIASES)) {
+          93 |         expect(values[legacy], `${entry.route} ${row.width} ${row.sidebar}: --${legacy} resolves like --${role}`).toBe(values[role]);
+            at /home/edckt/agents/bisellium/.worktrees/W-675/apps/web/tests-serve/w675.spec.ts:90:87
     
         Error Context: apps/web/test-results/w675-W-675-b3-every-shippe-7d8df-racula-at-every-capture-row-chromium/error-context.md
     
@@ -78,7 +71,7 @@ not ok 1 - W-675-b3 behaviour 3: every shipped screen resolves aliases through D
   actual: 1
   operator: 'strictEqual'
   stack: |-
-    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-675/apps/web/test/w675.test.ts:130:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-675/apps/web/test/w675.test.ts:134:10)
     Test.runInAsyncScope (node:async_hooks:226:14)
     Test.run (node:internal/test_runner/test:1201:25)
     Test.start (node:internal/test_runner/test:1096:17)
@@ -92,4 +85,4 @@ not ok 1 - W-675-b3 behaviour 3: every shipped screen resolves aliases through D
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 9297.755165
+# duration_ms 2442.660494
