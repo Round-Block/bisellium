@@ -1,0 +1,166 @@
+/**
+ * packages/cli/src/w666.test.ts — W-666: a Patron answer carries a signed receipt. Row b1: `answer` takes a Patron answer
+ * only with a valid receipt when the officina names Patron keys; b2: `check` refuses a recorded Patron answer whose
+ * receipt is missing or invalid; b3: the console's answer route forwards the receipt to `answer`. node:test TAP; a row
+ * is selected by `--test-name-pattern='^W-666-b<n>\s'`. Every key is generated here, per run; none is committed. The
+ * receipt's signed bytes are written out here, apart from the source, so the wire form is pinned. The fixture is a copy
+ * of examples/sample-studio under the OS tmp dir; nothing under studio/ is read or written.
+ *
+ * Run from the repo root:
+ *   node --test-reporter=tap --import tsx packages/cli/src/w666.test.ts
+ */
+import assert from "node:assert/strict";
+import { createHash, generateKeyPairSync, randomBytes, sign as cryptoSign, type KeyObject } from "node:crypto";
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
+import { runAnswer } from "@bisellium/commands/writes.js";
+
+const SAMPLE = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "examples", "sample-studio");
+const NOW = "2026-11-16T03:00:00.000Z";
+const DOMAIN = "bisellium-patron-receipt/v1";
+const dirs: string[] = [];
+after(() => {
+  for (const d of dirs) rmSync(d, { recursive: true, force: true });
+});
+
+interface Pair {
+  pub: KeyObject;
+  priv: KeyObject;
+}
+const ed = (): Pair => {
+  const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+  return { pub: publicKey, priv: privateKey };
+};
+const p256 = (): Pair => {
+  const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+  return { pub: publicKey, priv: privateKey };
+};
+const spki = (k: KeyObject): string => k.export({ type: "spki", format: "der" }).toString("base64");
+const keyId = (k: KeyObject): string => createHash("sha256").update(k.export({ type: "spki", format: "der" })).digest("hex");
+const sha = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
+
+interface Payload {
+  v: number;
+  petitio: string;
+  question: string;
+  option: string;
+  mode: string;
+  charter_gap: boolean;
+  nonce: string;
+  at: string;
+}
+interface Receipt {
+  payload: Payload;
+  key: string;
+  sig: string;
+}
+/** The signed bytes: the domain line, then the payload's fields as one JSON array, in this order. */
+const signed = (p: Payload): Buffer => Buffer.from(`${DOMAIN}\n${JSON.stringify([p.v, p.petitio, p.question, p.option, p.mode, p.charter_gap, p.nonce, p.at])}`, "utf8");
+function receiptOf(pair: Pair, p: Payload): Receipt {
+  const ec = pair.pub.asymmetricKeyType === "ec";
+  const sig = ec ? cryptoSign("sha256", signed(p), { key: pair.priv, dsaEncoding: "ieee-p1363" }) : cryptoSign(null, signed(p), pair.priv);
+  return { payload: p, key: keyId(pair.pub), sig: sig.toString("base64") };
+}
+
+const A1_BODY_RAW = () => readFileSync(join(SAMPLE, "petitiones", "A-1.md"), "utf8");
+const bodyOf = (raw: string): string => raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+/** The question digest: sha256 of the petitio's body, front matter excluded, trimmed. */
+const A1_QUESTION = (): string => sha(bodyOf(A1_BODY_RAW()).trim());
+const payload = (over: Partial<Payload> = {}): Payload => ({
+  v: 1,
+  petitio: "A-1",
+  question: A1_QUESTION(),
+  option: "Ship both.",
+  mode: "resolve",
+  charter_gap: false,
+  nonce: randomBytes(16).toString("hex"),
+  at: "2026-11-16T02:58:00.000Z",
+  ...over,
+});
+
+/** A copy of the sample officina whose bisellium.yml names these Patron keys (none: no `patron_receipts` at all). */
+function officina(tag: string, keys: KeyObject[] | undefined, extra = ""): string {
+  const dir = mkdtempSync(join(tmpdir(), `bisellium-w666-${tag}-`));
+  dirs.push(dir);
+  cpSync(SAMPLE, dir, { recursive: true });
+  if (keys !== undefined)
+    appendFileSync(join(dir, "bisellium.yml"), `patron_receipts:\n  keys:\n${keys.map((k) => `    - "${spki(k)}"\n`).join("")}${extra}`);
+  return dir;
+}
+function receiptFile(dir: string, r: unknown): string {
+  const path = join(`${dir}-receipts`, `${randomBytes(4).toString("hex")}.json`);
+  mkdirSync(dirname(path), { recursive: true });
+  dirs.push(dirname(path));
+  writeFileSync(path, typeof r === "string" ? r : JSON.stringify(r));
+  return path;
+}
+function answer(args: string[]): { code: number; err: string } {
+  const errs: string[] = [];
+  const oe = console.error;
+  const ol = console.log;
+  console.error = (...a: unknown[]) => void errs.push(a.join(" "));
+  console.log = () => {};
+  try {
+    return { code: runAnswer(args).exitCode, err: errs.join("\n") };
+  } finally {
+    console.error = oe;
+    console.log = ol;
+  }
+}
+const timeline = (dir: string): string => (existsSync(join(dir, "timeline", "patron.jsonl")) ? readFileSync(join(dir, "timeline", "patron.jsonl"), "utf8") : "");
+const petitio = (dir: string): string => readFileSync(join(dir, "petitiones", "A-1.md"), "utf8");
+
+test("W-666-b1 answer takes a Patron answer only with a valid receipt", () => {
+  const patron = ed();
+  const agent = ed();
+  const dir = officina("b1", [patron.pub]);
+  const base = ["--petitio", "A-1", "Ship both.", "--studio", dir, "--now", NOW];
+  const refused = (r: { code: number; err: string }, words: string, what: string): void => {
+    assert.equal(r.code === 2 && r.err.includes(words), true, what);
+    assert.equal(petitio(dir), A1_BODY_RAW(), `${what}, the petitio untouched`);
+    assert.equal(timeline(dir), "", `${what}, no timeline line`);
+  };
+
+  refused(answer(base), "patron receipt required", "an answer with no receipt is refused by name");
+  const good = receiptOf(patron, payload());
+  refused(answer([...base, "--receipt", receiptFile(dir, { ...good, sig: randomBytes(64).toString("base64") })]), "patron receipt signature does not verify", "a forged receipt is refused by name");
+  refused(answer([...base, "--receipt", receiptFile(dir, { ...good, payload: { ...good.payload, option: "Cut split stacks." } })]), "patron receipt signature does not verify", "an altered receipt is refused by name");
+  refused(answer([...base, "--receipt", receiptFile(dir, receiptOf(patron, payload({ option: "Cut split stacks." })))]), "patron receipt is not for this answer: option", "a receipt for another reply is refused by name");
+  refused(answer([...base, "--receipt", receiptFile(dir, receiptOf(agent, payload()))]), "patron receipt key is not a Patron key", "an agent-authored receipt is refused by name");
+  refused(answer([...base, "--receipt", receiptFile(dir, receiptOf(patron, payload({ at: "2026-11-16T02:40:00.000Z" })))]), "patron receipt time is outside", "a stale receipt is refused by name");
+  refused(answer([...base, "--receipt", receiptFile(dir, "{not json")]), "patron receipt is not valid JSON", "an unparseable receipt is refused by name");
+  refused(answer([...base, "--receipt", receiptFile(dir, { ...good, payload: { ...good.payload, nonce: "short" } })]), "patron receipt shape: nonce", "a receipt of the wrong shape is refused by name");
+
+  const ok = answer([...base, "--receipt", receiptFile(dir, good)]);
+  assert.equal(ok.code, 0, "a valid receipt is accepted");
+  const front = parseYaml(petitio(dir).split("---\n")[1]!) as { receipts?: Record<string, unknown> };
+  assert.deepEqual(front.receipts, { [NOW]: good }, "a valid receipt is recorded on the petitio under its stamp");
+  const line = JSON.parse(timeline(dir).trim()) as { role: string; receipt?: Receipt };
+  assert.deepEqual([line.role, line.receipt], ["patron", good], "a valid receipt is copied to the timeline line");
+
+  // the same receipt again, the petitio asked anew: its nonce is spent
+  writeFileSync(join(dir, "petitiones", "A-1.md"), A1_BODY_RAW());
+  const before = timeline(dir);
+  const replay = answer([...base, "--receipt", receiptFile(dir, good)]);
+  assert.equal(replay.code === 2 && replay.err.includes("patron receipt nonce already used"), true, "a replayed receipt is refused by name");
+  assert.equal(timeline(dir), before, "a replayed receipt writes no timeline line");
+
+  const ec = p256();
+  const both = officina("b1-ec", [patron.pub, ec.pub]);
+  const ecOk = answer(["--petitio", "A-1", "Ship both.", "--studio", both, "--now", NOW, "--receipt", receiptFile(both, receiptOf(ec, payload()))]);
+  assert.equal(ecOk.code, 0, "a P-256 Patron key verifies too");
+
+  const bad = mkdtempSync(join(tmpdir(), "bisellium-w666-bad-"));
+  dirs.push(bad);
+  cpSync(SAMPLE, bad, { recursive: true });
+  appendFileSync(join(bad, "bisellium.yml"), 'patron_receipts:\n  keys:\n    - "bm90IGEga2V5"\n');
+  const badKey = answer(["--petitio", "A-1", "Ship both.", "--studio", bad, "--now", NOW, "--receipt", receiptFile(bad, good)]);
+  assert.equal(badKey.code === 2 && badKey.err.includes("patron_receipts"), true, "a malformed Patron key list refuses every answer");
+
+  const open = officina("b1-open", undefined);
+  assert.equal(answer(["--petitio", "A-1", "Ship both.", "--studio", open, "--now", NOW]).code, 0, "an officina naming no Patron keys answers as before");
+});
