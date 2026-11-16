@@ -1,0 +1,42 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-645-b3\s --import tsx packages/cli/src/red-order.test.ts
+# exit: 1
+# at: 2026-11-16T08:25:04.864Z
+# sella: builder.W-645
+# tree: tree:fa650c957ba6c4d075ae332b2bc70769ed7fc745
+# ticket: {"opus":"W-645","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-645/studio","head":"00e69b537dcc1cfc7301cfccd0f8c8546b7cf717","brief":"bf76ecf3d51af16ac50ba196b9a4c2e855673502","at":"2026-11-16T08:25:01.126Z"}
+
+TAP version 13
+# Subtest: W-645-b3 behaviour 3: a served red with no port and token line is refused
+not ok 1 - W-645-b3 behaviour 3: a served red with no port and token line is refused
+  ---
+  duration_ms: 761.171512
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-645/packages/cli/src/red-order.test.ts:90:3232'
+  failureType: 'testCodeFailure'
+  error: |-
+    a served red with no port and token line is refused: stderr ""
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-645/packages/cli/src/red-order.test.ts:717:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 783.23851
