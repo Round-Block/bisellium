@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
+import { servedAttempt, servedLine, servedStart } from "@bisellium/commands/red-tree.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // apps/web/tests-serve -> apps/web -> apps -> repo root.
@@ -58,6 +59,9 @@ export async function startServed(tag: string, options: { now?: string; subdir?:
   cpSync(SAMPLE_STUDIO, studioDir, { recursive: true });
   options.prepareStudio?.(studioDir);
 
+  // W-645: each start is an attempt with its own name, its start line before the spawn and its port and token line after
+  const attempt = servedAttempt();
+  console.log(servedStart(attempt));
   const child: ChildProcessWithoutNullStreams = spawn(
     process.execPath,
     ["--import", "tsx", MAIN_TS, "serve", "--studio", studioDir, "--port", "0", ...(options.now === undefined ? [] : ["--now", options.now])],
@@ -93,6 +97,7 @@ export async function startServed(tag: string, options: { now?: string; subdir?:
     });
   });
 
+  console.log(servedLine(port!, attempt));
   const baseURL = `http://127.0.0.1:${port}`;
   await waitForReady(baseURL, token!);
 
