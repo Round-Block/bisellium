@@ -1,0 +1,54 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-669-b2\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-11-16T08:24:29.406Z
+# sella: builder.W-669
+# tree: tree:86481604dee72ea0c9d9e9678e28d0929537af6b
+# ticket: {"opus":"W-669","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-669/studio","head":"870e377e486efba83c4163bdfabf31d97b17cd23","brief":"332ad9803e7e9394b1ee2533653813d17574d6fb","at":"2026-11-16T08:24:24.841Z"}
+
+TAP version 13
+# Subtest: W-669-b2 behaviour 2: a held admin directory asks the installed guard's sync to prune it outside the sandbox, and it is one git worktree prune deletes; a cleanup that holds asks nothing
+not ok 1 - W-669-b2 behaviour 2: a held admin directory asks the installed guard's sync to prune it outside the sandbox, and it is one git worktree prune deletes; a cleanup that holds asks nothing
+  ---
+  duration_ms: 3236.741646
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-669/packages/cli/src/next.test.ts:11:2817'
+  failureType: 'testCodeFailure'
+  error: |-
+    a held admin directory: the installed guard's sync is requested
+    --- exit 0
+    --- stdout
+    next: W-900 cleanup performed
+    worktree: ran (the checkout is removed; its admin directory /tmp/claude-1000/w124-w669-b2-eovudO/repo/.git/worktrees/W-900 is held (error: failed to delete '/tmp/claude-1000/w124-w669-b2-eovudO/repo/.git/worktrees/W-900': Device or resource busy), as a sandbox's read-only mounts hold it; git no longer lists it, so the branch steps go on)
+    local branch: ran
+    remote branch: ran
+    next-step: done
+    usage: Claude unread (no status-line file); Codex unread (no session log holds a week rate_limits)
+    cost: Claude week unread, Codex week unread over 11.0 h since the first spec signature
+    
+    --- stderr
+    
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-669/packages/cli/src/next.test.ts:817:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3251.552165
