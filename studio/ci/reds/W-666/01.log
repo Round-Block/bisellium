@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-666-b1\s --import tsx packages/cli/src/w666.test.ts
+# exit: 1
+# at: 2026-11-16T16:06:13.271Z
+# sella: builder.W-666
+# tree: tree:4bd510faa32f9c4df6cef0b8f397366777bcb1df
+# ticket: {"opus":"W-666","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-666/studio","head":"b2db4e0b1713974b29d74250f0d133a66663b84e","brief":"bb2b9fb5672939798e5b781bcea805d27c5b0324","at":"2026-11-16T16:06:06.872Z"}
+
+TAP version 13
+# Subtest: W-666-b1 answer takes a Patron answer only with a valid receipt
+not ok 1 - W-666-b1 answer takes a Patron answer only with a valid receipt
+  ---
+  duration_ms: 20.088596
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:5:853'
+  failureType: 'testCodeFailure'
+  error: |-
+    an answer with no receipt is refused by name
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:123:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:128:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27.664214
