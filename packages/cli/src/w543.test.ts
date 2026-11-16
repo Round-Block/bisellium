@@ -375,12 +375,12 @@ test("W-543-b4 behaviour 4: launch refuses on its own state: a launch that did n
     const starts = (w: World, ...hoursAgo: number[]): void =>
       put(join(w.state, "starts.jsonl"), hoursAgo.map((h, i) => JSON.stringify({ at: new Date(NOW.getTime() - h * 3_600_000).toISOString(), handoff: String(i).repeat(40).slice(0, 40).replace(/[^0-9]/g, "0") })).join("\n") + "\n");
     let w = world();
-    starts(w, 11, 6, 3, 1);
-    assert.equal(await w.launch("--dry-run"), 1, "four starts in the last 12 hours refused");
-    assert.match(said(w), /the cap is reached: 4 launches in the last 12 hours \(cap 4\)/, "the refusal names the cap");
+    starts(w, 5, 4, 3, 1);
+    assert.equal(await w.launch("--dry-run"), 1, "four starts in the last 6 hours refused");
+    assert.match(said(w), /the cap is reached: 4 launches in the last 6 hours \(cap 4\)/, "the refusal names the cap");
     w = world();
-    starts(w, 30, 12, 6, 3, 1);
-    assert.equal(await w.launch("--dry-run"), 0, "a start 12 hours ago or older is not counted");
+    starts(w, 30, 12, 6, 3, 2);
+    assert.equal(await w.launch("--dry-run"), 0, "a start 6 hours ago or older is not counted");
     w = world();
     put(join(w.state, "starts.jsonl"), "{\"at\":1}\n");
     assert.equal(await w.launch("--dry-run"), 1, "a start line that is not { at, handoff } refused");

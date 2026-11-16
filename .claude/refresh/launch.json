@@ -33,5 +33,5 @@
     "Write(~/projects/**)"
   ],
   "addDirs": ["~/.bisellium-evidence"],
-  "cap": { "starts": 4, "hours": 12 }
+  "cap": { "starts": 4, "hours": 6 }
 }

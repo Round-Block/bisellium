@@ -387,7 +387,7 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
       return refuse(`the last session had ${denials.length} permission denial(s) (${tools}); add the rule to ${LAUNCH_CONFIG} by a reviewed PR, or remove ${resultFile}`);
     }
   }
-  // the nightly cap: at most cap.starts launches in the last cap.hours hours
+  // the cap: at most cap.starts launches in the last cap.hours hours
   const startsRead = readStarts(startsFile);
   if (typeof startsRead === "string") return refuse(startsRead);
   const since = deps.now().getTime() - c.cap.hours * 3_600_000;
