@@ -26,8 +26,8 @@ Current state only, after CLAUDE.md. Rules: lex `production.md`.
 - Until W-372: the orchestrator waits on isInMergeQueue (a queued PR shows no auto-merge request); a merge perform printing `QUEUE_TIMEOUT` on a still-queued PR reruns with `--poll-ms 20000 --max-polls 150`; the ladder-runner enqueues with `--max-polls 2`.
 - Until W-283: publish refused for a newer live version: read the live page, merge, publish; status republish reads the whole saved live page. Done reads certify's certificate from its check run (W-370, W-396); with none, uses the artifact host, named once if refused (no wildcard or settings edit).
 - Until W-371: a Codex UI builder gets `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'`, edits only, and a ladder-runner commits, takes `next`, records each red. `worktree add -b` needs `--no-track`; a subagent stays in turn while its background run goes.
-- Standing: a Codex UI builder runs `codex-passes/ui-run.sh` directly (the confined `bisellium run` host cannot see ~/.bisellium-evidence); a sandboxed `claude -p` reviewer cannot be resumed: reissue a shape refusal in a fresh session with `--session-reason`. A builder or runner brief spells every record write `npm run -s bisellium -- …` in one plain call, never the bare `bisellium` that `next` prints (the Patron's soft_deny refuses it, gap 71); run ~/.bisellium-evidence/declared-reds-check.mts <brief> <id> before any sign (gap 70).
-- Standing: refresh runs all day (D-211) (timer every 30 min, cap 4 per 6 h); a timer-started session never waits on the Patron: write the ask in current-state.md, push once per new wait, go on with independent lanes; never decide a Patron-only call.
+- Standing: a Codex UI builder runs `codex-passes/ui-run.sh` directly; a sandboxed `claude -p` reviewer cannot be resumed: reissue a shape refusal in a fresh session with `--session-reason`. A brief spells every record write `npm run -s bisellium -- …`, never the bare `bisellium` (soft_deny, gap 71); run ~/.bisellium-evidence/declared-reds-check.mts <brief> <id> before any sign (gap 70). A Codex workspace-write run from the Claude sandbox needs `-c sandbox_workspace_write.exclude_slash_tmp=true` (gap 104: /tmp read-only, bwrap fails "Can't mkdir /tmp/.git"); read-only runs need nothing.
+- Standing: refresh runs all day (D-211, timer every 30 min, cap 4 per 6 h); a timer-started session never waits on the Patron: write the ask in current-state.md, push once per wait, go on with independent lanes; never decide a Patron-only call.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and daily retro.
 - Records dates are UTC; Patron reads SGT (UTC+8).
@@ -44,7 +44,7 @@ Current state only, after CLAUDE.md. Rules: lex `production.md`.
 
 ## Queue
 
-**D-181 is the plan, as D-182 changes its lanes and D-183, D-187, D-188 its head. File through `land`: the `check` rule that a UI brief names the signed composition it follows, every difference Patron-ruled; check how a general-purpose agent's edit of this file got past W-290. Audit: ~/.bisellium-evidence/audit-1105/fable/audit.md.**
+**D-181 is the plan, as D-182 changes its lanes and D-183, D-187, D-188 its head. File through `land`: the `check` rule that a UI brief names the signed composition it follows. Audit: ~/.bisellium-evidence/audit-1105/fable/audit.md.**
 
 Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first. D-194 governs opening E2/E3.
 
@@ -52,25 +52,23 @@ Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-18
 
 Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-644.
 
-Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672.
+Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672 W-673 (certificate tree excludes the handoff via one list; needs the Patron's greenlight).
 
-Also, 11-16 (s30): D-212, D-213 landed; D-215 (Patron: W-467 re-specced onto bare master while W-503 parks) lands with this handoff.
+Also, 11-16: D-212, D-213, D-215 (Patron: W-467 re-specced onto bare master while W-503 parks) landed.
 
-D-193 replaces D-178: product (M4 path) or process entries; E1 and E2 take product, E3 is process (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201 (Patron 11-13): one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
+D-193 replaces D-178: E1 and E2 take product, E3 is process (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: one ranked list; W-595 after W-610. D-204: E2 and UI2 open.
 
 Lanes now:
-- E1 W-666 r3 revised, pre-sign gate owed (heavy), then verdict r3 + Codex r4 (last); W-669 spec ahead, branch held. E2 W-645 branches now (W-648 merged #1259); W-668 spec draft part A done, 10 questions to a leads' meet. E3 W-648 MERGED (#1259), done owed; W-665 branches next.
-- UI1 W-503 parked (D-215); W-467 re-spec onto bare master FAILED to launch (gap 104: codex bwrap /tmp/.git), diagnose then rerun ~/.bisellium-evidence/W-467-spec/remaster/run.sh. UI2 W-488 verify rerun (kit 235) then done x2 at once, nothing landing between (eng-lead read ~/.bisellium-evidence/W-488-verify-read-1116/eng-lead.md). W-662 held.
+- E1 W-666 (signed Patron receipt): SIGNED r3 (#1264, signature-r3b.md); next the Codex r4 spec review (last), resuming 01a1e2a8-1a7d-71a2-a229-30538a7b7015. E2 W-645 (served-location harness fix): b1-b4 red+code done; b5 folds into the harness row per W-645-build/b5-call.md: amend the brief, architect re-signs r5, a leads' meet round ruling for a 3rd spec review, delta review. E3 W-669 (host prune of sandbox-held worktree dirs): BUILD DONE (b1-b2, handoff 9727995e on opus/W-669); next Codex build review, full ci; then W-665 (kind-ui build review screenshots).
+- UI1 W-503 parked (D-215); W-467 (Officina restyle) revision 4 drafted (~/.bisellium-evidence/W-467-spec/remaster/), not signed: design-lead sign, Opus UI spec review, then the Patron's screens and 4 [ui] defaults. UI2 W-488 (comments on captures) verify (kit 235) then done x2, nothing landing between. W-662 held. W-668 (boot reader once) part B done (Patron ruled Q5/Q8/Q9/Q10, w668-meet-1116), part C after W-666. W-673 (certificate tree excludes the handoff) LANDED #1263, M7; awaits the Patron's greenlight.
 - W-555 not signed (no lane); W-646 carries the D-213 cap wording (lexcap-meet-1116).
-W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in queue), W-636 (next reads branch records); 11-14: W-639 W-640 W-641 W-642 (D-207, D-061 §4) W-643.
+W-250 (merge group's duplicate hosted suite cut; lifted). Filed 11-13: W-634 (research: context budget), W-635 (check flags finished opera in queue), W-636 (next reads branch records); 11-14: W-639 W-640 W-641 W-642 (D-207, D-061 §4) W-643.
 
-Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>`, `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
+Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`. W-507 halted (D-181, D-206), tag archive/W-507.
 
-Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-settled calls skip Patron.
-Sessions 21-30 meets and gaps 56-98: see ~/.bisellium-evidence/current-state.md.
-Session 31: lexcap-meet-1116, ui-lanes-meet-1116 (Patron: re-spec W-467 now, D-215); W-488-verify-read-1116; gaps 100-103.
-Next: heavy order W-467 re-spec -> W-666 pre-sign gate -> W-488 verify then done; W-645 branch (E2) and W-665 branch (E3) now; W-648 done; W-668 leads' meet; every status reply carries a lane table (gap 101).
+Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/. Sessions 21-30 meets and gaps 56-98: ~/.bisellium-evidence/current-state.md.
+Session 31: lexcap-meet-1116, ui-lanes-meet-1116 (Patron: re-spec W-467 now, D-215); gaps 100-104.
+Session 32: w668-meet-1116; gap 104 solved (the exclude_slash_tmp flag, section 4); gap 105: the Claude sandbox re-creates read-only stubs in .git/worktrees/<id> after every prune (W-669's case).
+Next: W-666 Codex r4 spec review -> W-488 verify then done x2 (heavy, nothing lands between) -> W-669 build review -> W-645 leads' meet + amendment -> W-467 sign + UI review.
 
-Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md. Open gaps, W-508 lessons: current-state-until-1106.md (same dir); read before any done step. W-510, after W-522 (queue.yml): ~/.bisellium-evidence/pr-debate-1106/brief-r1.md. Research is its own lane, never in D-182's lane unasked.
-
-Off-ladder work for the Patron gets a lead's read first; ladder builds keep Codex the one gate (D-066 C). W-467 follows W-503, takes W-451's Home palette. W-434 links prototype hash, design digest, source tree, captures, reviews.
+Unruled notes: top NOW of ~/.bisellium-evidence/current-state.md; older gaps: current-state-until-1106.md there. Research is its own lane. Codex stays the one gate (D-066 C).
