@@ -1,0 +1,40 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-645-b5\s --import tsx packages/cli/src/red-order.test.ts
+# exit: 1
+# at: 2026-11-16T10:37:54.149Z
+# sella: builder.W-645
+# tree: tree:c8770b6c95d520f6d82e5e17486140684522529c
+# ticket: {"opus":"W-645","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-645/studio","head":"53108fcdfb170153952ccbe294cd2c69c78e6217","brief":"5a268ce843d73a8924bed65927da85dcbd2221df","at":"2026-11-16T10:37:49.029Z"}
+
+TAP version 13
+# Subtest: W-645-b5 behaviour 5: the served config and the served harness are the ones the judge reads
+not ok 1 - W-645-b5 behaviour 5: the served config and the served harness are the ones the judge reads
+  ---
+  duration_ms: 1364.164558
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-645/packages/cli/src/red-order.test.ts:93:1165'
+  failureType: 'testCodeFailure'
+  error: |-
+    the served harness prints the judge's port and token line: apps/web/tests-serve/harness.ts
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-645/packages/cli/src/red-order.test.ts:803:12)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1378.133059
