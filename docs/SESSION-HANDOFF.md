@@ -54,13 +54,13 @@ Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-
 
 Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672.
 
-Also, 11-16 (s29): D-212 (end-state lanes rulings), D-213 (26 census merges halted, W-555 first opus, W-665 to build), both in PR #1253 awaiting the Patron.
+Also, 11-16 (s30): D-212, D-213 landed; D-214 (Patron yes to W-488's captures, tree 5192946f) lands by kit 231 on the Patron's approval.
 
 D-193 replaces D-178: product (M4 path) or process entries; E1 and E2 take product, E3 is process (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201 (Patron 11-13): one ranked list; W-595 after W-610. D-204: E2 and UI2 open now.
 
 Lanes now:
-- E1 W-666 signed (Codex spec review once #1253 lands); E2 W-645 not started; E3 W-648 spec r6 passed (amended Files owned), light gates at the new tree owed (gap 92), then build review r2, full ci, pr/merge/done.
-- UI1 W-503; UI2 W-488 done owed (master verify rerun, kit 222, after #1253 merges); W-665 to build without a round-4 spec review (D-213), W-669 signed r1 (Codex spec review r2 running/recorded next), W-662 held. First end-state opus W-555 (derived lane occupancy, no schema), then W-636 (greenlit).
+- E1 W-666 r2 FAIL recorded, W-414 title amended; architect needs a handoff record first (stale handover), revises, signs r3, Codex r4 (last). W-669 spec ahead of E1, branch held (r2 FAIL, blocker a build fix). E2 W-645 not started. E3 W-648 handoff a2aece36, light gates (kit 229), build review r2, full ci, pr, merge, done. W-665 spec ahead of E3, r4 PASS, branches when E3 frees; then W-555 (architect's part B prototype; signs when next names it).
+- UI1 W-503. UI2 W-488 verify PASS, D-214 landing, then done (kit 230 E1-E6). W-662 held.
 W-250 (merge group's duplicate hosted suite cut; lifted, retitled). Filed 11-13: W-634 (research: context budget, retrieval index), W-635 (check flags finished opera in queue), W-636 (next reads branch records); 11-14: W-639 W-640 W-641 W-642 (D-207, D-061 §4) W-643.
 
 Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`; a locked worktree moves to .worktrees/<id>; each commit: `git -C <main> fetch <clone> opus/<id>`, `update-ref`. W-507 halted (D-181, D-206), tag archive/W-507.
@@ -69,7 +69,8 @@ Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/; leads-se
 Sessions 21-27 meets and gaps 56-82: see ~/.bisellium-evidence/current-state.md.
 Session 28: lanes-queue-meet-1116 (Patron: first opus small no-schema; lane model end state, endstate-design.md); gaps 83-88.
 Session 29: endstate-meet-1116 rerun on Opus + collated + Patron-ruled; w665-w666-meet-1116; merge-verify.md (census); gaps 89-92.
-Next: Patron approves #1253, then a runner reruns kit 224's land line; W-669 and W-666 Codex spec reviews recorded; W-648 light gates (ask the eng-lead the exact command, gap 92); W-488 verify (kit 222, rebase its master sha); W-665 to branch per next; spec draft W-555.
+Session 30: w555-meet-1116 (four seats, collated); W-648-lightgate-read-1116; gaps 92b, 93-98.
+Next: Patron approves the D-214 records PR (#1256); a runner reruns kit 231's land; W-488 done (kit 230 E); W-648 light gates (kit 229) once the W-555 architect frees the heavy slot; W-666 revision r3; W-555 signature; D-213 lex fix needs an opus (gap 95).
 
 Unruled notes: top NOW of current-state.md; talk-a2a-1106/combined.md. Open gaps, W-508 lessons: current-state-until-1106.md (same dir); read before any done step. W-510, after W-522 (queue.yml): ~/.bisellium-evidence/pr-debate-1106/brief-r1.md. Research is its own lane, never in D-182's lane unasked.
 
