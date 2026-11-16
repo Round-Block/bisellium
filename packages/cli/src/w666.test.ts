@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { startServer, type StartServerOptions } from "@bisellium/server";
 import { parse as parseYaml } from "yaml";
 import { runAnswer } from "@bisellium/commands/writes.js";
 import { checkStudio } from "./check.js";
@@ -228,4 +229,41 @@ test("W-666-b2 check refuses a recorded Patron answer without a valid receipt", 
   record(open, [[AT, "Ship both."]], {});
   const f = receiptFindings(open);
   assert.equal(f.length === 1 && f[0]!.level === "advise", true, "an officina naming no Patron keys is told its answers are unsigned");
+});
+
+test("W-666-b3 the console's answer route forwards the receipt", async () => {
+  const seen: { args: string[]; receipt?: string }[] = [];
+  const noop = () => ({ exitCode: 0 });
+  const noopAsync = async () => ({ exitCode: 0 });
+  const runners: StartServerOptions["runners"] = {
+    answer: (args) => {
+      const at = args.indexOf("--receipt");
+      seen.push({ args, ...(at === -1 ? {} : { receipt: readFileSync(args[at + 1]!, "utf8") }) });
+      return { exitCode: 0 };
+    },
+    greenlight: noop,
+    budget: noop,
+    handoff: noop,
+    talk: noopAsync,
+    pause: noopAsync,
+    resume: noopAsync,
+    delegate: noop,
+  };
+  const dir = officina("b3", undefined);
+  const TOKEN = "test-token-w666";
+  const server = await startServer({ studioDir: dir, port: 0, once: true, now: new Date(NOW), token: TOKEN, checkStudio: () => ({ ok: true, blocks: 0, advisories: 0, findings: [] }), runners, listModels: () => Promise.resolve([]) });
+  try {
+    const post = (body: unknown) =>
+      fetch(`http://127.0.0.1:${server.port}/api/answer`, { method: "POST", headers: { "X-Bisellium-Token": TOKEN, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const receipt = receiptOf(ed(), payload());
+    const r = await post({ petitio: "A-1", reply: "Ship both.", receipt });
+    assert.equal(r.status, 200);
+    assert.deepEqual(seen.length === 1 && seen[0]!.receipt !== undefined ? JSON.parse(seen[0]!.receipt) : undefined, receipt, "the answer route passes the receipt to answer");
+    await post({ petitio: "A-1", reply: "Ship both." });
+    assert.equal(seen[1]?.args.includes("--receipt"), false, "an answer posted with no receipt passes none");
+    const wrong = await post({ petitio: "A-1", reply: "Ship both.", receipt: "a string" });
+    assert.equal(wrong.status, 400, "a receipt that is not an object is refused");
+  } finally {
+    await server.close();
+  }
 });
