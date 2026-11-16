@@ -1,0 +1,20 @@
+# opus: W-669
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e29b-8456-7363-88d8-f2ca8810fa3a
+# outcome: failed
+# at: 2026-11-16T04:40:39.493Z
+# tree: tree:5192946f86780c7b84b939646c54515020a666df
+# brief: briefs/W-669.md blob:332ad9803e7e9394b1ee2533653813d17574d6fb
+# ticket: {"opus":"W-669","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"1159917e5360010b6d69aa6da80159938b89b22e","brief":"332ad9803e7e9394b1ee2533653813d17574d6fb","at":"2026-11-16T04:40:34.348Z"}
+
+## Findings
+1. blocking — brief:80 [severity: S1] [design: keeps] `next-proto.out` and `gates-status.out` predate the final added assertion, as `signature-r1.md` acknowledges, so they do not evidence the claimed whole-file pass on the final prototype. Replace brief:80 with: `- The whole of packages/cli/src/next.test.ts passes on the final prototype after its last test edit, with fresh tree-bound output; the named next-done, W-369 and containment suites also pass.` [class: review×evidence-backfilled-or-absent] — check: none: rerun the whole test file on the final prototype and retain output bound to that tree
+2. advisory — brief:27 [severity: S2] The deletion guarantee also appears at brief:17, brief:61 and brief:72, but the `pruneSync`/`requestSync` writer, PostToolUse/SessionStart/launch consumers, `handleSync`, and `agent-workspace.sh sync` path remove the request before prune and tolerate a non-zero prune, so a request cannot guarantee deletion. Replace brief:27’s deletion claim with: `after its input checks pass, the installed sync removes the request and attempts git worktree prune -v; success deletes an ordinary held directory, while failure is reported and leaves it for a later SessionStart or launch sync`, retaining the remaining limits and pins. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w369.test.ts
+3. advisory — brief:49 [severity: S4] The outer test-call row omits the added readers and calls in `w669Admin`, `heldAdminGit`, `checkoutOnlyGit`, branch probes, checkout/admin/sync existence reads, admin-directory listing, `next`, and the prune subprocess. Replace brief:49 with rows naming those fixture files and subprocess results, their expected domains, and the corresponding `readFileSync`, `readdirSync`, `spawnSync` status and assertion failures as rejectors. [class: spec×input-without-named-rejector] — check: packages/cli/src/next.test.ts
+
+## Verdict
+At `c1ba7ad8 docs(studio): handoff, session 28 (W-665 signed r3, W-666 signed, W-670..W-672 filed) (#1252)`, the design is feasible, but its final-prototype acceptance evidence must be refreshed before build.
+VERDICT: FAIL

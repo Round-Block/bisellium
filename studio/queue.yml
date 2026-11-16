@@ -7,6 +7,8 @@ queues:
       - { opus: W-668, says: "Boot reader consumes each Patron answer once (verified receipt or forge-authored reply); Patron-only steps refuse without one; D-211's order, after W-666/W-667" }
       - { opus: W-648, says: "bisellium run --cwd <dir> runs a builder's command in the opus's own .worktrees/<id>, only with --opus; small and high, unblocks W-503's green rows (clone-tests-meet-1114 c, 5/5)" }
       - { opus: W-665, says: "kind ui: next orders the full ci (served-e2e shots) before the build review, and the review perform runs Claude Opus (D-150 C); gaps 77-78; high (W-488-review-meet-1116)" }
+      - { opus: W-555, says: "FIRST end-state opus, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; lanes: advisory + warning; one no-lane count line; Greenlit list goes" }
+      - { opus: W-478, says: "idle-lane check: next --all names a lane with no opus in flight while the queue holds an entry it could start; folded into W-555 once the architect confirms (w555-meet-1116)" }
       - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114)" }
       - { opus: W-641, says: "daily retro reads a timed-out gate log (gap 12), with W-621's first form folded in; E3's next process slot after W-644 (retro-meet-1115 c, 5/5) [absorbs W-533]" }
       - { opus: W-645, says: "cause fix, red admission refuses a red log with ERR_MODULE_NOT_FOUND, serve exited, no port or token line, or no declared assertion; high, unblocks W-503 (all-leads-meet-1114 Q4)" }
@@ -28,10 +30,12 @@ queues:
       - { opus: W-308, says: "opus timeline; E1 (next.ts), after W-551 (D-192)", next_ts: true }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-250, says: "rescoped by D-209 item 1: the merge group runs no duplicate hosted test suite; push keeps its full suite; process (D-208)" }
+      - { opus: W-289, says: "greenlight is the Patron's alone: it refuses a run from the agent clone, so it runs only from the Patron's folder or the Board (w555-meet-1116)" }
       - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
       - { opus: W-414, says: "cause fix, ruled-case-uncovered [absorbs W-393]" }
       - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not M4 path (D-193); after W-074 (the Patron 11-11, call C)" }
       - { opus: W-185, says: "records checked once, at load: cause fix, fail-open-on-malformed-records (7 opera); debt slot (balance-meet-1112)", next_ts: true }
+      - { opus: W-559, says: "W-547 remainder: markers and queue states fail closed; same fail-open class as W-185 (w555-meet-1116)" }
       - { opus: W-529, says: "pool the local test gate at eight; hosted CI stays serial; exempt, the Patron said yes 2026-11-06 (W-456)" }
       - { opus: W-643, says: "usage line shows each week's reset and the burn rate that spends the rest (the Patron 11-14); process, E3 after W-633 (codex-surplus-meet-1114, 3/3)" }
       - { opus: W-624, says: "pre-sign gate runs check on a named branch: an old-base opus's signature is refused (W-503 blocked); right after W-595; next in E3 after W-630 (w503-unblock-meet-1113)" }
@@ -85,7 +89,6 @@ queues:
       - { opus: W-570, says: "a Codex upgrade is admitted only by a kept smoke log for that version; W-562's stated limit (codex-sandbox meet call 1)" }
       - { opus: W-554, says: "a meet verb asks the relevant leads, each named with why, the owning collegium's magister always; check refuses a cited meet missing one; exempt at the Patron's ask 2026-11-09" }
       - { opus: W-553, says: "a spec draft declares a risk class and a 30/45-minute budget; check refuses unconnected behaviour groups without a keep-together reason (w563-scope-meet-1112); D-189" }
-      - { opus: W-555, says: "FIRST end-state opus, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; lanes: advisory + warning; one no-lane count line; Greenlit list goes" }
       - { opus: W-556, says: "greenlight --after writes the queue entry; no clerk step at filing; exempt at the Patron's ask 2026-11-09, on the leads' simplify meet (D-189)" }
       - { opus: W-372, says: "an agent waits on its own background perform; ranked ahead of W-545 on the leads' simplify meet (D-189)" }
       - { opus: W-545, says: "the build rung as one perform: handoff, ci --opus and gate commits; exempt on the leads' meet and the Patron 2026-11-09", folded: [W-557] }
@@ -152,6 +155,7 @@ queues:
       - { opus: W-286, says: "a decision's kill clause is evaluated; after W-291 (D-192); process (D-193)" }
       - { opus: W-670, says: "refresh timer every 30 min all day, cap 4/6h, prompt not assuming the Patron asleep (D-211); prototypes chore/refresh-all-day, chore/refresh-prompt-all-day; low; code-owned .claude/" }
       - { opus: W-672, says: "PR-time check fails source on a non-opus branch (certify refuses only in the merge group); absorbs W-327; code-owned .github/; process [absorbs W-327]" }
+      - { opus: W-290, says: "orchestrator write-deny hook; audit: does today's guard already cover it; done or cut follows (w555-meet-1116)" }
   research:
     lanes: { R1: ~ }
     next:
@@ -190,3 +194,5 @@ deferred:
   - { opus: W-486, says: "The application schedules the retro, which proposes improvements (D-188: stays deferred)" }
   - { opus: W-524, says: "remove the greenlit state and greenlight verb; after M4 (D-186, D-187)" }
   - { opus: W-515, says: "a bounded discussion across vendor seats: no pilot ruled (D-182)" }
+  - { opus: W-281, says: "milestone exits can be met (milestones.shape refuses a needs: exit); not end-state path (w555-meet-1116)" }
+  - { opus: W-440, says: "tick appends a daily history snapshot for trend charts; not end-state path (w555-meet-1116)" }
