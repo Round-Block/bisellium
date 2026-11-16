@@ -5,11 +5,15 @@ queues:
       - { opus: W-666, says: "Patron answers carry a signed receipt (key outside agent reads); guard refuses unsigned, forged, replayed or agent-authored writes; high, first of D-211's order (console-only-meet-1116)" }
       - { opus: W-673, says: "Certificate excludes come from ci-scope's one record-path list, so a handoff-only PR voids no verify; cause fix, design×indirection-duplicates-source-of-truth; high, gap 100 (w668-meet-1116 Q11, 5/5)" }
       - { opus: W-669, says: "Host job (launch service) runs git worktree prune for sandbox-held .git/worktrees/<id> dirs; cleanup never waits on a Patron rm; high, gaps 60/80 (D-211) [absorbs W-586]" }
+      - { opus: W-554, says: "meet verb asks relevant leads with why; seats boot as real sellae, context refuses unknown; design seat = ui-lead Astra; check refuses a cited meet missing one; process top (Patron 11-16)" }
+      - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead); qa-lead seat split out as W-644 (D-208 item 6); right after W-512 (w590-rank-meet-1112)" }
+      - { opus: W-590, says: "explicit legacy signer, each magister reader moved, then magister: design-lead; red row: same-model signer and reviewer refuse; after W-531; process (w590-rank-meet-1112) [absorbs W-591]" }
+      - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114)" }
+      - { opus: W-676, says: "greenlight --auto applies D-216: non-ui eng/ops/production opus <=3 points, no security/sandbox/branch-protection/architecture/code-owned title; hand greenlight until then; process" }
       - { opus: W-668, says: "Boot reader consumes each Patron answer once (verified receipt or forge-authored reply); Patron-only steps refuse without one; D-211's order, after W-666/W-667" }
       - { opus: W-648, says: "bisellium run --cwd <dir> runs a builder's command in the opus's own .worktrees/<id>, only with --opus; small and high, unblocks W-503's green rows (clone-tests-meet-1114 c, 5/5)" }
       - { opus: W-665, says: "kind ui: next orders the full ci (served-e2e shots) before the build review, and the review perform runs Claude Opus (D-150 C); gaps 77-78; high (W-488-review-meet-1116)" }
       - { opus: W-555, says: "FIRST end-state opus, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; advisory lanes; one no-lane count line; Greenlit list goes [absorbs W-478]", folded: [W-478], next_ts: true }
-      - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114)" }
       - { opus: W-641, says: "daily retro reads a timed-out gate log (gap 12), with W-621's first form folded in; E3's next process slot after W-644 (retro-meet-1115 c, 5/5) [absorbs W-533]" }
       - { opus: W-645, says: "cause fix, red admission refuses a red log with ERR_MODULE_NOT_FOUND, serve exited, no port or token line, or no declared assertion; high, unblocks W-503 (all-leads-meet-1114 Q4)" }
       - { opus: W-659, says: "cause fix for the class tests×one-sided-bound-assertion: source-text pins name each reader; rule in tests.ts + spec-draft line; W-645 never waits on it (W-645 class call 11-15); process" }
@@ -61,7 +65,6 @@ queues:
       - { opus: W-616, says: "process opera name their switch (pinned on in the real studio, loud if missing) and owed proof; done marks unproven; check rule, not memory (w610-proof-meet-1112)" }
       - { opus: W-618, says: "process.checkpoint reads the newest row: cycle minutes first, a spend cell, both from records; after W-616 (memory-enforce-meet-1112)" }
       - { opus: W-613, says: "ci --opus alongside the build review in a scratch checkout, killed on a failed review; follow-up of W-610, right after W-551 (review-order-meet-1112 round 2)" }
-      - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead); qa-lead seat split out as W-644 (D-208 item 6); right after W-512 (w590-rank-meet-1112)" }
       - { opus: W-642, says: "W-301's remainder: console writes refuse mistyped opera row ids (D-061 §4, w301-split-meet-1114); after W-301" }
       - { opus: W-597, says: "each lane's next unclaimed entry gets one spec-ahead draft; sign refuses a stale base; overlap via W-592; process, after W-592 (spec-ahead-lanes-meet-1112)" }
       - { opus: W-611, says: "W-494 guard clears a resumed runner's finished background run; process (retro 11-12) [absorbs W-629 W-538]" }
@@ -87,7 +90,6 @@ queues:
       - { opus: W-564, says: "the branch perform and the reds replay npm ci the worktree; on the leads' pre-sign meet (D-189)" }
       - { opus: W-569, says: "verdict refuses a Codex-model verdict with no --session; W-562's stated limit" }
       - { opus: W-570, says: "a Codex upgrade is admitted only by a kept smoke log for that version; W-562's stated limit (codex-sandbox meet call 1)" }
-      - { opus: W-554, says: "a meet verb asks the relevant leads, each named with why, the owning collegium's magister always; check refuses a cited meet missing one; exempt at the Patron's ask 2026-11-09" }
       - { opus: W-553, says: "a spec draft declares a risk class and a 30/45-minute budget; check refuses unconnected behaviour groups without a keep-together reason (w563-scope-meet-1112); D-189" }
       - { opus: W-556, says: "greenlight --after writes the queue entry; no clerk step at filing; exempt at the Patron's ask 2026-11-09, on the leads' simplify meet (D-189)" }
       - { opus: W-372, says: "an agent waits on its own background perform; ranked ahead of W-545 on the leads' simplify meet (D-189)" }
@@ -149,7 +151,6 @@ queues:
       - { opus: W-585, says: "next's split hint passes new's validation; new gains --dry-run and --milestone/--value; retro 11-10 and 11-11 cause fix; process (D-193)" }
       - { opus: W-587, says: "the guard refuses a backgrounded subshell group; retro 11-10 cause fix (or fold into W-537); process (D-193) [absorbs W-539]" }
       - { opus: W-588, says: "the guard refuses a dispatch naming a brief whose Write failed; retro 11-10 cause fix; process (D-193)" }
-      - { opus: W-590, says: "explicit legacy signer, each magister reader moved, then magister: design-lead; red row: same-model signer and reviewer refuse; after W-531; process (w590-rank-meet-1112) [absorbs W-591]" }
       - { opus: W-324, says: "a spec round counts signature plus review; qa, E1, after W-591 (same retro.ts) (D-192); process (D-193)" }
       - { opus: W-291, says: "commit trailers name a declared sella; after W-591 (D-192); process (D-193)" }
       - { opus: W-286, says: "a decision's kill clause is evaluated; after W-291 (D-192); process (D-193)" }
@@ -161,13 +162,13 @@ queues:
     next:
       - { opus: W-634, says: "orchestrator context budget: measure first, cheap fixes, graph/retrieval index; Fable leads, Astra challenges (Patron 11-13)" }
   ui:
-    lanes: { UI1: W-503, UI2: W-488 }
+    lanes: { UI1: W-503, UI2: W-675 }
     next:
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
-      - { opus: W-488, says: "comment on served UI captures, server half only (split: ui2-lane-meet-1115); UI2 now, no W-503 files" }
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2)" }
+      - { opus: W-675, says: "W-674's first child: Dracula theme layer (roles by meaning), old token names as aliases, w025.css untouched, pixel-identical; UI2 now, then W-467 re-signs on roles (D-217 item 8)" }
       - { opus: W-674, says: "Dracula spec scan for what the console lacks, then steps across every screen; its draft sets heading and link colours before W-467 signs (Patron 11-16)" }
-      - { opus: W-467, says: "Officina on Home's palette; UI2 after W-488, Officina files (D-192) ; signs after W-674's draft sets heading and link roles" }
+      - { opus: W-467, says: "Officina on Home's palette; UI2 after W-675, Officina files (D-192) ; signs after W-674's draft sets heading and link roles" }
       - { opus: W-658, says: "capture review screen, W-488's web half (split); UI2 after W-503 (shares App.tsx)" }
       - { opus: W-657, says: "screens register without editing shell files (App.tsx, route.ts, nav.ts); UI1 after W-503 (ui2-lane-meet-1115, 5/5)" }
       - { opus: W-504, says: "Home: Completion and Spend row (D-175 piece 4); needs W-439" }
