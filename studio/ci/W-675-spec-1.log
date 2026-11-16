@@ -1,0 +1,23 @@
+# opus: W-675
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-11-16T12:06:23.569Z
+# tree: tree:0301680274f66a3d4c75ed45f02fb6618ed9840a
+# brief: briefs/W-675.md blob:bf9ae238d7cf5842c38167d99edfe6280d8bc215
+# ticket: {"opus":"W-675","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"d8af1840a8be2491e699a1f259af08d6ddac7cea","brief":"bf9ae238d7cf5842c38167d99edfe6280d8bc215","at":"2026-11-16T12:06:12.934Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-675-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-675-spec/gate.log
+
+## Findings
+
+1. advisory — The exact spec-signature readers now report zero problems: every Input-domain row has held or scoped line evidence, every pin or unpinned limit is in the brief grammar, the path/shell form boundaries are explicit, and the three replayed red headers equal the normalized commands the brief declares — check: /home/edckt/.bisellium-evidence/W-675-spec/verdict-admission.out and /home/edckt/.bisellium-evidence/W-675-spec/reds-host.out
+2. advisory — Four mutations produced now prove the pinned promises and domain families: role census, alias mapping, outside-theme literal containment and served pixel identity each fail their named W-675 assertion in Node TAP output, from a one-hunk non-test source patch — check: /home/edckt/.bisellium-evidence/W-675-spec/kills-r1f/run-kills.out and /home/edckt/.bisellium-evidence/W-675-spec/promise-ledger.md
+3. advisory — The unchanged prototype mbox applies to base `ecb8761e8067176087cd0eba0814d95840225227`, makes tree `64981fd55bb059e7b51b4afdc15fd226132dd8c5`, and the rerun pre-sign gate passes both owed rows with exit 0 — check: /home/edckt/.bisellium-evidence/W-675-spec/gate.log
+
+## Verdict
+
+passed — signature round 1 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `/home/edckt/.bisellium-evidence/W-675-spec/brief.md` sha256 `a80d9895759bde0044501e6819227e6a92987bc607417c1335792e1d3290ac10`; prototype mbox sha256 is `e82848ddb97ba191354b117d78eeb1d7ca9868cf509203e0e521a025af554272`, the exact admission replay reports zero problems, and the pre-sign gate's two owed rows pass with exit 0. The Patron's three accepted Defaults remain unchanged: the `--color-<meaning>` role set, `themes/dracula.css` imported by `tokens.css`, and the one-theme guard boundary. Brief edits were limited to authorised clauses (a)–(d): exact pin/unpinned grammar, hostile path and shell-form limits, the already-quoted Genuine red command forms with freshly replayed matching evidence, and the Prototype-path grammar named by admission; no behaviour, Default, row name, assertion message, shot list or promise changed, and no record write or lifecycle command was performed.

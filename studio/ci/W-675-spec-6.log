@@ -1,0 +1,29 @@
+# opus: W-675
+# phase: spec
+# round: 6
+# sella: ui-lead
+# outcome: passed
+# at: 2026-11-16T14:40:49.410Z
+# tree: tree:536219a9a4ff36b416b577509eae7762284882c3
+# dispatch_prompt: ci/W-675-ui-prompt-6.md
+# design_digest: sha256:8e8a5e910edf6f9676e560721b31108eb90be8624dce4b546971ae90b3d60ac2
+# ticket: {"opus":"W-675","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"30cbfff2c819a417cc98621ff13f502711dc0498","brief":"0b74a25b6317e6780ab294538b537fdcc57ab282","at":"2026-11-16T14:40:41.087Z"}
+
+## Findings
+
+1. advisory — brief:85 — Round 5 advisory #1 matters to UI verification: identical initial captures do not establish preservation of focus, populated Budget cues, expanded Health or the narrow Inbox reading view. The named regression rows need evidence from the actual build; `readers-r4.sh` currently targets `gate-clone` explicitly — replace with: “Run the named reader files separately against the implementation checkout, record its tree and outputs, and retain the existing served-state coverage. Re-check Board blocking text, severity shapes and labels, and interactive-state legibility.” — check: `/home/edckt/.bisellium-evidence/W-675-spec/readers-r4.sh`, `apps/web/tests-serve/states.spec.ts`, `apps/web/tests-serve/w413.spec.ts`
+2. advisory — brief:63 — Round 5 advisory #2 affects confidence in colour evidence: migrated readers can inspect a commented declaration that the browser ignores. This is not a visible defect in these captures, but source-derived contrast results alone cannot establish rendered legibility — replace with: “Strip CSS comments in all migrated colour readers before reading declarations. Confirm their resolved values agree with browser-rendered text, surfaces and severity cues; comment handling requires no visual change.” — check: `apps/web/test/tokens.test.ts`, `apps/web/test/w341.test.ts`, `apps/web/test/w408.test.ts`, `apps/web/test/w413.test.ts`
+
+## UI input disposition
+
+This is my first input on W-675; there are no earlier findings of mine to reassess. I judged round 5, brief sha256 `4d6b0ec914453e42a36b959d6bae79e9f53bf309fc5c77b4e3806df8d7d13505`.
+
+I inspected all thirty-two captures and independently compared their decoded pixels: all sixteen pairs have zero differences. At build, re-check Board, Inbox, Officina and Seats at 1280×900 expanded and collapsed, 640×900 and 390×900, including text hierarchy, selection, evidence links, status labels and control boundaries. Establish the implementation’s identity with prototype tree `303b44f99deb5dcbf4d9fe1a96e8ae68dc2d4807` or regenerate the comparison against the implementation. Confirm advisories 1 and 2 are addressed, with browser evidence supporting the existing state checks beyond these initial captures.
+
+## Recommendation
+
+The extraction preserves legibility and all information visible in the captured states; I found no blocking UI defect.
+The role names sensibly distinguish purple headings, cyan links and facts, pink categories and selection, yellow project names, neutral surfaces, and workflow versus severity indicators.
+The compatibility aliases remain deliberately ambiguous: borders still follow `--rule` into the selected-surface role, and the Inbox’s cyan identifier still follows the link role; purpose-based consumer migration remains necessary before a whole-theme swap changes the right things independently.
+Pixel preservation and deferred visual corrections are Patron rulings under D-217; the brief’s implementation proposals make sense for that bounded extraction, and I found no agent-written rule applied here that warrants a screen correction.
+Verdict: passed

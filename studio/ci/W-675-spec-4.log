@@ -1,0 +1,25 @@
+# opus: W-675
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-11-16T14:14:01.623Z
+# tree: tree:c267c6bfa956f355dd6a0151d5ed27d44b110b36
+# brief: briefs/W-675.md blob:0b74a25b6317e6780ab294538b537fdcc57ab282
+# ticket: {"opus":"W-675","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"56ed80b6affec26cfe22f867d19b14f9e2b1912f","brief":"0b74a25b6317e6780ab294538b537fdcc57ab282","at":"2026-11-16T14:13:54.081Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-675-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-675-spec/gate.log
+
+## Findings
+
+1. advisory — Round-3 item 1 is adopted: `apps/web/test/w413.test.ts` is the eighth owned code path, W-413-b1 now resolves the Dracula theme with the compatibility aliases, and the complete eleven-site `tokens.css` census names every colour reader plus the font-only, runtime, text-only and historical-evidence limits; the old series tip fails W-413-b1 by assertion and the revised behaviour-2 and final tips pass all five W-413 rows — check: /home/edckt/.bisellium-evidence/W-675-spec/w413-red-before.out, /home/edckt/.bisellium-evidence/W-675-spec/w413-green-after.out, /home/edckt/.bisellium-evidence/W-675-spec/readers-r4-w413.out and /home/edckt/.bisellium-evidence/W-675-spec/tokens-readers-r4.md
+2. advisory — Round-3 item 2 is adopted: the promise now distinguishes b3's computed-value and reachability pin from the pixel proof, and the kept capture was rerun against current prototype build commit `5fbc15e0e98d8800fe2681f524562589034a3e0a`, tree `303b44f99deb5dcbf4d9fe1a96e8ae68dc2d4807`, with zero differing pixels across the unchanged four-screen by four-row matrix — check: /home/edckt/.bisellium-evidence/W-675-spec/capture-shots-r4.out and /home/edckt/.bisellium-evidence/W-675-spec/pixel-diff.md
+3. advisory — Round-3 item 3 is adopted: the four stale documentation locations are an explicit records follow-up, including the W-366-b1 DIRECTION assertion that pins the old wording — check: /home/edckt/.bisellium-evidence/W-675-spec/brief.md:94 and /home/edckt/.bisellium-evidence/W-675-spec/gate-clone/apps/web/test/tokens.test.ts:156
+4. advisory — Round-3 item 4 is adopted: b2 admits theme literals only under the exact `src/themes/` prefix, and the shared declaration reader strips CSS comments before counting roles or aliases — check: /home/edckt/.bisellium-evidence/W-675-spec/gate-clone/apps/web/test/w675.test.ts:43, /home/edckt/.bisellium-evidence/W-675-spec/gate-clone/apps/web/test/w675.test.ts:109 and /home/edckt/.bisellium-evidence/W-675-spec/readers-r4-w675-b1-b2.out
+5. advisory — Round-3 item 5 is adopted: the status records signed r2 and revision r4, and the obsolete draft-only signature/lifecycle acceptance line is gone — check: /home/edckt/.bisellium-evidence/W-675-spec/brief.md:3 and /home/edckt/.bisellium-evidence/W-675-spec/admission-r4.out
+
+## Verdict
+
+passed — signature round 4 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `/home/edckt/.bisellium-evidence/W-675-spec/brief.md` sha256 `4d6b0ec914453e42a36b959d6bae79e9f53bf309fc5c77b4e3806df8d7d13505`; prototype mbox sha256 is `e33c363930ecf7fd46b2c2514263956c9158501d36e35b78fd3c8b3a66ffefbd`, both admission replays report zero problems, and the pre-sign gate's two owed rows pass with exit 0 at tree `303b44f99deb5dcbf4d9fe1a96e8ae68dc2d4807`. All five round-3 items were adopted. Adding and migrating `apps/web/test/w413.test.ts` is the design change; the other edits clarify build-head pixel proof, records follow-up scope, exact theme/comment parsing, and signed status. Pixel identity and the four-screen by four-row matrix are unchanged. The Patron's three accepted Defaults remain unchanged: the `--color-<meaning>` role set, `themes/dracula.css` imported by `tokens.css`, and the one-theme guard boundary. No record write or lifecycle command was performed.

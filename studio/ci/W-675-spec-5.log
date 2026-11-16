@@ -1,0 +1,23 @@
+# opus: W-675
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 868bab0b-2568-4bc8-a061-a3ec38c9d69d
+# session_reason: the r3 session 1c2e1a60 cannot be resumed: the Bash sandbox denies writes to ~/.claude/projects, so it was never persisted (kit 329), and r5b was refused for form; a fresh session read the r3 and r5b verdicts as its own earlier rounds
+# outcome: passed
+# at: 2026-11-16T14:20:28.238Z
+# tree: tree:c267c6bfa956f355dd6a0151d5ed27d44b110b36
+# brief: briefs/W-675.md blob:0b74a25b6317e6780ab294538b537fdcc57ab282
+# ticket: {"opus":"W-675","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"56ed80b6affec26cfe22f867d19b14f9e2b1912f","brief":"0b74a25b6317e6780ab294538b537fdcc57ab282","at":"2026-11-16T14:20:19.001Z"}
+
+## Earlier findings
+- ci/W-675-spec-3.log #1: closed — brief:32 now lists `apps/web/test/w413.test.ts` under Files owned, and brief:34 says "eight". brief:67 adds the W-413-b1 reader, and brief:85 now requires W-413 b1–b5 to stay green. In the prototype (`prototype.mbox:486-503`), the W-413 reader reads `themes/dracula.css` and `tokens.css` together. It asserts that `--severity-blocking-text` resolves to `color-mix(in srgb, var(--color-severity-blocking-indicator) 75%, var(--color-text-primary))`. The census (`tokens-readers-r4.md`, `class-census-r4.out`) lists every reader of `tokens.css`; the only other hit is `tests-serve/w413.spec.ts`, which reads the value the browser computes, and the zero-pixel promise keeps that value the same.
+
+## Findings
+1. advisory — brief:85 [severity: S4] Acceptance requires W-341 b1–b6, W-408 b1–b5 and W-413 b1–b5 to stay green, but no build step runs these files. `npm test` does not run `apps/web/test/w413.test.ts`, which is how round 3's blocker went unnoticed. The only evidence is a run on the prototype tree. Replacement, appended to brief:85: "The build reruns `/home/edckt/.bisellium-evidence/W-675-spec/readers-r4.sh` (each reader file run separately, `set -euo pipefail`) against its own head and keeps the outputs as evidence." [class: review×fix-round-census-misses-reachable-paths] — check: none: the build gate should run every `apps/web/test/*.test.ts` that reads `src/tokens.css` or `src/themes/*.css`
+2. advisory — brief:63 [severity: S3] Comment stripping is promised only for W-675's own role and alias parsing. The migrated W-413 reader (`prototype.mbox:493`) takes the first regex match from the joined theme and token text without stripping comments, and so do the migrated readers in tokens.test, w341 and w408. A commented-out `--name:` placed above the real declaration would be read instead of it. Replacement for brief:63's tail: "…role/alias parsing in W-675 and in the migrated tokens, W-341, W-408 and W-413 readers strips CSS comments before reading declarations…" (or state this as a limit for those readers). [class: spec×input-domain-missing-or-unenforceable] — check: apps/web/test/w413.test.ts
+
+## Verdict
+Round 3's only blocker is closed, round 3's advisories 2–5 are taken up at brief:3, :50, :63 and :94, nothing in DIRECTION needs a sense finding because no pixel changes, and the two advisories above are fixes for the builder to adopt.
+VERDICT: PASS
