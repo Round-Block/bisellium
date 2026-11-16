@@ -1,0 +1,44 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-675-b2\s --import tsx apps/web/test/w675.test.ts
+# exit: 1
+# at: 2026-11-16T15:29:12.425Z
+# sella: ui-architect
+# tree: tree:34ba5cf34dd94105dfa646df8795ac6cde0984f8
+# ticket: {"opus":"W-675","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-675/studio","head":"fac11ad9dc07f9de87965ea58d83ec5ae01d37e1","brief":"0b74a25b6317e6780ab294538b537fdcc57ab282","at":"2026-11-16T15:29:12.391Z"}
+
+TAP version 13
+# Subtest: W-675-b2 behaviour 2: compatibility aliases retain values while colour authorship stays in themes
+not ok 1 - W-675-b2 behaviour 2: compatibility aliases retain values while colour authorship stays in themes
+  ---
+  duration_ms: 2.440566
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-675/apps/web/test/w675.test.ts:1:3339'
+  failureType: 'testCodeFailure'
+  error: |-
+    --ink aliases --color-text-primary
+    + actual - expected
+    
+    + '#f8f8f2'
+    - 'var(--color-text-primary)'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'var(--color-text-primary)'
+  actual: '#f8f8f2'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-675/apps/web/test/w675.test.ts:95:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8.264929
