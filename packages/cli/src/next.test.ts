@@ -806,3 +806,19 @@ test("W-669-b1 behaviour 1: a held admin directory does not hold cleanup: the ch
   assert.equal(branchExists(l), true, "a failed remove that leaves the entry listed: the local branch is left");
   assert.equal(remoteBranchExists(l), true, "a failed remove that leaves the entry listed: the remote branch is left");
 });
+
+test("W-669-b2 behaviour 2: a held admin directory asks the installed guard's sync to prune it outside the sandbox, and it is one git worktree prune deletes; a cleanup that holds asks nothing", { timeout: 1_800_000 }, () => {
+  const w = w669World("w669-b2");
+  const admin = w669Admin(w);
+  const kept = w227Cleanup(w, { GIT_STUB_REAL: failingGit("w669-b2-kept", ["worktree remove"]) });
+  assert.equal(kept.status, 1, ran("a failed remove that keeps the checkout: held", kept));
+  assert.equal(existsSync(syncRequest(w)), false, "a cleanup that holds asks no sync");
+  const o = w227Cleanup(w, { GIT_STUB_REAL: heldAdminGit("w669-b2", admin) });
+  assert.equal(existsSync(syncRequest(w)), true, ran("a held admin directory: the installed guard's sync is requested", o));
+  assert.ok(o.out.split("\n").includes(`sync: requested; the installed guard's sync runs git worktree prune outside the sandbox when this call returns, which deletes ${admin} (W-369, W-669)`), ran("a held admin directory: the sync line names the directory", o));
+  assert.equal(o.status, 0, ran("a held admin directory: cleanup exits 0", o));
+  // the sync's own prune (agent-workspace.sh sync: git worktree prune -v), run here without a sandbox
+  const pruned = spawnSync(REAL_GIT, ["-C", w.repo, "worktree", "prune", "-v"], { encoding: "utf8" });
+  assert.equal(pruned.status, 0, `git worktree prune exits 0: ${pruned.stderr}`);
+  assert.equal(existsSync(admin), false, "the held admin directory is one git worktree prune deletes");
+});
