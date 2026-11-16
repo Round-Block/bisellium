@@ -62,8 +62,9 @@ Lanes now:
 - E1 W-666 (signed Patron receipt) HELD till W-645 merges (D-192); then W-668 pt C, W-673.
 - E2 W-645 (red check refuses broken red logs): fix check of r3 left 3 open paths (a served spec stem holding its own `.ts:n:n`); the rules-audit engineering meet (~/.bisellium-evidence/rules-eng-meet-1116/) rules the judge's input grammar; then one last builder round.
 - E3 W-669 (host prune of sandbox-held worktree dirs) done (#1275, landed cb92fde8). Next W-665 (ui build review screenshots), then the process lane, re-ranked by the rules audit (W-612, one brief admission and a read-only admit verb, expected to rise): W-554 (meet asks leads), W-531 (one spec lead per collegium), W-590 (legacy signer), W-644 (qa-lead seat, Codex Sol), W-676 (greenlight --auto, D-216).
-- UI1 W-503 parked (D-215), W-467 re-signs after W-675, W-662 held.
+- UI1 W-503 halted by D-222 (W-675 first), W-467 re-signs after W-675, W-662 held.
 - UI2 W-675 (Dracula theme layer): spec round 2 signed (brief 41351a90, untracked in main); next Opus UI spec review round 3, then ui-lead (Astra) input.
+- Retro lane RT1, owner qa-lead (Patron 11-16): until W-682's host cron lands, every boot re-arms the session cron (CronCreate "4 9 * * *", prompt in daily-retro-lane-meet-1116/collated.md Q3); W-681, W-682 filed and greenlit (the Patron 11-16).
 - W-673 (cert tree excludes the handoff): meet w673-meet-1116 ruled 3/3; Codex spec review with 5 named items next; lands after W-645.
 - W-555 not signed (no lane); W-646 carries D-213 cap wording.
 W-250 (duplicate hosted suite cut), W-636 (next reads branch records); older filings: studio/queue.yml.
