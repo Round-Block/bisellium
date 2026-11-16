@@ -482,3 +482,11 @@ test("W-543-b6 behaviour 6: launch refuses with no landed handoff newer than the
     assert.equal(await w.launch("--dry-run"), 1, "after a session with no readable result the next launch is refused");
   }
 });
+
+test("W-543-b2b: the shipped refresh prompt does not assume the Patron is asleep and names PushNotification", () => {
+  const prompt = readFileSync(join(REPO, ".claude", "refresh", "prompt.md"), "utf8");
+  assert.doesNotMatch(prompt, /asleep/, "the prompt does not say the Patron is asleep");
+  assert.doesNotMatch(prompt, /until the morning/, "the prompt does not wait until the morning");
+  assert.doesNotMatch(prompt, /left for the morning/, "a Patron step is not left for the morning");
+  assert.match(prompt, /PushNotification/, "the prompt names PushNotification");
+});
