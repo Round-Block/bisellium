@@ -1,0 +1,1585 @@
+certifies: tree:975054b425ca899a41d1d0d47340febce9eb6918
+command: sha256:90c3645a3ea30ba4d2c0d47a670cdc604508a2221cb48d00fae41a48e227dd52
+exit code: 0
+
+$ npm run -s typecheck
+exit: 0
+
+
+$ npm run -s check -- "$BISELLIUM_STUDIO" --repo .
+exit: 0
+check /home/edckt/agents/bisellium/.worktrees/W-669/studio  (now 2026-11-16T10:16:22.210Z)
+
+advisories (1464)
+  probatio.certifies         opera/W-016.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-016.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-017.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-017.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-018.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-018.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-019.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-019.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-020.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-020.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-021.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-021.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-022.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-022.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-022.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-023.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-023.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-023.md                 handoff stage "building" ≠ state "halted"
+  opus.title.words           opera/W-023.md                 title has 10 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-023.md                 halted for 54 days
+  probatio.certifies         opera/W-024.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-024.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-025.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-025.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-026.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-026.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-027.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-027.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-027.md                 handoff stage "building" ≠ state "halted"
+  halted.stale               opera/W-027.md                 halted for 54 days
+  probatio.certifies         opera/W-028.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-028.md                 gate "review" evidence has no identity (certifies)
+  halted.stale               opera/W-028.md                 halted for 54 days
+  probatio.certifies         opera/W-029.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-029.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-030.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-030.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-031.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-031.md                 gate "spec" evidence has no identity (certifies)
+  opus.title.words           opera/W-032.md                 title has 14 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-032.md                 halted for 41 days
+  probatio.certifies         opera/W-033.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-033.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-033.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-034.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-034.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-034.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-035.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-035.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-036.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-036.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-037.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-037.md                 gate "review" evidence has no identity (certifies)
+  halted.stale               opera/W-038.md                 halted for 33 days
+  probatio.certifies         opera/W-039.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-039.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-039.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-040.md                 title has 21 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-040.md                 halted for 13 days
+  probatio.certifies         opera/W-041.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-041.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-041.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-042.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-042.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-042.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-043.md                 title has 9 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-043.md                 halted for 41 days
+  probatio.certifies         opera/W-044.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-044.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-044.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-045.md                 title has 9 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-045.md                 halted for 13 days
+  probatio.certifies         opera/W-046.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-046.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-046.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-047.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-047.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-047.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-048.md                 title has 10 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-048.md                 halted for 41 days
+  probatio.certifies         opera/W-049.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-049.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-049.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-050.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-050.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-050.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-051.md                 title has 12 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-051.md                 halted for 13 days
+  opus.title.words           opera/W-052.md                 title has 10 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-052.md                 halted for 41 days
+  opus.title.words           opera/W-053.md                 title has 10 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-053.md                 halted for 41 days
+  opus.title.words           opera/W-054.md                 title has 12 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-054.md                 halted for 41 days
+  opus.title.words           opera/W-055.md                 title has 13 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-055.md                 halted for 41 days
+  halted.stale               opera/W-056.md                 halted for 41 days
+  probatio.certifies         opera/W-057.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-057.md                 gate "review" evidence has no identity (certifies)
+  opus.title.words           opera/W-058.md                 title has 10 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-058.md                 halted for 33 days
+  opus.title.words           opera/W-059.md                 title has 14 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-059.md                 halted for 41 days
+  opus.title.words           opera/W-060.md                 title has 17 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-060.md                 halted for 41 days
+  opus.title.words           opera/W-061.md                 title has 14 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-061.md                 halted for 41 days
+  probatio.certifies         opera/W-062.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-062.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-062.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-063.md                 title has 16 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-063.md                 halted for 41 days
+  probatio.certifies         opera/W-064.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-064.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-064.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-065.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-065.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-065.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-066.md                 title has 23 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-066.md                 halted for 33 days
+  probatio.certifies         opera/W-067.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-067.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-067.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-068.md                 title has 60 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-068.md                 halted for 13 days
+  probatio.certifies         opera/W-069.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-069.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-069.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-070.md                 title has 20 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-070.md                 halted for 13 days
+  probatio.certifies         opera/W-071.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-071.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-071.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-072.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-072.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-072.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-073.md                 title has 22 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-073.md                 halted for 13 days
+  probatio.certifies         opera/W-075.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-075.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-075.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-076.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-076.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-076.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-077.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-077.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-077.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-078.md                 title has 24 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-078.md                 halted for 13 days
+  probatio.certifies         opera/W-079.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-079.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-079.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-080.md                 title has 26 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-080.md                 halted for 33 days
+  opus.title.words           opera/W-081.md                 title has 53 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-081.md                 halted for 13 days
+  probatio.certifies         opera/W-082.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-082.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-082.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-083.md                 title has 23 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-083.md                 halted for 34 days
+  probatio.certifies         opera/W-084.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-084.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-084.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-085.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-085.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-085.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-086.md                 title has 33 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-086.md                 halted for 33 days
+  probatio.certifies         opera/W-087.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-087.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-087.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-088.md                 title has 23 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-088.md                 halted for 41 days
+  probatio.certifies         opera/W-089.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-089.md                 gate "spec" evidence has no identity (certifies)
+  opus.title.words           opera/W-090.md                 title has 61 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-090.md                 halted for 13 days
+  opus.title.words           opera/W-091.md                 title has 19 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-091.md                 halted for 13 days
+  opus.title.words           opera/W-092.md                 title has 45 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-093.md                 title has 47 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-093.md                 halted for 13 days
+  opus.title.words           opera/W-094.md                 title has 26 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-094.md                 halted for 13 days
+  opus.title.words           opera/W-095.md                 title has 37 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-095.md                 halted for 41 days
+  probatio.certifies         opera/W-096.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-096.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-096.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-097.md                 title has 27 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-097.md                 halted for 41 days
+  opus.title.words           opera/W-098.md                 title has 25 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-098.md                 halted for 13 days
+  opus.title.words           opera/W-099.md                 title has 51 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-099.md                 halted for 13 days
+  opus.title.words           opera/W-100.md                 title has 25 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-100.md                 halted for 41 days
+  probatio.certifies         opera/W-101.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-101.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-102.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-102.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-102.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-103.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-103.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-104.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-104.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-105.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-105.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-106.md                 handoff stage "backlog" ≠ state "halted"
+  opus.title.words           opera/W-106.md                 title has 10 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-106.md                 halted for 41 days
+  probatio.certifies         opera/W-107.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-107.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-107.md                 handoff stage "building" ≠ state "halted"
+  halted.stale               opera/W-107.md                 halted for 45 days
+  probatio.certifies         opera/W-108.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-108.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-108.md                 handoff stage "building" ≠ state "halted"
+  halted.stale               opera/W-108.md                 halted for 45 days
+  probatio.certifies         opera/W-109.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-109.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-109.md                 handoff stage "building" ≠ state "halted"
+  halted.stale               opera/W-109.md                 halted for 45 days
+  probatio.certifies         opera/W-110.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-110.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-110.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-111.md                 title has 20 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-111.md                 halted for 41 days
+  opus.title.words           opera/W-112.md                 title has 13 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-112.md                 halted for 41 days
+  opus.title.words           opera/W-113.md                 title has 18 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-113.md                 halted for 13 days
+  probatio.certifies         opera/W-114.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-114.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-114.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-115.md                 title has 10 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-115.md                 halted for 13 days
+  opus.title.words           opera/W-116.md                 title has 12 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-116.md                 halted for 13 days
+  opus.title.words           opera/W-117.md                 title has 17 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-117.md                 halted for 34 days
+  opus.title.words           opera/W-118.md                 title has 42 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-118.md                 halted for 13 days
+  opus.title.words           opera/W-119.md                 title has 15 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-119.md                 halted for 41 days
+  probatio.certifies         opera/W-120.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-120.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-120.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-121.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-121.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-121.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-122.md                 title has 22 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-122.md                 halted for 34 days
+  probatio.certifies         opera/W-123.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-123.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-123.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-124.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-124.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-124.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-125.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-125.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-125.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-126.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-126.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-126.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-127.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-127.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-127.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-128.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-128.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-128.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-129.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-129.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-129.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-130.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-130.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-130.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-131.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-131.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-131.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-132.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-132.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-132.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-133.md                 title has 35 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-133.md                 halted for 13 days
+  probatio.certifies         opera/W-134.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-134.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-134.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-135.md                 title has 67 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-135.md                 halted for 13 days
+  opus.title.words           opera/W-136.md                 title has 28 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-136.md                 halted for 13 days
+  probatio.certifies         opera/W-137.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-137.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-137.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-138.md                 title has 52 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-138.md                 halted for 13 days
+  probatio.certifies         opera/W-139.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-139.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-139.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-140.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-140.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-140.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-141.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-141.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-141.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-142.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-142.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-142.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-143.md                 title has 28 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-143.md                 halted for 13 days
+  opus.title.words           opera/W-144.md                 title has 26 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-144.md                 halted for 13 days
+  opus.title.words           opera/W-145.md                 title has 9 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-145.md                 halted for 13 days
+  opus.title.words           opera/W-146.md                 title has 39 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-146.md                 halted for 13 days
+  opus.title.words           opera/W-147.md                 title has 41 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-147.md                 halted for 13 days
+  opus.title.words           opera/W-148.md                 title has 9 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-149.md                 title has 54 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-149.md                 halted for 13 days
+  opus.title.words           opera/W-150.md                 title has 12 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-150.md                 halted for 13 days
+  opus.title.words           opera/W-151.md                 title has 21 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-151.md                 halted for 13 days
+  probatio.certifies         opera/W-152.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-152.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-152.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-153.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-153.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-153.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-154.md                 title has 75 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-154.md                 halted for 13 days
+  opus.title.words           opera/W-155.md                 title has 35 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-155.md                 halted for 34 days
+  opus.title.words           opera/W-156.md                 title has 40 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-156.md                 halted for 41 days
+  opus.title.words           opera/W-157.md                 title has 41 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-158.md                 title has 34 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-158.md                 halted for 13 days
+  opus.title.words           opera/W-159.md                 title has 83 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-159.md                 halted for 13 days
+  opus.title.words           opera/W-160.md                 title has 75 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-160.md                 halted for 13 days
+  probatio.certifies         opera/W-161.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-161.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-161.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-162.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-162.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-162.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-163.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-163.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-163.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-164.md                 title has 17 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-164.md                 halted for 34 days
+  opus.title.words           opera/W-165.md                 title has 37 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-165.md                 halted for 13 days
+  probatio.certifies         opera/W-166.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-166.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-166.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-167.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-167.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-167.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-168.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-168.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-168.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-169.md                 title has 92 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-170.md                 title has 34 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-170.md                 halted for 34 days
+  opus.title.words           opera/W-171.md                 title has 55 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-171.md                 halted for 34 days
+  opus.title.words           opera/W-172.md                 title has 32 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-172.md                 halted for 13 days
+  opus.title.words           opera/W-173.md                 title has 28 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-173.md                 halted for 13 days
+  opus.title.words           opera/W-174.md                 title has 25 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-174.md                 halted for 13 days
+  opus.title.words           opera/W-175.md                 title has 26 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-175.md                 halted for 13 days
+  opus.title.words           opera/W-176.md                 title has 24 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-176.md                 halted for 13 days
+  opus.title.words           opera/W-177.md                 title has 22 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-177.md                 halted for 34 days
+  probatio.certifies         opera/W-178.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-178.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-178.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-179.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-179.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-179.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-180.md                 title has 21 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-180.md                 halted for 33 days
+  opus.title.words           opera/W-181.md                 title has 30 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-181.md                 halted for 34 days
+  probatio.certifies         opera/W-182.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-182.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-182.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-183.md                 title has 85 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-184.md                 title has 58 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-184.md                 halted for 34 days
+  opus.title.words           opera/W-185.md                 title has 66 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-186.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-186.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-186.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-187.md                 title has 32 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-187.md                 halted for 34 days
+  opus.title.words           opera/W-188.md                 title has 24 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-188.md                 halted for 34 days
+  opus.title.words           opera/W-189.md                 title has 31 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-189.md                 halted for 34 days
+  opus.title.words           opera/W-190.md                 title has 19 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-190.md                 halted for 13 days
+  opus.title.words           opera/W-191.md                 title has 30 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-191.md                 halted for 33 days
+  opus.title.words           opera/W-192.md                 title has 28 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-192.md                 halted for 33 days
+  opus.title.words           opera/W-193.md                 title has 50 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-193.md                 halted for 34 days
+  opus.title.words           opera/W-194.md                 title has 45 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-194.md                 halted for 33 days
+  opus.title.words           opera/W-195.md                 title has 38 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-195.md                 halted for 13 days
+  probatio.certifies         opera/W-196.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-196.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-196.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-197.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-197.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-197.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-198.md                 title has 45 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-198.md                 halted for 13 days
+  probatio.certifies         opera/W-199.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-199.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-199.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-200.md                 title has 54 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-200.md                 halted for 34 days
+  opus.title.words           opera/W-201.md                 title has 46 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-201.md                 halted for 34 days
+  opus.title.words           opera/W-202.md                 title has 301 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-203.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-203.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-203.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-204.md                 title has 35 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-204.md                 halted for 34 days
+  probatio.certifies         opera/W-205.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-205.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-205.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-206.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-206.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-206.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-207.md                 title has 45 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-207.md                 halted for 33 days
+  opus.title.words           opera/W-208.md                 title has 74 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-208.md                 halted for 13 days
+  probatio.certifies         opera/W-209.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-209.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-209.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-210.md                 title has 44 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-210.md                 halted for 13 days
+  probatio.certifies         opera/W-211.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-211.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-211.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-212.md                 title has 102 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-212.md                 halted for 34 days
+  opus.title.words           opera/W-213.md                 title has 156 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-213.md                 halted for 31 days
+  probatio.certifies         opera/W-214.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-214.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-214.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-215.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-215.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-215.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-216.md                 title has 79 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-217.md                 title has 30 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-217.md                 halted for 13 days
+  opus.title.words           opera/W-218.md                 title has 42 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-218.md                 halted for 34 days
+  opus.title.words           opera/W-219.md                 title has 89 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-219.md                 halted for 13 days
+  opus.title.words           opera/W-220.md                 title has 46 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-220.md                 halted for 34 days
+  probatio.certifies         opera/W-221.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-221.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-221.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-222.md                 title has 48 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-222.md                 halted for 34 days
+  opus.title.words           opera/W-223.md                 title has 44 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-223.md                 halted for 31 days
+  opus.title.words           opera/W-224.md                 title has 39 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-224.md                 halted for 33 days
+  opus.title.words           opera/W-225.md                 title has 48 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-225.md                 halted for 33 days
+  opus.title.words           opera/W-226.md                 title has 48 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-226.md                 halted for 34 days
+  probatio.certifies         opera/W-227.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-227.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-227.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-228.md                 title has 24 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-228.md                 halted for 13 days
+  opus.title.words           opera/W-229.md                 title has 56 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-229.md                 halted for 13 days
+  opus.title.words           opera/W-230.md                 title has 25 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-230.md                 halted for 13 days
+  opus.title.words           opera/W-231.md                 title has 41 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-231.md                 halted for 27 days
+  opus.title.words           opera/W-232.md                 title has 62 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-232.md                 halted for 36 days
+  probatio.certifies         opera/W-233.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-233.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-233.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-234.md                 title has 45 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-234.md                 halted for 31 days
+  opus.title.words           opera/W-235.md                 title has 51 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-235.md                 halted for 33 days
+  probatio.certifies         opera/W-236.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-236.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-236.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-237.md                 title has 36 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-237.md                 halted for 34 days
+  opus.title.words           opera/W-238.md                 title has 86 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-238.md                 halted for 13 days
+  opus.title.words           opera/W-239.md                 title has 90 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-239.md                 halted for 24 days
+  probatio.certifies         opera/W-240.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-240.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-240.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-241.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-241.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-241.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-242.md                 title has 58 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-243.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-243.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-243.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-244.md                 title has 55 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-244.md                 halted for 34 days
+  opus.title.words           opera/W-245.md                 title has 37 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-246.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-246.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-246.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-247.md                 title has 19 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-247.md                 halted for 30 days
+  opus.title.words           opera/W-248.md                 title has 97 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-248.md                 halted for 13 days
+  opus.title.words           opera/W-249.md                 title has 62 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-249.md                 halted for 13 days
+  opus.title.words           opera/W-251.md                 title has 37 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-251.md                 halted for 13 days
+  opus.title.words           opera/W-252.md                 title has 55 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-252.md                 halted for 13 days
+  probatio.certifies         opera/W-253.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-253.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-253.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-255.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-255.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-255.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-256.md                 title has 51 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-256.md                 halted for 33 days
+  opus.title.words           opera/W-257.md                 title has 56 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-257.md                 halted for 32 days
+  probatio.certifies         opera/W-258.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-258.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-258.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-259.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-259.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-259.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-260.md                 title has 41 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-260.md                 halted for 13 days
+  opus.title.words           opera/W-261.md                 title has 55 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-262.md                 title has 37 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-262.md                 halted for 33 days
+  opus.title.words           opera/W-263.md                 title has 52 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-263.md                 halted for 27 days
+  probatio.certifies         opera/W-264.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-264.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-264.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-265.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-265.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-265.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-266.md                 title has 45 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-266.md                 halted for 33 days
+  probatio.certifies         opera/W-267.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-267.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-267.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-268.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-268.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-268.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-269.md                 title has 25 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-269.md                 halted for 13 days
+  opus.title.words           opera/W-270.md                 title has 100 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-270.md                 halted for 13 days
+  opus.title.words           opera/W-271.md                 title has 69 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-271.md                 halted for 13 days
+  opus.title.words           opera/W-272.md                 title has 23 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-272.md                 halted for 13 days
+  opus.title.words           opera/W-273.md                 title has 18 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-273.md                 halted for 13 days
+  cap.hot_doc                opera/W-274.md                 9717 chars exceeds hot-tier cap 8000
+  probatio.certifies         opera/W-274.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-274.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-274.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-275.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-275.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-275.md                 handoff stage "building" ≠ state "done"
+  traditio.stage             opera/W-276.md                 handoff stage "greenlit" ≠ state "halted"
+  opus.title.words           opera/W-276.md                 title has 97 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-276.md                 halted for 13 days
+  opus.title.words           opera/W-277.md                 title has 47 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-277.md                 halted for 32 days
+  opus.title.words           opera/W-278.md                 title has 85 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-278.md                 halted for 13 days
+  probatio.certifies         opera/W-279.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-279.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-279.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-280.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-280.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-280.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-281.md                 title has 59 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-282.md                 title has 68 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-282.md                 halted for 13 days
+  opus.title.words           opera/W-283.md                 title has 49 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-284.md                 title has 69 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-285.md                 title has 65 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-286.md                 title has 58 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-287.md                 title has 59 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-287.md                 halted for 31 days
+  probatio.certifies         opera/W-288.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-288.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-288.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-289.md                 title has 66 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-290.md                 title has 102 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-291.md                 title has 38 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-292.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-292.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-292.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-293.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-293.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-293.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-294.md                 title has 73 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-295.md                 title has 54 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-296.md                 title has 66 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-296.md                 halted for 13 days
+  probatio.certifies         opera/W-297.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-297.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-297.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-298.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-298.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-298.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-299.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-299.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-299.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-300.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-300.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-300.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-301.md                 title has 74 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-302.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-302.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-302.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-303.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-303.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-303.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-304.md                 title has 99 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-305.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-305.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-305.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-306.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-306.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-306.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-307.md                 title has 97 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-307.md                 halted for 30 days
+  opus.title.words           opera/W-308.md                 title has 91 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-309.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-309.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-309.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-310.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-310.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-310.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-311.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-311.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-311.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-312.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-312.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-312.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-313.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-313.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-313.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-314.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-314.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-314.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-315.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-315.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-315.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-316.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-316.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-316.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-317.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-317.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-317.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-318.md                 title has 88 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-318.md                 halted for 29 days
+  probatio.certifies         opera/W-319.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-319.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-319.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-320.md                 title has 64 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-321.md                 title has 78 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-322.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-322.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-322.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-323.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-323.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-323.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-324.md                 title has 88 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-325.md                 title has 67 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-325.md                 halted for 28 days
+  probatio.certifies         opera/W-326.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-326.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-326.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-327.md                 title has 60 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-328.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-328.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-328.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-329.md                 title has 86 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-330.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-330.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-330.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-331.md                 title has 39 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-332.md                 title has 66 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-333.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-333.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-333.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-334.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-334.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-334.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-335.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-335.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-335.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-336.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-336.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-336.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-337.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-337.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-337.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-338.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-338.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-338.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-339.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-339.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-339.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-340.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-340.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-340.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-341.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-341.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-341.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-342.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-342.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-342.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-343.md                 title has 52 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-343.md                 halted for 27 days
+  opus.title.words           opera/W-344.md                 title has 71 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-344.md                 halted for 27 days
+  probatio.certifies         opera/W-345.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-345.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-345.md                 handoff stage "verifying" ≠ state "done"
+  opus.title.words           opera/W-346.md                 title has 40 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-346.md                 halted for 26 days
+  probatio.certifies         opera/W-347.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-347.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-347.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-348.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-348.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-348.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-349.md                 title has 67 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-350.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-350.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-350.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-351.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-351.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-351.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-352.md                 title has 40 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-353.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-353.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-353.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-354.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-354.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-354.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-355.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-355.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-355.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-356.md                 title has 49 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-357.md                 title has 74 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-358.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-358.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-358.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-359.md                 title has 58 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-360.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-360.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-360.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-361.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-361.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-361.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-362.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-362.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-362.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-363.md                 title has 91 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-364.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-364.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-364.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-365.md                 title has 67 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-366.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-366.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-366.md                 handoff stage "building" ≠ state "done"
+  opus.title.words           opera/W-367.md                 title has 41 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-368.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-368.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-368.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-369.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-369.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-369.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-370.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-370.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-370.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-371.md                 title has 71 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-371.md                 halted for 13 days
+  opus.title.words           opera/W-372.md                 title has 42 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-373.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-373.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-373.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-374.md                 title has 28 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-375.md                 title has 35 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-376.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-376.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-376.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-377.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-377.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-377.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-378.md                 title has 45 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-379.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-379.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-379.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-380.md                 title has 50 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-381.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-381.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-381.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-382.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-382.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-382.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-383.md                 title has 31 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-384.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-384.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-384.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-385.md                 title has 36 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-386.md                 title has 27 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-387.md                 title has 22 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-388.md                 title has 19 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-389.md                 title has 20 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-390.md                 title has 24 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-391.md                 title has 24 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-392.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-392.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-392.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-393.md                 title has 69 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-394.md                 title has 54 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-395.md                 title has 51 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-396.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-396.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-396.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-397.md                 title has 35 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-398.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-398.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-398.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-399.md                 title has 43 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-400.md                 title has 30 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-401.md                 title has 25 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-402.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-402.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-402.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-403.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-403.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-403.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-404.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-404.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-404.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-405.md                 title has 44 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-405.md                 halted for 13 days
+  probatio.certifies         opera/W-406.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-406.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-406.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-407.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-407.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-407.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-408.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-408.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-408.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-409.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-409.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-409.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-410.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-410.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-410.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-411.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-411.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-411.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-412.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-412.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-412.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-413.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-413.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-413.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-415.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-415.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-415.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-416.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-416.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-416.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-417.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-417.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-417.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-418.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-418.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-418.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-419.md                 title has 52 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-420.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-420.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-420.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-421.md                 title has 34 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-422.md                 title has 35 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-423.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-423.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-423.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-424.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-424.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-424.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-425.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-425.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-425.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-426.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-426.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-426.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-427.md                 title has 72 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-427.md                 halted for 13 days
+  probatio.certifies         opera/W-428.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-428.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-428.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-429.md                 title has 44 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-430.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-430.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-430.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-431.md                 title has 37 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-432.md                 title has 31 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-433.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-433.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-433.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-434.md                 title has 38 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-435.md                 title has 77 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-435.md                 halted for 19 days
+  opus.title.words           opera/W-436.md                 title has 88 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-436.md                 halted for 13 days
+  opus.title.words           opera/W-437.md                 title has 33 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-438.md                 title has 47 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-438.md                 halted for 13 days
+  opus.title.words           opera/W-439.md                 title has 46 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-440.md                 title has 41 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-441.md                 title has 40 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-442.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-442.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-442.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-443.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-443.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-443.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-444.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-444.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-444.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-445.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-445.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-445.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-446.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-446.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-446.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-447.md                 title has 39 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-448.md                 title has 33 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-449.md                 title has 31 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-450.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-450.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-450.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-451.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-451.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-451.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-452.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-452.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-452.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-454.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-454.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-454.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-455.md                 title has 57 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-457.md                 title has 49 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-457.md                 halted for 13 days
+  opus.title.words           opera/W-458.md                 title has 54 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-459.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-459.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-459.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-461.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-461.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-461.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-462.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-462.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-462.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-463.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-463.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-463.md                 handoff stage "verifying" ≠ state "done"
+  opus.title.words           opera/W-464.md                 title has 61 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-465.md                 title has 84 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-465.md                 halted for 13 days
+  probatio.certifies         opera/W-466.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-466.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-466.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-467.md                 title has 44 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-468.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-468.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-468.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-469.md                 title has 28 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-470.md                 title has 27 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-471.md                 title has 34 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-472.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-472.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-472.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-473.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-473.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-473.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-474.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-474.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-474.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-475.md                 title has 15 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-476.md                 title has 22 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-477.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-477.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-477.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-478.md                 title has 21 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-479.md                 title has 25 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-479.md                 halted for 13 days
+  opus.title.words           opera/W-480.md                 title has 22 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-481.md                 title has 17 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  opus.title.words           opera/W-482.md                 title has 33 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  probatio.certifies         opera/W-483.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-483.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-483.md                 handoff stage "review" ≠ state "done"
+  opus.title.words           opera/W-484.md                 title has 9 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title
+  halted.stale               opera/W-484.md                 halted for 13 days
+  halted.stale               opera/W-485.md                 halted for 13 days
+  halted.stale               opera/W-486.md                 halted for 13 days
+  probatio.certifies         opera/W-487.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-487.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-487.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-488.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies.stale   opera/W-488.md                 gate "tests" certifies tree:5192946f86780c7b84b939646c54515020a666df, current tree is tree:975054b425ca899a41d1d0d47340febce9eb6918
+  probatio.certifies.stale   opera/W-488.md                 gate "lint" certifies tree:5192946f86780c7b84b939646c54515020a666df, current tree is tree:975054b425ca899a41d1d0d47340febce9eb6918
+  probatio.certifies.stale   opera/W-488.md                 gate "types" certifies tree:5192946f86780c7b84b939646c54515020a666df, current tree is tree:975054b425ca899a41d1d0d47340febce9eb6918
+  probatio.certifies.stale   opera/W-488.md                 gate "served-e2e" certifies tree:5192946f86780c7b84b939646c54515020a666df, current tree is tree:975054b425ca899a41d1d0d47340febce9eb6918
+  probatio.certifies         opera/W-488.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-489.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-489.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-489.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-490.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-490.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-490.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-491.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-491.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-491.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-492.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-492.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-492.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-493.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-493.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-493.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-494.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-494.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-494.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-495.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-495.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-495.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-496.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-496.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-496.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-497.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-497.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-497.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-498.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-498.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-498.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-499.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-499.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-499.md                 handoff stage "verifying" ≠ state "done"
+  probatio.certifies         opera/W-501.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-501.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-501.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-502.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-502.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-502.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-505.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-505.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-505.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-508.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-508.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-508.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-509.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-509.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-509.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-512.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-512.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-512.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-523.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-523.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-523.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-525.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-525.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-525.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-526.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-526.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-526.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-528.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-528.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-528.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-530.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-530.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-530.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-541.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-541.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-541.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-542.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-542.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-542.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-543.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-543.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-543.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-547.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-547.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-547.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-558.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-558.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-558.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-563.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-563.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-563.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-568.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-568.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-568.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-571.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-571.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-571.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-572.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-572.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-572.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-573.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-573.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-573.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-589.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-589.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-589.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-604.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-604.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-604.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-608.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-608.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-608.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-610.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-610.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-610.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-630.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-630.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-630.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-633.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-633.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-633.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-648.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-648.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-648.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-661.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-661.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-661.md                 handoff stage "review" ≠ state "done"
+  probatio.certifies         opera/W-669.md                 gate "spec" evidence has no identity (certifies)
+  backlog.depth              opera/#engineering             27 backlog items (cap 20)
+  opus.ui.rulings            opera/W-488.md                 supplied UI rulings are stale for the current design or served tree
+  petitio.subject            petitiones/P-001.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-002.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-003.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-004.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-005.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-007.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-008.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-009.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-010.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-011.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-012.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-013.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-014.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-015.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-016.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-017.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-018.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-019.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-020.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-021.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-022.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-023.md            no subject (falls back to the derived legacy subject)
+  acta.daily                 acta/#production               magister "producer" last daily 26.9 days ago
+  acta.daily                 acta/#design                   magister "architect" last daily 26.9 days ago
+  acta.daily                 acta/#engineering              magister "eng-lead" last daily 26.9 days ago
+  acta.daily                 acta/#qa                       magister "qa-lead" last daily 26.9 days ago
+  acta.daily                 acta/#ops                      magister "ops-lead" last daily 26.9 days ago
+  aerarium.missing           aerarium/2026-W38.yml          collegium "design" has no allowance this period
+  aerarium.missing           aerarium/2026-W38.yml          collegium "ops" has no allowance this period
+  aerarium.missing           aerarium/2026-W41.yml          collegium "production" has no allowance this period
+  aerarium.missing           aerarium/2026-W41.yml          collegium "design" has no allowance this period
+  aerarium.missing           aerarium/2026-W41.yml          collegium "engineering" has no allowance this period
+  aerarium.missing           aerarium/2026-W41.yml          collegium "qa" has no allowance this period
+  process.review_tier        opera/W-016.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-017.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-018.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-019.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-020.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-021.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-023.md                 review gate (sella "qa-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-024.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-025.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-027.md                 review gate (sella "qa-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.cascade            opera/W-030.md                 sella "qa-lead" recorded for both spec and review — one context built and reviewed its own work
+  process.cascade            opera/W-031.md                 sella "qa-lead" recorded for both spec and review — one context built and reviewed its own work
+  process.review_tier        opera/W-039.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-046.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-047.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-050.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-065.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-067.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-069.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-071.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-075.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-077.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-085.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-087.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-096.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-101.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-102.md                 review sella "qa-lead" ran on gpt-6-astra, not an opus-tier model
+  process.review_tier        opera/W-103.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-104.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-105.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-107.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-108.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-109.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-110.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-114.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-120.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-121.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-123.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-124.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-125.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-126.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-127.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-128.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-129.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-131.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-137.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-139.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-140.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-141.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-142.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-152.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-153.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-161.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-162.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-163.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-166.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-167.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-168.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-178.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-179.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-182.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-186.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-196.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-197.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-199.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-203.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-205.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-206.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-209.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-211.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-214.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-215.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-221.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-227.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-233.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-236.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-240.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-241.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-243.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-246.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-253.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-255.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-258.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-259.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-264.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-265.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-267.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-268.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-274.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-275.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-279.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-280.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-288.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-292.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-293.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-297.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-298.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-299.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-300.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-302.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-303.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-305.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-306.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-309.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-310.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-311.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-312.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-313.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-314.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-315.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-316.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-317.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-319.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-322.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-323.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-326.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-328.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-330.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-333.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-334.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-335.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-336.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-337.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-338.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-339.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-340.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-341.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-342.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-345.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-347.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-348.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-350.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-351.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-353.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-354.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-355.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-358.md                 review gate (sella "qa-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-360.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-361.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-362.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-364.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-366.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-368.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-369.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-370.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-373.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-376.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-377.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-379.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-381.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-382.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-384.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-392.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-396.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-398.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-402.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-403.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-404.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-406.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-407.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-408.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-409.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-410.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-411.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-412.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-413.md                 review gate (sella "qa-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-415.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-416.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-417.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-418.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-420.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-423.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-424.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-425.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-426.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-428.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-430.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-433.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-442.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-443.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-444.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-445.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-446.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-450.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-451.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-452.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-454.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-459.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-461.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-462.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-463.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-466.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-468.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-472.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-473.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-474.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-477.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-483.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-487.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-489.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-490.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-491.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-492.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-493.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-494.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-495.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-496.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-497.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-498.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-499.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-501.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-502.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-505.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-508.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-509.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-512.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-523.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-525.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-526.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-528.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-530.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-541.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-542.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-543.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-547.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-558.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-563.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-568.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-571.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-572.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-573.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-589.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-604.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-608.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-610.md                 review gate (sella "qa-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-630.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-633.md                 review gate (sella "qa-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-648.md                 review gate (sella "qa-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-661.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  lesson.recurrent           lessons/                       class "tests×one-sided-bound-assertion" recurs across 2 cascades (L-034, L-066) — addressed by W-138 (halted), not yet done
+  lesson.recurrent           lessons/                       class "design×indirection-duplicates-source-of-truth" recurs across 2 cascades (L-044, L-053) — addressed by W-117 (halted), not yet done
+  process.checkpoint         HEAD                           last commit changed opera without updating SESSION-HANDOFF.md or dossier progress
+  lex.unchecked              leges/design.md                4 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.marker_unknown         leges/design.md                1 clause(s) cite a rule that does not exist: docs.arch.stale
+  lex.unchecked              leges/engineering.md           11 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/ops.md                   7 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/production.md            5 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/qa.md                    11 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  brief.stale                opera/W-169.md                 the title was amended at 2026-10-20T01:42:18.183Z, after the newest signature ci/W-169-spec-12.log (2026-10-11T08:54:50.587Z), and briefs/W-169.md does not name the current title: the architect revises the brief and signs it again
+  brief.stale                opera/W-183.md                 the title was amended at 2026-10-15T06:56:36.397Z, after the newest signature ci/W-183-spec-9.log (2026-10-11T05:46:34.248Z), and briefs/W-183.md does not name the current title: the architect revises the brief and signs it again
+
+PASS — 0 blocking, 1464 advisory
+
+
+$ node --test-reporter=tap --import tsx packages/cli/src/next.test.ts
+exit: 0
+TAP version 13
+# Subtest: W-124 behaviour 3: pr, merge and cleanup run in order and fail closed on gh
+ok 1 - W-124 behaviour 3: pr, merge and cleanup run in order and fail closed on gh
+  ---
+  duration_ms: 111494.160588
+  type: 'test'
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix C): a BEHIND PR on another head than the reviewed pin is HEAD_MOVED with nothing mutated
+ok 2 - W-124 behaviour 3 (round-1 fix C): a BEHIND PR on another head than the reviewed pin is HEAD_MOVED with nothing mutated
+  ---
+  duration_ms: 2405.699616
+  type: 'test'
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix C): a head after update-branch that does not descend from the pin is HEAD_MOVED
+ok 3 - W-124 behaviour 3 (round-1 fix C): a head after update-branch that does not descend from the pin is HEAD_MOVED
+  ---
+  duration_ms: 2645.600361
+  type: 'test'
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix C): a head that moved while queued and does not descend from the pin is HEAD_MOVED
+ok 4 - W-124 behaviour 3 (round-1 fix C): a head that moved while queued and does not descend from the pin is HEAD_MOVED
+  ---
+  duration_ms: 2829.060602
+  type: 'test'
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix C): a post-update head that descends from the pin is adopted and merged
+ok 5 - W-124 behaviour 3 (round-1 fix C): a post-update head that descends from the pin is adopted and merged
+  ---
+  duration_ms: 2876.318548
+  type: 'test'
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix D): a failing check named with a newline or control cannot inject a state= line
+ok 6 - W-124 behaviour 3 (round-1 fix D): a failing check named with a newline or control cannot inject a state= line
+  ---
+  duration_ms: 2464.663789
+  type: 'test'
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix D): gh stderr carries no control character into the output
+ok 7 - W-124 behaviour 3 (round-1 fix D): gh stderr carries no control character into the output
+  ---
+  duration_ms: 2656.421099
+  type: 'test'
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix D): an unknown PR state carries no control character into the output
+ok 8 - W-124 behaviour 3 (round-1 fix D): an unknown PR state carries no control character into the output
+  ---
+  duration_ms: 2098.15496
+  type: 'test'
+  ...
+# Subtest: W-311-b1 behaviour 1: one CLI start leaves tsx's compile cache entries written, and the env this file builds for its children keeps the test's TMPDIR, and a verb that leaves a handle open still exits
+ok 9 - W-311-b1 behaviour 1: one CLI start leaves tsx's compile cache entries written, and the env this file builds for its children keeps the test's TMPDIR, and a verb that leaves a handle open still exits
+  ---
+  duration_ms: 4207.723749
+  type: 'test'
+  ...
+# Subtest: W-179-b1 behaviour 1: test:suite runs every next row file once, side by side, in one node --test call
+ok 10 - W-179-b1 behaviour 1: test:suite runs every next row file once, side by side, in one node --test call
+  ---
+  duration_ms: 5.047099
+  type: 'test'
+  ...
+# Subtest: W-227-b1 behaviour 1: cleanup removes an empty folder git does not list, directly under .worktrees/, with one rmdir, then deletes the branches; a non-empty, symlinked, nested or registered one is held and left untouched
+ok 11 - W-227-b1 behaviour 1: cleanup removes an empty folder git does not list, directly under .worktrees/, with one rmdir, then deletes the branches; a non-empty, symlinked, nested or registered one is held and left untouched
+  ---
+  duration_ms: 7840.118073
+  type: 'test'
+  ...
+# Subtest: W-227-b1 behaviour 1, fail closed: cleanup holds before any mutation when git's worktree listing or the candidate's lstat fails, and on an unreadable candidate
+ok 12 - W-227-b1 behaviour 1, fail closed: cleanup holds before any mutation when git's worktree listing or the candidate's lstat fails, and on an unreadable candidate
+  ---
+  duration_ms: 7249.822069
+  type: 'test'
+  ...
+# Subtest: W-227-b2 behaviour 2: a leftover cleanup cannot remove, rmdir refused (a mount point the sandbox keeps) or holding only the empty files and folders a sandbox mounts over, is named for the Patron and left untouched; the branches are still deleted and next moves on to done
+ok 13 - W-227-b2 behaviour 2: a leftover cleanup cannot remove, rmdir refused (a mount point the sandbox keeps) or holding only the empty files and folders a sandbox mounts over, is named for the Patron and left untouched; the branches are still deleted and next moves on to done
+  ---
+  duration_ms: 7502.429418
+  type: 'test'
+  ...
+# Subtest: W-669-b1 behaviour 1: a held admin directory does not hold cleanup: the checkout gone and git no longer listing it, cleanup deletes both branches, names the directory, and next moves on to done; any other worktree remove failure still holds
+ok 14 - W-669-b1 behaviour 1: a held admin directory does not hold cleanup: the checkout gone and git no longer listing it, cleanup deletes both branches, names the directory, and next moves on to done; any other worktree remove failure still holds
+  ---
+  duration_ms: 6181.930689
+  type: 'test'
+  ...
+# Subtest: W-669-b2 behaviour 2: a held admin directory asks the installed guard's sync to prune it outside the sandbox, and it is one git worktree prune deletes; a cleanup that holds asks nothing
+ok 15 - W-669-b2 behaviour 2: a held admin directory asks the installed guard's sync to prune it outside the sandbox, and it is one git worktree prune deletes; a cleanup that holds asks nothing
+  ---
+  duration_ms: 3299.788582
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 166110.721128
+
+

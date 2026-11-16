@@ -1,0 +1,34 @@
+# opus: W-669
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T10:52:10.258Z
+# tree: tree:975054b425ca899a41d1d0d47340febce9eb6918
+# brief: briefs/W-669.md blob:3882b5a60dcae0e8df24a94b783c32f1d2659af8
+# ticket: {"opus":"W-669","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-669/studio","head":"59684a69cbe0c9f50c68646433319b90f9cf1b29","brief":"3882b5a60dcae0e8df24a94b783c32f1d2659af8","at":"2026-11-16T10:52:05.450Z"}
+
+# W-669 spec signature, round 3 (architect)
+
+Brief: studio/briefs/W-669.md blob:3882b5a60dcae0e8df24a94b783c32f1d2659af8 (opus/W-669 at 59684a69), revision 1 with brief:80 replaced word for word as spec review 2 finding #1 required (965daa00) and a `## Class census` section appended after Out of scope (59684a69; no earlier line moves); the fresh tree-bound acceptance evidence is /home/edckt/.bisellium-evidence/W-669-build/fix-r1/{next,next-done,w369,containment}.out, each headed `HEAD 965daa00785652537a8cae8d6490ec11f4af43b3 TREE 56d994a97261994e9a904139b283a4fbb0beb37b` (matching `git rev-parse 965daa00 965daa00^{tree}`), each exit 0 with no failing test.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-669-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — brief:80 says "the final prototype", and the fresh evidence is the opus branch's build tree at 965daa00, whose last test edit is e27d956c and whose source and tests are unchanged at 12d6fda7 (a studio/opera-only commit); that tree supersedes the prototype clone, so the whole-file pass of next.test.ts (W-669-b1 and W-669-b2 at ok 14 and ok 15) stands for brief:80 — check: /home/edckt/.bisellium-evidence/W-669-build/fix-r1/next.out, /home/edckt/.bisellium-evidence/W-669-build/fix-r1/run.sh, `git -C .worktrees/W-669 log master..HEAD -- packages`
+2. advisory — ledger rows brief:19, brief:48 and brief:82 still cite next-proto.out or gates-status.out from the prototype, which predate the final added assertion; none of them is brief:80's whole-file claim, and brief:82's gates run on the opus branch by `bisellium ci`, a stated scope — check: promise-ledger.md rows brief:19, brief:48, brief:82; /home/edckt/.bisellium-evidence/W-669-build/fix-r1/next.out for the cleanup rows
+
+3. advisory — class census: review×evidence-backfilled-or-absent repeats (spec-2 #1, review r1 #1), so the brief names its census; the census lists every evidence output the brief cites against the last test edit of its tree: the reds, the b1/b2 greens and pin-dryrun postdate the prototype's last test edit, the next, next-done, W-369 and containment runs are superseded by fix-r1's tree-bound outputs, and four outputs predate that edit with no fresh rerun (gates-status.out at brief:3, ladder-followon-proto.out, next-queue-proto.out and w362-proto.out at brief:81), each a limit whose follow-on is brief:82's `npm test` and `bisellium ci --opus W-669` on the opus branch — check: /home/edckt/.bisellium-evidence/W-669-spec/census/class-census.py, /home/edckt/.bisellium-evidence/W-669-spec/census/class-census.out
+
+## Earlier findings
+
+- spec review 2 #1 (studio/ci/W-669-spec-2.log:14, brief:80 cited stale next-proto.out and gates-status.out): fixed — brief:80 replaced word for word (965daa00), ledger rows brief:49 and brief:80 cite the fix-r1 outputs.
+- build review r1 #1 (/home/edckt/.bisellium-evidence/W-669-review/packets/r1/verdict.md, the same claim at brief:80): fixed — the same replacement and fresh output bound to HEAD 965daa00 TREE 56d994a9.
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief at `studio/briefs/W-669.md` blob 3882b5a6 on opus/W-669 at 59684a69; evidence in `/home/edckt/.bisellium-evidence/W-669-spec/` and `/home/edckt/.bisellium-evidence/W-669-build/fix-r1/`.
+
+VERDICT: PASS

@@ -13,7 +13,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { accessSync, constants, lstatSync, readdirSync, realpathSync, rmdirSync, unlinkSync, writeFileSync, type Stats } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { instant } from "@bisellium/schema";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
@@ -359,19 +359,27 @@ function patronStop(repo: string, target: string, hold: (reason: string, tail?: 
       : `refusing: this session may not write incoming paths (${denied.slice(0, 10).map(quoted).join(", ")}) in the main checkout (the sandbox's deny, W-362); the main checkout is untouched`;
   // W-227: the sync is asked for a Patron path too (W-369's Out of scope): it moves only a master checked out here
   const syncs = holder !== undefined && here(holder.path);
-  return { ok: false, reason: clean(reason, 600), after: [`patron: ${command}`, ...(syncs ? [requestSync(repo, target)] : [])] };
+  return { ok: false, reason: clean(reason, 600), after: [`patron: ${command}`, ...(syncs ? [fastForwardSync(repo, target)] : [])] };
 }
 
 /** W-369: asks the installed guard's sync (its PostToolUse hook) to fast-forward this checkout when the call returns. The
  *  file is only a trigger: the sync's commit is the one it fetches into the Patron's clone; the reviewed commit written
  *  here is for a reader. The line says whether it was asked. */
-function requestSync(repo: string, target: string): string {
+const fastForwardSync = (repo: string, target: string): string =>
+  requestSync(repo, `${target}\n`, "sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)");
+/** W-669: asks the same sync for its `git worktree prune -v`, which runs outside the sandbox and so deletes an admin
+ *  directory the sandbox's mounts hold here. The file's text is for a reader; the sync reads only that it exists. */
+const pruneSync = (repo: string, admin: string): string =>
+  requestSync(repo, `prune ${admin}\n`, `sync: requested; the installed guard's sync runs git worktree prune outside the sandbox when this call returns, which deletes ${admin} (W-369, W-669)`);
+/** W-369, W-669: writes the request file `<git common dir>/bisellium/sync` the installed guard's PostToolUse hook answers;
+ *  `said` is the line when it was written. */
+function requestSync(repo: string, text: string, said: string): string {
   const common = gitCommonDir(repo);
   try {
     if ("error" in common) throw new Error(common.error);
     // W-423: <common>/bisellium through the shared containment helper, so a symlinked level refuses before the write
-    writeFileSync(join(ensureRealDirectory(common.path, "bisellium"), "sync"), `${target}\n`);
-    return "sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)";
+    writeFileSync(join(ensureRealDirectory(common.path, "bisellium"), "sync"), text);
+    return said;
   } catch (e) {
     return `sync: not requested (${thrown(e)})`;
   }
@@ -1246,9 +1254,16 @@ export function cleanup(ctx: Ctx): StepResult {
     const inside = relative(dir, resolve(process.cwd()));
     if (lstatSync(dir).isSymbolicLink()) return stop("worktree", `${dir} is a symlink; left untouched`);
     if (inside === "" || (!inside.startsWith("..") && !isAbsolute(inside))) return stop("worktree", `the current directory is inside ${dir}`);
+    // W-669: the admin directory is read before the removal deletes the `.git` file that names it
+    const admin = adminDirOf(repo, dir);
     const removed = git(repo, ["worktree", "remove", "--", dir]);
-    if (removed.status !== 0) return stop("worktree", `git worktree remove refused (no --force): ${why(removed)}`);
-    out.push("worktree: ran");
+    if (removed.status === 0) out.push("worktree: ran");
+    else {
+      const kept = heldAdmin(repo, id, admin);
+      if (kept === undefined) return stop("worktree", `git worktree remove refused (no --force): ${why(removed)}`);
+      out.push(`worktree: ran (the checkout is removed; its admin directory ${kept} is held (${why(removed)}), as a sandbox's read-only mounts hold it; git no longer lists it, so the branch steps go on)`);
+      out.push(pruneSync(repo, kept));
+    }
   }
 
   // (2) the local branch: compare-and-swap on the tip, only if the merged PR has it
@@ -1354,6 +1369,52 @@ function clearLeftover(repo: string, id: string, dir: string): { ok: true; line:
     return { ok: false, reason: `rmdir refused (${code})` };
   }
   return { ok: true, line: `ran (removed the empty leftover ${dir}, which git does not list)` };
+}
+
+/** W-669: the worktree admin folder name git makes (the checkout's basename, a number appended on a clash). */
+const ADMIN_NAME = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/;
+/** W-669: the bytes of a `.git` file read: git writes one `gitdir: <path>` line. */
+const GITFILE_MAX = 4096;
+
+/**
+ * W-669: the admin directory a linked worktree's `.git` file names (`gitdir: <path>`, a relative path read against the
+ * checkout), when it is one plainly named folder directly under the common directory's `worktrees/`. Undefined for
+ * anything else (no such file, a symlink, a longer file, another line, a path elsewhere): cleanup then holds on a failed
+ * removal as before. It reads only.
+ */
+function adminDirOf(repo: string, dir: string): string | undefined {
+  const common = gitCommonDir(repo);
+  if ("error" in common) return undefined;
+  const read = readContainedRegularFile(dir, ".git", "", GITFILE_MAX);
+  if ("error" in read) return undefined;
+  const m = /^gitdir: ([^\n]+)\n?$/.exec(read.bytes.toString("utf8"));
+  if (m === null) return undefined;
+  const path = resolve(dir, m[1]!);
+  let worktrees: string;
+  try {
+    worktrees = realpathSync(join(common.path, "worktrees"));
+  } catch {
+    return undefined;
+  }
+  const name = basename(path);
+  return ADMIN_NAME.test(name) && resolve(path, "..") === worktrees ? join(worktrees, name) : undefined;
+}
+
+/**
+ * W-669: after a failed `git worktree remove`, the admin directory it could not delete, when the failure is the one a
+ * sandbox's read-only mounts cause (gaps 60, 80): `.worktrees/<id>` is truly absent, git's listing succeeds and lists no
+ * worktree there, and the admin directory read before the removal is still a real folder. Undefined for every other
+ * failure (the checkout or its entry kept, a listing or a stat that failed), which holds as before. It reads only.
+ */
+function heldAdmin(repo: string, id: string, admin: string | undefined): string | undefined {
+  if (admin === undefined) return undefined;
+  const { dir, entry, listed } = opusWorktree(repo, id);
+  if (!listed || entry !== undefined || lstatRead(dir).kind !== "absent") return undefined;
+  try {
+    return lstatSync(admin).isDirectory() ? admin : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** W-227: a path read three ways: present, truly absent (ENOENT), or unreadable (never "absent"). */
