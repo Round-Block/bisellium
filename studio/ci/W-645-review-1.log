@@ -1,0 +1,18 @@
+# opus: W-645
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1e3f4-3d7a-7f90-aeea-b8d1ede63c7f
+# outcome: failed
+# at: 2026-11-16T10:45:58.257Z
+# tree: tree:5e3c711471efd83d8d68bb986119351bbc0e5c48
+# brief: briefs/W-645.md blob:5a268ce843d73a8924bed65927da85dcbd2221df
+# ticket: {"opus":"W-645","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-645/studio","head":"0072bc6fa1fe08f1e806fcb48db0599c329967d3","brief":"5a268ce843d73a8924bed65927da85dcbd2221df","at":"2026-11-16T10:45:53.016Z"}
+
+## Findings
+1. blocking — packages/commands/src/red-tree.ts:36 [severity: S1] `SERVED_SPEC` excludes whitespace and `:` from path segments, so an ordinary discovered file such as `tests-serve/a b/w900.spec.ts:3:1` is not recognized and its wrong-tree red is admitted, contrary to brief:24 and brief:63. Both production readers—`runRed` at `lifecycle.ts:1217` and `redReplayProblems` at `verdict.ts:897`—are affected for both named writers, Playwright list-reporter locations and absolute stack frames; W-645-b5 tests neither filename form with these characters. [class: mechanism×red-certifies-wrong-tree] — check: packages/cli/src/red-order.test.ts W-645-b5
+
+## Verdict
+The attempt-local token guard and amendment items hold, but the served-spec judge remains open on an input explicitly inside the brief’s domain.
+VERDICT: FAIL
