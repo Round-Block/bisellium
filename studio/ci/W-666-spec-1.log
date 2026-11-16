@@ -1,0 +1,30 @@
+# opus: W-666
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T03:54:29.628Z
+# tree: tree:82a7bb5bcec7c5035c0a416d7a7415d393b30c52
+# brief: briefs/W-666.md blob:acd898448d885fb24b3716066cc729a1f420eb8e
+# ticket: {"opus":"W-666","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"fbf9187910b79bcc57bc1ca7a93e046327bc7e88","brief":"acd898448d885fb24b3716066cc729a1f420eb8e","at":"2026-11-16T03:54:23.453Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-666-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-666-spec/gate.log
+
+## Findings
+
+1. advisory — the timeline (`timeline/patron.jsonl`) is gitignored (.gitignore:31), so a check over it would never run in CI; the receipt is therefore recorded on the committed petitio's front matter under its stamp instant, and the `patron.receipt` rule reads the petitiones, the timeline keeping a copy only — check: census.out, .gitignore, packages/cli/src/rules/receipts.ts in prototype.mbox
+2. advisory — each red fails by assertion on master fbf91879 with the final rows (tag w666-t0) at its declared pin, the first error line equal to the pin: b1 "an answer with no receipt is refused by name", b2 "a recorded answer with no receipt is blocked", b3 "the answer route passes the receipt to answer"; all three rows pass on the prototype (w666-s1) — check: red-b1-master.out, red-b2-master.out, red-b3-master.out, w666-proto.out, pin-dryrun.out
+3. advisory — fifteen single-hunk kills of the prototype's source each fail their pinned row at one of the pinned line's assertions, one kill per pinned line (six promises and nine Input domain rows); pin-dryrun.mts gives ALL PASS through master's redFailsAt and killedPin — check: kills.py, kills.log, k1.patch..k15.patch, k1.out..k15.out, pin-dryrun.out
+4. advisory — the prototype passes the whole of every test file the change touches (gates.sh: 14 files, typecheck, lint, both officina checks) and the fixture census's other must-stay-green files (gates2.sh: 6); the one flip the census lists, W-163-b6's inventory D, is owned and passes with three `outside` lines; the served Playwright specs are not run here and post receipt-less bodies to an unconfigured officina — check: gates-status.out, gates2-status.out, fixture-census.md, containment-proto.out
+5. advisory — the brief passes the brief admission (briefAdmissionProblems), declared-reds-check.mts and a replica of the ledger's verb and row coverage with 0 problems — check: admission.mts, declared-reds-check.out, ledger-check.mts, verb-lines.mts
+6. advisory — five Patron calls are named (key type and custody, the signer, the console's signature, code-owning the verifier, the install); none is load-bearing for the verifier half: it takes Ed25519 and P-256 keys, any signer that writes the wire form, and a WebAuthn form later would sit beside it; until the Patron names a key the real studio carries one `patron.receipt` advisory over its 22 unsigned stamps — check: brief:134 to brief:138, check-studio-proto.out, census.out
+7. advisory — the pre-sign gate (presign-gate.ts) ran every owed row at the series' own tree in a second clone on a named branch (`gate-clone`, spec-scratch/W-666); every row exits 0; a first run in `clone` (its log overwritten by this one) failed only the studio check and check.test.ts on the clone-only `opus.records_unchanged` finding for W-096, which master fbf91879 shows in that clone too — check: gate.log, gate-clone
+8. advisory — W-666's Files owned share `packages/commands/src/usage.ts` and `package.json` with W-648's (one line each, different lines); no code-owned path is touched; W-667 meets it at the route's `receipt` field and W-668 at `patronStamps` and `receiptProblem` — check: brief.md Files owned, W-648's brief on opus/W-648
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-666.md` (brief.md, sha256 d43edf6a46bada882cb4958bf0e5f55a042074c3057791a28219618092cb99b2), prototype over master fbf91879 (prototype.mbox); evidence in `/home/edckt/.bisellium-evidence/W-666-spec/`.
+
+VERDICT: PASS

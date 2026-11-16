@@ -1,0 +1,20 @@
+# opus: W-665
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e22b-7e86-7862-b59a-058961032493
+# outcome: failed
+# at: 2026-11-16T03:01:40.470Z
+# tree: tree:82a7bb5bcec7c5035c0a416d7a7415d393b30c52
+# brief: briefs/W-665.md blob:83bdc5487b8daa618b2e282f0413689d38d85257
+# ticket: {"opus":"W-665","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"fbf9187910b79bcc57bc1ca7a93e046327bc7e88","brief":"83bdc5487b8daa618b2e282f0413689d38d85257","at":"2026-11-16T03:01:35.583Z"}
+
+## Findings
+1. blocking — brief:47 [severity: S1] [design: keeps] The claimed rejectors guard none of the three changed `kind` reads: `recordOf` accepts any mapping and `loadOpusRecord` validates only `state`, while `isNativeOpusKind` is not called. All sites are the existing record creation/branch copy into worktree `studio/opera/<id>.md`, `deriveNext`’s build-order reader, `reviewSteps`’ pre-call and post-regather model readers, and the unchanged `buildPacket` → `uiFact` reader that does reject; thus an ordinary `kind: iu` typo makes `next` order light gates/review before the packet later refuses. Replace brief:47 with: `| The worktree branch record's kind, read by deriveNext and by reviewSteps before the reviewer call and after regather | exactly one native opus kind; ui selects full-ci/Claude and every other native kind selects the existing path | validatedBranchKind (specified), using isNativeOpusKind, holds before ordering, calling or recording when the value is non-native |` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-review.test.ts: add a non-native branch-kind row covering every changed reader and proving neither light gates nor a reviewer is selected
+2. advisory — brief:31 [severity: S3] The changed timeout reader has no domain or rejector: both `claudeCodeProfile.start` and `.resume` feed `timeoutMs` to `runClaude`, and zero disables `spawnSync`’s timeout rather than honoring the promised deadline. Replace brief:31 with: `Promise deadline: the claude-code adapter accepts an absent timeoutMs or a positive safe integer; validateClaudeTimeout (specified) rejects every other value before spawning, while absence keeps the 120 s default and a killed claude returns exit 127 without a timedOut mark.` [class: spec×input-without-named-rejector] — check: packages/shim/test/harness.test.ts: positive, absent, zero and invalid Claude timeout cases for start and resume
+3. advisory — brief:52 [severity: S4] The outer-test row omits every added fixture reader and writer: the Claude stub’s `HOME`, stdin/argv/cwd and reply-JSON reads plus call-log write; `CODEX_PATH`’s `PATH`; `CodexReply.claudeSession`; `claudeCalls`; `shotsBlock`; b1’s manifest/CI-directory reads; and b2’s prompt, review-log and gate reads. Replace brief:52 with: `| W-665's test call and fixture inputs: HOME/PATH, Claude stdin/argv/cwd, codex-reply.json including claudeSession, claude-calls.jsonl, the fixture manifest/ci directory, screenshot-path world, packet prompt, review logs and gate record | fixture-owned paths, parseable declared JSON shapes, the prepended stub PATH and expected strings/records | uncaught fs/JSON failures and the named node:test assertions fail the row and therefore the script's && chain |` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-review.test.ts
+
+## Verdict
+The required shell check printed “8a6dcf90 feat(W-488): comments on captures, server half (#1247)”; the unguarded branch-kind readers are blocking.
+VERDICT: FAIL

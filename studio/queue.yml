@@ -1,13 +1,11 @@
 queues:
   engineering:
-    lanes: { E1: W-661, E2: W-645, E3: W-648 }
+    lanes: { E1: W-666, E2: W-645, E3: W-648 }
     next:
       - { opus: W-666, says: "Patron answers carry a signed receipt (key outside agent reads); guard refuses unsigned, forged, replayed or agent-authored writes; high, first of D-211's order (console-only-meet-1116)" }
       - { opus: W-669, says: "Host job (launch service) runs git worktree prune for sandbox-held .git/worktrees/<id> dirs; cleanup never waits on a Patron rm; high, gaps 60/80 (D-211)" }
       - { opus: W-668, says: "Boot reader consumes each Patron answer once (verified receipt or forge-authored reply); Patron-only steps refuse without one; D-211's order, after W-666/W-667" }
-      - { opus: W-610, says: "build review before the full ci; lifted by D-209 item 3 after W-633 merged; the ci-run cap is cut to W-632 (D-206)" }
       - { opus: W-648, says: "bisellium run --cwd <dir> runs a builder's command in the opus's own .worktrees/<id>, only with --opus; small and high, unblocks W-503's green rows (clone-tests-meet-1114 c, 5/5)" }
-      - { opus: W-661, says: "the light-gate reader reads only each Files-owned bullet's path span, so a command span no longer holds a built opus; high, unblocks W-648 and W-644 (W-648 light-gate call 11-15, 2/2); process" }
       - { opus: W-665, says: "kind ui: next orders the full ci (served-e2e shots) before the build review, and the review perform runs Claude Opus (D-150 C); gaps 77-78; high (W-488-review-meet-1116)" }
       - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114)" }
       - { opus: W-641, says: "daily retro reads a timed-out gate log (gap 12), with W-621's first form folded in; E3's next process slot after W-644 (retro-meet-1115 c, 5/5)" }
@@ -174,6 +172,9 @@ queues:
       - { opus: W-324, says: "a spec round counts signature plus review; qa, E1, after W-591 (same retro.ts) (D-192); process (D-193)" }
       - { opus: W-291, says: "commit trailers name a declared sella; after W-591 (D-192); process (D-193)" }
       - { opus: W-286, says: "a decision's kill clause is evaluated; after W-291 (D-192); process (D-193)" }
+      - { opus: W-670, says: "refresh timer every 30 min all day, cap 4/6h, prompt not assuming the Patron asleep (D-211); prototypes chore/refresh-all-day, chore/refresh-prompt-all-day; low; code-owned .claude/" }
+      - { opus: W-671, says: "guard refuses a main-thread push or gh pr create of a branch not opus/<id> or records/...; RETRO s27 5; process; census: joins the W-617 guard-rows group" }
+      - { opus: W-672, says: "PR-time check fails source on a non-opus branch (certify refuses only in the merge group); absorbs W-327; code-owned .github/; process" }
   research:
     lanes: { R1: ~ }
     next:
