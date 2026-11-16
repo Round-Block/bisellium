@@ -1,0 +1,26 @@
+# opus: W-645
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1dacf-6879-7ad2-9360-7b1c578f5666
+# outcome: failed
+# at: 2026-11-14T17:19:08.729Z
+# tree: tree:696b7e0d5efe10958ef6f38f7cb8fd897e9199cf
+# brief: briefs/W-645.md blob:bf76ecf3d51af16ac50ba196b9a4c2e855673502
+# ticket: {"opus":"W-645","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"924bf6ebe3501a1e5f9c0bc89f8708f81571f723","brief":"bf76ecf3d51af16ac50ba196b9a4c2e855673502","at":"2026-11-14T17:19:05.506Z"}
+
+## Findings
+1. blocking — brief:120 [severity: S1] [design: keeps] Reached through ci/W-645-spec-2.log #2’s attempt-state class: b6 proves only that an attempt-local string is declared, so the plausible `board.spec.ts` typo `attemptPort !== undefined && token !== undefined` still passes while a restart reuses the outer token, prints a ready marker after receiving only its port, and lets both `runRed` and `redReplayProblems` accept the wrong-tree failure; neither b3, b6 nor the mutations catch it. Replace brief:120 after “each attempt scrapes into a token of its own” with `the row extracts that local token identifier and asserts that tokenMatch assigns it and both the success and exit guards read it rather than the outer token; changing either guard to the outer token fails the row`. [class: tests×one-sided-bound-assertion] — check: packages/cli/src/red-order.test.ts W-645-b6
+2. advisory — brief:58 [severity: S2] The two output-domain rows remain on revision 3’s single-line grammar: brief:58 calls one `servedLine` sufficient and brief:59 inherits that domain, although the revised judge requires a start and matching ready line for every attempt. Replace brief:58’s served clause with `when a served spec is named, at least one servedStart is present and every started attempt has its matching servedLine`; replace brief:59’s domain with `the same whole-output attempt-pair domain`. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/red-order.test.ts W-645-b3
+3. advisory — brief:64 [severity: S4] The revision changes `spawnAndWaitReady`’s runtime child-stdout reader, but the table names only the two source files’ text; the reused `startServed` path and changed board path consume the same port/token record. Replace brief:64 with its existing source-text row followed by `| Each startServed or spawnAndWaitReady bisellium serve child’s stdout | parseable port and write-auth token before error, exit or 15-second timeout | startServed/spawnAndWaitReady’s startup Promise rejects on error, premature exit or timeout and emits no servedLine |`. [class: spec×input-without-named-rejector] — check: packages/cli/src/red-order.test.ts W-645-b6
+4. advisory — brief:24 [severity: S3] Reached through ci/W-645-spec-2.log #1’s class: the list reporter and stack-frame writers can name a valid default-testMatch descendant containing whitespace, but `SERVED_SPEC` excludes whitespace from every segment, so both production readers admit it and b5’s 144 cases do not cover it. Replace brief:24’s location sentence with `A served spec is every Playwright-default-testMatch descendant under tests-serve/, including path segments containing whitespace, in both list-reporter and absolute-stack forms; W-645-b5 covers each form.` [class: mechanism×red-certifies-wrong-tree] — check: packages/cli/src/red-order.test.ts W-645-b5
+5. advisory — brief:38 [severity: S2] The final limit overpromises: a start outside `startServed` and `spawnAndWaitReady` is not refused when an earlier instrumented attempt in the same output already supplied a complete pair. Replace its last clause with `a start outside the two writers is refused only when the output contains no earlier instrumented start; otherwise it is not observed, a stated limit`. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/red-order.test.ts W-645-b3
+
+## Earlier findings
+- ci/W-645-spec-2.log #1: closed — brief:24,63 and W-645-b5 now cover direct and nested descendants, all 24 default suffixes, both location writers and both production readers — check: packages/cli/src/red-order.test.ts W-645-b5
+- ci/W-645-spec-2.log #2: closed — brief:38 and W-645-b3 pair every named start with its own ready line and refuse a successful first attempt followed by an unready second attempt at both readers — check: packages/cli/src/red-order.test.ts W-645-b3
+
+## Verdict
+Repository check returned `924bf6eb docs(studio): handoff, session 19 (W-610 review 8 passed, W-645 re-signed, Fable seat and retro meets) (#1231)`; the attempt-local token guard remains unpinned, so the final spec review fails with a design-keeping required fix.
+VERDICT: FAIL

@@ -4,6 +4,7 @@
  * node:test TAP. The `red` rows spawn the real CLI against real git fixtures
  * under os.tmpdir(); no timers, sleeps or polling.
  * W-473 rows (`W-473-b<n>`): a red's failing assertion equals the brief's declared one, and ready asks for it.
+ * W-645 rows (`W-645-b<n>`): a red that certifies the wrong tree is refused, by `red` and by the spec signature.
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -16,6 +17,7 @@ import { parseDocument } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { sourceTreeHash } from "@bisellium/shim";
+import { redReplayProblems } from "@bisellium/commands/verdict.js";
 import { runReady } from "./lifecycle.js";
 import { checkEvidence } from "./rules/evidence.js";
 
@@ -587,4 +589,384 @@ test("W-473-b2 behaviour 2: ready asks a new opus to declare each genuine red's 
   assert.equal(past.exitCode, 0, `an opus past ready resumes with no declared assertion: stderr ${JSON.stringify(past.stderr)}`);
   const open = readyFixture([], { limit: false, behaviours: ["1. Behaviour 1 refuses a thing.", "   **Genuine red:** row 1.1 fails on its assertion."] });
   assert.equal(open.exitCode, 0, `an officina with no limit asks nothing: stderr ${JSON.stringify(open.stderr)}`);
+});
+
+
+// ---------------------------------------------------------------------------
+// W-645: a red that certifies the wrong tree is refused (mechanism×red-certifies-wrong-tree), where `red` records it and
+// where the spec signature reads the red evidence a prototyped brief cites (`redReplayProblems`). Rows
+// `W-645-b<n> behaviour <n>: …`, selected with `--test-name-pattern='^W-645-b<n>\s'`.
+// ---------------------------------------------------------------------------
+/** The list reporter's location line for a served spec, as a wrapped served run prints it. */
+const W645_SERVED_AT = "[chromium] › apps/web/tests-serve/w900.spec.ts:3:1 › W-900-b1 a served row";
+/** A node:test file whose one row fails at the declared assertion, its message carrying what its first argument names
+ *  (`other` fails at an earlier assertion; `served-line` appends its second argument; `at` carries it alone). */
+const W645_ROWS = [
+  'import assert from "node:assert/strict";',
+  'import { test } from "node:test";',
+  "const [mode, line] = process.argv.slice(2);",
+  "const tail = {",
+  '  plain: "a detail",',
+  "  module: \"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/x/src/gone.ts' imported from /x/src/a.ts\",",
+  '  exited: "Error: bisellium serve exited (1) before printing port/token:",',
+  `  served: ${JSON.stringify(W645_SERVED_AT)},`,
+  `  "served-line": ${JSON.stringify(W645_SERVED_AT)} + "\\n" + line,`,
+  "  at: line,",
+  "}[mode];",
+  'test("W-900-b1 behaviour 1: the declared row", () => {',
+  '  if (mode === "other") assert.ok(false, "an earlier assertion");',
+  '  assert.equal(mode, "none", `the declared assertion: ${tail}`);',
+  "});",
+  "",
+].join("\n");
+const W645_WRITTEN = "node --test-reporter=tap rows.test.mjs";
+interface W645Fx {
+  M: string;
+  studio: string;
+  /** `red` behaviour 1 with the rows file in `mode`: its result, and whether 01.log was written (removed after). */
+  red: (mode: string, line?: string) => Ran & { written: boolean };
+  /** The spec signature's red-command problems for a prototyped brief whose behaviour 1 declares `W-900-b1` "the declared
+   *  assertion" and cites the given red logs, each headed as `bisellium red` heads it over the rows file's real output. */
+  cited: (...runs: { name: string; mode: string; line?: string }[]) => string[];
+  ev: string;
+}
+function w645Fixture(tag: string): W645Fx {
+  const M = repoWithStudio(tag);
+  const studio = join(M, "studio");
+  const S = scratch(`${tag}-rows`);
+  put(S, "rows.test.mjs", W645_ROWS);
+  put(
+    studio,
+    `briefs/${ID}.md`,
+    [`# ${ID} fixture`, "", "## Behaviours to test", "", "1. one", `   **Genuine red:** \`bisellium red ${ID} --behaviour 1 -- node rows.test.mjs\` fails, pinned by \`W-900-b1\` "the declared assertion".`, ""].join("\n"),
+  );
+  put(studio, `opera/${ID}.md`, `---\nid: ${ID}\ntitle: Wrong-tree fixture\nkind: feature\ncollegium: engineering\nstate: building\nprobationes: {}\nspec: briefs/${ID}.md\n---\nbody\n`);
+  G(M, ["add", "-A"]);
+  G(M, ["commit", "-q", "-m", "opus fixture"]);
+  const log = logOf(studio, ID, 1);
+  const args = (mode: string, line?: string): string[] => [mode, ...(line === undefined ? [] : [line])];
+  const red = (mode: string, line?: string): Ran & { written: boolean } => {
+    rmSync(log, { force: true });
+    const r = w473Red({ M, studio }, 1, [process.execPath, "--test-reporter=tap", join(S, "rows.test.mjs"), ...args(mode, line)]);
+    const written = existsSync(log);
+    rmSync(log, { force: true });
+    return { ...r, written };
+  };
+  const ev = scratch(`${tag}-ev`);
+  const cited = (...runs: { name: string; mode: string; line?: string }[]): string[] => {
+    const env = { ...process.env };
+    delete env["NODE_TEST_CONTEXT"];
+    for (const run of runs) {
+      const r = spawnSync(process.execPath, ["--test-reporter=tap", join(S, "rows.test.mjs"), ...args(run.mode, run.line)], { cwd: S, encoding: "utf8", timeout: 60_000, env });
+      if (r.error) throw r.error;
+      writeFileSync(join(ev, run.name), `# behaviour: 1\n# command: ${W645_WRITTEN}\n# exit: ${r.status}\n\n${r.stdout}${r.stderr}`);
+    }
+    const brief = [
+      "# W-300 fixture brief",
+      `Evidence in \`${ev}/\`.`,
+      `Prototype: /home/fixture/proto.mbox sha256:${"0".repeat(64)}`,
+      "## Behaviours to test",
+      "1. **One.** The row.",
+      `   **Genuine red:** \`bisellium red W-300 --behaviour 1 --sella builder --studio studio -- ${W645_WRITTEN}\` fails (${runs.map((r) => `\`${r.name}\``).join(", ")}), pinned by \`W-900-b1\` "the declared assertion".`,
+      "",
+    ].join("\n");
+    return redReplayProblems(brief, "W-300");
+  };
+  return { M, studio, red, cited, ev };
+}
+const W645_REFUSED = (why: string): string => `red: behaviour 1's output ${why} — nothing recorded`;
+const W645_CITED = (fx: W645Fx, name: string, why: string): string => `behaviour 1's genuine red cites \`${name}\`, and ${join(fx.ev, name)} ${why}`;
+const W645_MODULE = "names a module that did not load (Node's module-not-found error): the red fails in the tree, not at the behaviour";
+
+test("W-645-b1 behaviour 1: a red whose output names a module that did not load is refused", () => {
+  const fx = w645Fixture("w645-b1");
+  const r = fx.red("module");
+  assert.equal(r.status, 1, `a red naming a module that did not load is refused: stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "a red naming a module that did not load writes no log");
+  assert.equal(r.stderr.trim(), W645_REFUSED(W645_MODULE), "the refusal names the module failure");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "module" }), [W645_CITED(fx, "red.out", W645_MODULE)], "a cited red naming a module that did not load is refused at the spec signature");
+  const plain = fx.red("plain");
+  assert.equal(plain.status, 0, `a red failing at its declared assertion alone records: stderr ${JSON.stringify(plain.stderr)}`);
+  assert.equal(plain.written, true, "and writes its log");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "plain" }), [], "a cited red failing at its declared assertion alone has no problem");
+});
+const W645_EXITED = 'carries the served harness\'s exit line (its server exited before printing a port and token): the served row\'s server never started';
+
+test("W-645-b2 behaviour 2: a red whose served server exited before its port and token is refused", () => {
+  const fx = w645Fixture("w645-b2");
+  const r = fx.red("exited");
+  assert.equal(r.status, 1, `a red whose server exited before its port and token is refused: stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "a red whose server exited writes no log");
+  assert.equal(r.stderr.trim(), W645_REFUSED(W645_EXITED), "the refusal names the harness's exit line");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "plain" }, { name: "exited.out", mode: "exited" }), [W645_CITED(fx, "exited.out", W645_EXITED)], "every cited red is judged: one whose server exited is refused at the spec signature");
+});
+const W645_SERVED = 'names a served spec (tests-serve/w900.spec.ts:3:1) and no served attempt\'s start and port and token lines ("bisellium serve: attempt <id> starting", "bisellium serve: attempt <id> listening on port <n>, write-auth token read"): the served row never read its server\'s port and token';
+/** The refusal for a served attempt that printed its start and never its port and token line. */
+const W645_UNREADY = (at: string, attempt: string): string => `names a served spec (${at}), and served attempt ${attempt} printed its start and no port and token line: that attempt's server never read its port and token`;
+/** red-tree.ts's served exports, imported in a row (not at the top: the module is this opus's). */
+interface W645Served {
+  servedAttempt: () => string;
+  servedStart: (attempt: string) => string;
+  servedLine: (port: number, attempt: string) => string;
+  wrongTreeRed: (output: string) => string | undefined;
+}
+
+test("W-645-b3 behaviour 3: a served red with no port and token line is refused", async () => {
+  const fx = w645Fixture("w645-b3");
+  const r = fx.red("served");
+  assert.equal(r.status, 1, `a served red with no port and token line is refused: stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "a served red with no port and token line writes no log");
+  assert.equal(r.stderr.trim(), W645_REFUSED(W645_SERVED), "the refusal names the served spec and the missing line");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "served" }), [W645_CITED(fx, "red.out", W645_SERVED)], "a cited served red with no port and token line is refused at the spec signature");
+  // the harness's own lines (imported here, not at the top: the module is this behaviour's)
+  const { servedAttempt, servedStart, servedLine } = (await import("@bisellium/commands/red-tree.js")) as W645Served;
+  assert.equal(servedStart("4100.1"), "bisellium serve: attempt 4100.1 starting", "the start line the served harness prints");
+  assert.equal(servedLine(4477, "4100.1"), "bisellium serve: attempt 4100.1 listening on port 4477, write-auth token read", "the line the served harness prints");
+  const [first, second] = [servedAttempt(), servedAttempt()];
+  assert.match(first, new RegExp(`^${process.pid}\\.\\d+$`), "an attempt is named by the process and a count");
+  assert.notEqual(first, second, "each attempt is named afresh");
+  const pair = (attempt: string, port: number): string => `${servedStart(attempt)}\n${servedLine(port, attempt)}`;
+  const lined = fx.red("served-line", pair("4100.1", 4477));
+  assert.equal(lined.status, 0, `a served red carrying the harness's port and token line records: stderr ${JSON.stringify(lined.stderr)}`);
+  assert.equal(lined.written, true, "and writes its log");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "served-line", line: pair("4100.1", 4477) }), [], "a cited served red carrying the line has no problem");
+  // a first start that read its port and token, then a second (a restart) that did not: the first's line does not cover it
+  const restarted = `${pair("4100.1", 4477)}\n${servedStart("4100.2")}`;
+  const again = fx.red("served-line", restarted);
+  assert.equal(again.status, 1, `a served red whose second start never read its port and token is refused: stderr ${JSON.stringify(again.stderr)}`);
+  assert.equal(again.written, false, "and writes no log");
+  assert.equal(again.stderr.trim(), W645_REFUSED(W645_UNREADY("tests-serve/w900.spec.ts:3:1", "4100.2")), "the refusal names the attempt with no port and token line");
+  assert.deepEqual(
+    fx.cited({ name: "red.out", mode: "served-line", line: restarted }),
+    [W645_CITED(fx, "red.out", W645_UNREADY("tests-serve/w900.spec.ts:3:1", "4100.2"))],
+    "a cited served red whose second start never read its port and token is refused at the spec signature",
+  );
+  const both = `${pair("4100.1", 4477)}\n${pair("4100.2", 4477)}`;
+  assert.equal(fx.red("served-line", both).status, 0, "a served red whose every start read its port and token records");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "served-line", line: both }), [], "a cited served red whose every start read its port and token has no problem");
+});
+
+test("W-645-b4 behaviour 4: a cited red that lacks the brief's declared assertion is refused at the spec signature", () => {
+  const fx = w645Fixture("w645-b4");
+  const r = fx.red("other");
+  assert.equal(r.status, 1, `a red failing at another assertion is refused (W-473): stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "and writes no log");
+  assert.deepEqual(
+    fx.cited({ name: "red.out", mode: "other" }),
+    ['behaviour 1\'s genuine red declares pinned by `W-900-b1` "the declared assertion", and no cited red output recording its command fails at it: cite the red that does, or record it again'],
+    "a cited red that lacks the brief's declared assertion is refused at the spec signature",
+  );
+  assert.deepEqual(fx.cited({ name: "other.out", mode: "other" }, { name: "red.out", mode: "plain" }), [], "one cited red failing at the declared assertion is the red; another run may fail elsewhere");
+});
+
+test("W-645-b5 behaviour 5: the served config and the served harness are the ones the judge reads", async () => {
+  // the guards first: they hold from b3's pattern on, and their kept mutations show each one can fail (W-645 revision 5)
+  // the config's real testDir (a variable specifier, as served-config.test.ts imports it), not a copy of it
+  const configPath = join(REPO, "apps", "web", "playwright.serve.config.ts");
+  const config = ((await import(configPath)) as { default: { testDir?: string; testMatch?: unknown } }).default;
+  assert.equal(config.testDir, "./tests-serve", "the served config's testDir is the directory the judge reads");
+  assert.equal(config.testMatch, undefined, "the served config sets no testMatch: Playwright's default suffixes are the ones the judge reads");
+  const fx = w645Fixture("w645-b5");
+  const dir = String(config.testDir).replace(/^\.\//, "");
+  const at = `[chromium] › apps/web/${dir}/w900.spec.ts:3:1 › W-900-b1 a served row`;
+  const r = fx.red("at", at);
+  assert.equal(r.status, 1, `a served red under the served config's testDir is refused: stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "and writes no log");
+  // a nested descendant with another suffix, through `red` and the spec signature (the list reporter's form)
+  const nested = `[chromium] › ${dir}/reconnect/w900.test.ts:3:1 › W-900-b1 a served row`;
+  const deep = fx.red("at", nested);
+  assert.equal(deep.status, 1, `a served red at a nested location under the testDir is refused: stderr ${JSON.stringify(deep.stderr)}`);
+  assert.equal(deep.written, false, "and writes no log");
+  assert.equal(fx.cited({ name: "red.out", mode: "at", line: nested }).length, 1, "a cited served red at a nested location is refused at the spec signature");
+  // every suffix Playwright's default testMatch (`**/*.@(spec|test).?(c|m)[jt]s?(x)`) discovers, direct and nested, in both
+  // location writers' forms (the list reporter's relative path, a stack frame's absolute one); a helper file is no spec
+  const { wrongTreeRed } = (await import("@bisellium/commands/red-tree.js")) as W645Served;
+  const suffixes = ["spec", "test"].flatMap((kind) => ["", "c", "m"].flatMap((m) => ["j", "t"].flatMap((jt) => ["", "x"].map((x) => `.${kind}.${m}${jt}s${x}`))));
+  assert.equal(suffixes.length, 24, "the default testMatch's suffixes, counted");
+  let judged = 0;
+  for (const suffix of suffixes)
+    for (const rel of [`w900${suffix}`, `reconnect/w900${suffix}`, `a/b/w900${suffix}`])
+      for (const form of [`  ✘  1 [chromium] › ${dir}/${rel}:3:1 › a row`, `    at ${join(REPO, "apps", "web", dir, rel)}:12:5`]) {
+        assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${form}\n`), undefined, `every discovered location under the testDir is judged (${judged})`);
+        judged++;
+      }
+  assert.equal(judged, 144, "each suffix, each depth and each writer's form judged");
+  assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, "harness.ts")}:12:5\n`), undefined, "a helper module under the testDir is no served spec");
+  // review r1 #1: a path segment is any character but a separator (a space, a colon, a parenthesis, a non-ASCII letter), in both
+  // writers' forms, through the judge, `red` and the spec signature; a helper under such a directory is still no spec
+  const odd = ["a b", "a:b", "a (1)", "é ü", "a  b/c d"];
+  for (const seg of odd) {
+    for (const form of [`  ✘  1 [chromium] › ${dir}/${seg}/w900.spec.ts:3:1 › a row`, `    at ${join(REPO, "apps", "web", dir, seg, "w900.spec.ts")}:12:5`, `    at f (${join(REPO, "apps", "web", dir, seg, "w900.spec.ts")}:12:5)`])
+      assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${form}\n`), undefined, `a served spec under a directory named ${JSON.stringify(seg)} is judged: ${JSON.stringify(form)}`);
+    assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, seg, "helper.ts")}:12:5\n`), undefined, `a helper module under a directory named ${JSON.stringify(seg)} is no served spec`);
+  }
+  assert.notEqual(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, "a b", "helper.ts")}:12:5 in w900.spec.ts:3:1\n`), undefined, "a helper's frame followed by another location on its line is no served spec");
+  const spaced = `[chromium] › ${dir}/a b/w900.spec.ts:3:1 › W-900-b1 a served row`;
+  const spacedRed = fx.red("at", spaced);
+  assert.equal(spacedRed.status, 1, `a served red under a directory with a space is refused: stderr ${JSON.stringify(spacedRed.stderr)}`);
+  assert.equal(spacedRed.written, false, "and writes no log");
+  assert.equal(fx.cited({ name: "red.out", mode: "at", line: spaced }).length, 1, "a cited served red under a directory with a space is refused at the spec signature");
+  // fix check r1: a segment holding a coordinate-shaped colon (`:<digits>:<digits>`) or a line break, in both writers' forms, through
+  // the judge, `red` and the spec signature; a helper's frame followed by a location is still no spec
+  const coord = ["a:3:1", "a\nb", "a\rb", "a\r\nb"];
+  for (const seg of coord) {
+    const forms = [`  ✘  1 [chromium] › ${dir}/${seg}/w900.spec.ts:3:1 › a row`, `    at ${join(REPO, "apps", "web", dir, seg, "w900.spec.ts")}:12:5`, `    at f (${join(REPO, "apps", "web", dir, seg, "w900.spec.ts")}:12:5)`];
+    for (const form of forms) assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${form}\n`), undefined, `a served spec under a directory named ${JSON.stringify(seg)} is judged: ${JSON.stringify(form)}`);
+    assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, seg, "helper.ts")}:12:5\n`), undefined, `a helper module under a directory named ${JSON.stringify(seg)} is no served spec`);
+    const line = `[chromium] › ${dir}/${seg}/w900.spec.ts:3:1 › W-900-b1 a served row`;
+    const coordRed = fx.red("at", line);
+    assert.equal(coordRed.status, 1, `a served red under a directory named ${JSON.stringify(seg)} is refused: stderr ${JSON.stringify(coordRed.stderr)}`);
+    assert.equal(coordRed.written, false, "and writes no log");
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line }).length, 1, `a cited served red under a directory named ${JSON.stringify(seg)} is refused at the spec signature`);
+  }
+  for (const file of ["w900:3:1.spec.ts", "w9\n00.spec.ts"]) {
+    for (const form of [`  ✘  1 [chromium] › ${dir}/${file}:3:1 › a row`, `    at ${join(REPO, "apps", "web", dir, file)}:12:5`])
+      assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${form}\n`), undefined, `a served spec named ${JSON.stringify(file)} is judged: ${JSON.stringify(form)}`);
+    const line = `[chromium] › ${dir}/${file}:3:1 › W-900-b1 a served row`;
+    assert.equal(fx.red("at", line).status, 1, `a served red for a spec named ${JSON.stringify(file)} is refused`);
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line }).length, 1, `a cited served red for a spec named ${JSON.stringify(file)} is refused at the spec signature`);
+  }
+  // fix check r2 (the class): the cross product of segment contents, positions (a directory, the spec file's stem) and writer forms
+  // (the list reporter's relative path, an absolute frame, a parenthesised frame), each through the judge, `red` and the spec
+  // signature; a helper's frame followed by a location is no spec under any directory content
+  const contents = ["plain", "a b", "a:b", "a:3:1", "a:3:1 b", "a:3:1\tb", "a\nb", "a\rb", "a\r\nb", 'a"b\'c', "é ü", "a›b", "a)b"];
+  const table = contents.flatMap((seg) =>
+    ["directory", "stem"].flatMap((where) => {
+      const rel = where === "directory" ? `${seg}/w900.spec.ts` : `sub/${seg}.spec.ts`;
+      const abs = `${join(REPO, "apps", "web")}/${dir}/${rel}`;
+      return [
+        { seg, where, form: "list", text: `  ✘  1 [chromium] › ${dir}/${rel}:3:1 › a row`, at: `[chromium] › ${dir}/${rel}:3:1 › W-900-b1 a served row` },
+        { seg, where, form: "absolute", text: `    at ${abs}:12:5`, at: `    at ${abs}:12:5` },
+        { seg, where, form: "parenthesised", text: `    at f (${abs}:12:5)`, at: `    at f (${abs}:12:5)` },
+      ];
+    }),
+  );
+  assert.equal(table.length, 78, "thirteen segment contents, two positions, three writer forms");
+  for (const row of table) {
+    const label = `${JSON.stringify(row.seg)} as a ${row.where} in the ${row.form} form`;
+    assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${row.text}\n`), undefined, `a served spec with ${label} is judged: ${JSON.stringify(row.text)}`);
+    const tabled = fx.red("at", row.at);
+    assert.equal(tabled.status, 1, `a served red with ${label} is refused: stderr ${JSON.stringify(tabled.stderr)}`);
+    assert.equal(tabled.written, false, `a served red with ${label} writes no log`);
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line: row.at }).length, 1, `a cited served red with ${label} is refused at the spec signature`);
+  }
+  for (const seg of contents)
+    assert.notEqual(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir)}/${seg}/helper.ts:12:5 in w900.spec.ts:3:1\n`), undefined, `a helper's frame followed by a location under a directory named ${JSON.stringify(seg)} is no served spec`);
+  // fix check r3 (ruled grammar, rules-eng-meet-1116): the coordinate is the rightmost `:<line>:<col>` before a terminator, a coordinate-shaped
+  // run inside the path is stem text, and the last segment must end in the spec suffix; a helper's frame followed by a spec location is one
+  // served spec (fail closed)
+  const embedded = ["ts", "js", "cts", "mts", "tsx", "jsx"].flatMap((ext) =>
+    ["directory", "stem"].flatMap((where) => {
+      const rel = where === "directory" ? `sub/a.${ext}:3:1.spec.ts/w900.spec.ts` : `sub/a.${ext}:3:1.spec.ts`;
+      const tail = where === "directory" ? ":3:1" : ":7:2";
+      const abs = `${join(REPO, "apps", "web")}/${dir}/${rel}`;
+      return [
+        { ext, where, form: "list", text: `  ✘  1 [chromium] › ${dir}/${rel}${tail} › a row`, at: `[chromium] › ${dir}/${rel}${tail} › W-900-b1 a served row` },
+        { ext, where, form: "absolute", text: `    at ${abs}${tail}`, at: `    at ${abs}${tail}` },
+        { ext, where, form: "parenthesised", text: `    at f (${abs}${tail})`, at: `    at f (${abs}${tail})` },
+      ];
+    }),
+  );
+  assert.equal(embedded.length, 36, "six extensions, two positions, three writer forms");
+  for (const row of embedded) {
+    const label = `an embedded .${row.ext}:3:1 as a ${row.where} in the ${row.form} form`;
+    assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${row.text}\n`), undefined, `a served spec with ${label} is judged: ${JSON.stringify(row.text)}`);
+    const refused = fx.red("at", row.at);
+    assert.equal(refused.status, 1, `a served red with ${label} is refused: stderr ${JSON.stringify(refused.stderr)}`);
+    assert.equal(refused.written, false, `a served red with ${label} writes no log`);
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line: row.at }).length, 1, `a cited served red with ${label} is refused at the spec signature`);
+  }
+  for (const text of ["tests-serve/sub/a.ts:3:1", "tests-serve/sub/a.spec.ts:3:1.ts:7:2", "tests-serve/harness.ts:12:5", "tests/unit/a.spec.ts:3:1"])
+    assert.equal(wrongTreeRed(`not ok 1 - a row\n    at ${join(REPO, "apps", "web")}/${text}\n`), undefined, `${JSON.stringify(text)} is no served location`);
+  assert.notEqual(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir)}/harness.ts:12:5 in w900.spec.ts:3:1\n`), undefined, "a helper's frame followed by a spec location reads as one served spec and is refused");
+  // fix check r4 (ruled grammar, rules-eng-meet-1116 r2): an empty stem is a served spec, and `spec|test` matches in any case (Playwright
+  // matches testMatch with minimatch nocase); the extension stays case-sensitive (the collector rejects `.spec.TS`)
+  const anyCase = ["tests-serve/.spec.ts", "tests-serve/.test.ts", "tests-serve/sub/.test.mjs", "tests-serve/w900.SPEC.ts", "tests-serve/W900.SPEC.ts", "tests-serve/sub/w900.Test.mjs", "tests-serve/w900.Test.tsx"].flatMap((rel) => {
+    const abs = `${join(REPO, "apps", "web")}/${rel}`;
+    return [
+      { rel, form: "list", text: `  ✘  1 [chromium] › ${rel}:3:1 › a row`, at: `[chromium] › ${rel}:3:1 › W-900-b1 a served row` },
+      { rel, form: "absolute", text: `    at ${abs}:3:1`, at: `    at ${abs}:3:1` },
+      { rel, form: "parenthesised", text: `    at f (${abs}:3:1)`, at: `    at f (${abs}:3:1)` },
+    ];
+  });
+  assert.equal(anyCase.length, 21, "seven locations, three writer forms");
+  for (const row of anyCase) {
+    const label = `${row.rel} in the ${row.form} form`;
+    assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${row.text}\n`), undefined, `a served spec at ${label} is judged: ${JSON.stringify(row.text)}`);
+    const refused = fx.red("at", row.at);
+    assert.equal(refused.status, 1, `a served red at ${label} is refused: stderr ${JSON.stringify(refused.stderr)}`);
+    assert.equal(refused.written, false, `a served red at ${label} writes no log`);
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line: row.at }).length, 1, `a cited served red at ${label} is refused at the spec signature`);
+  }
+  assert.equal(wrongTreeRed(`not ok 1 - a row\n    at ${join(REPO, "apps", "web")}/tests-serve/w900.spec.TS:3:1\n`), undefined, "an upper-case extension is no served spec (the collector rejects it)");
+  // the behaviour: the served harness's two lines, at their source
+  const files = ["apps/web/tests-serve/harness.ts", "apps/web/tests-serve/board.spec.ts"];
+  const sources = files.map((rel) => ({ rel, src: readFileSync(join(REPO, rel), "utf8") }));
+  // each writer's attempt function: `startServed` (every call is an attempt) and `spawnAndWaitReady` (the first start and
+  // every restart)
+  const attempts: Record<string, string> = { "apps/web/tests-serve/harness.ts": "export async function startServed(", "apps/web/tests-serve/board.spec.ts": "async function spawnAndWaitReady(" };
+  for (const { rel, src } of sources) {
+    const lines = [...src.matchAll(/console\.log\(servedLine\((\w+)!, attempt\)\);/g)];
+    assert.equal(lines.length, 1, `the served harness prints the judge's port and token line: ${rel}`);
+    assert.equal(src.includes('import { servedAttempt, servedLine, servedStart } from "@bisellium/commands/red-tree.js";'), true, `the line's text is the judge's own (one source): ${rel}`);
+    const fn = src.indexOf(attempts[rel]!);
+    const named = src.indexOf("const attempt = servedAttempt();");
+    const started = src.indexOf("console.log(servedStart(attempt));");
+    const spawned = src.indexOf("spawn(", fn);
+    const printed = lines[0]!.index!;
+    assert.equal(src.split("const attempt = servedAttempt();").length - 1, 1, `the served harness names one attempt: ${rel}`);
+    assert.equal(src.split("console.log(servedStart(attempt));").length - 1, 1, `the served harness prints one start line: ${rel}`);
+    assert.equal(fn !== -1 && fn < named && named < started && started < spawned && spawned < printed, true, `each attempt names itself and prints its start before it spawns, and its line after: ${rel}`);
+    // the scrape's state is the attempt's own: the port it prints and the token beside it are declared afresh in the attempt
+    const port = lines[0]![1]!;
+    const body = src.slice(fn, printed);
+    assert.equal(new RegExp(`^\\s*let ${port}: number \\| undefined;$`, "m").test(body), true, `each attempt scrapes into a port of its own: ${rel}`);
+    const tokens = [...body.matchAll(/^\s*let (\w+): string \| undefined;$/gm)];
+    assert.equal(tokens.length, 1, `each attempt scrapes into a token of its own: ${rel}`);
+    // the attempt's own token is what the scrape assigns and both the success and the exit guards read, never an outer one
+    const token = tokens[0]![1]!;
+    assert.equal(body.includes(`if (tokenMatch) ${token} = tokenMatch[1];`), true, `the scrape assigns the attempt's own token: ${rel}`);
+    assert.equal(body.includes(`if (${port} !== undefined && ${token} !== undefined)`), true, `the success guard reads the attempt's own token: ${rel}`);
+    assert.equal(body.includes(`if (${port} === undefined || ${token} === undefined)`), true, `the exit guard reads the attempt's own token: ${rel}`);
+  }
+  for (const { rel, src } of sources) {
+    // the harness's startup-failure message, its template literal as written, with its code and stdout filled in
+    const templates = [...src.matchAll(/new Error\(`([^`]*before printing port\/token[^`]*)`\)/g)].map((m) => m[1]!);
+    assert.equal(templates.length, 1, `the served harness words one startup-failure message: ${rel}`);
+    const printed = templates[0]!.replace("${code}", "1").replace("${stdout}", "").replaceAll("\\n", "\n");
+    assert.equal(wrongTreeRed(`  error: ${printed}`), W645_EXITED, `the harness's startup-failure message is the exit line the judge refuses: ${rel}`);
+  }
+});
+
+/** The stated limit's input: a served location whose directory segment holds an earlier served location and a terminator,
+ *  then a helper's frame; in the list reporter's, an absolute frame's and a parenthesised frame's forms. */
+const W645_LIMIT = "tests-serve/a.spec.ts:3:1)b/helper.ts:12:5";
+function w645LimitForms(): { form: string; text: string; at: string }[] {
+  const abs = `${join(REPO, "apps", "web")}/${W645_LIMIT}`;
+  return [
+    { form: "list", text: `  ✘  1 [chromium] › ${W645_LIMIT} › a row`, at: `[chromium] › ${W645_LIMIT} › W-900-b1 a served row` },
+    { form: "absolute", text: `    at ${abs}`, at: `    at ${abs}` },
+    { form: "parenthesised", text: `    at f (${abs})`, at: `    at f (${abs})` },
+  ];
+}
+
+test("W-645-b5 stated limit (direct): a served location inside a directory segment is refused, fails closed", async () => {
+  const { wrongTreeRed } = (await import("@bisellium/commands/red-tree.js")) as W645Served;
+  for (const row of w645LimitForms())
+    assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${row.text}\n`), undefined, `the limit's input is refused with a reason in the ${row.form} form: ${JSON.stringify(row.text)}`);
+});
+
+test("W-645-b5 stated limit (red): a served location inside a directory segment is refused, fails closed", () => {
+  const fx = w645Fixture("w645-b5-limit-red");
+  for (const row of w645LimitForms()) {
+    const r = fx.red("at", row.at);
+    assert.equal(r.status, 1, `the limit's input is refused by red in the ${row.form} form: stderr ${JSON.stringify(r.stderr)}`);
+    assert.equal(r.written, false, `and writes no log in the ${row.form} form`);
+  }
+});
+
+test("W-645-b5 stated limit (spec signature): a served location inside a directory segment is refused, fails closed", () => {
+  const fx = w645Fixture("w645-b5-limit-cited");
+  for (const row of w645LimitForms())
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line: row.at }).length, 1, `a cited red with the limit's input is refused at the spec signature in the ${row.form} form`);
 });

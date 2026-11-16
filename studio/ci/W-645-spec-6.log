@@ -1,0 +1,27 @@
+# opus: W-645
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T14:19:47.555Z
+# tree: tree:321aa8cf113107fc248295b9dcc9692abbdbcee4
+# brief: briefs/W-645.md blob:9e839a28f97bf0dc2da7f79f6c3ce3e600b127c4
+# ticket: {"opus":"W-645","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-645/studio","head":"193cd09ba0cf2493361b5a1237f4bc6f84fe6e06","brief":"9e839a28f97bf0dc2da7f79f6c3ce3e600b127c4","at":"2026-11-16T14:19:09.458Z"}
+
+# W-645 spec signature, studio/briefs/W-645.md (engineering architect), spec round 6
+
+Brief: `studio/briefs/W-645.md`, amendment commit 193cd09b on opus/W-645 (over 284dc957), a stated limit only: no behaviour, row, pin or promise substance changed.
+
+Verdict: passed — studio/briefs/W-645.md, spec round 6, re-signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C) after one stated limit, per rules-eng-meet-1116 r2 (4/4).
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-645-build/sign-r6/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-645-spec/r4/gate.log
+
+## Findings
+
+1. advisory — the Codex fix check at 284dc957 (census Open) finds `tests-serve/a.spec.ts:3:1)b/helper.ts:12:5`, a path whose directory segment holds a served location followed by a ruled terminator, read as served spec `tests-serve/a.spec.ts:3:1` and refused; this over-refusal fails closed (a reason, exit 1/no log, a spurious signature problem) and never admits a wrong-tree red, and the ruling accepts it as a stated limit, now brief "Limits, stated" beside the served-spec pattern's limit; the amendment commit touches only that one bullet — check: /home/edckt/agents/bisellium/.bisellium/reviews/W-645/fix-1/census.md, /home/edckt/.bisellium-evidence/rules-eng-meet-1116/r2/collated.md
+
+## Verdict
+
+passed — re-signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), signed brief `studio/briefs/W-645.md` at amendment commit 193cd09b, spec round 6.

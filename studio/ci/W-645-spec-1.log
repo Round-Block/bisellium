@@ -1,0 +1,33 @@
+# opus: W-645
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-14T14:49:52.210Z
+# tree: dirty:aa17a0784092885f2190e706f6451a6ff8832bcf
+# brief: briefs/W-645.md blob:b4cad062d8fbc21e4444c409992849d6ca9e53e7
+# ticket: {"opus":"W-645","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b407139f8c936b50903f44f7891860e2d345839e","brief":"b4cad062d8fbc21e4444c409992849d6ca9e53e7","at":"2026-11-14T14:49:46.353Z"}
+
+# W-645 spec signature, round 1 (engineering architect)
+
+Brief: `studio/briefs/W-645.md` (revision 3, carrying w645-questions-meet-1114), master b407139f, prototype `/home/edckt/.bisellium-evidence/W-645-spec/s18/prototype.mbox` (red 1a8e0025, green 8e96f11d).
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-645-spec/promise-ledger.md
+
+Gate log: /home/edckt/.bisellium-evidence/W-645-spec/s18/presign-gate.log
+
+## Findings
+
+1. advisory — master moved 6922b82e -> b407139f (handoff, W-648's record and the queue only); the two prototype commits rebased with no conflict and an identical diff body, and every run was repeated on b407139f under s18/ — check: /home/edckt/.bisellium-evidence/W-645-spec/s18/prototype.mbox, /home/edckt/.bisellium-evidence/W-645-spec/s18/full.log
+2. advisory — each of the six reds fails on master by assertion at its declared pin (b1 to b3 and b5 at the refusal's exit, b4 at the empty problem list, b6 at the harness's print) and each passes at the green commit — check: /home/edckt/.bisellium-evidence/W-645-spec/s18/red-master-b1.out .. s18/red-master-b6.out, s18/green-b1.out .. s18/green-b6.out
+3. advisory — the touched files pass whole and unedited on the prototype, with typecheck, lint, format, both officina checks and the served w300 and board specs; the first whole run sat over 8 minutes in next-branch.test.ts with no row reported (still at its TAP header at 22:32:42 SGT, started 22:24:38; full-rest.sh's note says 13, an overstatement) and was stopped, its first row alone then passed in 6 s and the rerun of that file and the rest passed (34 rows, 317 s); unexplained, a builder's long run may meet it — check: /home/edckt/.bisellium-evidence/W-645-spec/s18/full.log, s18/full-rest.log, s18/next-branch-proto.out
+4. advisory — rows b5 and b6 catch the four drifts (testDir moved, either startup-failure message reworded, the print replaced); the ledger's eight kills (one source file and one hunk each) fail their pinned rows — check: /home/edckt/.bisellium-evidence/W-645-spec/s18/mutations.log, s18/kills.log
+5. advisory — the read enumeration over b407139f, the W-503 and W-610 branch briefs and the four uncommitted main briefs (W-648 added) adds problems for W-503's revision-11 b1 logs (pattern 3) and W-227's b4 (pattern 4) only, as the brief states; a served opus signed again after W-645 lands records its served reds again — check: /home/edckt/.bisellium-evidence/W-645-spec/s18/readers.out
+6. advisory — overlap: lifecycle.ts and verdict.ts with W-610 (other functions), harness.ts and board.spec.ts with W-301's draft (another hunk; row b6 fails on a reword, by design); none with W-503, W-644 or W-648 (package.json is not touched) — check: studio/briefs/W-645.md:79
+7. advisory — the brief passes briefAdmissionProblems, declaredRedProblems and redReplayProblems, and the signature's ledger and citation checks return nothing on it; reused unchanged code (redFailsAt, declaredReds, citedFile, recordedCommand, cellRefusal, classifyReplay, the scrape) is a stated limit, not a promise (D-076 E) — check: /home/edckt/.bisellium-evidence/W-645-spec/s18/admission.out, s18/ledger-probe.out
+8. advisory — the pre-sign gate passed at the series' tree on b407139f: check, typecheck and the seven owed test files (next-branch with next-done 319 s, red-order, safe-helpers, verdict-citation, verdict-findings, w382), 5.7 minutes, none deferred — check: /home/edckt/.bisellium-evidence/W-645-spec/s18/presign-gate.log
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 3 at `studio/briefs/W-645.md`, master b407139f (s18/prototype.mbox).

@@ -5,11 +5,12 @@ import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
-import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
+import { countBehaviours, declaredReds, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, redFailsAt, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
 import { gateLogProblems } from "./presign-gate.js";
 import { CLASS_TAG, censusProblems, repeatedClasses } from "./class-census.js";
 import { codexHome, codexModels, sessionRan, validTurnRan, type TurnRan } from "./codex-run.js";
 import { ensureRealDirectory } from "./ids.js";
+import { wrongTreeRed } from "./red-tree.js";
 import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { USAGE } from "./usage.js";
@@ -860,7 +861,9 @@ function recordedCommand(text: string): string | undefined | { error: string } {
  * (`redCommand`, the replay's own reader: a shell passes them unchanged), and the evidence its genuine red cites
  * (`redEvidence`), each resolved as a quoted claim's citation is (`citedFile`), must include a file whose header records its
  * command (`recordedCommand`), and every file recording one must record those words, space-joined, exactly; a citation that
- * names no readable file is a problem of its own, and stands for the missing record. ponytail: the
+ * names no readable file is a problem of its own, and stands for the missing record. W-645: every file recording a
+ * command is judged by `wrongTreeRed` (a problem each), and when behaviour k declares one failing assertion
+ * (`declaredReds`), at least one file recording the written command must fail at it (`redFailsAt`). ponytail: the
  * working directory, the environment and whether the header was written by the run it heads are not compared.
  */
 export function redReplayProblems(brief: string, id: string): string[] {
@@ -875,6 +878,9 @@ export function redReplayProblems(brief: string, id: string): string[] {
     }
     const written = words.join(" ");
     let recorded = 0;
+    let matched = 0;
+    let atPin = false;
+    const pins = declaredReds(brief, k);
     const before = problems.length;
     for (const path of redEvidence(brief, k)) {
       const head = `behaviour ${k}'s genuine red cites \`${path}\``;
@@ -888,8 +894,16 @@ export function redReplayProblems(brief: string, id: string): string[] {
         recorded++;
         if (ran !== written)
           problems.push(`behaviour ${k}'s genuine red command is \`${written}\`, and ${cited.file} records \`${ran}\`: write the command the evidence ran, or run the red again with the written command`);
+        const wrongTree = wrongTreeRed(read.text);
+        if (wrongTree !== undefined) problems.push(`${head}, and ${cited.file} ${wrongTree}`);
+        if (ran === written) {
+          matched++;
+          if (pins.length === 1 && redFailsAt(read.text, pins[0]!)) atPin = true;
+        }
       }
     }
+    if (pins.length === 1 && matched > 0 && !atPin)
+      problems.push(`behaviour ${k}'s genuine red declares pinned by \`${pins[0]!.row}\` "${pins[0]!.assertion}", and no cited red output recording its command fails at it: cite the red that does, or record it again`);
     if (recorded === 0 && problems.length === before)
       problems.push(`behaviour ${k}'s genuine red cites no evidence recording the command it ran: cite its red output, headed "# command: <the command>" as \`bisellium red\` records it`);
   }

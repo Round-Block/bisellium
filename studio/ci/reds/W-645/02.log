@@ -1,0 +1,42 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-645-b2\s --import tsx packages/cli/src/red-order.test.ts
+# exit: 1
+# at: 2026-11-16T08:24:42.874Z
+# sella: builder.W-645
+# tree: tree:948baf68b3d3fb2d7779dc241a65c1fe5ac1a6a2
+# ticket: {"opus":"W-645","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-645/studio","head":"ee55bd02db3bfe58d94b3b4bd9e7b8287cfc9cb3","brief":"bf76ecf3d51af16ac50ba196b9a4c2e855673502","at":"2026-11-16T08:24:40.203Z"}
+
+TAP version 13
+# Subtest: W-645-b2 behaviour 2: a red whose served server exited before its port and token is refused
+not ok 1 - W-645-b2 behaviour 2: a red whose served server exited before its port and token is refused
+  ---
+  duration_ms: 416.761897
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-645/packages/cli/src/red-order.test.ts:90:2034'
+  failureType: 'testCodeFailure'
+  error: |-
+    a red whose server exited before its port and token is refused: stderr ""
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-645/packages/cli/src/red-order.test.ts:698:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 428.680954

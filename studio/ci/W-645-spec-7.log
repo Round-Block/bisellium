@@ -1,0 +1,21 @@
+# opus: W-645
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1dacf-6879-7ad2-9360-7b1c578f5666
+# outcome: passed
+# at: 2026-11-16T14:22:55.456Z
+# tree: tree:321aa8cf113107fc248295b9dcc9692abbdbcee4
+# brief: briefs/W-645.md blob:9e839a28f97bf0dc2da7f79f6c3ce3e600b127c4
+# ticket: {"opus":"W-645","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":".worktrees/W-645/studio","head":"67c0323b1cac7f6b0e668bb60ecfead2caee8da1","brief":"9e839a28f97bf0dc2da7f79f6c3ce3e600b127c4","at":"2026-11-16T14:22:49.008Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-645-spec-4.log #1: closed — brief:117 now asserts both attempt-local token guards, and mutations replacing either with the outer token fail — check: packages/cli/src/red-order.test.ts W-645-b5
+
+## Verdict
+The line-48 limit accurately bounds the accepted fail-closed over-refusal without leaving any promise broader than the implementation.
+VERDICT: PASS

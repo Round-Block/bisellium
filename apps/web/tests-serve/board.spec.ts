@@ -23,6 +23,7 @@ import { appendFileSync, cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync,
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { servedAttempt, servedLine, servedStart } from "@bisellium/commands/red-tree.js";
 import { runGreenlight } from "@bisellium/commands/writes.js";
 import { boardModel, type BoardModel } from "../src/lib/board.js";
 import type { InboxResponse, OfficinaResponse, OpusEntry } from "../src/api.js";
@@ -87,12 +88,18 @@ async function startRestartable(tag: string): Promise<RestartableServed> {
   cpSync(SAMPLE_STUDIO, studioDir, { recursive: true });
 
   let child: ChildProcessWithoutNullStreams;
-  let port: number | undefined;
-  let token: string | undefined;
+  // the port and token of the latest attempt that read both (each attempt scrapes into its own, below)
+  let servedPort = 0;
+  let servedToken = "";
 
   async function spawnAndWaitReady(fixedPort: number): Promise<void> {
+    // W-645: each start is an attempt with its own name, its start line before the spawn and its port and token line after
+    const attempt = servedAttempt();
+    console.log(servedStart(attempt));
     child = spawn(process.execPath, ["--import", "tsx", MAIN_TS, "serve", "--studio", studioDir, "--port", String(fixedPort)], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
+    let port: number | undefined;
+    let token: string | undefined;
     await new Promise<void>((resolvePromise, reject) => {
       // sleep-waiver: guard -- a fifteen second startup deadline that fails the spec; correctness waits on the printed port and token
       const timer = setTimeout(() => reject(new Error(`bisellium serve never printed its port/token within 15s:\n${stdout}`)), 15_000);
@@ -118,6 +125,9 @@ async function startRestartable(tag: string): Promise<RestartableServed> {
         }
       });
     });
+    console.log(servedLine(port!, attempt));
+    servedPort = port!;
+    servedToken = token!;
     const base = `http://127.0.0.1:${port}`;
     const start = Date.now();
     while (Date.now() - start < 10_000) {
@@ -133,14 +143,14 @@ async function startRestartable(tag: string): Promise<RestartableServed> {
   }
 
   await spawnAndWaitReady(0);
-  const fixedPort = port!;
+  const fixedPort = servedPort;
 
   return {
     get port() {
       return fixedPort;
     },
     get token() {
-      return token!;
+      return servedToken;
     },
     studioDir,
     baseURL: `http://127.0.0.1:${fixedPort}`,

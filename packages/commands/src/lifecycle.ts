@@ -48,6 +48,7 @@ import {
 } from "./opus-model.js";
 import { ensureRealDirectory } from "./ids.js";
 import { cellRefusal, openCell, type Cell } from "./red-cell.js";
+import { wrongTreeRed } from "./red-tree.js";
 import { claimPending, recordTicket, releaseClaim, requireTicket, ticketsProblem } from "./ticket.js";
 import { countedFailures, readBuildReviewConfig, readBuildRounds, readSourceExcludes, type BuildReviewRound } from "./verdict.js";
 import { webBuild, webBuildFailure } from "./web-build.js";
@@ -1209,6 +1210,14 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
       console.error(`red: behaviour ${behaviour}'s command ${refused} — nothing recorded`);
       return { exitCode: 1 };
     }
+  }
+
+  // W-645: an output that fails in the tree (a module that did not load, a served row whose server never started or never
+  // printed its port and token) is no behaviour's red, whatever assertion it declares; after the classifier's own refusals
+  const wrongTree = wrongTreeRed(output);
+  if (wrongTree !== undefined) {
+    console.error(`red: behaviour ${behaviour}'s output ${wrongTree} — nothing recorded`);
+    return { exitCode: 1 };
   }
 
   if (optIn.optedIn && hashRepo((repository as { root: string }).root) !== treeHeader) {
