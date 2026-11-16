@@ -700,3 +700,48 @@ test("W-645-b2 behaviour 2: a red whose served server exited before its port and
   assert.equal(r.stderr.trim(), W645_REFUSED(W645_EXITED), "the refusal names the harness's exit line");
   assert.deepEqual(fx.cited({ name: "red.out", mode: "plain" }, { name: "exited.out", mode: "exited" }), [W645_CITED(fx, "exited.out", W645_EXITED)], "every cited red is judged: one whose server exited is refused at the spec signature");
 });
+const W645_SERVED = 'names a served spec (tests-serve/w900.spec.ts:3:1) and no served attempt\'s start and port and token lines ("bisellium serve: attempt <id> starting", "bisellium serve: attempt <id> listening on port <n>, write-auth token read"): the served row never read its server\'s port and token';
+/** The refusal for a served attempt that printed its start and never its port and token line. */
+const W645_UNREADY = (at: string, attempt: string): string => `names a served spec (${at}), and served attempt ${attempt} printed its start and no port and token line: that attempt's server never read its port and token`;
+/** red-tree.ts's served exports, imported in a row (not at the top: the module is this opus's). */
+interface W645Served {
+  servedAttempt: () => string;
+  servedStart: (attempt: string) => string;
+  servedLine: (port: number, attempt: string) => string;
+  wrongTreeRed: (output: string) => string | undefined;
+}
+
+test("W-645-b3 behaviour 3: a served red with no port and token line is refused", async () => {
+  const fx = w645Fixture("w645-b3");
+  const r = fx.red("served");
+  assert.equal(r.status, 1, `a served red with no port and token line is refused: stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "a served red with no port and token line writes no log");
+  assert.equal(r.stderr.trim(), W645_REFUSED(W645_SERVED), "the refusal names the served spec and the missing line");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "served" }), [W645_CITED(fx, "red.out", W645_SERVED)], "a cited served red with no port and token line is refused at the spec signature");
+  // the harness's own lines (imported here, not at the top: the module is this behaviour's)
+  const { servedAttempt, servedStart, servedLine } = (await import("@bisellium/commands/red-tree.js")) as W645Served;
+  assert.equal(servedStart("4100.1"), "bisellium serve: attempt 4100.1 starting", "the start line the served harness prints");
+  assert.equal(servedLine(4477, "4100.1"), "bisellium serve: attempt 4100.1 listening on port 4477, write-auth token read", "the line the served harness prints");
+  const [first, second] = [servedAttempt(), servedAttempt()];
+  assert.match(first, new RegExp(`^${process.pid}\\.\\d+$`), "an attempt is named by the process and a count");
+  assert.notEqual(first, second, "each attempt is named afresh");
+  const pair = (attempt: string, port: number): string => `${servedStart(attempt)}\n${servedLine(port, attempt)}`;
+  const lined = fx.red("served-line", pair("4100.1", 4477));
+  assert.equal(lined.status, 0, `a served red carrying the harness's port and token line records: stderr ${JSON.stringify(lined.stderr)}`);
+  assert.equal(lined.written, true, "and writes its log");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "served-line", line: pair("4100.1", 4477) }), [], "a cited served red carrying the line has no problem");
+  // a first start that read its port and token, then a second (a restart) that did not: the first's line does not cover it
+  const restarted = `${pair("4100.1", 4477)}\n${servedStart("4100.2")}`;
+  const again = fx.red("served-line", restarted);
+  assert.equal(again.status, 1, `a served red whose second start never read its port and token is refused: stderr ${JSON.stringify(again.stderr)}`);
+  assert.equal(again.written, false, "and writes no log");
+  assert.equal(again.stderr.trim(), W645_REFUSED(W645_UNREADY("tests-serve/w900.spec.ts:3:1", "4100.2")), "the refusal names the attempt with no port and token line");
+  assert.deepEqual(
+    fx.cited({ name: "red.out", mode: "served-line", line: restarted }),
+    [W645_CITED(fx, "red.out", W645_UNREADY("tests-serve/w900.spec.ts:3:1", "4100.2"))],
+    "a cited served red whose second start never read its port and token is refused at the spec signature",
+  );
+  const both = `${pair("4100.1", 4477)}\n${pair("4100.2", 4477)}`;
+  assert.equal(fx.red("served-line", both).status, 0, "a served red whose every start read its port and token records");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "served-line", line: both }), [], "a cited served red whose every start read its port and token has no problem");
+});
