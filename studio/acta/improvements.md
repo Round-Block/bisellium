@@ -1422,3 +1422,73 @@ Classes in more than one opus, 2026-11-01..2026-11-14:
 - prompt×first-reviewer-round-packet-no-prompt (gaps.md 66: at W-467 round 3, the reviewer's first round after two signatures, review-packet.mjs wrote only subject and facts.txt, no prompt.md, and a copied kit exited 3; the prompt came from studio/prompts/spec-review.md): nothing in studio/queue.yml names it. File it: on a reviewer's first round the packet writes prompt.md from spec-review.md, or `next` names that source. Red: a round-3 first-review packet without prompt.md fails. Owner: ops-lead.
 - workflow×newer-reader-holds-signed-brief (gaps.md 56: W-280's pinned Playwright reds refused by `red`; gaps.md 61: W-648 build held by the light-gate reader taking a command span as a test path; current-state.md:20 RETRO s21 (2)): covered by W-660 "Admission refuses a pinned Playwright red" (greenlit, queue.yml:12) and W-661 "Cause fix (high): light gates read path spans" (greenlit, E1 head, queue.yml:7). Owner: eng-lead.
 - spec×input-domain-missing-or-unenforceable (W-301 spec r4 S1, W-644 spec r2 S1; 11 opera): none new, because the class is not owed and W-393 (greenlit, queue.yml:27) is its admission cause fix. Owner: design lead.
+
+### 2026-11-15
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-280 | 1907 | 0 |  |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-280 | review | 1 | passed | - |  |
+| W-280 | spec | 3 | passed | 618 |  |
+| W-280 | spec | 4 | passed | 84 |  |
+| W-467 | spec | 1 | passed | - |  |
+| W-467 | spec | 2 | passed | 15 |  |
+| W-467 | spec | 3 | passed | 21 |  |
+| W-467 | spec | 4 | passed | 10 |  |
+| W-661 | review | 1 | passed | - |  |
+| W-661 | spec | 1 | passed | - |  |
+| W-661 | spec | 2 | passed | 8 |  |
+| W-661 | spec | 3 | passed | 93 |  |
+| W-661 | spec | 4 | passed | 372 |  |
+| W-662 | spec | 1 | passed | - |  |
+
+- no loop
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| none | | | |
+
+Classes in more than one opus, 2026-11-02..2026-11-15:
+- class gate×tests seen in 7 opera: W-364, W-494, W-502, W-509, W-558, W-563, W-572
+- class interface×validation-order-masks-errors seen in 2 opera: W-543, W-547
+- class review×evidence-backfilled-or-absent seen in 5 opera: W-300, W-413, W-495, W-502, W-541
+- class review×fail-open-on-malformed-records-patched-per-site seen in 4 opera: W-525, W-547, W-558, W-563
+- class security×symlink-parent-write-escape seen in 2 opera: W-542, W-543
+- class spec×input-domain-missing-or-unenforceable seen in 10 opera: W-227, W-298, W-301, W-525, W-530, W-547, W-558, W-573, W-610, W-644
+- class spec×promise-unattainable-under-accepted-domain seen in 12 opera: W-227, W-298, W-333, W-495, W-498, W-501, W-509, W-512, W-525, W-543, W-547, W-604
+- class tests×one-sided-bound-assertion seen in 2 opera: W-604, W-645
+- class tests×ruled-case-uncovered seen in 7 opera: W-364, W-495, W-496, W-525, W-542, W-547, W-608
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-227, W-501
+
+#### Owed cause fixes
+
+- OWED class gate×tests (W-364, W-494, W-502, W-509, W-558, W-563, W-572): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class tests×one-sided-bound-assertion (W-604, W-645): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- gate×tests×owed (7 opera, last W-572; the 11-14 entry's proposal to file a lesson was not carried out: no `class: "gate×tests"` lesson exists in studio/lessons/, so the OWED line repeats): covered by W-596 "Handoff refuses without a passing pre-handoff gate" (greenlit, studio/queue.yml:75). A dispatched clerk files the gate×tests lesson with `addressed_by: "W-596"` in the next records PR. Check rule so an unrouted proposal fails loud: `retro.owed_repeated` (warn) when an OWED class appears in two daily entries in a row and the earlier entry's proposal names a greenlit opus that no lesson of the class stamps. Red: a fixture with two daily entries owing one class and no lesson warns. Owner: eng-lead.
+- tests×one-sided-bound-assertion×owed (W-604, W-645; ci/W-645-spec-4.log): covered by W-659 "Cause fix (high): tests×one-sided-bound-assertion, source-text pins" (greenlit, queue.yml:12). The 11-14 restamp was not done: L-115.md:8 still names `"W-201"`, L-034.md:7 and L-066.md:7 `"W-138"`. The same clerk restamps L-115 to `"W-659"`. The `retro.owed_repeated` row above covers this too. Owner: eng-lead.
+- admission×gates-disagree (gaps 58, 59, 63b, 70, 73: five briefs passed one gate and were refused at the next; W-488-ready-meet-1115 d, W-661-red-meet-1115 e; current-state.md RETRO s21 (1), s24 (2), s25 (2), s19 (2)): covered by W-612 "Every gate runs one brief admission" (greenlit, queue.yml:15), widened to a read-only admit verb plus a sign-time replay through redFailsAt and killedPin. Nothing new. Owner: eng-lead.
+- prompt×printed-record-command-incomplete (gap 63a: verdict close-out printed without --session-reason; gap 69: W-488 ui-lead round 10 printed without --session although next had read ci/W-488-spec-6.log; gap 67: the kit asked for every earlier finding where verdict.ts:909-914 takes only blocking ones; RETRO s23 (1)): covered by W-631 "Ladder steps run exactly what next prints" (greenlit, queue.yml:49) and W-662 "Fresh Claude reviewer sessions by rule" (greenlit, queue.yml:13; it also closes gaps 66-68, the 11-14 entry's prompt×first-reviewer-round proposal). Add a W-631 row: a fixture with a recorded spec-N session makes next's printed verdict line carry `--session <that id>`. Owner: eng-lead.
+- script×codex-workspace-write-kit-missing-tmp-flag (gaps 64 and 75: a Codex fix run and a Terra build both died on "bwrap: Can't mkdir /tmp/.git"; RETRO s25 (1)): nothing in studio/opera/ or queue.yml names `exclude_slash_tmp`. File it: a kept repo script (beside scripts/censor.sh, which runs read-only) is the only path for a Codex workspace-write run and always passes `-c sandbox_workspace_write.exclude_slash_tmp=true`; a guard row refuses an agent's `codex exec -s workspace-write` without the flag. Red: the guard passes such a call on master. Owner: ops-lead.
+- build×fresh-worktree-no-node-modules (gap 74: W-488 red b4 died ERR_MODULE_NOT_FOUND because the worktree had no node_modules and the CLI ran against main's packages; RETRO s25 (3)): W-645 only classifies the failure, and W-638's point 4 (fresh clone needs npm ci) is backlog. Fold into W-622 "Opus checkouts as local clones" (greenlit, queue.yml:55): the branch perform runs `npm ci --cache ~/.bisellium-evidence/npm-cache` in the new checkout, and next refuses to name `red` while the checkout has no node_modules. Red: a fixture checkout without node_modules makes next print the install step, not red. Owner: eng-lead.
+- build×cleanup-stops-before-branch-delete (gaps 60 and 80: `next W-661 --perform --expect cleanup` held on "Device or resource busy" for .git/worktrees/W-661; packages/cli/src/integrate.ts:1250 returns `stop` before step 2's branch deletion, so W-227's promise "names it for the Patron, still deletes the branches" fails for a busy admin dir): W-622 removes the cause (no worktrees) but is not built. File a small cause fix: a busy admin-dir refusal is named for the Patron to prune, and cleanup still deletes the local and remote branches. Red: a fixture whose `git worktree remove` exits with EBUSY still deletes opus/<id>. Owner: eng-lead.
+- check×staged-brief-revision-blocks-unrelated-land (gap 62: copying W-488's revised brief r7b into main before its own verdict made `check` block every records PR on "stale design_digest"; the workaround was to restore the old brief by hand): not filed. File it: the record kit stages a revision only inside the verdict step (verdict `--brief <path>` reads it from the kit), so main's brief changes only as the signature records. Red: a records PR with a kit-held revision passes `check`. Owner: eng-lead.
+- workflow×kind-ui-build-review-order (gaps 77, 78; W-488-review-meet-1116; RETRO s26 (2)): covered by W-665 "Kind-ui build review gets screenshots and Opus reviewer" (greenlit, queue.yml:8). Owner: eng-lead.
+- workflow×delta-round-cannot-carry-keeps-blocker (gap 72; W-488-r12-meet-1115 d): covered by W-664 "Review ceiling counts rounds per signature" (greenlit, queue.yml:19). Owner: eng-lead.
+- prompt×bare-bisellium-in-orders (gap 71; classifier-red-meet-1115; RETRO s24 (1), (3)): covered by W-663 "Agent orders print the allowlisted bisellium form" (greenlit, queue.yml:14). Owner: eng-lead.
+- workflow×newer-reader-holds-signed-brief (gaps 56, 61; W-280-fable-read-1115, W-648-lightgate-meet-1115; RETRO s21 (2)): W-661 merged (d5c1e2ab); the Playwright-pin half is covered by W-660 (greenlit, queue.yml:16). Owner: eng-lead.
+- scheduling×required-check-never-runs (gap 79: CodeQL never ran for PR #1244, so Merge-when-ready never queued and the merge perform sat 37 minutes with an empty log): the CodeQL setup is covered by W-544 (greenlit, queue.yml:104). Also file: the merge perform fails loud, naming the check, when a required check has no run on the head 10 minutes after the PR is ready, and push-notifies the Patron. Red: a fixture PR whose required check has no run makes the perform exit non-zero with the check's name. Owner: ops-lead.
+- script×pr-with-no-code-owned-path-asks-no-review (RETRO s25 (4): a PR touching no code-owned path got no review request; the Patron was added by hand with `gh pr edit --add-reviewer`): not filed (integrate.ts:956 requests code owners only). File it: the pr perform requests the Patron's review when CODEOWNERS matches no path in the PR. Red: a records-only fixture PR gets a review request. Owner: ops-lead.
+- prompt×pre-existing-failure-unverified (RETRO s26 (1): W-488's format:check failure was told to a reviewer as pre-existing, but it was this opus's): file one line in the build-review prompt template and a packet fact: a gate failure is called pre-existing only beside a master log of the same command failing the same way; otherwise the packet lists it as the opus's own. Owner: ops-lead.
+- prompt×runner-handback (RETRO s26 (4), placeholder hand-back re-dispatched; RETRO s21 (3), dependent ladder parts in one runner): covered by W-639 "cap subagent hand-backs, detail in a file" (greenlit, queue.yml:44); W-653 (greenlit, queue.yml:24) routes each session RETRO point. Owner: ops-lead.
+- none for `new`'s refused title and flags (gap 63c, RETRO s26 (3)), because `new` refused loudly before writing anything (opus.title.words); the miss was in a hand kit, and W-631 makes kits print commands from next.
+- spec, UI spec and design quality: none, because the entry has no failed spec round on 11-15 (W-280, W-467, W-661 and W-662 all passed), and the D-050 input-domain refusals of W-467 and W-488 (gaps 59, 63b) are admission work covered by W-612 and W-393 (greenlit, queue.yml:32). Owner: design lead.
