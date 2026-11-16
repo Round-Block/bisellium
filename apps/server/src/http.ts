@@ -144,7 +144,7 @@ type ErrorCode =
   | "Content-Type must be application/json"
   | "item cannot be combined with since"
   | "petitio and reply are required strings"
-  | "receipt must be a JSON object"
+  | "receipt must be an object"
   | "opus is required"
   | "period, collegium and tokens are required"
   | "opus, sella and next are required"
@@ -875,7 +875,7 @@ async function route(
     // only carries it: written to a fresh private temp file, named by --receipt, removed once the write returns.
     const receipt = body["receipt"];
     if (receipt !== undefined && (receipt === null || typeof receipt !== "object" || Array.isArray(receipt))) {
-      sendError(res, 400, "receipt must be a JSON object");
+      sendError(res, 400, "receipt must be an object");
       return;
     }
     const args = ["--petitio", petitio, reply, "--studio", store.studioDir];
