@@ -785,7 +785,7 @@ test("W-669-b1 behaviour 1: a held admin directory does not hold cleanup: the ch
   const admin = w669Admin(w);
   const kept = w227Cleanup(w, { GIT_STUB_REAL: failingGit("w669-b1-kept", ["worktree remove"]) });
   assert.equal(kept.status, 1, ran("a failed remove that keeps the checkout: held", kept));
-  assert.match(kept.out, /^worktree: held \(git worktree remove refused \(no --force\): /m, ran("a failed remove that keeps the checkout: the worktree line says held", kept));
+  assert.match(kept.out, /^worktree: held \(git worktree remove refused \(no --force\): /m, ran("a failed remove that keeps the checkout: the worktree line says held", kept)); // one-sided: the text after the colon is git's own refusal, which the row does not pin
   assert.equal(existsSync(w.wt), true, "a failed remove that keeps the checkout: the checkout is left");
   assert.equal(branchExists(w), true, "a failed remove that keeps the checkout: the local branch is left");
   assert.equal(remoteBranchExists(w), true, "a failed remove that keeps the checkout: the remote branch is left");
@@ -794,7 +794,7 @@ test("W-669-b1 behaviour 1: a held admin directory does not hold cleanup: the ch
   assert.equal(branchExists(w), false, ran("a held admin directory: the local branch is deleted", o));
   assert.equal(remoteBranchExists(w), false, ran("a held admin directory: the remote branch is deleted", o));
   assert.equal(o.status, 0, ran("a held admin directory: cleanup exits 0", o));
-  assert.ok(o.out.split("\n").some((l) => l.startsWith(`worktree: ran (the checkout is removed; its admin directory ${admin} is held (`) && l.includes("Device or resource busy")), ran("a held admin directory: the worktree line names the directory and git's refusal", o));
+  assert.ok(o.out.split("\n").some((l) => l.startsWith(`worktree: ran (the checkout is removed; its admin directory ${admin} is held (`) && l.includes("Device or resource busy")), ran("a held admin directory: the worktree line names the directory and git's refusal", o)); // one-sided: the text inside the parentheses is git's own refusal, which the row pins by its words
   assert.equal(existsSync(w.wt), false, "a held admin directory: the checkout is gone");
   assert.deepEqual(readdirSync(admin).sort(), ["commondir", "config.worktree"], "a held admin directory: it is left as git left it");
   expectStep(next(w, [OPUS]), "done", "named", "a held admin directory: next moves on to done");
@@ -802,7 +802,7 @@ test("W-669-b1 behaviour 1: a held admin directory does not hold cleanup: the ch
   const l = w669World("w669-b1-listed");
   const lo = w227Cleanup(l, { GIT_STUB_REAL: checkoutOnlyGit("w669-b1-listed") });
   assert.equal(lo.status, 1, ran("a failed remove that leaves the entry listed: held", lo));
-  assert.match(lo.out, /^worktree: held \(git worktree remove refused \(no --force\): /m, ran("a failed remove that leaves the entry listed: the worktree line says held", lo));
+  assert.match(lo.out, /^worktree: held \(git worktree remove refused \(no --force\): /m, ran("a failed remove that leaves the entry listed: the worktree line says held", lo)); // one-sided: the text after the colon is the wrapper's failure message, which the row does not pin
   assert.equal(branchExists(l), true, "a failed remove that leaves the entry listed: the local branch is left");
   assert.equal(remoteBranchExists(l), true, "a failed remove that leaves the entry listed: the remote branch is left");
 });
