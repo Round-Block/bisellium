@@ -46,7 +46,7 @@ Current state only, after CLAUDE.md. Rules: lex `production.md`.
 
 **D-181 is the plan, as D-182 changes its lanes and D-183, D-187, D-188 its head.**
 
-Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first. D-194 governs opening E2/E3.
+Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first. D-223: two engineering lanes (E1, E2) and two ui lanes (UI1, UI2).
 
 Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624 W-625 W-626 W-627 W-628 W-629 W-630 W-631 W-632 W-633.
 
@@ -56,12 +56,12 @@ Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653
 
 Also, 11-16: D-212, D-213, D-215 (W-467 re-specced while W-503 parks) landed; D-216 (auto-greenlight widens to small non-ui engineering/ops/process opera), D-217 (console adopts whole themes) and D-218 (W-488 re-approved at tree 51f8690d) landed #1268; W-674 (Dracula spec audit and console-wide steps) filed #1266.
 
-D-193 replaces D-178: E1 and E2 take product, E3 is process (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: W-595 after W-610. D-204: E2 and UI2 open.
+D-193 replaces D-178: D-223 closes E3; process opera take E1/E2 by rank. D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: W-595 after W-610. D-204: E2 and UI2 open.
 
 Lanes now:
-- E1 W-666 (signed Patron receipt) HELD till W-645 merges (D-192); then W-668 pt C, W-673.
-- E2 W-645 (red check refuses broken red logs): fix check of r3 left 3 open paths (a served spec stem holding its own `.ts:n:n`); the rules-audit engineering meet (~/.bisellium-evidence/rules-eng-meet-1116/) rules the judge's input grammar; then one last builder round.
-- E3 W-669 (host prune of sandbox-held worktree dirs) done (#1275, landed cb92fde8). Next W-665 (ui build review screenshots), then the process lane, re-ranked by the rules audit (W-612, one brief admission and a read-only admit verb, expected to rise): W-554 (meet asks leads), W-531 (one spec lead per collegium), W-590 (legacy signer), W-644 (qa-lead seat, Codex Sol), W-676 (greenlight --auto, D-216).
+- E1 W-666 (signed Patron receipt) branched (opus/W-666); then W-668 pt C, W-673.
+- E2 W-645 done (#1281, #1282); E2 takes the next non-overlapping opus by rank.
+- E3 closed (D-223, Patron 11-16); W-665 (ui build review screenshots) waits for E1/E2 by rank.
 - UI1 W-503 halted by D-222 (W-675 first), W-467 re-signs after W-675, W-662 held.
 - UI2 W-675 (Dracula theme layer): spec round 2 signed (brief 41351a90, untracked in main); next Opus UI spec review round 3, then ui-lead (Astra) input.
 - Retro lane RT1, owner qa-lead (Patron 11-16): until W-682's host cron lands, every boot re-arms the session cron (CronCreate "4 9 * * *", prompt in daily-retro-lane-meet-1116/collated.md Q3); W-681, W-682 filed and greenlit (the Patron 11-16).
@@ -72,8 +72,6 @@ W-250 (duplicate hosted suite cut), W-636 (next reads branch records); older fil
 Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`. W-507 halted (D-181, D-206), tag archive/W-507.
 
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/. Sessions 21-30 meets and gaps 56-98: ~/.bisellium-evidence/current-state.md.
-Session 31: lex-cap, ui-lanes meets; gaps 100-104. Session 32: W-668 meet; gap 105.
-Session 33: theme, W-645-round meets; gap 106 (1 run/kit); theme samples noted.
 Session 35: W-669 merged #1275; W-645 fix r3 check 3 open; W-675 r2 signed; W-673 meet; signer meet + Patron rulings.
 Session 36: W-669 done (checkpoint row 246); rules audit (rules-audit-1116/: census s1-s3; eng + design meets); decisions owed: W-673 D-129 B departure, signer rulings.
 Next: rules audit collate -> W-645 r4 per ruling -> W-675 UI spec review r3 -> W-673 Codex spec review -> decisions records PR (code-owner) -> file opera per audit rulings.
