@@ -59,19 +59,22 @@ Also, 11-16: D-212, D-213, D-215 (W-467 re-specced while W-503 parks) landed; D-
 D-193 replaces D-178: E1 and E2 take product, E3 is process (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: W-595 after W-610. D-204: E2 and UI2 open.
 
 Lanes now:
-- E1 W-666 (signed Patron receipt): spec r4 failed on one design-keeping blocker (build fix: writes.ts:970 ENOENT-only); branch HELD, overlaps W-645 (D-192). Then W-668 (boot reader once) part C, W-673 (certificate tree excludes the handoff).
-- E2 W-645 (red check refuses broken red logs): w645-round-meet-1116: no third spec review; architect amends E1-E7 and re-signs round 5; next must show ticket red round 5, else stop; build review names E1-E7 and r4 #1.
-- E3 W-669 (host prune of sandbox-held worktree dirs): light gates, Codex Sol build review, full ci. Then W-665 (kind-ui build review screenshots), then W-554 (meet verb asks the relevant leads; design seat = ui-lead Astra) -> W-531 (one spec lead per collegium) -> W-590 (explicit legacy signer) -> W-644 (qa-lead seat on Codex Sol) atop the process lane (Patron: escalate; queue edit and W-554 amend owed).
-- UI1 W-503 (Home panels) parked (D-215); W-467 (Officina on Home's palette) re-signs on role tokens after W-674's theme-layer child. W-662 held.
-- UI2 W-488 (comments on captures) DONE (or: done land in flight, kit 268); next W-674's first child, the theme layer (Dracula only, pixel-identical), filed with its queue line.
-- W-555 not signed (no lane); W-646 carries the D-213 cap wording (lexcap-meet-1116).
-W-250 (duplicate hosted suite cut). Filed 11-13: W-634 (research: context budget), W-635 (check flags finished opera), W-636 (next reads branch records); 11-14: W-639 W-640 W-641 W-642 (D-207, D-061 §4) W-643.
+- E1 W-666 (signed Patron receipt): HELD till W-645 merges (D-192); then W-668 (boot reader once) pt C, W-673 (cert tree excludes handoff).
+- E2 W-645 (red check refuses broken red logs): r1 FAILed; fix r1 done, check found 6 open (CR/LF, coordinate-colon); round 2, then check again.
+- E3 W-669 (host prune of sandbox-held worktree dirs): re-signed r3; r4 owed (packet from worktree studio; kit 284 failed on main's); then review r2. Then W-665 (ui build review screenshots), then process: W-554 (meet asks leads) -> W-531 (one spec lead/collegium) -> W-590 (legacy signer) -> W-644 (qa-lead seat, Codex Sol) -> W-676 (greenlight --auto, D-216).
+- UI1 W-503 (Home panels) parked (D-215), resumes after W-645; W-467 (Officina on Home's palette) re-signs after W-675; W-662 held.
+- UI2 W-675 (Dracula theme layer, pixel-identical): greenlit (#1272), Patron accepted 3 Defaults; sign r1 gate lacked node_modules: npm ci, re-gate, sign, verdict; then UI spec review, ui-lead input.
+- W-673 signed r1: leads' meet on host-runner scope, then Codex spec review.
+- Patron idea 11-16: host-side key signs review gates (verdict/check/merge refuse unsigned): leads' meet, then architecture call.
+- W-555 not signed (no lane); W-646 carries D-213 cap wording.
+W-250 (duplicate hosted suite cut), W-636 (next reads branch records); older filings: studio/queue.yml.
 
 Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`. W-507 halted (D-181, D-206), tag archive/W-507.
 
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/. Sessions 21-30 meets and gaps 56-98: ~/.bisellium-evidence/current-state.md.
-Session 31: lexcap-meet-1116, ui-lanes-meet-1116; gaps 100-104. Session 32: w668-meet-1116; gap 105.
-Session 33: theme-meet-1116, w645-round-meet-1116; gap 106 (one background run per kit); theme samples ~/.bisellium-evidence/W-674-spec/samples/.
-Next: W-488 done land (if unmerged) -> file W-674 theme-layer child + queue and the D-216 --auto opus -> W-645 amend, re-sign r5 -> W-669 gates + review -> W-554 amend + ranking -> W-666 branches after W-645.
+Session 31: lex-cap, ui-lanes meets; gaps 100-104. Session 32: W-668 meet; gap 105.
+Session 33: theme, W-645-round meets; gap 106 (1 run/kit); theme samples noted.
+Session 34: W-675/W-676 filed #1271, W-675 greenlit #1272; W-645 r1 FAIL, fix r1, check 6 open; W-669 r3; W-673 r1; gaps: packet from main studio, gate missing node_modules.
+Next: land handoff -> W-645 fix r2 + check -> W-675 npm ci, sign, verdict -> W-669 r4 -> W-673 meet + review -> signer meet -> W-645 merge opens W-666, W-503.
 
 Unruled notes: top NOW of ~/.bisellium-evidence/current-state.md; older gaps: current-state-until-1106.md there. Research is its own lane. Codex stays the one gate (D-066 C).
