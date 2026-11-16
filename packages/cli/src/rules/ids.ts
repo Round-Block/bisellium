@@ -111,6 +111,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "opus.ui.rulings",
   "path.escapes.officina",
   "path.id.unvalidated",
+  "patron.receipt",
   "petitio.age",
   "petitio.cap",
   "petitio.direction",

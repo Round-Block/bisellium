@@ -30,6 +30,7 @@ import { checkInstructions } from "./rules/instructions.js";
 import { checkDocs } from "./rules/docs.js";
 import { checkMilestones } from "./rules/milestones.js";
 import { checkQueue } from "./rules/queue.js";
+import { checkReceipts } from "./rules/receipts.js";
 import { checkEvidence } from "./rules/evidence.js";
 import { checkPaths } from "./rules/paths.js";
 import { checkDesign } from "./rules/design.js";
@@ -946,6 +947,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   findings.push(...checkTests(root, ruleOpts));
   findings.push(...checkMilestones(root, ruleOpts));
   findings.push(...checkQueue(root, ruleOpts));
+  findings.push(...checkReceipts(root, ruleOpts));
   findings.push(...checkSessionHandoff(root, ruleOpts));
   findings.push(...checkPipeExit(root, ruleOpts));
   findings.push(...checkPromptTemplates(root, ruleOpts));
