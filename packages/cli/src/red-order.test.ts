@@ -758,3 +758,75 @@ test("W-645-b4 behaviour 4: a cited red that lacks the brief's declared assertio
   );
   assert.deepEqual(fx.cited({ name: "other.out", mode: "other" }, { name: "red.out", mode: "plain" }), [], "one cited red failing at the declared assertion is the red; another run may fail elsewhere");
 });
+
+test("W-645-b5 behaviour 5: the served config and the served harness are the ones the judge reads", async () => {
+  // the guards first: they hold from b3's pattern on, and their kept mutations show each one can fail (W-645 revision 5)
+  // the config's real testDir (a variable specifier, as served-config.test.ts imports it), not a copy of it
+  const configPath = join(REPO, "apps", "web", "playwright.serve.config.ts");
+  const config = ((await import(configPath)) as { default: { testDir?: string; testMatch?: unknown } }).default;
+  assert.equal(config.testDir, "./tests-serve", "the served config's testDir is the directory the judge reads");
+  assert.equal(config.testMatch, undefined, "the served config sets no testMatch: Playwright's default suffixes are the ones the judge reads");
+  const fx = w645Fixture("w645-b5");
+  const dir = String(config.testDir).replace(/^\.\//, "");
+  const at = `[chromium] › apps/web/${dir}/w900.spec.ts:3:1 › W-900-b1 a served row`;
+  const r = fx.red("at", at);
+  assert.equal(r.status, 1, `a served red under the served config's testDir is refused: stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "and writes no log");
+  // a nested descendant with another suffix, through `red` and the spec signature (the list reporter's form)
+  const nested = `[chromium] › ${dir}/reconnect/w900.test.ts:3:1 › W-900-b1 a served row`;
+  const deep = fx.red("at", nested);
+  assert.equal(deep.status, 1, `a served red at a nested location under the testDir is refused: stderr ${JSON.stringify(deep.stderr)}`);
+  assert.equal(deep.written, false, "and writes no log");
+  assert.equal(fx.cited({ name: "red.out", mode: "at", line: nested }).length, 1, "a cited served red at a nested location is refused at the spec signature");
+  // every suffix Playwright's default testMatch (`**/*.@(spec|test).?(c|m)[jt]s?(x)`) discovers, direct and nested, in both
+  // location writers' forms (the list reporter's relative path, a stack frame's absolute one); a helper file is no spec
+  const { wrongTreeRed } = (await import("@bisellium/commands/red-tree.js")) as W645Served;
+  const suffixes = ["spec", "test"].flatMap((kind) => ["", "c", "m"].flatMap((m) => ["j", "t"].flatMap((jt) => ["", "x"].map((x) => `.${kind}.${m}${jt}s${x}`))));
+  assert.equal(suffixes.length, 24, "the default testMatch's suffixes, counted");
+  let judged = 0;
+  for (const suffix of suffixes)
+    for (const rel of [`w900${suffix}`, `reconnect/w900${suffix}`, `a/b/w900${suffix}`])
+      for (const form of [`  ✘  1 [chromium] › ${dir}/${rel}:3:1 › a row`, `    at ${join(REPO, "apps", "web", dir, rel)}:12:5`]) {
+        assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${form}\n`), undefined, `every discovered location under the testDir is judged (${judged})`);
+        judged++;
+      }
+  assert.equal(judged, 144, "each suffix, each depth and each writer's form judged");
+  assert.equal(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir, "harness.ts")}:12:5\n`), undefined, "a helper module under the testDir is no served spec");
+  // the behaviour: the served harness's two lines, at their source
+  const files = ["apps/web/tests-serve/harness.ts", "apps/web/tests-serve/board.spec.ts"];
+  const sources = files.map((rel) => ({ rel, src: readFileSync(join(REPO, rel), "utf8") }));
+  // each writer's attempt function: `startServed` (every call is an attempt) and `spawnAndWaitReady` (the first start and
+  // every restart)
+  const attempts: Record<string, string> = { "apps/web/tests-serve/harness.ts": "export async function startServed(", "apps/web/tests-serve/board.spec.ts": "async function spawnAndWaitReady(" };
+  for (const { rel, src } of sources) {
+    const lines = [...src.matchAll(/console\.log\(servedLine\((\w+)!, attempt\)\);/g)];
+    assert.equal(lines.length, 1, `the served harness prints the judge's port and token line: ${rel}`);
+    assert.equal(src.includes('import { servedAttempt, servedLine, servedStart } from "@bisellium/commands/red-tree.js";'), true, `the line's text is the judge's own (one source): ${rel}`);
+    const fn = src.indexOf(attempts[rel]!);
+    const named = src.indexOf("const attempt = servedAttempt();");
+    const started = src.indexOf("console.log(servedStart(attempt));");
+    const spawned = src.indexOf("spawn(", fn);
+    const printed = lines[0]!.index!;
+    assert.equal(src.split("const attempt = servedAttempt();").length - 1, 1, `the served harness names one attempt: ${rel}`);
+    assert.equal(src.split("console.log(servedStart(attempt));").length - 1, 1, `the served harness prints one start line: ${rel}`);
+    assert.equal(fn !== -1 && fn < named && named < started && started < spawned && spawned < printed, true, `each attempt names itself and prints its start before it spawns, and its line after: ${rel}`);
+    // the scrape's state is the attempt's own: the port it prints and the token beside it are declared afresh in the attempt
+    const port = lines[0]![1]!;
+    const body = src.slice(fn, printed);
+    assert.equal(new RegExp(`^\\s*let ${port}: number \\| undefined;$`, "m").test(body), true, `each attempt scrapes into a port of its own: ${rel}`);
+    const tokens = [...body.matchAll(/^\s*let (\w+): string \| undefined;$/gm)];
+    assert.equal(tokens.length, 1, `each attempt scrapes into a token of its own: ${rel}`);
+    // the attempt's own token is what the scrape assigns and both the success and the exit guards read, never an outer one
+    const token = tokens[0]![1]!;
+    assert.equal(body.includes(`if (tokenMatch) ${token} = tokenMatch[1];`), true, `the scrape assigns the attempt's own token: ${rel}`);
+    assert.equal(body.includes(`if (${port} !== undefined && ${token} !== undefined)`), true, `the success guard reads the attempt's own token: ${rel}`);
+    assert.equal(body.includes(`if (${port} === undefined || ${token} === undefined)`), true, `the exit guard reads the attempt's own token: ${rel}`);
+  }
+  for (const { rel, src } of sources) {
+    // the harness's startup-failure message, its template literal as written, with its code and stdout filled in
+    const templates = [...src.matchAll(/new Error\(`([^`]*before printing port\/token[^`]*)`\)/g)].map((m) => m[1]!);
+    assert.equal(templates.length, 1, `the served harness words one startup-failure message: ${rel}`);
+    const printed = templates[0]!.replace("${code}", "1").replace("${stdout}", "").replaceAll("\\n", "\n");
+    assert.equal(wrongTreeRed(`  error: ${printed}`), W645_EXITED, `the harness's startup-failure message is the exit line the judge refuses: ${rel}`);
+  }
+});
