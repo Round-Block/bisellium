@@ -1,0 +1,53 @@
+# behaviour: 6
+# command: node --test-reporter=tap --test-name-pattern=^W-666-b6\s --import tsx packages/cli/src/w666.test.ts
+# exit: 1
+# at: 2026-11-16T16:09:43.394Z
+# sella: builder.W-666
+# tree: tree:9089b0b498821e48e8227647137ccb24238c595a
+# ticket: {"opus":"W-666","step":"reds","action":"red","round":6,"actor":"builder","studio":".worktrees/W-666/studio","head":"ce03bdd1235017f8b174e899465d622b43f10acb","brief":"bb2b9fb5672939798e5b781bcea805d27c5b0324","at":"2026-11-16T16:09:40.380Z"}
+
+TAP version 13
+POST /api/answer 400 1ms
+# Subtest: W-666-b6 the answer route answers 400 for a body-shape error and 200 ok false for a refusal
+not ok 1 - W-666-b6 the answer route answers 400 for a body-shape error and 200 ok false for a refusal
+  ---
+  duration_ms: 132.29536
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:13:1462'
+  failureType: 'testCodeFailure'
+  error: |-
+    a body-shape error answers 400
+    + actual - expected
+    
+      [
+        400,
+    +   'receipt must be a JSON object'
+    -   'receipt must be an object'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 400
+    1: 'receipt must be an object'
+  actual:
+    0: 400
+    1: 'receipt must be a JSON object'
+  operator: 'deepStrictEqual'
+  stack: |-
+    <anonymous> (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:349:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async serveAnswer (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:338:5)
+    async TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:346:3)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 138.104056
