@@ -964,11 +964,27 @@ function answerReceipt(root: string, manifest: Manifest, path: string | undefine
   }
   const receipt = parseReceipt(raw);
   if ("error" in receipt) return receipt;
-  // every nonce a recorded receipt has spent: the timeline's, and each petitio's recorded receipts (the committed record)
+  // every nonce a recorded receipt has spent: the timeline's, and each petitio's recorded receipts (the committed record,
+  // which a clone without the gitignored timeline still carries). A source that does not read refuses the answer, never
+  // spends nothing (a skipped receipt could be replayed). Only ENOENT is an absent timeline: lstat, not existsSync, so a
+  // dangling symlink, or any other failure (a `timeline` that is a file, no access), reaches the contained reader and
+  // refuses with its own reason rather than the generic `answer failed` (D-086 A).
   let recorded = "";
-  const file = readContainedRegularFile(root, "timeline/patron.jsonl", "timeline");
-  if (!("error" in file)) recorded = file.bytes.toString("utf8");
-  const spent = spentNonces(recorded, readPetitioReceipts(root).records);
+  let present = true;
+  try {
+    lstatSync(join(root, "timeline", "patron.jsonl"));
+  } catch (e) {
+    present = (e as NodeJS.ErrnoException).code !== "ENOENT";
+  }
+  if (present) {
+    const file = readContainedRegularFile(root, "timeline/patron.jsonl", "timeline");
+    if ("error" in file) return { error: `timeline/patron.jsonl: ${file.error}` };
+    recorded = file.bytes.toString("utf8");
+  }
+  const petitiones = readPetitioReceipts(root);
+  const unread = petitiones.problems[0];
+  if (unread !== undefined) return { error: unread.message };
+  const spent = spentNonces(recorded, petitiones.records);
   if ("error" in spent) return spent;
   const problem = receiptProblem(receipt, policy, facts, now, spent);
   return problem === undefined ? { receipt } : { error: problem };

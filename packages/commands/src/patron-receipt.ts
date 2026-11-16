@@ -13,7 +13,7 @@
  * Readers: `runAnswer` (writes.ts, the write path) and the `patron.receipt` rule (packages/cli/src/rules/receipts.ts).
  */
 import { createHash, createPublicKey, verify as cryptoVerify, type KeyObject } from "node:crypto";
-import { readdirSync } from "node:fs";
+import { lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "yaml";
 import { instant } from "@bisellium/schema";
@@ -209,21 +209,27 @@ export interface SourceProblem {
   where: string;
   message: string;
 }
-/** Every `.md` entry of `petitiones/`, sorted, read for its stamps and receipts. An entry that does not read is skipped
- *  here (behaviour 4 and 5 make each a problem). */
+/** W-666 r3: every `.md` entry of `petitiones/`, sorted, read for its stamps and receipts. No source is skipped: a
+ *  `petitiones/` that is not a real, listable directory, an entry that is not a contained, regular, readable file, front
+ *  matter that is absent, does not parse or is not a mapping, and `receipts` that is not a mapping are each a problem. */
 export function readPetitioReceipts(root: string): { records: PetitioReceipts[]; problems: SourceProblem[] } {
   const records: PetitioReceipts[] = [];
   const problems: SourceProblem[] = [];
   let names: string[];
   try {
+    const st = lstatSync(join(root, "petitiones"));
+    if (st.isSymbolicLink() || !st.isDirectory()) throw new Error("not a real directory");
     names = readdirSync(join(root, "petitiones")).filter((n) => n.endsWith(".md")).sort();
-  } catch {
-    return { records, problems };
+  } catch (e) {
+    return { records, problems: [{ where: "petitiones/", message: `petitiones/ is not listable: ${(e as Error).message}` }] };
   }
   for (const name of names) {
     const where = `petitiones/${name}`;
     const file = readContainedRegularFile(root, where, "petitiones");
-    if ("error" in file) continue;
+    if ("error" in file) {
+      problems.push({ where, message: `${where} is not a contained regular readable file: ${file.error}` });
+      continue;
+    }
     const split = splitFront(file.bytes.toString("utf8"));
     let front: unknown;
     try {
@@ -232,34 +238,45 @@ export function readPetitioReceipts(root: string): { records: PetitioReceipts[];
     } catch {
       front = undefined;
     }
-    if (split === undefined || front === null || typeof front !== "object" || Array.isArray(front)) continue;
+    if (split === undefined || front === null || typeof front !== "object" || Array.isArray(front)) {
+      problems.push({ where, message: `${where} front matter does not parse as a mapping` });
+      continue;
+    }
     const receipts = recordedReceipts(front);
-    if ("error" in receipts) continue;
+    if ("error" in receipts) {
+      problems.push({ where, message: `${where} ${receipts.error}` });
+      continue;
+    }
     records.push({ where, id: name.slice(0, -".md".length), body: split.body, receipts });
   }
   return { records, problems };
 }
 
-/** The nonces recorded receipts have spent, in the timeline's JSON lines (`receipt`) and in each petitio's `receipts`. A
- *  line or a receipt that does not read spends nothing here (behaviour 4 refuses it). */
+/** W-666 r3: the nonces recorded receipts have spent, in the timeline's JSON lines (`receipt`) and in each petitio's
+ *  `receipts`; or the first source that does not read: a timeline line that does not parse or is not an object, and a
+ *  recorded receipt (a line's `receipt`, a `receipts` value) of the wrong shape. Nothing is skipped. */
 export function spentNonces(timeline: string, records: readonly Pick<PetitioReceipts, "where" | "receipts">[]): Set<string> | { error: string } {
   const out = new Set<string>();
-  for (const line of timeline.split("\n")) {
+  for (const [i, line] of timeline.split("\n").entries()) {
     if (line.trim() === "") continue;
     let entry: unknown;
     try {
       entry = JSON.parse(line);
     } catch {
-      continue;
+      return { error: `timeline/patron.jsonl line ${i + 1} does not parse` };
     }
-    if (entry === null || typeof entry !== "object" || Array.isArray(entry)) continue;
-    const r = parseReceipt((entry as Record<string, unknown>)["receipt"]);
-    if (!("error" in r)) out.add(r.payload.nonce);
+    if (entry === null || typeof entry !== "object" || Array.isArray(entry)) return { error: `timeline/patron.jsonl line ${i + 1} is not an object` };
+    const raw = (entry as Record<string, unknown>)["receipt"];
+    if (raw === undefined) continue;
+    const r = parseReceipt(raw);
+    if ("error" in r) return { error: `timeline/patron.jsonl line ${i + 1}: ${r.error}` };
+    out.add(r.payload.nonce);
   }
   for (const rec of records)
-    for (const raw of rec.receipts.values()) {
+    for (const [at, raw] of rec.receipts) {
       const r = parseReceipt(raw);
-      if (!("error" in r)) out.add(r.payload.nonce);
+      if ("error" in r) return { error: `${rec.where} receipt ${at}: ${r.error}` };
+      out.add(r.payload.nonce);
     }
   return out;
 }
