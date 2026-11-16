@@ -3,6 +3,7 @@
  * W-124 behaviour 3 and its TERMINALS table stay here: ladder-followon.test.ts (W-128 behaviour 2) reads this file.
  * Select one row with --test-name-pattern='^<row id>\s'.
  * W-227 rows b1-b2 (studio/briefs/W-227.md): cleanup clears an empty folder git does not list, directly under .worktrees/.
+ * W-669 rows b1-b2 (studio/briefs/W-669.md): a sandbox-held admin directory does not hold cleanup; the installed guard's sync prunes it.
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -10,7 +11,7 @@ import { chmodSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, rea
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { BODY, BRANCH, HERE, MAIN, MIN_CHECKS, OID_UNFETCHED, OPUS, Out, PR_NUMBER, REPO_ROOT, SETUP_ENV, SLUG, SlotName, SlotValue, TITLE, TSX, World, advanceOrigin, advanceSource, branchExists, cand, check, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitOk, greens, headOf, landMerge, mergedList, mutating, next, openList, performMerge, performPr, pushed, ran, remoteBranchExists, reviewed, runs, scenario, scratch, tipOf, unmatched, viewOf, world } from "./next-world.test.js";
+import { BODY, BRANCH, HERE, MAIN, MIN_CHECKS, OID_UNFETCHED, OPUS, Out, PR_NUMBER, REAL_GIT, REPO_ROOT, SETUP_ENV, SLUG, SlotName, SlotValue, TITLE, TSX, World, advanceOrigin, advanceSource, branchExists, cand, check, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitOk, greens, headOf, landMerge, mergedList, mutating, next, openList, performMerge, performPr, pushed, ran, remoteBranchExists, reviewed, runs, scenario, scratch, tipOf, unmatched, viewOf, world } from "./next-world.test.js";
 
 /** An open PR on the tip whose merge lands (and reads back MERGED) once `gh pr merge` has been called. */
 function landing(w: World, extra: Partial<Record<SlotName, SlotValue>> = {}): string {
@@ -749,4 +750,59 @@ test("W-227-b2 behaviour 2: a leftover cleanup cannot remove, rmdir refused (a m
   } finally {
     chmodSync(wts, 0o755);
   }
+});
+
+// ---------------------------------------------------------------------------
+// W-669 rows b1-b2 (studio/briefs/W-669.md): a sandbox holds the admin directory `git worktree remove` cannot delete
+// (gaps 60, 80); cleanup goes on to the branches, names the directory and asks the installed guard's sync to prune it
+// ---------------------------------------------------------------------------
+/** The admin directory a worktree's `.git` file names. */
+const w669Admin = (w: World): string => readFileSync(join(w.wt, ".git"), "utf8").trim().replace(/^gitdir: /, "");
+/** A git whose `worktree remove` runs the real one, then leaves the admin directory as a sandbox's read-only mounts do
+ *  (`commondir` and `config.worktree` kept, `gitdir` gone) and exits 255 with git's own message (gap 80). */
+function heldAdminGit(tag: string, admin: string): string {
+  const wrapper = join(scratch(`${tag}-git`), "git-real");
+  const remake = `mkdir -p '${admin}' && printf '../..\\n' > '${admin}/commondir' && : > '${admin}/config.worktree'`;
+  writeFileSync(wrapper, `#!/bin/sh\ncase "$*" in\n*"worktree remove"*) "${REAL_GIT}" "$@" || exit $?; ${remake}; echo "error: failed to delete '${admin}': Device or resource busy" >&2; exit 255;;\nesac\nexec "${REAL_GIT}" "$@"\n`, { mode: 0o755 });
+  return wrapper;
+}
+/** A git whose `worktree remove` deletes only the checkout folder and fails: git still lists the entry. */
+function checkoutOnlyGit(tag: string): string {
+  const wrapper = join(scratch(`${tag}-git`), "git-real");
+  writeFileSync(wrapper, `#!/bin/sh\ncase "$*" in\n*"worktree remove"*) for a; do last=$a; done; rm -rf "$last"; echo "error: simulated failure" >&2; exit 255;;\nesac\nexec "${REAL_GIT}" "$@"\n`, { mode: 0o755 });
+  return wrapper;
+}
+const w669World = (tag: string): World => {
+  const w = world(tag, "merge", { mainOnMaster: false });
+  scenario(w, { list: mergedList(w), view: { stdout: viewOf(cand(w, { state: "MERGED" })) } });
+  return w;
+};
+const syncRequest = (w: World): string => join(w.repo, ".git", "bisellium", "sync");
+
+test("W-669-b1 behaviour 1: a held admin directory does not hold cleanup: the checkout gone and git no longer listing it, cleanup deletes both branches, names the directory, and next moves on to done; any other worktree remove failure still holds", { timeout: 1_800_000 }, () => {
+  // a remove that fails with the checkout still there holds, as before, and touches nothing else
+  const w = w669World("w669-b1");
+  const admin = w669Admin(w);
+  const kept = w227Cleanup(w, { GIT_STUB_REAL: failingGit("w669-b1-kept", ["worktree remove"]) });
+  assert.equal(kept.status, 1, ran("a failed remove that keeps the checkout: held", kept));
+  assert.match(kept.out, /^worktree: held \(git worktree remove refused \(no --force\): /m, ran("a failed remove that keeps the checkout: the worktree line says held", kept));
+  assert.equal(existsSync(w.wt), true, "a failed remove that keeps the checkout: the checkout is left");
+  assert.equal(branchExists(w), true, "a failed remove that keeps the checkout: the local branch is left");
+  assert.equal(remoteBranchExists(w), true, "a failed remove that keeps the checkout: the remote branch is left");
+  // the sandbox's EBUSY: the checkout and gitdir go, the admin directory stays, unlisted
+  const o = w227Cleanup(w, { GIT_STUB_REAL: heldAdminGit("w669-b1", admin) });
+  assert.equal(branchExists(w), false, ran("a held admin directory: the local branch is deleted", o));
+  assert.equal(remoteBranchExists(w), false, ran("a held admin directory: the remote branch is deleted", o));
+  assert.equal(o.status, 0, ran("a held admin directory: cleanup exits 0", o));
+  assert.ok(o.out.split("\n").some((l) => l.startsWith(`worktree: ran (the checkout is removed; its admin directory ${admin} is held (`) && l.includes("Device or resource busy")), ran("a held admin directory: the worktree line names the directory and git's refusal", o));
+  assert.equal(existsSync(w.wt), false, "a held admin directory: the checkout is gone");
+  assert.deepEqual(readdirSync(admin).sort(), ["commondir", "config.worktree"], "a held admin directory: it is left as git left it");
+  expectStep(next(w, [OPUS]), "done", "named", "a held admin directory: next moves on to done");
+  // a remove that deletes the checkout but leaves the entry listed still holds: git has not let go of it
+  const l = w669World("w669-b1-listed");
+  const lo = w227Cleanup(l, { GIT_STUB_REAL: checkoutOnlyGit("w669-b1-listed") });
+  assert.equal(lo.status, 1, ran("a failed remove that leaves the entry listed: held", lo));
+  assert.match(lo.out, /^worktree: held \(git worktree remove refused \(no --force\): /m, ran("a failed remove that leaves the entry listed: the worktree line says held", lo));
+  assert.equal(branchExists(l), true, "a failed remove that leaves the entry listed: the local branch is left");
+  assert.equal(remoteBranchExists(l), true, "a failed remove that leaves the entry listed: the remote branch is left");
 });
