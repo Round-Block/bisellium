@@ -879,6 +879,26 @@ test("W-645-b5 behaviour 5: the served config and the served harness are the one
   for (const text of ["tests-serve/sub/a.ts:3:1", "tests-serve/sub/a.spec.ts:3:1.ts:7:2", "tests-serve/harness.ts:12:5", "tests/unit/a.spec.ts:3:1"])
     assert.equal(wrongTreeRed(`not ok 1 - a row\n    at ${join(REPO, "apps", "web")}/${text}\n`), undefined, `${JSON.stringify(text)} is no served location`);
   assert.notEqual(wrongTreeRed(`    at ${join(REPO, "apps", "web", dir)}/harness.ts:12:5 in w900.spec.ts:3:1\n`), undefined, "a helper's frame followed by a spec location reads as one served spec and is refused");
+  // fix check r4 (ruled grammar, rules-eng-meet-1116 r2): an empty stem is a served spec, and `spec|test` matches in any case (Playwright
+  // matches testMatch with minimatch nocase); the extension stays case-sensitive (the collector rejects `.spec.TS`)
+  const anyCase = ["tests-serve/.spec.ts", "tests-serve/.test.ts", "tests-serve/sub/.test.mjs", "tests-serve/w900.SPEC.ts", "tests-serve/W900.SPEC.ts", "tests-serve/sub/w900.Test.mjs", "tests-serve/w900.Test.tsx"].flatMap((rel) => {
+    const abs = `${join(REPO, "apps", "web")}/${rel}`;
+    return [
+      { rel, form: "list", text: `  ✘  1 [chromium] › ${rel}:3:1 › a row`, at: `[chromium] › ${rel}:3:1 › W-900-b1 a served row` },
+      { rel, form: "absolute", text: `    at ${abs}:3:1`, at: `    at ${abs}:3:1` },
+      { rel, form: "parenthesised", text: `    at f (${abs}:3:1)`, at: `    at f (${abs}:3:1)` },
+    ];
+  });
+  assert.equal(anyCase.length, 21, "seven locations, three writer forms");
+  for (const row of anyCase) {
+    const label = `${row.rel} in the ${row.form} form`;
+    assert.notEqual(wrongTreeRed(`not ok 1 - a row\n${row.text}\n`), undefined, `a served spec at ${label} is judged: ${JSON.stringify(row.text)}`);
+    const refused = fx.red("at", row.at);
+    assert.equal(refused.status, 1, `a served red at ${label} is refused: stderr ${JSON.stringify(refused.stderr)}`);
+    assert.equal(refused.written, false, `a served red at ${label} writes no log`);
+    assert.equal(fx.cited({ name: "red.out", mode: "at", line: row.at }).length, 1, `a cited served red at ${label} is refused at the spec signature`);
+  }
+  assert.equal(wrongTreeRed(`not ok 1 - a row\n    at ${join(REPO, "apps", "web")}/tests-serve/w900.spec.TS:3:1\n`), undefined, "an upper-case extension is no served spec (the collector rejects it)");
   // the behaviour: the served harness's two lines, at their source
   const files = ["apps/web/tests-serve/harness.ts", "apps/web/tests-serve/board.spec.ts"];
   const sources = files.map((rel) => ({ rel, src: readFileSync(join(REPO, rel), "utf8") }));
