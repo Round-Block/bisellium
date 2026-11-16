@@ -1,0 +1,24 @@
+# opus: W-648
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T04:20:59.276Z
+# tree: tree:e267aee1677fa321fa28516a08538fe3c67a0d3b
+# brief: briefs/W-648.md blob:b5a5152d7c34c963a88e852175a9cceee9f5e48e
+# ticket: {"opus":"W-648","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-648/studio","head":"1147ea9469bc551e9fd6ca452897ed1eaf84b02b","brief":"b5a5152d7c34c963a88e852175a9cceee9f5e48e","at":"2026-11-16T04:20:53.226Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-648-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the amendment adds one Files owned bullet, `packages/cli/src/containment.test.ts`, and changes nothing else in the brief: inventory A pins every `safeItemPath` call site, and run.ts's new `opusWorktree` (run.ts:86) adds one, so `PINNED_A` gains the single entry `packages/commands/src/run.ts:opusWorktree:.worktrees#1` (commit 467002cd, one line); without it the full ci's tests gate fails (pinned=24 scan=25) — check: amend-1116/brief-amend.diff, amend-1116/pin.diff
+2. advisory — the source diff of opus/W-648 against origin/master (every path outside `studio/`: package.json, packages/cli/src/containment.test.ts, packages/commands/src/run.ts, packages/commands/src/usage.ts, packages/commands/src/w648.test.ts) is now covered by Files owned, with no path left over — check: amend-1116/diff-names.out, studio/briefs/W-648.md Files owned
+3. advisory — no promise, behaviour, red, Input domain row or interface changes; the pin is a reused inventory row, not a new promise, and `safeItemPath` itself stays unchanged (a stated limit in the brief's Limits) — check: amend-1116/brief-amend.diff
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief amendment at `studio/briefs/W-648.md` on opus/W-648 69dfa37b; evidence in `/home/edckt/.bisellium-evidence/W-648-spec/amend-1116/`.
+
+VERDICT: PASS
