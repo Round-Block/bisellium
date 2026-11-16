@@ -325,3 +325,32 @@ test("W-666-b5 check blocks a petitio source it cannot read", () => {
   writeFileSync(join(flat, "petitiones"), "not a directory\n");
   assert.equal(receiptFindings(flat).some((x) => x.level === "block" && x.message.includes("petitiones/ is not listable")), true, "an unlistable petitiones directory is blocked");
 });
+
+// W-666 r3: the route's two response classes, through the real `answer`: 400 for a body of the wrong shape, and HTTP 200
+// `{ ok: false, exitCode: 2, output }` for a verifier refusal; neither writes.
+async function serveAnswer(dir: string, fn: (post: (body: unknown) => Promise<Response>) => Promise<void>): Promise<void> {
+  const noop = () => ({ exitCode: 0 });
+  const noopAsync = async () => ({ exitCode: 0 });
+  const runners: StartServerOptions["runners"] = { answer: (args) => runAnswer(args), greenlight: noop, budget: noop, handoff: noop, talk: noopAsync, pause: noopAsync, resume: noopAsync, delegate: noop };
+  const TOKEN = "test-token-w666";
+  const server = await startServer({ studioDir: dir, port: 0, once: true, now: new Date(NOW), token: TOKEN, checkStudio: () => ({ ok: true, blocks: 0, advisories: 0, findings: [] }), runners, listModels: () => Promise.resolve([]) });
+  try {
+    await fn((body) => fetch(`http://127.0.0.1:${server.port}/api/answer`, { method: "POST", headers: { "X-Bisellium-Token": TOKEN, "Content-Type": "application/json" }, body: JSON.stringify(body) }));
+  } finally {
+    await server.close();
+  }
+}
+
+test("W-666-b6 the answer route answers 400 for a body-shape error and 200 ok false for a refusal", async () => {
+  const dir = officina("b6", [ed().pub]);
+  await serveAnswer(dir, async (post) => {
+    const r = await post({ petitio: "A-1", reply: "Ship both.", receipt: "a string" });
+    const body = (await r.json()) as { error?: string };
+    assert.deepEqual([r.status, body.error], [400, "receipt must be an object"], "a body-shape error answers 400");
+    assert.equal(petitio(dir), A1_BODY_RAW(), "a body-shape error writes nothing");
+    const refused = await post({ petitio: "A-1", reply: "Ship both.", receipt: receiptOf(ed(), payload()) });
+    const out = (await refused.json()) as { ok?: boolean; exitCode?: number; output?: string };
+    assert.deepEqual([refused.status, out.ok, out.exitCode, out.output?.includes("answer refused: patron receipt key is not a Patron key")], [200, false, 2, true], "a verifier refusal is HTTP 200 with ok false and exit 2");
+    assert.equal(petitio(dir), A1_BODY_RAW(), "a verifier refusal writes nothing");
+  });
+});
