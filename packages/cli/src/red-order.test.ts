@@ -4,6 +4,7 @@
  * node:test TAP. The `red` rows spawn the real CLI against real git fixtures
  * under os.tmpdir(); no timers, sleeps or polling.
  * W-473 rows (`W-473-b<n>`): a red's failing assertion equals the brief's declared one, and ready asks for it.
+ * W-645 rows (`W-645-b<n>`): a red that certifies the wrong tree is refused, by `red` and by the spec signature.
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -16,6 +17,7 @@ import { parseDocument } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { sourceTreeHash } from "@bisellium/shim";
+import { redReplayProblems } from "@bisellium/commands/verdict.js";
 import { runReady } from "./lifecycle.js";
 import { checkEvidence } from "./rules/evidence.js";
 
@@ -587,4 +589,104 @@ test("W-473-b2 behaviour 2: ready asks a new opus to declare each genuine red's 
   assert.equal(past.exitCode, 0, `an opus past ready resumes with no declared assertion: stderr ${JSON.stringify(past.stderr)}`);
   const open = readyFixture([], { limit: false, behaviours: ["1. Behaviour 1 refuses a thing.", "   **Genuine red:** row 1.1 fails on its assertion."] });
   assert.equal(open.exitCode, 0, `an officina with no limit asks nothing: stderr ${JSON.stringify(open.stderr)}`);
+});
+
+
+// ---------------------------------------------------------------------------
+// W-645: a red that certifies the wrong tree is refused (mechanism×red-certifies-wrong-tree), where `red` records it and
+// where the spec signature reads the red evidence a prototyped brief cites (`redReplayProblems`). Rows
+// `W-645-b<n> behaviour <n>: …`, selected with `--test-name-pattern='^W-645-b<n>\s'`.
+// ---------------------------------------------------------------------------
+/** The list reporter's location line for a served spec, as a wrapped served run prints it. */
+const W645_SERVED_AT = "[chromium] › apps/web/tests-serve/w900.spec.ts:3:1 › W-900-b1 a served row";
+/** A node:test file whose one row fails at the declared assertion, its message carrying what its first argument names
+ *  (`other` fails at an earlier assertion; `served-line` appends its second argument; `at` carries it alone). */
+const W645_ROWS = [
+  'import assert from "node:assert/strict";',
+  'import { test } from "node:test";',
+  "const [mode, line] = process.argv.slice(2);",
+  "const tail = {",
+  '  plain: "a detail",',
+  "  module: \"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/x/src/gone.ts' imported from /x/src/a.ts\",",
+  '  exited: "Error: bisellium serve exited (1) before printing port/token:",',
+  `  served: ${JSON.stringify(W645_SERVED_AT)},`,
+  `  "served-line": ${JSON.stringify(W645_SERVED_AT)} + "\\n" + line,`,
+  "  at: line,",
+  "}[mode];",
+  'test("W-900-b1 behaviour 1: the declared row", () => {',
+  '  if (mode === "other") assert.ok(false, "an earlier assertion");',
+  '  assert.equal(mode, "none", `the declared assertion: ${tail}`);',
+  "});",
+  "",
+].join("\n");
+const W645_WRITTEN = "node --test-reporter=tap rows.test.mjs";
+interface W645Fx {
+  M: string;
+  studio: string;
+  /** `red` behaviour 1 with the rows file in `mode`: its result, and whether 01.log was written (removed after). */
+  red: (mode: string, line?: string) => Ran & { written: boolean };
+  /** The spec signature's red-command problems for a prototyped brief whose behaviour 1 declares `W-900-b1` "the declared
+   *  assertion" and cites the given red logs, each headed as `bisellium red` heads it over the rows file's real output. */
+  cited: (...runs: { name: string; mode: string; line?: string }[]) => string[];
+  ev: string;
+}
+function w645Fixture(tag: string): W645Fx {
+  const M = repoWithStudio(tag);
+  const studio = join(M, "studio");
+  const S = scratch(`${tag}-rows`);
+  put(S, "rows.test.mjs", W645_ROWS);
+  put(
+    studio,
+    `briefs/${ID}.md`,
+    [`# ${ID} fixture`, "", "## Behaviours to test", "", "1. one", `   **Genuine red:** \`bisellium red ${ID} --behaviour 1 -- node rows.test.mjs\` fails, pinned by \`W-900-b1\` "the declared assertion".`, ""].join("\n"),
+  );
+  put(studio, `opera/${ID}.md`, `---\nid: ${ID}\ntitle: Wrong-tree fixture\nkind: feature\ncollegium: engineering\nstate: building\nprobationes: {}\nspec: briefs/${ID}.md\n---\nbody\n`);
+  G(M, ["add", "-A"]);
+  G(M, ["commit", "-q", "-m", "opus fixture"]);
+  const log = logOf(studio, ID, 1);
+  const args = (mode: string, line?: string): string[] => [mode, ...(line === undefined ? [] : [line])];
+  const red = (mode: string, line?: string): Ran & { written: boolean } => {
+    rmSync(log, { force: true });
+    const r = w473Red({ M, studio }, 1, [process.execPath, "--test-reporter=tap", join(S, "rows.test.mjs"), ...args(mode, line)]);
+    const written = existsSync(log);
+    rmSync(log, { force: true });
+    return { ...r, written };
+  };
+  const ev = scratch(`${tag}-ev`);
+  const cited = (...runs: { name: string; mode: string; line?: string }[]): string[] => {
+    const env = { ...process.env };
+    delete env["NODE_TEST_CONTEXT"];
+    for (const run of runs) {
+      const r = spawnSync(process.execPath, ["--test-reporter=tap", join(S, "rows.test.mjs"), ...args(run.mode, run.line)], { cwd: S, encoding: "utf8", timeout: 60_000, env });
+      if (r.error) throw r.error;
+      writeFileSync(join(ev, run.name), `# behaviour: 1\n# command: ${W645_WRITTEN}\n# exit: ${r.status}\n\n${r.stdout}${r.stderr}`);
+    }
+    const brief = [
+      "# W-300 fixture brief",
+      `Evidence in \`${ev}/\`.`,
+      `Prototype: /home/fixture/proto.mbox sha256:${"0".repeat(64)}`,
+      "## Behaviours to test",
+      "1. **One.** The row.",
+      `   **Genuine red:** \`bisellium red W-300 --behaviour 1 --sella builder --studio studio -- ${W645_WRITTEN}\` fails (${runs.map((r) => `\`${r.name}\``).join(", ")}), pinned by \`W-900-b1\` "the declared assertion".`,
+      "",
+    ].join("\n");
+    return redReplayProblems(brief, "W-300");
+  };
+  return { M, studio, red, cited, ev };
+}
+const W645_REFUSED = (why: string): string => `red: behaviour 1's output ${why} — nothing recorded`;
+const W645_CITED = (fx: W645Fx, name: string, why: string): string => `behaviour 1's genuine red cites \`${name}\`, and ${join(fx.ev, name)} ${why}`;
+const W645_MODULE = "names a module that did not load (Node's module-not-found error): the red fails in the tree, not at the behaviour";
+
+test("W-645-b1 behaviour 1: a red whose output names a module that did not load is refused", () => {
+  const fx = w645Fixture("w645-b1");
+  const r = fx.red("module");
+  assert.equal(r.status, 1, `a red naming a module that did not load is refused: stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "a red naming a module that did not load writes no log");
+  assert.equal(r.stderr.trim(), W645_REFUSED(W645_MODULE), "the refusal names the module failure");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "module" }), [W645_CITED(fx, "red.out", W645_MODULE)], "a cited red naming a module that did not load is refused at the spec signature");
+  const plain = fx.red("plain");
+  assert.equal(plain.status, 0, `a red failing at its declared assertion alone records: stderr ${JSON.stringify(plain.stderr)}`);
+  assert.equal(plain.written, true, "and writes its log");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "plain" }), [], "a cited red failing at its declared assertion alone has no problem");
 });
