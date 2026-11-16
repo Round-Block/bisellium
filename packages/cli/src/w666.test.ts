@@ -11,7 +11,7 @@
  */
 import assert from "node:assert/strict";
 import { createHash, generateKeyPairSync, randomBytes, sign as cryptoSign, type KeyObject } from "node:crypto";
-import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
@@ -308,4 +308,20 @@ test("W-666-b4 an inaccessible timeline refuses with the reader's reason", () =>
   assert.equal(r.code === 2 && r.err.includes("answer refused: timeline/patron.jsonl:"), true, "an inaccessible timeline gives the reader's refusal");
   assert.equal(r.err.includes("answer failed"), false, "an inaccessible timeline is not the generic answer failed");
   assert.equal(petitio(dir), A1_BODY_RAW(), "an inaccessible timeline leaves the petitio untouched");
+});
+
+// W-666 r3: with keys named, a petitio source `check` cannot read blocks; a skipped one could hide an unsigned stamp.
+test("W-666-b5 check blocks a petitio source it cannot read", () => {
+  const dir = officina("b5", [ed().pub]);
+  const outside = `${dir}-outside.md`;
+  dirs.push(outside);
+  writeFileSync(outside, `${A2_RAW()}\n\n[stated] 2026-11-16T02:59:00.000Z patron: Seasonal events wait.`);
+  rmSync(A2(dir));
+  symlinkSync(outside, A2(dir));
+  const f = receiptFindings(dir);
+  assert.equal(f.some((x) => x.level === "block" && x.where === "petitiones/A-2.md" && x.message.includes("is not a contained regular readable file")), true, "a symlinked petitio is blocked");
+  const flat = officina("b5-flat", [ed().pub]);
+  rmSync(join(flat, "petitiones"), { recursive: true });
+  writeFileSync(join(flat, "petitiones"), "not a directory\n");
+  assert.equal(receiptFindings(flat).some((x) => x.level === "block" && x.message.includes("petitiones/ is not listable")), true, "an unlistable petitiones directory is blocked");
 });
