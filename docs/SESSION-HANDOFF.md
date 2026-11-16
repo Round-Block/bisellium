@@ -59,13 +59,12 @@ Also, 11-16: D-212, D-213, D-215 (W-467 re-specced while W-503 parks) landed; D-
 D-193 replaces D-178: E1 and E2 take product, E3 is process (W-595 enforces). D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: W-595 after W-610. D-204: E2 and UI2 open.
 
 Lanes now:
-- E1 W-666 (signed Patron receipt): HELD till W-645 merges (D-192); then W-668 (boot reader once) pt C, W-673 (cert tree excludes handoff).
-- E2 W-645 (red check refuses broken red logs): r1 FAILed; fix r1 done, check found 6 open (CR/LF, coordinate-colon); round 2, then check again.
-- E3 W-669 (host prune of sandbox-held worktree dirs): re-signed r3; r4 owed (packet from worktree studio; kit 284 failed on main's); then review r2. Then W-665 (ui build review screenshots), then process: W-554 (meet asks leads) -> W-531 (one spec lead/collegium) -> W-590 (legacy signer) -> W-644 (qa-lead seat, Codex Sol) -> W-676 (greenlight --auto, D-216).
-- UI1 W-503 (Home panels) parked (D-215), resumes after W-645; W-467 (Officina on Home's palette) re-signs after W-675; W-662 held.
-- UI2 W-675 (Dracula theme layer, pixel-identical): greenlit (#1272), Patron accepted 3 Defaults; sign r1 gate lacked node_modules: npm ci, re-gate, sign, verdict; then UI spec review, ui-lead input.
-- W-673 signed r1: leads' meet on host-runner scope, then Codex spec review.
-- Patron idea 11-16: host-side key signs review gates (verdict/check/merge refuse unsigned): leads' meet, then architecture call.
+- E1 W-666 (signed Patron receipt) HELD till W-645 merges (D-192); then W-668 pt C, W-673.
+- E2 W-645 (red check refuses broken red logs): fix check of r3 left 3 open paths (a served spec stem holding its own `.ts:n:n`); the rules-audit engineering meet (~/.bisellium-evidence/rules-eng-meet-1116/) rules the judge's input grammar; then one last builder round.
+- E3 W-669 (host prune of sandbox-held worktree dirs) done (#1275, landed cb92fde8). Next W-665 (ui build review screenshots), then the process lane, re-ranked by the rules audit (W-612, one brief admission and a read-only admit verb, expected to rise): W-554 (meet asks leads), W-531 (one spec lead per collegium), W-590 (legacy signer), W-644 (qa-lead seat, Codex Sol), W-676 (greenlight --auto, D-216).
+- UI1 W-503 parked (D-215), W-467 re-signs after W-675, W-662 held.
+- UI2 W-675 (Dracula theme layer): spec round 2 signed (brief 41351a90, untracked in main); next Opus UI spec review round 3, then ui-lead (Astra) input.
+- W-673 (cert tree excludes the handoff): meet w673-meet-1116 ruled 3/3; Codex spec review with 5 named items next; lands after W-645.
 - W-555 not signed (no lane); W-646 carries D-213 cap wording.
 W-250 (duplicate hosted suite cut), W-636 (next reads branch records); older filings: studio/queue.yml.
 
@@ -74,7 +73,8 @@ Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch orig
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/. Sessions 21-30 meets and gaps 56-98: ~/.bisellium-evidence/current-state.md.
 Session 31: lex-cap, ui-lanes meets; gaps 100-104. Session 32: W-668 meet; gap 105.
 Session 33: theme, W-645-round meets; gap 106 (1 run/kit); theme samples noted.
-Session 34: W-675/W-676 filed #1271, W-675 greenlit #1272; W-645 r1 FAIL, fix r1, check 6 open; W-669 r3; W-673 r1; gaps: packet from main studio, gate missing node_modules.
-Next: land handoff -> W-645 fix r2 + check -> W-675 npm ci, sign, verdict -> W-669 r4 -> W-673 meet + review -> signer meet -> W-645 merge opens W-666, W-503.
+Session 35: W-669 merged #1275; W-645 fix r3 check 3 open; W-675 r2 signed; W-673 meet; signer meet + Patron rulings.
+Session 36: W-669 done (checkpoint row 246); rules audit (rules-audit-1116/: census s1-s3; eng + design meets); decisions owed: W-673 D-129 B departure, signer rulings.
+Next: rules audit collate -> W-645 r4 per ruling -> W-675 UI spec review r3 -> W-673 Codex spec review -> decisions records PR (code-owner) -> file opera per audit rulings.
 
 Unruled notes: top NOW of ~/.bisellium-evidence/current-state.md; older gaps: current-state-until-1106.md there. Research is its own lane. Codex stays the one gate (D-066 C).
