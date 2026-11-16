@@ -18,6 +18,7 @@ import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { runAnswer } from "@bisellium/commands/writes.js";
+import { checkStudio } from "./check.js";
 
 const SAMPLE = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "examples", "sample-studio");
 const NOW = "2026-11-16T03:00:00.000Z";
@@ -163,4 +164,68 @@ test("W-666-b1 answer takes a Patron answer only with a valid receipt", () => {
 
   const open = officina("b1-open", undefined);
   assert.equal(answer(["--petitio", "A-1", "Ship both.", "--studio", open, "--now", NOW]).code, 0, "an officina naming no Patron keys answers as before");
+});
+
+/** A recorded answer, as `answer` writes it: the petitio resolved, its stamp lines appended, and each receipt recorded in
+ *  its front matter under the instant it is keyed by. */
+function record(dir: string, stamps: [at: string, reply: string][], receipts: Record<string, unknown>, file = "A-1.md"): void {
+  const raw = readFileSync(join(SAMPLE, "petitiones", file), "utf8");
+  const front = Object.keys(receipts).length === 0 ? "" : `receipts: ${JSON.stringify(receipts)}\n`;
+  const withFront = raw.replace(/\n---\n/, `\n${front}---\n`).replace(/state: \w+/, "state: resolved");
+  writeFileSync(join(dir, "petitiones", file), `${withFront}${stamps.map(([at, reply]) => `\n\n[stated] ${at} patron: ${reply}`).join("")}`);
+}
+const receiptFindings = (dir: string) => checkStudio(dir, new Date(NOW)).findings.filter((f) => f.rule === "patron.receipt");
+
+test("W-666-b2 check refuses a recorded Patron answer without a valid receipt", () => {
+  const patron = ed();
+  const agent = ed();
+  const AT = "2026-11-16T02:59:00.000Z";
+  const blocks = (dir: string, words: string, what: string): void => {
+    const f = receiptFindings(dir);
+    assert.equal(f.some((x) => x.level === "block" && x.message.includes(words)), true, what);
+  };
+
+  const valid = officina("b2-valid", [patron.pub]);
+  record(valid, [[AT, "Ship both."]], { [AT]: receiptOf(patron, payload()) });
+  assert.deepEqual(receiptFindings(valid), [], "a valid recorded receipt raises no finding");
+
+  const none = officina("b2-none", [patron.pub]);
+  record(none, [[AT, "Ship both."]], {});
+  blocks(none, "carry no receipt", "a recorded answer with no receipt is blocked");
+
+  const forged = officina("b2-forged", [patron.pub]);
+  record(forged, [[AT, "Ship both."]], { [AT]: { ...receiptOf(patron, payload()), sig: randomBytes(64).toString("base64") } });
+  blocks(forged, "signature does not verify", "a recorded forged receipt is blocked");
+
+  const agentDir = officina("b2-agent", [patron.pub]);
+  record(agentDir, [[AT, "Ship both."]], { [AT]: receiptOf(agent, payload()) });
+  blocks(agentDir, "key is not a Patron key", "a recorded agent-authored receipt is blocked");
+
+  const altered = officina("b2-altered", [patron.pub]);
+  record(altered, [[AT, "Cut split stacks."]], { [AT]: receiptOf(patron, payload()) });
+  blocks(altered, "is not for this answer: option", "a recorded answer altered after signing is blocked");
+
+  const replayed = officina("b2-replay", [patron.pub]);
+  const once = receiptOf(patron, payload());
+  record(replayed, [[AT, "Ship both."], [NOW, "Ship both."]], { [AT]: once, [NOW]: once });
+  blocks(replayed, "nonce already used", "a recorded replayed receipt is blocked");
+
+  const stray = officina("b2-stray", [patron.pub]);
+  record(stray, [[AT, "Ship both."]], { [AT]: receiptOf(patron, payload()), [NOW]: receiptOf(patron, payload()) });
+  blocks(stray, "answers no stamp", "a receipt keyed by no stamp is blocked");
+
+  // the floor: the digest of the unsigned stamps recorded before receipts
+  const LEGACY = "2026-11-01T00:00:00.000Z";
+  const legacy = sha([`petitiones/A-2.md\t[stated] ${LEGACY} patron: Seasonal events wait.`].sort().join("\n"));
+  const floored = officina("b2-floor", [patron.pub], `  floor: "${legacy}"\n`);
+  record(floored, [[LEGACY, "Seasonal events wait."]], {}, "A-2.md");
+  record(floored, [[AT, "Ship both."]], { [AT]: receiptOf(patron, payload()) });
+  assert.deepEqual(receiptFindings(floored), [], "an unsigned stamp under the floor needs no receipt");
+  record(floored, [[LEGACY, "Seasonal events start now."]], {}, "A-2.md");
+  blocks(floored, "are not the floor", "an unsigned stamp that changed under the floor is blocked");
+
+  const open = officina("b2-open", undefined);
+  record(open, [[AT, "Ship both."]], {});
+  const f = receiptFindings(open);
+  assert.equal(f.length === 1 && f[0]!.level === "advise", true, "an officina naming no Patron keys is told its answers are unsigned");
 });
