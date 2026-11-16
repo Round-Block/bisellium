@@ -690,3 +690,13 @@ test("W-645-b1 behaviour 1: a red whose output names a module that did not load 
   assert.equal(plain.written, true, "and writes its log");
   assert.deepEqual(fx.cited({ name: "red.out", mode: "plain" }), [], "a cited red failing at its declared assertion alone has no problem");
 });
+const W645_EXITED = 'carries the served harness\'s exit line (its server exited before printing a port and token): the served row\'s server never started';
+
+test("W-645-b2 behaviour 2: a red whose served server exited before its port and token is refused", () => {
+  const fx = w645Fixture("w645-b2");
+  const r = fx.red("exited");
+  assert.equal(r.status, 1, `a red whose server exited before its port and token is refused: stderr ${JSON.stringify(r.stderr)}`);
+  assert.equal(r.written, false, "a red whose server exited writes no log");
+  assert.equal(r.stderr.trim(), W645_REFUSED(W645_EXITED), "the refusal names the harness's exit line");
+  assert.deepEqual(fx.cited({ name: "red.out", mode: "plain" }, { name: "exited.out", mode: "exited" }), [W645_CITED(fx, "exited.out", W645_EXITED)], "every cited red is judged: one whose server exited is refused at the spec signature");
+});
