@@ -1,0 +1,20 @@
+# opus: W-645
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1dacf-6879-7ad2-9360-7b1c578f5666
+# outcome: failed
+# at: 2026-11-14T16:12:28.670Z
+# tree: tree:f9783e0aa3488165a45de0ea304b059ed3916bbe
+# brief: briefs/W-645.md blob:b4cad062d8fbc21e4444c409992849d6ca9e53e7
+# ticket: {"opus":"W-645","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"2dff3030042420c443345c1522dfa30055ed0a18","brief":"b4cad062d8fbc21e4444c409992849d6ca9e53e7","at":"2026-11-14T16:12:24.945Z"}
+
+## Findings
+1. blocking — brief:63 [severity: S1] [design: changes] Playwright’s two location writers—the list reporter and stack frames—can name recursively discovered `test|spec` files with multiple configured suffixes, but `SERVED_SPEC` matches only a direct-child `.spec.ts`; therefore both `runRed` and `redReplayProblems` admit a missing-marker failure from a plausible `tests-serve/reconnect/w900.test.ts`, which b3/b5 do not cover. Replace brief:63 with `| The served config’s testDir and testMatch | ./tests-serve and every Playwright-discovered descendant test location | wrongTreeRed through runRed and redReplayProblems; W-645-b5 covers direct and nested locations and every configured test suffix |`. [class: mechanism×red-certifies-wrong-tree] — check: packages/cli/src/red-order.test.ts W-645-b3,W-645-b5
+2. blocking — brief:38 [severity: S1] [design: changes] Both readers judge the whole command/log, while `startServed` can run for several tests and `board.spec.ts`’s `spawnAndWaitReady` runs initially and through `restart()` without clearing `port`/`token`; an earlier successful marker can therefore make a later failed start record or sign as genuine, and b3/b6 cover no multi-attempt failure. Replace brief:38 with `Promise line: every startServed and spawnAndWaitReady attempt clears its state and emits an attempt-specific start/ready marker pair; wrongTreeRed refuses a served failure when any started attempt lacks its matching ready marker, with rows exercising a successful first start followed by a failed second start through runRed and redReplayProblems.` [class: mechanism×red-certifies-wrong-tree] — check: packages/cli/src/red-order.test.ts W-645-b3,W-645-b6
+3. advisory — brief:64 [severity: S4] At both source/config drift readers, brief:63 and brief:64 name `wrongTreeRed`, which does not reject an invalid imported config or malformed source; b5 actually fails through dynamic `import`/`assert.equal`, and b6 through `readFileSync`/`assert.equal`. Replace brief:63’s rejector with `dynamic import and W-645-b5’s assert.equal/runRed assertions`, and brief:64’s with `readFileSync and W-645-b6’s assert.equal assertions, including its wrongTreeRed-result equality`. [class: spec×input-without-named-rejector] — check: packages/cli/src/red-order.test.ts W-645-b5,W-645-b6
+
+## Verdict
+Repository check returned `2dff3030 docs(studio): handoff, session 18 (W-610 merge-group fix, W-648 and W-280 specs passed) (#1229)`; two design-changing fail-open paths prevent the signed brief from guaranteeing its served-red promises.
+VERDICT: FAIL

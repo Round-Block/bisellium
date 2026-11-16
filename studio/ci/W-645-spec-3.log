@@ -1,0 +1,36 @@
+# opus: W-645
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-14T17:01:24.692Z
+# tree: tree:49e15ccca23f398dbe5b34cbaa5ddf33ca25f1e6
+# brief: briefs/W-645.md blob:bf76ecf3d51af16ac50ba196b9a4c2e855673502
+# ticket: {"opus":"W-645","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"7405d7bcdd08936add189afc42498468ff0e47e8","brief":"bf76ecf3d51af16ac50ba196b9a4c2e855673502","at":"2026-11-14T17:01:18.680Z"}
+
+# W-645 spec signature, studio/briefs/W-645.md revision 4 (engineering architect), spec round 3
+
+Brief: `studio/briefs/W-645.md` (revision 4, spec round 3; identical to `/home/edckt/.bisellium-evidence/W-645-spec/r3/brief.new.md`), prototype built at master 2dff3030, prototype `/home/edckt/.bisellium-evidence/W-645-spec/r3/prototype.mbox` (red 63254f64, green e07be261).
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-645-spec/r3/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-645-spec/r3/gate.log
+
+## Findings
+
+1. advisory — master moved b407139f -> 2dff3030 (studio records only, no source); round 1's two commits rebased with no conflict before the revision, and every run was repeated at the revised series under r3/ — check: /home/edckt/.bisellium-evidence/W-645-spec/r3/prototype.mbox, /home/edckt/.bisellium-evidence/W-645-spec/r3/full.log
+2. advisory — each of the six reds fails on master by assertion at its declared pin at red commit 63254f64 (b3 and b5 still at the first refusal, b6 at the attempt-aware print) and each passes at green commit e07be261 — check: /home/edckt/.bisellium-evidence/W-645-spec/r3/red-master-b1.out .. r3/red-master-b6.out, r3/green-b1.out .. r3/green-b6.out
+3. advisory — round 2's advisory #3 (ci/W-645-spec-2.log #3) is taken with one change of form: the input-domain admission (D-050) wants a cell opening with one backticked name, so brief:63 opens "`import` (dynamic) and W-645-b5's `assert.equal` and `runRed` assertions" and brief:64 "`readFileSync` and W-645-b6's `assert.equal` assertions, including its `wrongTreeRed`-result equality"; the reviewer's unquoted wording was refused by the admission — check: /home/edckt/.bisellium-evidence/W-645-spec/r3/admission.out
+4. advisory — the first full run at a25f581e failed both officina checks on `test.one_sided` (an ASCII `\b` in b6's two scrape regexes and in `SERVE_EXITED`, the last unchanged from round 1 and passing there) and on W-096's `opus.records_unchanged` (the clone sat on a detached HEAD); the regexes became line-anchored and Unicode-bounded, the series was rebuilt (63254f64, e07be261) with every red, green, mutation and kill re-run, and the clone's master moved to the green — check: /home/edckt/.bisellium-evidence/W-645-spec/r3/full.log, r3/check-studio-proto.out, r3/check-sample-proto.out
+5. advisory — rows b5 and b6 catch eight drifts (testDir moved, a testMatch set, either startup-failure message reworded, the print replaced, board.spec.ts's start dropped or its outer port printed, harness.ts's attempt dropped), and the ledger's thirteen kills (one source file, one hunk each; wholelog, nested, suffix and harnessstart new) fail their pinned rows — check: /home/edckt/.bisellium-evidence/W-645-spec/r3/mutations.log, r3/kills.log
+6. advisory — overlap: W-280's draft (new to the list) reads `playwright.serve.config.ts` and `harness.ts` and edits neither; W-645's `board.spec.ts` hunk now spans `spawnAndWaitReady`'s scrape, beside W-301's studio-setup hunk in the same function's caller, so whichever lands second rebases; lifecycle.ts and verdict.ts with W-610 (other functions); none with W-503, W-644 or W-648 — check: /home/edckt/.bisellium-evidence/W-645-spec/r3/brief.md:79
+7. advisory — the read enumeration over 2dff3030, the W-503 and W-610 branch briefs and the five uncommitted main briefs adds problems for W-503's revision-11 b1 logs and W-227's b4 only, as before; red-tree.ts gains module state (`servedAttempt`'s per-process count), so it is no longer called pure — check: /home/edckt/.bisellium-evidence/W-645-spec/r3/readers.out, r3/brief.md:70
+
+## Earlier findings
+
+- ci/W-645-spec-2.log #1: closed — brief:63, a nested or other-suffix served location passed runRed and redReplayProblems: SERVED_SPEC reads every descendant of tests-serve/ with any default testMatch suffix and the config may set no testMatch; pinned by W-645-b5 "a served red at a nested location under the testDir is refused", "a cited served red at a nested location is refused at the spec signature", "every discovered location under the testDir is judged" (144 locations) and "the served config sets no testMatch: Playwright's default suffixes are the ones the judge reads"; killed by the nested and suffix kills (/home/edckt/.bisellium-evidence/W-645-spec/r3/green-b5.out:1, /home/edckt/.bisellium-evidence/W-645-spec/r3/kills/nested.out, /home/edckt/.bisellium-evidence/W-645-spec/r3/kills/suffix.out, /home/edckt/.bisellium-evidence/W-645-spec/r3/mutation-testmatch.out)
+- ci/W-645-spec-2.log #2: closed — brief:38, an earlier start's line masked a later failed startServed or spawnAndWaitReady restart: each attempt is named (servedAttempt), prints servedStart before it spawns and servedLine(port, attempt) after reading into its own scrape state (board.spec.ts's restart no longer reuses the first start's port and token, and its exit check reads the attempt's), and wrongTreeRed refuses when any started attempt lacks its own line; pinned by W-645-b3 "a served red whose second start never read its port and token is refused" and "a cited served red whose second start never read its port and token is refused at the spec signature" (beside "a served red whose every start read its port and token records") and by W-645-b6 "each attempt names itself and prints its start before it spawns, and its line after" and "each attempt scrapes into a port of its own"; killed by the wholelog and harnessstart kills; on the real served run every one of 26 starts has its line, and dropping one is refused naming that attempt (/home/edckt/.bisellium-evidence/W-645-spec/r3/green-b3.out:1, /home/edckt/.bisellium-evidence/W-645-spec/r3/green-b6.out:1, /home/edckt/.bisellium-evidence/W-645-spec/r3/kills/wholelog.out, /home/edckt/.bisellium-evidence/W-645-spec/r3/mutation-board-state.out, /home/edckt/.bisellium-evidence/W-645-spec/r3/served-judge.out:3)
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), signed brief `studio/briefs/W-645.md` (revision 4, spec round 3), prototype at master 2dff3030 (r3/prototype.mbox).
