@@ -401,3 +401,35 @@ test("W-666-b7 answer holds a cross-process lock from its read through its write
   const stamps = petitio(race).split("\n\n[stated] ").length - 1;
   assert.deepEqual([codes.filter((c) => c === 0).length <= 1, stamps <= 1], [true, true], "two processes replaying one receipt accept at most one");
 });
+
+// W-666 r5 (build review 1, finding 2): the stamp projection is exact. A signed stamp spans exactly its option, so text
+// after it blocks and a stamp marker inside it is part of it; an unsigned reply runs to the next Patron stamp or the body's
+// end, and the floor digests all of it.
+test("W-666-b8 a stamp's reply is read exactly, signed or floored", () => {
+  const patron = ed();
+  const AT = "2026-11-16T02:59:00.000Z";
+  const LEGACY = "2026-11-01T00:00:00.000Z";
+  const blocks = (dir: string, words: string, what: string): void => {
+    const f = receiptFindings(dir);
+    assert.equal(f.some((x) => x.level === "block" && x.message.includes(words)), true, what);
+  };
+  const suffixed = officina("b8-signed", [patron.pub]);
+  record(suffixed, [[AT, "Ship both.\nappended"]], { [AT]: receiptOf(patron, payload()) });
+  blocks(suffixed, "text after the signed reply", "a suffix after a signed reply is blocked");
+
+  const legacy = sha([`petitiones/A-2.md\t[stated] ${LEGACY} patron: Seasonal events wait.`].join("\n"));
+  const floored = officina("b8-floor", [patron.pub], `  floor: "${legacy}"\n`);
+  record(floored, [[LEGACY, "Seasonal events wait.\nappended"]], {}, "A-2.md");
+  blocks(floored, "are not the floor", "a suffix after a floored stamp is blocked");
+
+  const marked = "Ship both.\n\n[stated] 2026-11-16T03:00:00.000Z patron: x";
+  const marker = officina("b8-marker", [patron.pub]);
+  record(marker, [[AT, marked]], { [AT]: receiptOf(patron, payload({ option: marked })) });
+  assert.deepEqual(receiptFindings(marker), [], "a signed reply holding a stamp marker raises no finding");
+
+  const two = "Seasonal events wait.\nThen ship.";
+  const twoFloor = sha([`petitiones/A-2.md\t[stated] ${LEGACY} patron: ${JSON.stringify(two)}`].join("\n"));
+  const twoLine = officina("b8-two", [patron.pub], `  floor: "${twoFloor}"\n`);
+  record(twoLine, [[LEGACY, two]], {}, "A-2.md");
+  assert.deepEqual(receiptFindings(twoLine), [], "a floor over a two-line unsigned reply passes");
+});
