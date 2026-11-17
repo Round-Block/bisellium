@@ -1,0 +1,26 @@
+# opus: W-467
+# phase: spec
+# round: 5
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1db2c-b519-7ba1-b091-c82e17bd861f
+# outcome: passed
+# at: 2026-11-17T11:45:33.343Z
+# tree: tree:f3114e2361981192b74beec8e88d5f9de835be02
+# brief: briefs/W-467.md blob:5319da28972d6e6887cb3cb281b330f4e1b9294e
+# ticket: {"opus":"W-467","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-467/studio","head":"f2bf943513c38af7e6d8b0acb32acb24710e9da4","brief":"5319da28972d6e6887cb3cb281b330f4e1b9294e","at":"2026-11-17T11:45:24.752Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-467-spec/r5/promise-ledger-r5h.md
+Admission log: /home/edckt/.bisellium-evidence/W-467-spec/r5/admission-r5h.out
+Gate log: /home/edckt/.bisellium-evidence/W-467-spec/r5/gate-r5j.log
+
+## Findings
+
+1. advisory — The browser-capable r5g host replay passes both unpatched baselines, kills both mutations at the brief's exact served pins and records `killedPin` matched=true for palette and severity — check: /home/edckt/.bisellium-evidence/W-467-spec/r5/host-r5g/summary.md, /home/edckt/.bisellium-evidence/W-467-spec/r5/kill-palette-r5g.out and /home/edckt/.bisellium-evidence/W-467-spec/r5/kill-severity-r5g.out
+2. advisory — Every Promise and Input domain ledger entry now carries a non-brief `<file>:<line>` citation and the whole status word `holds` or `scoped`; the verdict's own instrumented `promiseLedgerProblems` returns zero problems — check: /home/edckt/.bisellium-evidence/W-467-spec/r5/promise-ledger-r5h.md and /home/edckt/.bisellium-evidence/W-467-spec/r5/ledger-check-r5h.out
+3. advisory — Revision 5h changes only the promise-ledger form and its signature citation: brief-r5g remains byte-identical at sha256 `0883a177ff0f25153532e5f7cfd8d2aac2f96abb53dd7e0d686d0a4708bd474b`, and the D-217 composition, promises, files owned, r5c reds, r5e mutations and six-commit prototype remain unchanged — check: /home/edckt/.bisellium-evidence/W-467-spec/r5/brief-r5g.md and /home/edckt/.bisellium-evidence/W-467-spec/r5/prototype-r5b.mbox
+4. advisory — Brief admission and the complete verdict ledger check both report zero problems; no lifecycle record write was performed — check: /home/edckt/.bisellium-evidence/W-467-spec/r5/admission-r5h.out and /home/edckt/.bisellium-evidence/W-467-spec/r5/ledger-check-r5h.out
+
+## Verdict
+
+passed — revision 5h is signed by the design lead, Codex `gpt-5.6-sol` under D-150 C, for unchanged `/home/edckt/.bisellium-evidence/W-467-spec/r5/brief-r5g.md` sha256 `0883a177ff0f25153532e5f7cfd8d2aac2f96abb53dd7e0d686d0a4708bd474b` and unchanged prototype mbox sha256 `e6630ad53619e55e832f41240ce1cb07aa10a61503fc1a7b9861f1665598382d`; the r5g host evidence passes, the actual verdict promise-ledger reader reports zero problems for the r5h ledger, no brief or prototype row changed, and no lifecycle record write was performed.

@@ -1,0 +1,20 @@
+# opus: W-467
+# phase: spec
+# round: 6
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 401aeda9-2990-49b9-a06f-44982e395336
+# session_reason: round-3 session 2ca0bc4c-338b-480b-833d-f3f88ef9e5c2 cannot be resumed: sandboxed claude -p sessions are not persisted, so a fresh Opus session ran round 6
+# outcome: passed
+# at: 2026-11-17T11:51:07.818Z
+# tree: tree:f3114e2361981192b74beec8e88d5f9de835be02
+# brief: briefs/W-467.md blob:5319da28972d6e6887cb3cb281b330f4e1b9294e
+# ticket: {"opus":"W-467","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-467/studio","head":"f2bf943513c38af7e6d8b0acb32acb24710e9da4","brief":"5319da28972d6e6887cb3cb281b330f4e1b9294e","at":"2026-11-17T11:51:00.134Z"}
+
+## Findings
+1. advisory — brief:72 [severity: S4] Sense, carried from my round-3 advisory #2 under the same class. The r5 prototype's `officina-palette.css` still puts `--color-category` (pink) on `.panel--health .officina__health-row > summary > span:first-child`. Those are the clickable ▸ disclosure labels "Lex status" and "Process health". Next to cyan underlined links, pink reads as an interactive or selected state. Brief:100 says D-217 settles "pink categories", but D-217 items 2–4 name only headings, links and severity. The pink-categories approval came through the "yes to all the leads' recommendations" collation, which never raised the disclosure case. Replacement for brief:72's role clause: "Health disclosure summaries ('Lex status', 'Process health') keep `--color-text-primary` as interactive controls; pink `--color-category` stays on inert category labels only; Default 3 puts pink-on-disclosure to the Patron on captures." [class: design×accent-on-interactive-control] — check: none: a W-467-b3 served `toHaveCSS('color')` on each Health `summary` label.
+2. advisory — brief:84 [severity: S4] This line still says "no revision-5b served green is claimed". The signature (spec-5.log #1) and host-r5g/summary.md now record that the unpatched b1 and b2 served rows passed on the browser-capable host. Brief:80's "Evidence to be produced on the browser-capable host" now exists too. The text understates the evidence and does not show that b3's served row alone still has no host green. Replacement: "Host run r5g passed the unpatched b1 and b2 served rows (`host-r5g/summary.md`, `baseline-palette-r5g.out`, `baseline-severity-r5g.out`); b3's revised served row has no host green yet and remains a required build gate." [class: evidence×stale-claim-after-replay] — check: none: an admission row that matches each "to be produced" or "not claimed" sentence against existing evidence paths.
+
+## Verdict
+Revision 5 drops the W-503 dependency and moves onto W-675 roles. The Input domain is still complete, and the opus adds no reader. Each promise is pinned or states its limit, and both mutation kills are produced and `killedPin`-matched. Round 3 had no blockers, so no earlier-findings section is owed. Only two S4 advisories remain: pink on the Health disclosure labels, and stale served-evidence wording.
+VERDICT: PASS
