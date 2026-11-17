@@ -1,0 +1,39 @@
+# opus: W-675
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: claude-opus-5-5
+# session: f1dc5535-5314-4eb0-9a3d-dc5baafdbd5b
+# session_reason: claude -p sessions never persist in this sandbox, so round 1 session f52b8da9 and the refused round 2 session 36e586f4 cannot be resumed
+# outcome: passed
+# at: 2026-11-17T01:06:11.040Z
+# tree: tree:5591fb730065643f31189ddee1d3db0ab21f4fca
+# ui_input: ci/W-675-spec-6.log
+# design_digest: sha256:8e8a5e910edf6f9676e560721b31108eb90be8624dce4b546971ae90b3d60ac2
+# ticket: {"opus":"W-675","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-675/studio","head":"e714c87f16855564f2174ce3c6dcc5b38e8b813b","brief":"0b74a25b6317e6780ab294538b537fdcc57ab282","at":"2026-11-17T01:05:58.991Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-675-review-1.log #1: closed — ci/reds/W-675/03.log (head 6bc278d3, tree 360cc9ca, exit 1) now reaches the browser and fails at w675.spec.ts:90 with `inbox 1280 expanded: --color-surface-page` Expected "#282a36" Received "". The outer row then fails with ERR_ASSERTION at w675.test.ts:134. This is the failure brief:77 names.
+
+## UI input disposition
+The ui-lead's round 6 input left two build advisories.
+
+- **Advisory 1 (run the named readers at the implementation checkout and record tree and outputs): met in substance.** readers.out runs each reader separately at the W-675 worktree, and all six exit 0. Its recorded `tree: 17d55700…` is the committed HEAD's, not the dirty tree that actually ran. The binding record is the light-gates log ci/W-675-light-5591fb73.log, which reruns every reader green at the reviewed source tree. That source tree is the same one round 1 reviewed.
+- **Advisory 2 (strip CSS comments in every migrated colour reader): met.** Commit 4939dd9f strips comments in tokens.test.ts, w341.test.ts, w408.test.ts and w413.test.ts. The bite in comment-strip.out still only exercises W-675-b1, as round 1 advisory 6 already recorded.
+
+I inspected all eight served captures:
+
+- **Inbox 1280:** keeps the purple heading, cyan id and links, the pink "Decision evidence" label, the reason input and the four actions.
+- **Board 1280:** keeps the column hierarchy, the orange ask rail, the red "1 blocked" and the in-container horizontal scroll.
+- **Seats 1280:** keeps the grouped selects.
+- **Officina 1280:** keeps the panel order, pies and numerals.
+- **390 width:** every screen collapses to the badge toggle with no clipped controls. Board shows column chips, the carousel cue and the footer scroll. Seats stacks its selects at full width. Officina wraps the pending labels under the titles.
+
+Colours and layout match the pre-extraction console, which is what a change with no visible effect should look like. The images raised no finding and did not change the verdict.
+
+## Verdict
+The round-1 blocker is closed: red 03 now fails on the empty `--color-surface-page` assertion that the brief requires. Reds 01 and 02 still match brief:73 and brief:75. The source is unchanged from the tree round 1 reviewed, and no new blocking issue was found.
+VERDICT: PASS

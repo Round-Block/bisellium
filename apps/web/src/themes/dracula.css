@@ -1,0 +1,49 @@
+/* W-675: Dracula owns palette values and meaning-based colour roles.
+ * Compatibility names remain in tokens.css until the consumer migration. */
+:root {
+  --dracula-background: #282a36;
+  --dracula-current-line: #6272a4;
+  --dracula-selection: #44475a;
+  --dracula-foreground: #f8f8f2;
+  --dracula-foreground-secondary: #c6c9d8;
+  --dracula-foreground-muted: #9ea4c4;
+  --dracula-cyan: #8be9fd;
+  --dracula-green: #50fa7b;
+  --dracula-orange: #ffb86c;
+  --dracula-pink: #ff79c6;
+  --dracula-purple: #bd93f9;
+  --dracula-red: #ff5555;
+  --dracula-yellow: #f1fa8c;
+  --dracula-product: #3fb9a3;
+  --dracula-panel: #343746;
+  --dracula-transparent: transparent;
+  --dracula-shadow: rgb(0 0 0 / 45%);
+
+  --color-surface-page: var(--dracula-background);
+  --color-surface-panel: var(--dracula-panel);
+  --color-surface-selected: var(--dracula-selection);
+  --color-surface-transparent: var(--dracula-transparent);
+  --color-text-primary: var(--dracula-foreground);
+  --color-text-secondary: var(--dracula-foreground-secondary);
+  --color-text-muted: var(--dracula-foreground-muted);
+  --color-heading: var(--dracula-purple);
+  --color-link: var(--dracula-cyan);
+  --color-fact: var(--dracula-cyan);
+  --color-category: var(--dracula-pink);
+  --color-project: var(--dracula-yellow);
+  --color-border-decorative: var(--dracula-selection);
+  --color-border-interactive: var(--dracula-selection);
+  --color-focus: var(--dracula-product);
+  --color-selection-background: var(--dracula-pink);
+  --color-selection-text: var(--dracula-background);
+  --color-action-primary: var(--dracula-product);
+  --color-action-primary-text: var(--dracula-background);
+  --color-state-success-indicator: var(--dracula-green);
+  --color-state-warning-indicator: var(--dracula-orange);
+  --color-state-error-indicator: var(--dracula-red);
+  --color-severity-blocking-indicator: var(--dracula-red);
+  --color-severity-blocking-text: color-mix(in srgb, var(--color-severity-blocking-indicator) 75%, var(--color-text-primary));
+  --color-severity-high-indicator: var(--dracula-orange);
+  --color-severity-low-indicator: var(--dracula-current-line);
+  --color-shadow-overlay: var(--dracula-shadow);
+}

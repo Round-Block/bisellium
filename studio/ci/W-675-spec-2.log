@@ -1,0 +1,23 @@
+# opus: W-675
+# phase: spec
+# round: 2
+# sella: ui-architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-11-16T12:15:50.324Z
+# tree: tree:0301680274f66a3d4c75ed45f02fb6618ed9840a
+# brief: briefs/W-675.md blob:cf67fa994279b4300c078216161ec872ea647c0e
+# ticket: {"opus":"W-675","step":"spec","action":"verdict-spec","round":2,"actor":"architect","studio":"studio","head":"d8af1840a8be2491e699a1f259af08d6ddac7cea","brief":"cf67fa994279b4300c078216161ec872ea647c0e","at":"2026-11-16T12:15:42.671Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-675-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-675-spec/gate.log
+
+## Findings
+
+1. advisory — The complete brief admission used by `next` and the spec-signature admission used by `verdict` both report zero problems after the D-050 rejection forms, kept read-enumeration citation and existing-policy promise limit were put in their required grammar — check: /home/edckt/.bisellium-evidence/W-675-spec/admission-r2.out and /home/edckt/.bisellium-evidence/W-675-spec/verdict-admission-r2.out
+2. advisory — The kept enumeration producer read all twenty-two named files and the W-503 branch brief before writing its cited output; the change is evidence form, not a new design claim — check: /home/edckt/.bisellium-evidence/W-675-spec/read-enumeration-r2.mts, /home/edckt/.bisellium-evidence/W-675-spec/read-enumeration-r2.out and /home/edckt/.bisellium-evidence/W-675-spec/read-enumeration.md
+3. advisory — The unchanged prototype mbox applies to base `ecb8761e8067176087cd0eba0814d95840225227`, makes tree `64981fd55bb059e7b51b4afdc15fd226132dd8c5`, and the rerun pre-sign gate passes both owed rows with exit 0 — check: /home/edckt/.bisellium-evidence/W-675-spec/gate.log
+
+## Verdict
+
+passed — signature round 2 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `/home/edckt/.bisellium-evidence/W-675-spec/brief.md` sha256 `41351a90835f15fd7b62750e5d0feda1d6e22d4fdedf460227732c0475a78195`; prototype mbox sha256 is `e82848ddb97ba191354b117d78eeb1d7ca9868cf509203e0e521a025af554272`, the complete brief admission and exact spec-signature admission each report zero problems, and the pre-sign gate's two owed rows pass with exit 0. Only wording, form, citation and limit clauses changed: the affected Rejected-by cells now open with their actual assertion, runner or limit form, the kept read enumeration names its producer and output, and the existing-policy promise uses the required limit separator; no behaviour, Default, row, assertion, shot or promise substance changed. The Patron's three accepted Defaults remain unchanged: the `--color-<meaning>` role set, `themes/dracula.css` imported by `tokens.css`, and the one-theme guard boundary. No record write or lifecycle command was performed.
