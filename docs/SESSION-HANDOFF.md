@@ -54,6 +54,8 @@ Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-
 
 Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672 W-673 W-675 W-676 W-677 W-678 W-679 W-680.
 
+Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686.
+
 Also, 11-16: D-212, D-213, D-215 (W-467 re-specced while W-503 parks) landed; D-216 (auto-greenlight widens to small non-ui engineering/ops/process opera), D-217 (console adopts whole themes) and D-218 (W-488 re-approved at tree 51f8690d) landed #1268; W-674 (Dracula spec audit and console-wide steps) filed #1266.
 
 D-193 replaces D-178: D-223 closes E3; process opera take E1/E2 by rank. D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: W-595 after W-610. D-204: E2 and UI2 open.
