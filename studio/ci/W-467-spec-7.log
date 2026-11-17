@@ -1,0 +1,28 @@
+# opus: W-467
+# phase: spec
+# round: 7
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1e983-b1dd-76c0-a2bd-6d26d6006e89
+# outcome: passed
+# at: 2026-11-17T12:41:52.727Z
+# tree: tree:f3114e2361981192b74beec8e88d5f9de835be02
+# dispatch_prompt: ci/W-467-ui-prompt-7.md
+# design_digest: sha256:cab392cd02b5fa223ee8123b46f05b5c6b9a3d067bf83471e05540ccf6fb4e20
+# ticket: {"opus":"W-467","step":"spec","action":"verdict-spec","round":7,"actor":"ui-lead","studio":".worktrees/W-467/studio","head":"d6bde0aac8434fc6cfc3fb6b622b1e801453ea40","brief":"5319da28972d6e6887cb3cb281b330f4e1b9294e","at":"2026-11-17T12:41:46.215Z"}
+
+## Findings
+
+1. advisory — brief:15 — Round 4’s sole advisory remains open in narrowed form: r5 states the assignments but does not explicitly resolve DIRECTION.md’s agent-written “Every accent has one role” restriction. That restriction makes no sense here: cyan facts and links remain distinguishable through underlining, while pink categories coexist with text selection. The earlier white-heading replacement is superseded by the Patron’s D-217 ruling; brief:100 also overstates that ruling’s explicit coverage of categories. — replace with: “D-217 rules purple headings, underlined cyan content links and preserved severity semantics. This design assigns pink to categories, including Health disclosure labels, and cyan to non-link facts. These assignments supersede DIRECTION.md’s agent-written exclusive accent roles for Officina; equal colours do not merge semantic roles. Correct the corresponding DIRECTION.md wording separately.” — check: docs/design/DIRECTION.md:104; studio/decisions/D-217.md; /home/edckt/.bisellium-evidence/theme-meet-1116/collated.md; ui-input-7/shots/officina-r5-1280-expanded.png.
+2. advisory — brief:84 — Round 6’s evidence-wording advisory holds and should be corrected in this opus: lines 80 and 84 understate the completed host replay. This is an evidence-description issue, not a visible UI defect. — replace with: “Host run r5g passed the unpatched b1 and b2 served rows and both mutation checks. The revised b3 served row still requires a successful host replay; the captures do not replace that build gate.” — check: /home/edckt/.bisellium-evidence/W-467-spec/r5/host-r5g/summary.md; signature-r5j.md; promise-ledger-r5h.md.
+3. advisory — brief:23 — The supplied Home reference actually renders Inbox: its heading, selected navigation item and decision pane identify it, and this tree routes `#/home` to Inbox. Calling it Home overstates the visual comparison. — replace with: “The supplied home-master-1280 capture shows master’s Inbox fallback. It supports comparison with the shared console palette, not direct verification against Home; W-503’s earlier Home composition remains outside this revision.” — check: ui-input-7/shots/home-master-1280.png; ui-input-7/shots/MANIFEST.md; ui-input-7/clone/apps/web/src/lib/route.ts; ui-input-7/clone/apps/web/src/lib/nav.ts.
+
+## Recommendation
+
+Compared with round 4, r5 changes the white page and section headings to purple; they have less brightness but remain clearly readable and distinguishable from pink categories and cyan identifiers.
+Across both 1280 sidebar states, 640 and 390, I see no loss of Officina information or deterioration in wrapping: work identifiers, titles, next-mover notes, counts and the absent-budget explanation remain available.
+The captures still show closed Health disclosures and no populated Budget; at 390, Health details fall below the captured viewport, so those states cannot be judged from these images.
+Round 6’s pink-disclosure advisory does not warrant a colour change: “Lex status” and “Process health” read as category labels, their arrows identify disclosure controls, and adjacent shapes and severity words carry status independently.
+Restricting pink to inert labels would introduce an unnecessary exception; cyan underlined links denote navigation without requiring every interactive control to share their colour, although these closed captures do not show the expanded link adjacency.
+Officina reads as one system with the supplied console reference through purple headings, pink categories, cyan identifiers and links, neutral supporting text and shared surfaces; a direct claim about the current Home screen is not established.
+Verdict: passed
