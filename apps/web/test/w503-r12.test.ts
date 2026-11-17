@@ -31,6 +31,8 @@ test("W-503-b5 behaviour 5: a rejected shared Inbox read is evicted before a tok
   }
   assert.deepEqual(retry, inbox, "a token save after a rejected shared Inbox read issues a fresh successful read");
   assert.equal(requests, 1, "the retry issues exactly one fresh GET");
+  assert.deepEqual(await api.fetchInbox({ shared: true }), inbox, "a successful shared Inbox read remains reusable inside the 50ms window");
+  assert.equal(requests, 1, "successful sharing inside the 50ms window issues no duplicate GET");
 });
 
 test.after(() => {
