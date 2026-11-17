@@ -75,3 +75,6 @@ studio/events.jsonl
 # scripts/cascade-loop.sh's state (logs, lock, the Patron's settings.json): the
 # Patron makes it by hand in their own folder, never committed.
 .cascade-loop/
+# The answer lock (W-666 b7): local liveness state at the officina root, ignored like timeline/ so a held or stale
+# lock never makes the checkout dirty.
+**/.answer.lock
