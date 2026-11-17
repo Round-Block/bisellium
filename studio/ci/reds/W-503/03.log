@@ -1,0 +1,104 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-503-b3\s --import tsx apps/web/test/w503.test.ts
+# exit: 1
+# at: 2026-11-17T07:58:45.730Z
+# sella: builder.W-503
+# tree: tree:800848482916d8119f09fc5b2a93e9cb5976c608
+# ticket: {"opus":"W-503","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-503/studio","head":"a5f96b1dddc71502140fd19726b4ee5c3ff4a368","brief":"4a61cab426b4a8d99cc75394e1f325ede245b198","at":"2026-11-17T07:58:41.015Z"}
+
+TAP version 13
+# Subtest: W-503-b3 behaviour 3: Stuck, Health and one signed work summary use only recorded facts
+not ok 1 - W-503-b3 behaviour 3: Stuck, Health and one signed work summary use only recorded facts
+  ---
+  duration_ms: 7.07473
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w503.test.ts:2:1659'
+  failureType: 'testCodeFailure'
+  error: |-
+    active work with several failed gates counts once while done and halted failures do not contribute
+    + actual - expected
+    
+      {
+        health: {
+    +     count: 0,
+    +     cue: 'normal',
+    +     detail: 'Healthy'
+    -     count: 2,
+    -     cue: 'high',
+    -     detail: '2 high findings'
+        },
+        stuck: {
+    +     count: 0,
+    +     cue: 'normal'
+    -     count: 1,
+    -     cue: 'blocking'
+        },
+    +   wip: []
+    -   wip: [
+    -     {
+    -       count: 1,
+    -       id: 'in_progress',
+    -       label: 'In progress'
+    -     },
+    -     {
+    -       count: 1,
+    -       id: 'verifying',
+    -       label: 'Verifying'
+    -     },
+    -     {
+    -       count: 1,
+    -       id: 'awaiting_review',
+    -       label: 'Awaiting review'
+    -     }
+    -   ]
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    stuck:
+      count: 1
+      cue: 'blocking'
+    health:
+      count: 2
+      cue: 'high'
+      detail: '2 high findings'
+    wip:
+      0:
+        id: 'in_progress'
+        label: 'In progress'
+        count: 1
+      1:
+        id: 'verifying'
+        label: 'Verifying'
+        count: 1
+      2:
+        id: 'awaiting_review'
+        label: 'Awaiting review'
+        count: 1
+  actual:
+    stuck:
+      count: 0
+      cue: 'normal'
+    health:
+      count: 0
+      cue: 'normal'
+      detail: 'Healthy'
+    wip:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w503.test.ts:79:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16.662136
