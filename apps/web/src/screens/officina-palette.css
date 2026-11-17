@@ -17,3 +17,29 @@
 .panel--work .officina__work-row > span:nth-child(2) {
   color: var(--color-text-secondary);
 }
+
+.panel--budget .officina__panel-heading {
+  color: var(--color-heading);
+}
+
+.panel--budget .officina__collegium-name {
+  color: var(--color-category);
+}
+
+.panel--budget .budget-meter__numerals {
+  color: var(--color-fact);
+}
+
+.panel--budget .officina__posture-word {
+  color: var(--color-text-primary);
+}
+
+.panel--budget .officina__posture-reason {
+  color: var(--color-text-secondary);
+}
+
+.officina__row--link,
+.officina__row--link:visited {
+  color: var(--color-link);
+  text-decoration: underline;
+}
