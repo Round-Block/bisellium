@@ -12,10 +12,11 @@
 import assert from "node:assert/strict";
 import { createHash, generateKeyPairSync, randomBytes, sign as cryptoSign, type KeyObject } from "node:crypto";
 import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { startServer, type StartServerOptions } from "@bisellium/server";
 import { parse as parseYaml } from "yaml";
 import { runAnswer } from "@bisellium/commands/writes.js";
@@ -298,6 +299,47 @@ test("W-666-b4 answer refuses when a recorded-nonce source does not read", () =>
   assert.equal(list.r.code === 2 && list.r.err.includes("answer refused: petitiones/A-2.md receipts must be a mapping"), true, "a non-mapping receipts refuses the answer");
   const recorded = answerOver("b4-recorded", (d) => writeFileSync(A2(d), A2_RAW().replace("\n---\n", '\nreceipts: { "2026-11-01T00:00:00.000Z": { key: x } }\n---\n')));
   assert.equal(recorded.r.code === 2 && recorded.r.err.includes("petitiones/A-2.md receipt 2026-11-01T00:00:00.000Z: patron receipt shape"), true, "a recorded receipt of the wrong shape refuses the answer");
+});
+
+// Fix round 1 (review-1 #1): the check and the write of one answer are atomic across processes. A lock the officina's
+// timeline/ holds names its owner's pid: a live owner keeps a second answer out (it is refused by name, writing nothing),
+// a dead owner's lock is taken over.
+const LOCK = (dir: string): string => join(dir, "timeline", ".answer.lock");
+test("W-666-b4 a second answer is refused while another process holds the answer lock", () => {
+  const live = answerOver("b4-lock", (d) => {
+    mkdirSync(join(d, "timeline"), { recursive: true });
+    writeFileSync(LOCK(d), `${process.pid}\n`);
+  });
+  assert.equal(live.r.code === 2 && live.r.err.includes("answer refused: another answer is in progress"), true, "a live lock refuses the answer by name");
+  assert.equal(petitio(live.dir), A1_BODY_RAW(), "a refused answer leaves the petitio untouched");
+  assert.equal(timeline(live.dir), "", "a refused answer writes no timeline line");
+  const dead = spawnSync(process.execPath, ["-e", "0"]);
+  const stale = answerOver("b4-stale", (d) => {
+    mkdirSync(join(d, "timeline"), { recursive: true });
+    writeFileSync(LOCK(d), `${dead.pid}\n`);
+  });
+  assert.equal(stale.r.code, 0, "a dead owner's lock is taken over");
+  assert.equal(existsSync(LOCK(stale.dir)), false, "the lock is released when the answer returns");
+});
+
+// two processes answer the one petitio with the one receipt, released together: at most one is accepted, the petitio
+// holds one stamp and the timeline one line.
+test("W-666-b4 two processes replaying one receipt accept at most one", async () => {
+  const patron = ed();
+  const dir = officina("b4-race", [patron.pub]);
+  const receipt = receiptFile(dir, receiptOf(patron, payload()));
+  const barrier = join(`${dir}-receipts`, "go");
+  const writes = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "commands", "src", "writes.ts");
+  const code = `import { existsSync } from "node:fs"; const { runAnswer } = await import(${JSON.stringify(pathToFileURL(writes).href)}); while (!existsSync(${JSON.stringify(barrier)})) {} process.exit(runAnswer(JSON.parse(process.argv[1])).exitCode);`;
+  const args = JSON.stringify(["--petitio", "A-1", "Ship both.", "--studio", dir, "--now", NOW, "--receipt", receipt]);
+  const run = (): Promise<number> => new Promise((done) => spawn(process.execPath, ["--import", "tsx", "--input-type=module", "-e", code, args], { stdio: "ignore" }).on("close", (c) => done(c ?? -1)));
+  const both = [run(), run()];
+  await new Promise((r) => setTimeout(r, 2500));
+  writeFileSync(barrier, "");
+  const codes = (await Promise.all(both)).sort();
+  assert.deepEqual(codes, [0, 2], "two processes replaying one receipt accept at most one");
+  assert.equal((petitio(dir).match(/\[stated\]/g) ?? []).length, 1, "the petitio holds one stamp");
+  assert.equal(timeline(dir).trim().split("\n").length, 1, "the timeline holds one line");
 });
 
 // D-086 A (spec review round 4, finding 1): only an absent timeline is no timeline; one that cannot be read (here `timeline`
