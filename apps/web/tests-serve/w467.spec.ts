@@ -387,3 +387,123 @@ test("W-467-b2 Budget uses Home roles when absent, under and over while severity
   );
   await failed.close();
 });
+
+test("W-467-b3 Health uses Home roles when clean and at every severity", async ({ page }) => {
+  served = await startServed("w467-b3", { now: NOW });
+  await seedToken(page, served);
+  const fixtures = base();
+  fixtures.opera = [opus("W-1", "building")];
+  await installRoutes(page, fixtures);
+
+  fixtures.health = healthy();
+  await open(page, 1280, "expanded");
+  await expect(page.locator(".panel--health .severity-cue--normal")).toHaveCount(2);
+  await expect(page.locator(".panel--health")).toContainText("Normal");
+
+  fixtures.health = {
+    ...healthy(),
+    ok: false,
+    blocks: 1,
+    advisories: 2,
+    findingsByRule: { "traditio.stage": 2 },
+    due: [{ kind: "daily", id: "producer" }],
+  };
+  for (const [width, sidebar] of [
+    [1280, "expanded"],
+    [1280, "collapsed"],
+    [640, "expanded"],
+    [390, "expanded"],
+  ] as const) {
+    await open(page, width, sidebar);
+    const [heading, ink2, cyan, pink, blocking, high, low] = await Promise.all([
+      tokenColour(page, "--color-heading"),
+      tokenColour(page, "--color-text-secondary"),
+      tokenColour(page, "--color-fact"),
+      tokenColour(page, "--color-category"),
+      tokenColour(page, "--color-severity-blocking-indicator"),
+      tokenColour(page, "--color-severity-high-indicator"),
+      tokenColour(page, "--color-severity-low-indicator"),
+    ]);
+    const label = `${width} ${sidebar}`;
+    const lexSummary = page.locator(".panel--lex > summary");
+    const processSummary = page.locator(".panel--process > summary");
+    await expect(
+      page.locator(".panel--health .officina__panel-heading"),
+      `${label}: Health heading uses Dracula Purple`,
+    ).toHaveCSS("color", heading);
+    await expect(
+      lexSummary.locator(":scope > span:first-child"),
+      `${label}: Health category is pink`,
+    ).toHaveCSS("color", pink);
+    await expect(
+      lexSummary.locator(".officina__severity-summary"),
+      `${label}: severity words stay neutral`,
+    ).toHaveCSS("color", ink2);
+
+    const blockingCue = lexSummary.locator(".severity-cue--blocking");
+    const highCue = lexSummary.locator(".severity-cue--high");
+    const lowCue = processSummary.locator(
+      ".officina__severity-summary .severity-cue--low",
+    );
+    await expect(blockingCue, `${label}: blocking stays W-427 red`).toHaveCSS(
+      "background-color",
+      blocking,
+    );
+    await expect(blockingCue, `${label}: blocking keeps a square`).toHaveCSS(
+      "border-radius",
+      "0px",
+    );
+    await expect(highCue, `${label}: high stays W-427 orange`).toHaveCSS(
+      "background-color",
+      high,
+    );
+    expect(
+      await highCue.evaluate((node) => getComputedStyle(node).transform),
+      `${label}: high keeps a diamond`,
+    ).not.toBe("none");
+    await expect(lowCue, `${label}: low stays W-427 blue`).toHaveCSS(
+      "background-color",
+      low,
+    );
+    expect(
+      await lowCue.evaluate((node) => getComputedStyle(node).clipPath),
+      `${label}: low keeps a triangle`,
+    ).not.toBe("none");
+
+    await lexSummary.click();
+    const handoffRule = page
+      .locator(".panel--lex .officina__rule-family")
+      .filter({ has: page.getByText("Handoff notes", { exact: true }) });
+    await expect(
+      handoffRule.locator(":scope > span:last-child"),
+      `${label}: rule count is cyan`,
+    ).toHaveCSS("color", cyan);
+    await processSummary.click();
+    const producerDue = page
+      .locator(".panel--process .officina__process-row")
+      .filter({ has: page.getByText("producer", { exact: true }) });
+    await expect(
+      producerDue.locator(".officina__value-mono"),
+      `${label}: due owner is cyan`,
+    ).toHaveCSS("color", cyan);
+    await expectContained(page, label);
+  }
+
+  const slow = await page.context().newPage();
+  await seedToken(slow, served);
+  const slowFixtures = base();
+  slowFixtures.health = "pending";
+  await installRoutes(slow, slowFixtures);
+  await open(slow, 1280, "expanded", false);
+  await expect(slow.locator(".panel--health")).toContainText("Loading health…");
+  await slow.close();
+
+  const failed = await page.context().newPage();
+  await seedToken(failed, served);
+  const failedFixtures = base();
+  failedFixtures.health = "failed";
+  await installRoutes(failed, failedFixtures);
+  await open(failed, 1280, "expanded", false);
+  await expect(failed.locator(".panel--health")).toContainText("Could not load health.");
+  await failed.close();
+});

@@ -103,3 +103,31 @@ test(
     servedRow(2);
   },
 );
+
+test(
+  "W-467-b3 behaviour 3: Health takes Home roles while W-427 severity stays intact",
+  { timeout: 300_000 },
+  () => {
+    assert.match(
+      css,
+      /\.panel--health \.officina__panel-heading\s*{[^}]*color:\s*var\(--color-heading\)/s,
+      "Health takes the purple heading, pink category and cyan fact roles",
+    );
+    assert.match(
+      css,
+      /\.panel--health \.officina__health-row > summary > span:first-child\s*{[^}]*color:\s*var\(--color-category\)/s,
+      "Health categories use the pink category role",
+    );
+    assert.match(
+      css,
+      /\.panel--health \.officina__value-mono,\s*\.panel--health \.officina__rule-family > span:last-child\s*{[^}]*color:\s*var\(--color-fact\)/s,
+      "Health identifiers and rule counts use the cyan fact role",
+    );
+    assert.match(
+      css,
+      /\.severity-cue--blocking\s*{[^}]*var\(--severity-blocking\)[^}]*}[^]*\.severity-cue--high\s*{[^}]*var\(--severity-high\)[^}]*}[^]*\.severity-cue--low\s*{[^}]*var\(--severity-low\)/s,
+      "W-427's blocking, high and low severity tokens remain shared",
+    );
+    servedRow(3);
+  },
+);
