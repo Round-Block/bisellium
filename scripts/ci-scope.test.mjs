@@ -9,6 +9,7 @@
  * W-368 adds the runner-image and action-runtime row (`--test-name-pattern='^W-368-b1\s'`).
  * W-483 adds the handoff's row (`--test-name-pattern='^W-483-b1\s'`).
  * W-528 adds the gates job's time limit row (`--test-name-pattern='^W-528-b1\s'`).
+ * W-673 adds the SOURCE tree's record rows (`--test-name-pattern='^W-673-b1\s'`, `'^W-673-b2\s'`).
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -26,7 +27,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { parse as parseYaml } from "yaml";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -903,5 +904,145 @@ test("W-528-b1 behaviour 1: the gates job stops at 60 minutes, under certify's l
     gates.steps.filter((step) => step["timeout-minutes"] !== undefined).map((step) => step.run ?? step.uses),
     [],
     "no gates step carries its own limit: the one limit is the job's",
+  );
+});
+
+/** W-673: a scratch repository at `dir` with `files` committed as "base"; returns its git runner. */
+function w673Repo(dir, files) {
+  const id = ["-c", "user.name=w673", "-c", "user.email=w673@x.invalid", "-c", "commit.gpgsign=false"];
+  const git = (...args) => execFileSync("git", [...id, ...args], { cwd: dir, encoding: "utf8" });
+  for (const [rel, body] of files) {
+    mkdirSync(join(dir, dirname(rel)), { recursive: true });
+    writeFileSync(join(dir, rel), body);
+  }
+  git("init", "-q");
+  git("add", "-A");
+  git("commit", "-q", "-m", "base");
+  return git;
+}
+
+/** W-673: `rel`'s new `body` committed alone in `dir`. */
+function w673Commit(git, dir, rel, body) {
+  mkdirSync(join(dir, dirname(rel)), { recursive: true });
+  writeFileSync(join(dir, rel), body);
+  git("add", "-A");
+  git("commit", "-q", "-m", rel);
+}
+
+test("W-673-b1 behaviour 1: the SOURCE tree leaves out every record recordOnly takes outside the officina, with no source_excludes entry for it", async () => {
+  const { sourceTreeHash } = await import("../packages/shim/src/sourceTree.ts");
+  const handoff = "docs/SESSION-HANDOFF.md";
+  const page = "docs/design/dossier/body.html";
+  const exclusions = ["studio", ".bisellium"];
+  const tmp = mkdtempSync(join(tmpdir(), "w673-b1-"));
+  try {
+    const git = w673Repo(tmp, [
+      [handoff, "# Handoff\n"],
+      [page, "<p>1</p>\n"],
+      ["packages/a.ts", "export const a = 1;\n"],
+      ["studio/bisellium.yml", "bisellium: 1\n"],
+    ]);
+    const tree = sourceTreeHash(tmp, exclusions);
+    w673Commit(git, tmp, handoff, "# Handoff\n\n- a checkpoint line\n");
+    assert.equal(sourceTreeHash(tmp, exclusions), tree, "a handoff-only commit keeps the SOURCE tree");
+    w673Commit(git, tmp, page, "<p>2</p>\n");
+    assert.equal(sourceTreeHash(tmp, exclusions), tree, "a dossier-page-only commit keeps the SOURCE tree");
+    w673Commit(git, tmp, "docs/design/dossier/new-page.html", "<p>new</p>\n");
+    assert.equal(sourceTreeHash(tmp, exclusions), tree, "a new dossier page keeps the SOURCE tree");
+    const moves = [
+      ["packages/a.ts", "export const a = 2;\n", "a source commit moves the SOURCE tree"],
+      ["docs/design/dossier/sub/deep.html", "<p>deep</p>\n", "a page below the dossier's top level is source"],
+      ["docs/design/dossier/notes.md", "notes\n", "a dossier file that is not a page is source"],
+      [`${handoff}.bak`, "x\n", "a near-handoff path is source"],
+      ["docs/STUDIO.md", "x\n", "another doc is source"],
+    ];
+    for (const [rel, body, message] of moves) {
+      const before = sourceTreeHash(tmp, exclusions);
+      w673Commit(git, tmp, rel, body);
+      assert.notEqual(sourceTreeHash(tmp, exclusions), before, message);
+    }
+    const before = sourceTreeHash(tmp, [".bisellium"]);
+    w673Commit(git, tmp, "studio/bisellium.yml", "bisellium: 1\n# edit\n");
+    assert.notEqual(
+      sourceTreeHash(tmp, [".bisellium"]),
+      before,
+      "the record list never excludes the officina itself: that stays the caller's exclusion",
+    );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+/** W-673: every non-test source file under packages/, apps/, adapters/ and scripts/ that lists a whole tree to hash it. */
+function w673Hashers() {
+  const found = [];
+  const walk = (rel) => {
+    for (const entry of readdirSync(join(REPO, rel), { withFileTypes: true })) {
+      const child = `${rel}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (!["node_modules", "dist", ".git"].includes(entry.name)) walk(child);
+      } else if (/\.(?:[cm]?[jt]s|tsx)$/.test(entry.name) && !/\.test\.|\.d\.m?ts$/.test(entry.name)) {
+        if (/\["ls-tree", "-r", [A-Za-z_]+\]/.test(readFileSync(join(REPO, child), "utf8"))) found.push(child);
+      }
+    }
+  };
+  for (const root of ["packages", "apps", "adapters", "scripts"]) walk(root);
+  return found.sort();
+}
+
+test("W-673-b2 behaviour 2: each SOURCE-tree hasher reads ci-scope's one record list, so a record path added to it leaves every SOURCE tree", async () => {
+  assert.deepEqual(
+    w673Hashers(),
+    ["packages/shim/src/sourceTree.ts", "scripts/run-builder-host.mjs"],
+    "the SOURCE-tree hashers are the shim's and the host runner's",
+  );
+  // The shim's hasher, copied beside a ci-scope.mjs whose list holds one more record path and not the handoff.
+  const tmp = mkdtempSync(join(tmpdir(), "w673-b2-"));
+  try {
+    const tooling = join(tmp, "tooling");
+    mkdirSync(join(tooling, "packages", "shim", "src"), { recursive: true });
+    mkdirSync(join(tooling, "scripts"), { recursive: true });
+    writeFileSync(join(tooling, "package.json"), '{ "type": "module" }\n');
+    copyFileSync(
+      join(REPO, "packages", "shim", "src", "sourceTree.ts"),
+      join(tooling, "packages", "shim", "src", "sourceTree.ts"),
+    );
+    writeFileSync(
+      join(tooling, "scripts", "ci-scope.mjs"),
+      'export const recordOnly = (paths, studio = "studio") => paths.length > 0 && paths.every((p) => p.startsWith(`${studio}/`) || p === "docs/NEW-RECORD.md");\n',
+    );
+    const { sourceTreeHash } = await import(
+      pathToFileURL(join(tooling, "packages", "shim", "src", "sourceTree.ts")).href
+    );
+    const repo = join(tmp, "repo");
+    mkdirSync(repo);
+    const git = w673Repo(repo, [
+      ["docs/NEW-RECORD.md", "1\n"],
+      ["docs/SESSION-HANDOFF.md", "# Handoff\n"],
+      ["packages/a.ts", "export const a = 1;\n"],
+    ]);
+    const tree = sourceTreeHash(repo, ["studio", ".bisellium"]);
+    w673Commit(git, repo, "docs/NEW-RECORD.md", "2\n");
+    assert.equal(
+      sourceTreeHash(repo, ["studio", ".bisellium"]),
+      tree,
+      "a record path added to ci-scope's list leaves the shim's SOURCE tree",
+    );
+    w673Commit(git, repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n- a line\n");
+    assert.notEqual(sourceTreeHash(repo, ["studio", ".bisellium"]), tree, "the shim keeps no record list of its own");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+  // The host runner's hasher cannot be imported (the module runs on load): its source reads the same list.
+  const host = readFileSync(join(REPO, "scripts", "run-builder-host.mjs"), "utf8");
+  assert.match(
+    host,
+    /^import \{[^}]*\brecordOnly\b[^}]*\} from "\.\/ci-scope\.mjs";$/m,
+    "the host runner imports recordOnly from ci-scope.mjs",
+  );
+  assert.match(
+    host,
+    /\nconst sourceTree = \(repo, ref, excludes\) => \{\n(?:(?!\n\};)[\s\S])*recordOnly\(\[path\], ""\)/,
+    "the host runner's sourceTree skips what recordOnly takes",
   );
 });
