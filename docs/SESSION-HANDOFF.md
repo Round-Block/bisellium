@@ -54,28 +54,26 @@ Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-
 
 Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672 W-673 W-675 W-676 W-677 W-678 W-679 W-680.
 
-Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686.
+Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686. W-687 (DR independence is mechanical, qa) filed session 40; D-226 (DR lane) and D-227 (DR workflow, multi-lead changes, meets, owner map; Patron session 40) land with it.
 
 Also, 11-16: D-212, D-213, D-215 (W-467 re-specced while W-503 parks) landed; D-216 (auto-greenlight widens to small non-ui engineering/ops/process opera), D-217 (console adopts whole themes) and D-218 (W-488 re-approved at tree 51f8690d) landed #1268; W-674 (Dracula spec audit and console-wide steps) filed #1266.
 
 D-193 replaces D-178: D-223 closes E3; process opera take E1/E2 by rank. D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: W-595 after W-610. D-204: E2 and UI2 open.
 
 Lanes now:
-- E1 W-666 (signed Patron receipt) branched (opus/W-666); then W-668 pt C, W-673.
-- E2 W-645 done (#1281, #1282); E2 takes the next non-overlapping opus by rank.
-- E3 closed (D-223, Patron 11-16); W-665 (ui build review screenshots) waits for E1/E2 by rank.
-- UI1 W-503 halted by D-222 (W-675 first), W-467 re-signs after W-675, W-662 held.
-- UI2 W-675 (Dracula theme layer): spec round 2 signed (brief 41351a90, untracked in main); next Opus UI spec review round 3, then ui-lead (Astra) input.
-- Retro lane RT1, owner qa-lead (Patron 11-16): until W-682's host cron lands, every boot re-arms the session cron (CronCreate "4 9 * * *", prompt in daily-retro-lane-meet-1116/collated.md Q3); W-681, W-682 filed and greenlit (the Patron 11-16).
-- W-673 (cert tree excludes the handoff): meet w673-meet-1116 ruled 3/3; Codex spec review with 5 named items next; lands after W-645.
-- W-555 not signed (no lane); W-646 carries D-213 cap wording.
-W-250 (duplicate hosted suite cut), W-636 (next reads branch records); older filings: studio/queue.yml.
+- E1 W-666 (signed Patron receipt): build review r2 failed (a refused answer left an empty timeline/); fix rounds 3-5 done; brief revision 6 (architect) uncommitted, its signature refused on three admission lines, being fixed; then spec review, fix check, light gates, build review r3.
+- E2 W-673 (cert tree excludes the handoff): build review r1 failed (brief:108 vs brief:124 order); brief revision 4 (architect), leads meet w673-d219-meet-1117 3/3, spec round 7 signed (uncommitted); Codex spec review round 8 running; then build review r2.
+- UI1 W-503 halted by D-222; W-467 re-signs after W-675; W-662 held.
+- UI2 W-675 (Dracula theme layer) DONE (#1288, D-228); UI2 free; W-467 re-signs next.
+- DR (qa-lead, D-226, D-227): kept script ~/.bisellium-evidence/dr-lane/run.sh + README.md; one session cron "4 9 * * *" re-armed each boot; next W-687, then W-682; lessons L-198..208 wait on W-534's lesson row.
+- Meet rules (D-227): rows amended into W-554; W-515 unchanged; proposal-id rows go to a qa opus not yet filed.
+W-250 (duplicate hosted suite cut), W-636 (next reads branch records), W-665 (ui build review screenshots; waits for E1/E2 by rank), W-681 (filed with W-682 in the DR lane's opera); older filings: studio/queue.yml.
 
 Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`. W-507 halted (D-181, D-206), tag archive/W-507.
 
 Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/. Sessions 21-30 meets and gaps 56-98: ~/.bisellium-evidence/current-state.md.
-Session 35: W-669 merged #1275; W-645 fix r3 check 3 open; W-675 r2 signed; W-673 meet; signer meet + Patron rulings.
-Session 36: W-669 done (checkpoint row 246); rules audit (rules-audit-1116/: census s1-s3; eng + design meets); decisions owed: W-673 D-129 B departure, signer rulings.
-Next: rules audit collate -> W-645 r4 per ruling -> W-675 UI spec review r3 -> W-673 Codex spec review -> decisions records PR (code-owner) -> file opera per audit rulings.
+Session 35: W-669 merged #1275; W-645 fix r3 check 3 open; W-675 r2 signed; W-673 meet.
+Session 36: W-669 done (checkpoint row 246); rules audit (rules-audit-1116/); decisions owed: W-673 D-129 B departure, signer rulings.
+Next: W-645 r4 per ruling -> W-673 Codex spec review -> decisions records PR (code-owner) -> file opera per audit rulings.
 
 Unruled notes: top NOW of ~/.bisellium-evidence/current-state.md; older gaps: current-state-until-1106.md there. Research is its own lane. Codex stays the one gate (D-066 C).

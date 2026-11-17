@@ -1,6 +1,6 @@
 queues:
   engineering:
-    lanes: { E1: W-666, E2: W-645 }
+    lanes: { E1: W-666, E2: W-673 }
     next:
       - { opus: W-666, says: "Patron answers carry a signed receipt (key outside agent reads); guard refuses unsigned, forged, replayed or agent-authored writes; high, first of D-211's order (console-only-meet-1116)" }
       - { opus: W-673, says: "Certificate excludes come from ci-scope's one record-path list, so a handoff-only PR voids no verify; cause fix, design×indirection-duplicates-source-of-truth; high, gap 100 (w668-meet-1116 Q11, 5/5)" }
@@ -167,16 +167,16 @@ queues:
     next:
       - { opus: W-634, says: "orchestrator context budget: measure first, cheap fixes, graph/retrieval index; Fable leads, Astra challenges (Patron 11-13)" }
   retro:
-    # daily retro lane, owner qa-lead (the Patron 11-16; daily-retro-lane-meet-1116): session cron 09:04 SGT until W-682's host cron lands; never holds or fills a work lane (D-204)
-    lanes: { RT1: ~ }
+    # daily retro lane DR, owner qa-lead (D-226; workflow D-227): runs only in DR's own clone via ~/.bisellium-evidence/dr-lane/run.sh, never main; a session cron 09:04 SGT until W-682's host cron lands; never holds or fills a work lane (D-204)
+    lanes: { DR: ~ }
     next:
+      - { opus: W-687, says: "DR independence is mechanical: lane row, occupancy skip, guard refuses DR from main, land from DR's clone, check pin (D-226 item 3, D-227)" }
       - { opus: W-682, says: "qa-lead: host cron (W-669 shape) persists the daily retro run; next OVERDUE from the first missed day, check names the date; never blocks (Patron 11-16)", folded: [W-486] }
   ui:
-    lanes: { UI1: W-503, UI2: W-675 }
+    lanes: { UI1: W-503, UI2: ~ }
     next:
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2) — HALTED by D-222 (W-675 first; resumes after W-675, W-648, W-645 merge)" }
-      - { opus: W-675, says: "W-674's first child: Dracula theme layer (roles by meaning), old token names as aliases, w025.css untouched, pixel-identical; UI2, then W-467 re-signs on roles (D-217 item 8) — branch next (D-222)" }
       - { opus: W-674, says: "Dracula spec scan for what the console lacks, then steps across every screen; its draft sets heading and link colours before W-467 signs (Patron 11-16)" }
       - { opus: W-467, says: "Officina on Home's palette; UI2 after W-675, Officina files (D-192) ; signs after W-674's draft sets heading and link roles" }
       - { opus: W-658, says: "capture review screen, W-488's web half (split); UI2 after W-503 (shares App.tsx)" }
