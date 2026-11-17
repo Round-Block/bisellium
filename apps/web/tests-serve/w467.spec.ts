@@ -141,6 +141,7 @@ async function tokenColour(
   page: Page,
   token:
     | "--color-heading"
+    | "--color-link"
     | "--color-text-primary"
     | "--color-text-secondary"
     | "--color-text-muted"
@@ -269,5 +270,120 @@ test("W-467-b1 Work in flight uses Home roles for empty, one and many work at ev
   await installRoutes(failed, failedFixtures);
   await open(failed, 1280, "expanded", false);
   await expect(failed.locator(".panel--work")).toContainText("Could not load work in flight.");
+  await failed.close();
+});
+
+test("W-467-b2 Budget uses Home roles when absent, under and over while severity stays intact", async ({
+  page,
+}) => {
+  served = await startServed("w467-b2", { now: NOW });
+  await seedToken(page, served);
+  const fixtures = base();
+  fixtures.opera = [opus("W-1", "building")];
+  await installRoutes(page, fixtures);
+
+  fixtures.budgets = [];
+  await open(page, 1280, "expanded");
+  await expect(page.locator(".panel--budget")).toContainText(
+    "No budget allocation is recorded for this week.",
+  );
+
+  fixtures.budgets = [
+    {
+      collegium: "engineering",
+      period: "2026-W44",
+      allowance: { tokens: 3_000_000 },
+      burn: { tokens: 1_880_000 },
+      posture: "conserve",
+    },
+    {
+      collegium: "production",
+      period: "2026-W44",
+      allowance: { tokens: 500_000 },
+      burn: { tokens: 650_000 },
+      posture: "closeout",
+    },
+  ];
+  for (const [width, sidebar] of [
+    [1280, "expanded"],
+    [1280, "collapsed"],
+    [640, "expanded"],
+    [390, "expanded"],
+  ] as const) {
+    await open(page, width, sidebar);
+    const [heading, ink, ink2, cyan, pink, blocking] = await Promise.all([
+      tokenColour(page, "--color-heading"),
+      tokenColour(page, "--color-text-primary"),
+      tokenColour(page, "--color-text-secondary"),
+      tokenColour(page, "--color-fact"),
+      tokenColour(page, "--color-category"),
+      tokenColour(page, "--color-severity-blocking-indicator"),
+    ]);
+    const label = `${width} ${sidebar}`;
+    const engineeringBudget = page.locator(".panel--budget .officina__budget-row").filter({
+      has: page.getByText("engineering", { exact: true }),
+    });
+    const productionBudget = page.locator(".panel--budget .officina__budget-row").filter({
+      has: page.getByText("production", { exact: true }),
+    });
+    await expect(
+      page.locator(".panel--budget .officina__panel-heading"),
+      `${label}: Budget heading uses Dracula Purple`,
+    ).toHaveCSS("color", heading);
+    await expect(
+      engineeringBudget.locator(".officina__collegium-name"),
+      `${label}: collegium is pink`,
+    ).toHaveCSS("color", pink);
+    await expect(
+      engineeringBudget.locator(".budget-meter__numerals"),
+      `${label}: under-budget values are cyan`,
+    ).toHaveCSS("color", cyan);
+    await expect(
+      productionBudget.locator(".budget-meter__numerals"),
+      `${label}: over-budget values remain the same cyan fact role`,
+    ).toHaveCSS("color", cyan);
+    await expect(
+      engineeringBudget.locator(".officina__posture-word"),
+      `${label}: posture word is primary neutral`,
+    ).toHaveCSS("color", ink);
+    await expect(
+      engineeringBudget.locator(".officina__posture-reason"),
+      `${label}: posture reason is secondary neutral`,
+    ).toHaveCSS("color", ink2);
+    const normalCue = engineeringBudget.locator(".severity-cue--normal");
+    const blockingCue = productionBudget.locator(".severity-cue--blocking");
+    await expect(normalCue, `${label}: under budget keeps a hollow circle`).toHaveCSS(
+      "border-radius",
+      "50%",
+    );
+    await expect(blockingCue, `${label}: over budget keeps W-427 red`).toHaveCSS(
+      "background-color",
+      blocking,
+    );
+    await expect(blockingCue, `${label}: over budget keeps a square`).toHaveCSS(
+      "border-radius",
+      "0px",
+    );
+    await expectContained(page, label);
+  }
+
+  const slow = await page.context().newPage();
+  await seedToken(slow, served);
+  const slowFixtures = base();
+  slowFixtures.budgets = "pending";
+  await installRoutes(slow, slowFixtures);
+  await open(slow, 1280, "expanded", false);
+  await expect(slow.locator(".panel--budget")).toContainText("Loading budget allocations…");
+  await slow.close();
+
+  const failed = await page.context().newPage();
+  await seedToken(failed, served);
+  const failedFixtures = base();
+  failedFixtures.budgets = "failed";
+  await installRoutes(failed, failedFixtures);
+  await open(failed, 1280, "expanded", false);
+  await expect(failed.locator(".panel--budget")).toContainText(
+    "Could not load budget allocations.",
+  );
   await failed.close();
 });

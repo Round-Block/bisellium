@@ -15,7 +15,8 @@ function source(path: string): string {
   }
 }
 
-const css = `${source("components/w025.css")}\n${source("screens/officina-palette.css")}`;
+const palette = source("screens/officina-palette.css");
+const css = `${source("components/w025.css")}\n${palette}`;
 
 function servedRow(behaviour: number): void {
   const result = spawnSync(
@@ -60,6 +61,45 @@ test(
       /\.panel--work \.officina__work-row > span:nth-child\(2\)\s*{[^}]*color:\s*var\(--color-text-secondary\)/s,
       "work titles use the secondary text role",
     );
+    assert.doesNotMatch(
+      palette,
+      /var\(--(?:ink(?:-[23])?|accent-|dracula-)/,
+      "the Officina assignment layer consumes meaning-based roles only",
+    );
     servedRow(1);
+  },
+);
+
+test(
+  "W-467-b2 behaviour 2: Budget takes Home roles without changing severity",
+  { timeout: 300_000 },
+  () => {
+    assert.match(
+      css,
+      /\.panel--budget \.officina__panel-heading\s*{[^}]*color:\s*var\(--color-heading\)/s,
+      "Budget takes the purple heading, pink category and cyan fact roles",
+    );
+    assert.match(
+      css,
+      /\.panel--budget \.officina__collegium-name\s*{[^}]*color:\s*var\(--color-category\)/s,
+      "Budget collegia use the pink category role",
+    );
+    assert.match(
+      css,
+      /\.panel--budget \.budget-meter__numerals\s*{[^}]*color:\s*var\(--color-fact\)/s,
+      "Budget numerals use the cyan fact role",
+    );
+    assert.match(
+      css,
+      /\.officina__row--link,\s*\.officina__row--link:visited\s*{[^}]*color:\s*var\(--color-link\)[^}]*text-decoration:\s*underline/s,
+      "Officina content links and visited links use the underlined link role",
+    );
+    assert.doesNotMatch(palette, /\.sidebar/, "the Officina layer does not restyle navigation");
+    assert.match(
+      css,
+      /\.severity-cue--blocking\s*{[^}]*var\(--severity-blocking\)[^}]*}[^]*\.severity-cue--normal\s*{[^}]*border-radius:\s*50%/s,
+      "Budget keeps W-427's blocking square and normal hollow circle",
+    );
+    servedRow(2);
   },
 );
