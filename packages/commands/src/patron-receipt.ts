@@ -109,40 +109,92 @@ export function readReceiptPolicy(manifest: unknown): ReceiptPolicy | { error: s
   return { keys: map, floor };
 }
 
-/** One Patron stamp line of a petitio body: `\n\n[stated] <instant> <patron>: <reply>`, as `runAnswer` appends it. */
+/** One Patron stamp of a petitio body: `\n\n[stated] <instant> <patron>: <reply>`, as `runAnswer` appends it. */
 export interface Stamp {
   /** the stamp's instant, as written */
   at: string;
   /** the body's offset of the stamp's leading blank line: the question is the body before it */
   index: number;
-  /** the stamp line, from `[stated]` to its line's end */
+  /** the stamp's first line, from `[stated]` to its line's end */
   line: string;
-  /** the text after `<patron>: `, to the end of the body */
-  rest: string;
+  /** W-666 r5: the stamp's exact reply: a signed stamp's option, else its text to the next Patron stamp or the body's end
+   *  (whitespace at the body's end dropped) */
+  reply: string;
+  /** W-666 r5: the text after a signed reply that is neither the next Patron stamp nor whitespace at the body's end; "" when none */
+  suffix: string;
 }
-/** Every Patron stamp of `body`, in order. */
-export function patronStamps(body: string, patronId: string): Stamp[] {
+/** W-666 r5: every Patron stamp of `body`, read in body order. A stamp whose instant keys a recorded receipt that parses and
+ *  whose text opens with its option spans exactly that option, so a stamp marker inside a signed reply is part of it; any
+ *  other stamp spans to the next Patron stamp or the body's end. The projection is exact: no byte after a stamp is unread. */
+export function patronStamps(body: string, patronId: string, receipts: ReadonlyMap<string, unknown>): Stamp[] {
   const marker = `\n\n[stated] `;
+  const next = (from: number): { index: number; at: string; start: number } | undefined => {
+    for (let i = body.indexOf(marker, from); i !== -1; i = body.indexOf(marker, i + 1)) {
+      const m = /^\[stated\] (\S+) /.exec(body.slice(i + 2, i + 2 + 256));
+      if (m !== null && body.startsWith(`${m[0]}${patronId}: `, i + 2)) return { index: i, at: m[1]!, start: i + 2 + m[0].length + patronId.length + 2 };
+    }
+    return undefined;
+  };
   const out: Stamp[] = [];
-  for (let i = body.indexOf(marker); i !== -1; i = body.indexOf(marker, i + 1)) {
-    const after = body.slice(i + 2);
-    const m = /^\[stated\] (\S+) /.exec(after);
-    if (m === null || !after.startsWith(`${m[0]}${patronId}: `)) continue;
-    const head = `${m[0]}${patronId}: `;
-    const end = after.indexOf("\n");
-    out.push({ at: m[1]!, index: i, line: end === -1 ? after : after.slice(0, end), rest: after.slice(head.length) });
+  for (let s = next(0); s !== undefined; ) {
+    const raw = receipts.get(s.at);
+    const parsed = raw === undefined ? undefined : parseReceipt(raw);
+    const option = parsed === undefined || "error" in parsed ? undefined : parsed.payload.option;
+    let reply: string;
+    let suffix = "";
+    let following: ReturnType<typeof next>;
+    if (option !== undefined && body.startsWith(option, s.start)) {
+      reply = option;
+      following = next(s.start + option.length);
+      const gap = body.slice(s.start + option.length, following === undefined ? body.length : following.index);
+      suffix = following === undefined ? gap.trimEnd() : gap;
+    } else {
+      following = next(s.start);
+      const text = body.slice(s.start, following === undefined ? body.length : following.index);
+      reply = following === undefined ? text.trimEnd() : text;
+    }
+    out.push({ at: s.at, index: s.index, line: `[stated] ${s.at} ${patronId}: ${reply.split("\n")[0] ?? ""}`, reply, suffix });
+    s = following;
   }
   return out;
 }
-/** The reply a stamp records, as a receipt's option is compared with it: the option itself when the stamp's text opens with
- *  it and then ends or breaks a line, else the stamp's first line. */
-export function stampedReply(stamp: Stamp, option: string): string {
-  const r = stamp.rest;
-  return r.startsWith(option) && (r.length === option.length || r[option.length] === "\n") ? option : (r.split("\n")[0] ?? "");
+/** W-666 r5: the digest a floor fixes: sha256 (hex) of the unsigned stamps, each `<file>\t[stated] <instant> <patron>: <reply>`,
+ *  sorted, one per line; the file as written unless it holds a tab or a line break, the reply as written unless it holds a
+ *  line break or opens with a quote, each else its `JSON.stringify`, so no entry holds a raw line feed and each reads back
+ *  to one file and one reply. A one-line reply keeps revision 3's entry. */
+export function unsignedDigest(unsigned: readonly { where: string; at: string; reply: string }[], patronId: string): string {
+  const entries = unsigned.map(({ where, at, reply }) => {
+    const file = /[\t\r\n]/.test(where) ? JSON.stringify(where) : where;
+    const text = /[\r\n]/.test(reply) || reply.startsWith('"') ? JSON.stringify(reply) : reply;
+    return `${file}\t[stated] ${at} ${patronId}: ${text}`;
+  });
+  return createHash("sha256").update(entries.sort().join("\n"), "utf8").digest("hex");
 }
-/** The digest a floor fixes: sha256 (hex) of the unsigned stamps, each `<petitio file>\t<stamp line>`, sorted, one per line. */
-export function unsignedDigest(unsigned: readonly string[]): string {
-  return createHash("sha256").update([...unsigned].sort().join("\n"), "utf8").digest("hex");
+/** W-666 r5: takes the officina's answer lock, `timeline/.answer.lock`, by an exclusive create inside a real `timeline/`;
+ *  the caller releases it in a `finally`. A lock already there, or one that cannot be made, is an error. Never a takeover:
+ *  a dead owner cannot be told from a live one without a race (two takers would each remove the other's lock), so a lock
+ *  left by a killed answer refuses until it is removed. */
+export function takeAnswerLock(root: string): { release: () => void } | { error: string } {
+  let path: string;
+  try {
+    path = join(ensureRealDirectory(root, "timeline"), ANSWER_LOCK);
+  } catch (e) {
+    return { error: `timeline/ cannot hold the answer lock: ${(e as Error).message}` };
+  }
+  try {
+    writeFileSync(path, `${process.pid}\n`, { flag: "wx" });
+  } catch (e) {
+    return { error: (e as NodeJS.ErrnoException).code === "EEXIST" ? `another answer holds timeline/${ANSWER_LOCK}` : `timeline/${ANSWER_LOCK} cannot be made: ${(e as Error).message}` };
+  }
+  return {
+    release: () => {
+      try {
+        unlinkSync(join(ensureRealDirectory(root, "timeline"), ANSWER_LOCK));
+      } catch {
+        /* a lock that cannot be removed refuses the next answer by name */
+      }
+    },
+  };
 }
 /** A petitio front matter's `receipts` mapping (stamp instant to raw receipt): empty when absent, an error when not a mapping. */
 export function recordedReceipts(front: unknown): Map<string, unknown> | { error: string } {
@@ -282,31 +334,4 @@ export function spentNonces(timeline: string, records: readonly Pick<PetitioRece
       out.add(r.payload.nonce);
     }
   return out;
-}
-
-/** W-666 r5: takes the officina's answer lock, `timeline/.answer.lock`, by an exclusive create inside a real `timeline/`;
- *  the caller releases it in a `finally`. A lock already there, or one that cannot be made, is an error. Never a takeover:
- *  a dead owner cannot be told from a live one without a race (two takers would each remove the other's lock), so a lock
- *  left by a killed answer refuses until it is removed. */
-export function takeAnswerLock(root: string): { release: () => void } | { error: string } {
-  let path: string;
-  try {
-    path = join(ensureRealDirectory(root, "timeline"), ANSWER_LOCK);
-  } catch (e) {
-    return { error: `timeline/ cannot hold the answer lock: ${(e as Error).message}` };
-  }
-  try {
-    writeFileSync(path, `${process.pid}\n`, { flag: "wx" });
-  } catch (e) {
-    return { error: (e as NodeJS.ErrnoException).code === "EEXIST" ? `another answer holds timeline/${ANSWER_LOCK}` : `timeline/${ANSWER_LOCK} cannot be made: ${(e as Error).message}` };
-  }
-  return {
-    release: () => {
-      try {
-        unlinkSync(join(ensureRealDirectory(root, "timeline"), ANSWER_LOCK));
-      } catch {
-        /* a lock that cannot be removed refuses the next answer by name */
-      }
-    },
-  };
 }

@@ -12,7 +12,7 @@
  * `receipts` not a mapping) blocks, never is skipped, so no unread stamp escapes the rule.
  */
 import { instant } from "@bisellium/schema";
-import { parseReceipt, patronStamps, questionDigest, readPetitioReceipts, readReceiptPolicy, receiptProblem, stampedReply, unsignedDigest } from "@bisellium/commands/patron-receipt.js";
+import { parseReceipt, patronStamps, questionDigest, readPetitioReceipts, readReceiptPolicy, receiptProblem, unsignedDigest } from "@bisellium/commands/patron-receipt.js";
 import type { Finding, RuleOpts } from "../check.js";
 
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -28,19 +28,19 @@ export function checkReceipts(root: string, opts: RuleOpts): Finding[] {
   const declared = (opts.manifest as Record<string, unknown> | undefined)?.["patron"];
   const patronId = typeof declared === "string" && declared.trim() !== "" ? declared : "patron";
   const read = readPetitioReceipts(root);
-  const unsigned: string[] = [];
+  const unsigned: { where: string; at: string; reply: string }[] = [];
   const spent = new Set<string>();
   if (policy !== undefined) for (const p of read.problems) add("block", p.where, p.message);
   for (const { where, id, body, receipts } of read.records) {
-    const stamps = patronStamps(body, patronId);
+    const stamps = patronStamps(body, patronId, receipts);
     if (policy === undefined) {
-      unsigned.push(...stamps.map((s) => `${where}\t${s.line}`));
+      unsigned.push(...stamps.map((s) => ({ where, at: s.at, reply: s.reply })));
       continue;
     }
     for (const stamp of stamps) {
       const raw = receipts.get(stamp.at);
       if (raw === undefined) {
-        unsigned.push(`${where}\t${stamp.line}`);
+        unsigned.push({ where, at: stamp.at, reply: stamp.reply });
         continue;
       }
       const receipt = parseReceipt(raw);
@@ -53,10 +53,12 @@ export function checkReceipts(root: string, opts: RuleOpts): Finding[] {
         add("block", where, `stamp ${stamp.at}: the stamp's instant is not an ISO time`);
         continue;
       }
-      const facts = { petitio: id, question: questionDigest(body.slice(0, stamp.index)), option: stampedReply(stamp, receipt.payload.option), mode: receipt.payload.mode, charter_gap: receipt.payload.charter_gap };
+      const facts = { petitio: id, question: questionDigest(body.slice(0, stamp.index)), option: stamp.reply, mode: receipt.payload.mode, charter_gap: receipt.payload.charter_gap };
       const problem = receiptProblem(receipt, policy, facts, stampedAt, spent);
       if (problem !== undefined) add("block", where, `stamp ${stamp.at}: ${problem}`);
       else spent.add(receipt.payload.nonce);
+      // W-666 r5: a signed stamp spans exactly its option; any text after it but the next stamp is an unsigned addition
+      if (stamp.suffix !== "") add("block", where, `stamp ${stamp.at}: text after the signed reply: ${JSON.stringify(stamp.suffix.slice(0, 80))}`);
     }
     const stamped = new Set(stamps.map((s) => s.at));
     for (const at of receipts.keys()) if (!stamped.has(at)) add("block", where, `the receipt recorded under ${at} answers no stamp`);
@@ -66,7 +68,7 @@ export function checkReceipts(root: string, opts: RuleOpts): Finding[] {
     add("advise", "bisellium.yml", `${unsigned.length} Patron stamp${unsigned.length === 1 ? "" : "s"} carry no receipt: bisellium.yml names no patron_receipts keys`);
     return out;
   }
-  const digest = unsignedDigest(unsigned);
+  const digest = unsignedDigest(unsigned, patronId);
   if (digest !== policy.floor)
     add("block", "bisellium.yml", `${unsigned.length} Patron stamp${unsigned.length === 1 ? "" : "s"} carry no receipt and are not the floor: their sha256 ${digest} is not patron_receipts.floor`);
   return out;
