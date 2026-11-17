@@ -1,0 +1,38 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-576-b3\s --import tsx packages/core/src/v1-walk.test.ts
+# exit: 1
+# at: 2026-11-17T14:12:43.516Z
+# sella: builder.W-576
+# tree: tree:2f568a7acd4a74ede650401057ed1f614408adc4
+# ticket: {"opus":"W-576","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-576/studio","head":"a66153eae229e7c782ba8a92f78ee56dc64b0fc6","brief":"f68d7e9bef0d37849697c0cf0c8c4a827325e814","at":"2026-11-17T14:12:39.906Z"}
+
+TAP version 13
+# Subtest: W-576-b3 the reader prints k and names S5's failing half
+not ok 1 - W-576-b3 the reader prints k and names S5's failing half
+  ---
+  duration_ms: 6.106628
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-576/packages/core/src/v1-walk.test.ts:3:25'
+  failureType: 'testCodeFailure'
+  error: 'the reader prints the count line: scripts/v1-walk-count.ts is absent'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-576/packages/core/src/v1-walk.test.ts:153:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21.695877
