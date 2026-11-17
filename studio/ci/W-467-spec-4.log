@@ -1,0 +1,24 @@
+# opus: W-467
+# phase: spec
+# round: 4
+# sella: ui-lead
+# outcome: passed
+# at: 2026-11-15T02:20:14.007Z
+# tree: tree:716648751c427c590035fab2d68b874508b929c1
+# dispatch_prompt: ci/W-467-ui-prompt-4.md
+# design_digest: sha256:ff8340d5a96bd5aa41a218f912a4553dbf8aa7bd5da4492cf986f8cba251e350
+# ticket: {"opus":"W-467","step":"spec","action":"verdict-spec","round":4,"actor":"ui-lead","studio":"studio","head":"0aa5ad2af517f1d71c027b071d9abedbbc88090b","brief":"65f873e6e183920be688431c3446cc5011220861","at":"2026-11-15T02:20:04.964Z"}
+
+## Findings
+
+1. advisory — brief:15 — Round 3 #1 holds: DIRECTION.md:104–109’s agent-written restriction of pink to selection and purple to headings does not describe either target screen. Restoring purple headings would weaken the visible match to Home; clarify the brief in this opus. — replace with: “On Home and Officina, white identifies headings, pink identifies categories, and cyan identifies factual values and links; Home also uses purple progress bars. These assignments supersede DIRECTION.md:104–109’s agent-written exclusive colour roles for these surfaces. Shared text-selection styling and Patron-ruled severity cues remain unchanged. DIRECTION.md’s corresponding wording needs a separate documentation correction.” — check: docs/design/DIRECTION.md:104; apps/web/test/tokens.test.ts; shots/home-after-w503-1280.png and shots/officina-after-1280-expanded.png.
+
+## Recommendation
+
+This is my first input on W-467; I have no earlier findings to reassess.
+Across both 1280 sidebar states, the 640 zoom proxy and 390 captures, the revision preserves visible information, ordering and wrapping; white headings improve hierarchy, and the quieter work titles remain readable alongside identifiers and mover notes.
+The captures show an absent Budget allocation and closed Health disclosures, with Health details below the 390 viewport, so they do not visually establish every populated or expanded state.
+Round 3 #2 does not warrant a change: “Lex status” and “Process health” remain category labels, and their visible disclosure arrows communicate interaction independently of colour.
+Their constant pink does not indicate selection or severity, and cyan links need not dictate the colour of every interactive control; the proposed rule restricting pink to inert labels would add an unnecessary exception.
+Officina reads as one system with Home through white headings, pink categories, cyan facts and neutral supporting copy, while retaining the Patron’s dated ruling for three unboxed detail sections and separate severity shapes.
+Verdict: passed
