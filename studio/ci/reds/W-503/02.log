@@ -1,0 +1,87 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-503-b2\s --import tsx apps/web/test/w503.test.ts
+# exit: 1
+# at: 2026-11-17T07:57:43.640Z
+# sella: builder.W-503
+# tree: tree:32e83e3d5eeaa2d03a8b7721c47d8586b12283dc
+# ticket: {"opus":"W-503","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-503/studio","head":"f365ef553f6a704fe0e29152643d2a7033acfdd8","brief":"4a61cab426b4a8d99cc75394e1f325ede245b198","at":"2026-11-17T07:57:38.411Z"}
+
+TAP version 13
+# Subtest: W-503-b2 behaviour 2: Needs you reuses D-151 groups and counts each attention item once
+not ok 1 - W-503-b2 behaviour 2: Needs you reuses D-151 groups and counts each attention item once
+  ---
+  duration_ms: 5.974904
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w503.test.ts:2:615'
+  failureType: 'testCodeFailure'
+  error: |-
+    Greenlight, Human gate, Inbox decision and questions group without duplicating a combined opus
+    + actual - expected
+    
+    + []
+    - [
+    -   [
+    -     'greenlights',
+    -     [
+    -       'opus:W-1'
+    -     ]
+    -   ],
+    -   [
+    -     'human_gates',
+    -     [
+    -       'opus:W-2'
+    -     ]
+    -   ],
+    -   [
+    -     'inbox_decisions',
+    -     [
+    -       'opus:W-3'
+    -     ]
+    -   ],
+    -   [
+    -     'questions',
+    -     [
+    -       'opus:W-404',
+    -       'petitio:P-4'
+    -     ]
+    -   ]
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      0: 'greenlights'
+      1:
+        0: 'opus:W-1'
+    1:
+      0: 'human_gates'
+      1:
+        0: 'opus:W-2'
+    2:
+      0: 'inbox_decisions'
+      1:
+        0: 'opus:W-3'
+    3:
+      0: 'questions'
+      1:
+        0: 'opus:W-404'
+        1: 'petitio:P-4'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w503.test.ts:51:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13.948112
