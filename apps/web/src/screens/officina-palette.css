@@ -43,3 +43,21 @@
   color: var(--color-link);
   text-decoration: underline;
 }
+
+.panel--health .officina__panel-heading {
+  color: var(--color-heading);
+}
+
+.panel--health .officina__health-row > summary > span:first-child {
+  color: var(--color-category);
+}
+
+.panel--health .officina__value-mono,
+.panel--health .officina__rule-family > span:last-child {
+  color: var(--color-fact);
+}
+
+.panel--health .officina__health-copy,
+.panel--health .officina__brake-explanation {
+  color: var(--color-text-secondary);
+}
