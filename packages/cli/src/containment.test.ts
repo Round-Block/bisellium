@@ -1000,6 +1000,8 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/light-gates.ts:runLightGates:writeFileSync#1", disposition: "contained", why: "W-610: ci/<opus>-light-<8 hex>.log in a real directory chain checked by ensureRealDirectory; the opus id is validated by runNext (ID_RE), the hex is the source tree hash" },
   { key: "packages/commands/src/opus-model.ts:readContainedRegularFile:openSync#1", disposition: "helper", why: "the contained reader's own open and read" },
   { key: "packages/commands/src/opus-model.ts:readContainedRegularFile:readFileSync#1", disposition: "helper", why: "the contained reader's own open and read" },
+  { key: "packages/commands/src/patron-receipt.ts:takeAnswerLock:writeFileSync#1", disposition: "contained", why: "W-666 r5: the answer lock, an exclusive create (flag wx) at the fixed name .answer.lock inside the timeline directory ensureRealDirectory returns, holding the owner's pid" },
+  { key: "packages/commands/src/patron-receipt.ts:release:unlinkSync#1", disposition: "contained", why: "W-666 r5: removes that answer lock when the answer ends, at the same fixed path" },
   { key: "packages/commands/src/pause.ts:readPauseState:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (PAUSED)" },
   { key: "packages/commands/src/pause.ts:runPause:mkdirSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (PAUSED)" },
   { key: "packages/commands/src/pause.ts:runPause:writeFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (PAUSED)" },

@@ -306,7 +306,7 @@ test("W-666-b4 answer refuses when a recorded-nonce source does not read", () =>
 // the generic `answer failed`.
 test("W-666-b4 an inaccessible timeline refuses with the reader's reason", () => {
   const { dir, r } = answerOver("b4-inaccessible", (d) => writeFileSync(join(d, "timeline"), "not a directory\n"));
-  assert.equal(r.code === 2 && r.err.includes("answer refused: timeline/patron.jsonl:"), true, "an inaccessible timeline gives the reader's refusal");
+  assert.equal(r.code === 2 && r.err.includes("answer refused: timeline/"), true, "an inaccessible timeline gives the reader's refusal");
   assert.equal(r.err.includes("answer failed"), false, "an inaccessible timeline is not the generic answer failed");
   assert.equal(petitio(dir), A1_BODY_RAW(), "an inaccessible timeline leaves the petitio untouched");
 });

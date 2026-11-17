@@ -13,11 +13,12 @@
  * Readers: `runAnswer` (writes.ts, the write path) and the `patron.receipt` rule (packages/cli/src/rules/receipts.ts).
  */
 import { createHash, createPublicKey, verify as cryptoVerify, type KeyObject } from "node:crypto";
-import { lstatSync, readdirSync } from "node:fs";
+import { lstatSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "yaml";
 import { instant } from "@bisellium/schema";
 import { splitFront } from "./frontmatter.js";
+import { ensureRealDirectory } from "./ids.js";
 import { readContainedRegularFile } from "./opus-model.js";
 
 /** The first line of the signed bytes: a receipt signs this domain, never a bare payload another protocol could reuse. */
@@ -27,6 +28,8 @@ export const RECEIPT_WINDOW_MS = 15 * 60_000;
 const SKEW_MS = 60_000;
 /** A receipt file's most bytes (the write path reads one from a Patron-named path). */
 export const RECEIPT_MAX_BYTES = 64 * 1024;
+/** W-666 r5: the answer lock's name inside `timeline/`: one `answer` of an officina naming `patron_receipts` at a time. */
+export const ANSWER_LOCK = ".answer.lock";
 
 export interface ReceiptPayload {
   v: 1;
@@ -279,4 +282,31 @@ export function spentNonces(timeline: string, records: readonly Pick<PetitioRece
       out.add(r.payload.nonce);
     }
   return out;
+}
+
+/** W-666 r5: takes the officina's answer lock, `timeline/.answer.lock`, by an exclusive create inside a real `timeline/`;
+ *  the caller releases it in a `finally`. A lock already there, or one that cannot be made, is an error. Never a takeover:
+ *  a dead owner cannot be told from a live one without a race (two takers would each remove the other's lock), so a lock
+ *  left by a killed answer refuses until it is removed. */
+export function takeAnswerLock(root: string): { release: () => void } | { error: string } {
+  let path: string;
+  try {
+    path = join(ensureRealDirectory(root, "timeline"), ANSWER_LOCK);
+  } catch (e) {
+    return { error: `timeline/ cannot hold the answer lock: ${(e as Error).message}` };
+  }
+  try {
+    writeFileSync(path, `${process.pid}\n`, { flag: "wx" });
+  } catch (e) {
+    return { error: (e as NodeJS.ErrnoException).code === "EEXIST" ? `another answer holds timeline/${ANSWER_LOCK}` : `timeline/${ANSWER_LOCK} cannot be made: ${(e as Error).message}` };
+  }
+  return {
+    release: () => {
+      try {
+        unlinkSync(join(ensureRealDirectory(root, "timeline"), ANSWER_LOCK));
+      } catch {
+        /* a lock that cannot be removed refuses the next answer by name */
+      }
+    },
+  };
 }
