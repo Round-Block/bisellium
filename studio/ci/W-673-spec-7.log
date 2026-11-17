@@ -1,0 +1,25 @@
+# opus: W-673
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-17T03:55:57.249Z
+# tree: tree:c3c3f28bf1c9b5b1332062bc35635f1011fe2a4c
+# brief: briefs/W-673.md blob:4ad54118cfeeb0498945b6afddda07e4c6042b67
+# ticket: {"opus":"W-673","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-673/studio","head":"47c5e335fac45b3c14eda855148c105e53418053","brief":"4ad54118cfeeb0498945b6afddda07e4c6042b67","at":"2026-11-17T03:55:48.339Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-673-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — closes build review round 1's finding (`/home/edckt/.bisellium-evidence/W-673-review/packets/r1/verdict.md`): revision 4 rewrites only brief:61 and brief:108 in place and appends one sentence to brief:3, per amend-r1.md (option B) and reword-r4.py, so no cited line moves (124 lines, as revision 3). brief:108 no longer asks for "one following source commit", which contradicted brief:124 `Red order: one at a time`. It now names the behaviour 1 shim-only commit (a private literal) and the behaviour 2 commit, the only one that touches scripts/run-builder-host.mjs, which changes both hashers together (D-219 2a, 2b). The opus history matches: 98b784a8 touches only scripts/ci-scope.test.mjs, 966c8a35 only packages/shim/src/sourceTree.ts, and b23cfe2b touches sourceTree.ts, run-builder-host.mjs and next-done.test.ts. The reds (studio/ci/reds/W-673/01.log, 02.log) stand as recorded — check: `git show --stat 98b784a8 966c8a35 b23cfe2b`, brief.md (brief:3, brief:61, brief:108, brief:124)
+2. advisory — leads' meet w673-d219-meet-1117 (3/3 "meets 2a", no D-219 amendment). Two conditions are carried. qa-lead: brief:108 keeps "the squash merge lands both hashers in one master commit" word for word, and the spec re-review should confirm that no mint or replay on the branch loads the branch's own shim (brief:19, D-219 2e: branch reds, receipts and certify run master's installed pair). ops-lead: build review round 2 confirms that 966c8a35 touches only packages/shim/src/sourceTree.ts and that no mint or receipt was taken at it — check: /home/edckt/.bisellium-evidence/w673-d219-meet-1117/collated.md, brief.md (brief:19, brief:108)
+3. advisory — brief:108's prototype sentence is reworded (producer's call on this signature's earlier advisory 3; kept `reword-r4.py`) to say the branch's final source tree equals `w673-r3-s1` except one comment-only line. sourceTree.ts, run-builder-host.mjs and next-done.test.ts are byte-identical to w673-r3-s1 at 64f1f9db. scripts/ci-scope.test.mjs differs only by the `// one-sided:` annotation that 64f1f9db adds at :1040 for check test.one_sided. That is a test comment, not a hasher or fixture change. "the squash merge lands both hashers in one master commit" is kept verbatim, and the brief is still 124 lines — check: `git show 64f1f9db`, `diff <(git -C clone show w673-r3-s1:scripts/ci-scope.test.mjs) <(git show 64f1f9db:scripts/ci-scope.test.mjs)`, reword-r4.py, brief.md (brief:108)
+4. advisory — admission replay on the amended brief, all read-only and run from the main checkout with tsx. The kept `admission.mts` (with the unchanged promise-ledger.md) gives problem_count=0. `ready-dryrun-r5.mts` gives limit=6, red_order declared and problem_count=0. declared-reds-check.mts gives 0 problems. Not re-run: the prototype, rows, greens, kills and pin dry-run. Revision 4 changes no promise, pin, red or Files owned line, so the r3 evidence stands as cited. That is a stated limit, not re-proved — check: admission.mts, ready-dryrun-r5.mts, rows-r3-status.out, pin-dryrun-r3.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C). Brief revision 4 is at `.worktrees/W-673/studio/briefs/W-673.md`, sha256 cba618b1f88aca88cce6ea78519f21d65503a6795f22c017b7ca84ad864aca36 (blob 4ad54118cfeeb0498945b6afddda07e4c6042b67). The evidence is in `/home/edckt/.bisellium-evidence/W-673-spec/` and `/home/edckt/.bisellium-evidence/W-673-review/`. As revision 2 required, the merge stays held by the pre-merge census until it exits 0.
+
+VERDICT: PASS
