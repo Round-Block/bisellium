@@ -269,6 +269,10 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
   for (const { source, selector, declarations } of badConsumers) {
     assert.doesNotMatch(declarations, /(?:^|;)\s*color\s*:/i, `${source}: ${selector} never sets text colour from --bad`);
   }
+  assert.match(cssRule(".home-tile__value"), /font\s*:\s*700\s+30px\//, "D-200's blocking Home number remains 700 30px large text");
+  const badOnSurface = contrast(token("bad"), token("surface"));
+  // one-sided: WCAG large-text contrast is a minimum
+  assert.ok(badOnSurface >= 3, `computed bad on surface large-text contrast ${badOnSurface.toFixed(4)} is at least 3:1`);
   assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /background\s*:\s*var\(--bad\)/, "the failed gate keeps its bad fill");
   assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /clip-path\s*:/, "the failed gate keeps its diagonal shape cue");
   assert.match(cssRule(".inbox__notice--failure::before"), /width\s*:\s*8px[\s\S]*height\s*:\s*8px[\s\S]*background\s*:\s*var\(--bad\)/, "the Inbox failure keeps its eight-pixel bad square");
