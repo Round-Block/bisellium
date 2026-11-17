@@ -13,12 +13,11 @@
  * Readers: `runAnswer` (writes.ts, the write path) and the `patron.receipt` rule (packages/cli/src/rules/receipts.ts).
  */
 import { createHash, createPublicKey, verify as cryptoVerify, type KeyObject } from "node:crypto";
-import { lstatSync, readdirSync, rmdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { lstatSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "yaml";
 import { instant } from "@bisellium/schema";
 import { splitFront } from "./frontmatter.js";
-import { ensureRealDirectory, existingRealDirectory } from "./ids.js";
 import { readContainedRegularFile } from "./opus-model.js";
 
 /** The first line of the signed bytes: a receipt signs this domain, never a bare payload another protocol could reuse. */
@@ -170,32 +169,22 @@ export function unsignedDigest(unsigned: readonly { where: string; at: string; r
   });
   return createHash("sha256").update(entries.sort().join("\n"), "utf8").digest("hex");
 }
-/** W-666 r5: takes the officina's answer lock, `timeline/.answer.lock`, by an exclusive create inside a real `timeline/`;
- *  the caller releases it in a `finally`. A lock already there, or one that cannot be made, is an error. Never a takeover:
- *  a dead owner cannot be told from a live one without a race (two takers would each remove the other's lock), so a lock
- *  left by a killed answer refuses until it is removed. */
+/** W-666 r5: takes the officina's answer lock, `.answer.lock` at the officina's root, by an exclusive create; the caller
+ *  releases it in a `finally`. The root already exists, so taking or releasing the lock creates and removes no directory and
+ *  a refused answer writes nothing under any interleaving of processes. A lock already there, or one that cannot be made,
+ *  is an error. Never a takeover: a dead owner cannot be told from a live one without a race (two takers would each remove
+ *  the other's lock), so a lock left by a killed answer refuses until it is removed. */
 export function takeAnswerLock(root: string): { release: () => void } | { error: string } {
-  let path: string;
-  let made = false;
-  try {
-    made = existingRealDirectory(root, "timeline") === undefined;
-    path = join(ensureRealDirectory(root, "timeline"), ANSWER_LOCK);
-  } catch (e) {
-    return { error: `timeline/ cannot hold the answer lock: ${(e as Error).message}` };
-  }
+  const path = join(root, ANSWER_LOCK);
   try {
     writeFileSync(path, `${process.pid}\n`, { flag: "wx" });
   } catch (e) {
-    return { error: (e as NodeJS.ErrnoException).code === "EEXIST" ? `another answer holds timeline/${ANSWER_LOCK}` : `timeline/${ANSWER_LOCK} cannot be made: ${(e as Error).message}` };
+    return { error: (e as NodeJS.ErrnoException).code === "EEXIST" ? `another answer holds ${ANSWER_LOCK}` : `${ANSWER_LOCK} cannot be made: ${(e as Error).message}` };
   }
   return {
     release: () => {
       try {
-        const dir = ensureRealDirectory(root, "timeline");
-        unlinkSync(join(dir, ANSWER_LOCK));
-        // S1 (review 2): a timeline/ this lock created is removed with it when still empty, so a refused answer leaves the
-        // officina as it found it; an answer that wrote its timeline line leaves the directory non-empty and it stays
-        if (made) rmdirSync(dir);
+        unlinkSync(path);
       } catch {
         /* a lock that cannot be removed refuses the next answer by name */
       }
