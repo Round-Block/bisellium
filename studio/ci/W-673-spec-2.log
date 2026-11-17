@@ -1,0 +1,25 @@
+# opus: W-673
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e489-bcdb-7710-9540-4a22d53bad55
+# outcome: failed
+# at: 2026-11-16T13:56:35.483Z
+# tree: tree:c267c6bfa956f355dd6a0151d5ed27d44b110b36
+# brief: briefs/W-673.md blob:5200154d9fd673ce59639d03d2bc362792cc6bd9
+# ticket: {"opus":"W-673","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"56ed80b6affec26cfe22f867d19b14f9e2b1912f","brief":"5200154d9fd673ce59639d03d2bc362792cc6bd9","at":"2026-11-16T13:56:30.197Z"}
+
+## Findings
+1. blocking — brief:33 The switch is unsafe if an overlooked local or `origin/opus/*` branch or queued PR retains an old-hasher certificate, receipt, or red: its post-switch `next`/receipt/red reader refuses, and no existing test inventories that live population; sites are W-645, W-669, every other local and remote opus branch, and the merge queue. Replace brief:33 with: “Before merging W-673, the orchestrator verifies W-645 and W-669 done on master; enumerates every local and `origin/opus/*` branch and refuses any other branch holding `studio/ci/reds/`, `run_receipt`, or passed `probationes` against master; verifies the merge queue is empty; and permits no new red or certificate while W-673 waits. A failed check holds the merge and reconvenes the leads. Certify uses master tooling’s old host and shim; after merge, if its old-hasher receipt cannot be recorded, run `verify W-673` once on trunk. W-134 re-identification records the new `replayedTree`; otherwise pre-switch reds are re-recorded.” [severity: S1] [design: changes] [class: spec×fix-opens-new-surface] — check: none: add a fail-closed pre-merge population census covering all named branches and the merge queue
+2. advisory — brief:97 The prototype happens to put both hasher changes in one source commit, but Acceptance does not require that atomicity; the relevant sites are the red-only `scripts/ci-scope.test.mjs` commit and the following `packages/shim/src/sourceTree.ts` plus `scripts/run-builder-host.mjs` source commit. Replace brief:97 with: “The red commit contains only the W-673 rows; one following source commit changes both hashers together, and the host diff is only the `recordOnly` import, its one skip after `mustGit` trim, and the specified comment.” [severity: S4] [class: spec×fix-opens-new-surface] — check: none: acceptance should inspect the opus commit sequence
+3. advisory — brief:47 `mustGit(...).trim()` alters a lexicographically final pathname ending in whitespace before the host predicate, so that sole host site can hash or classify it differently from the shim despite the row promising every space-containing form is kept identically. Replace brief:47 with the existing row plus: “Limit: `mustGit` trims the whole output, so a lexicographically final pathname ending in whitespace is altered before the host check and can diverge from the shim.” [severity: S3] [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/ci-scope.test.mjs
+4. advisory — brief:51 The changed W-673 tests themselves add uncovered readers: the `packages/`, `apps/`, `adapters/`, and `scripts/` census, the `sourceTree.ts` copy/import, the host-source read, and the scratch-repository git helper; notably, symlink entries are silently outside `w673Hashers`. Replace brief:51 with the existing row plus an Input-domain row naming those sites, regular readable source entries and successful git calls as the domain, `readdirSync`/`readFileSync`/`copyFileSync`/dynamic import/`execFileSync` exceptions through the `node:test` callback as rejectors, and symlink entries as a census limit. [severity: S4] [class: spec×input-without-named-rejector] — check: scripts/ci-scope.test.mjs
+
+## Verdict
+`f32f28ee docs(studio): handoff, session 36 (W-669 done, rules audit meets, W-645 grammar ruling owed) (#1277)`; (1) master tooling’s host `sourceTree` computes `finalSourceTree`, while master tooling’s shim `sourceTreeHash` supplies the builder-run/verify comparison during W-673’s certify, never the candidate;  
+(2) the proposed host skip uses the shim’s predicate after `mustGit` trim and makes no other runner change, but the brief omits the one-source-commit acceptance requirement;  
+(3) W-134 re-identification writes `replayedTree`, so an old-hasher red can be admitted after the switch or re-recorded;  
+(4) no branch-or-later reader compares a spec signature’s `# tree:`—`readSpecSignature` binds the brief blob and the other cited readers use non-tree headers—so W-301, W-467, W-644, W-662, and W-666 need neither re-signing nor exemption;  
+and (5) brief:33 states a condition but omits the meet’s executable Q2 pre-merge census, which is blocking.
+VERDICT: FAIL
