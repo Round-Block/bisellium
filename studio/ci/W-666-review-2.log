@@ -1,0 +1,24 @@
+# opus: W-666
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1e708-0b76-7f90-9dd2-5bcae85afa33
+# outcome: failed
+# at: 2026-11-17T03:48:09.376Z
+# tree: tree:589214dbb6b02c22828a49def0e3d87627320a58
+# brief: briefs/W-666.md blob:72d72945b2f09c024c54a489b45f8692dd335abd
+# ticket: {"opus":"W-666","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-666/studio","head":"7e1a67b2ffaf07265d4aebd5f7e2d1ece1316a06","brief":"72d72945b2f09c024c54a489b45f8692dd335abd","at":"2026-11-17T03:48:00.390Z"}
+
+## Findings
+1. blocking — packages/commands/src/patron-receipt.ts:180 [severity: S1] brief:27 brief:65 Reached through ci/W-666-review-1.log #1’s class: `takeAnswerLock` calls the creating `ensureRealDirectory` before receipt authorization, so a configured officina with an absent `timeline/` leaves a new empty directory after a refused answer releases its lock, violating the promise that refusal writes nothing and leaves the timeline unchanged. Sites are the lock creator/releaser at `patron-receipt.ts:177-197`, caller/finally at `writes.ts:808-815,952-954`, and successful timeline writer at `writes.ts:169-172,910-921`. [class: security×authorization-check-and-write-not-atomic] — check: packages/cli/src/w666.test.ts: refuse a receipt-less answer with `timeline/` absent and assert the directory remains absent
+
+## Earlier findings
+- ci/W-666-review-1.log #1: closed — `writes.ts:808-815,873-881,952-954` now holds a cross-process lock across the operation and verifies the receipt against the body supplied by the synchronous edit.
+- ci/W-666-review-1.log #2: closed — `patron-receipt.ts:129-159` now projects signed options exactly and unsigned multiline replies completely; W-666-b8 pins suffixes and embedded markers.
+- ci/W-666-review-1.log #3: closed — brief:138-141 now scopes b6’s genuine red to its body-shape error-code change and identifies the verifier response as reused regression coverage without a separate red.
+
+## Verdict
+At reviewed head “7e1a67b2 chore(studio): W-666 light gates”, the earlier defects are closed, but refused authorization can still leave a newly created timeline directory.
+
+VERDICT: FAIL

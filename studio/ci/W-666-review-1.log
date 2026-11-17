@@ -1,0 +1,21 @@
+# opus: W-666
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1e708-0b76-7f90-9dd2-5bcae85afa33
+# outcome: failed
+# at: 2026-11-17T01:11:51.879Z
+# tree: tree:03f5f2128a198dcdbde06bff7a5092145d38fa68
+# brief: briefs/W-666.md blob:bb2b9fb5672939798e5b781bcea805d27c5b0324
+# ticket: {"opus":"W-666","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-666/studio","head":"aaf36e8e334c46075b34f691f551118fd6e733cc","brief":"bb2b9fb5672939798e5b781bcea805d27c5b0324","at":"2026-11-17T01:11:42.635Z"}
+
+## Findings
+1. blocking — packages/commands/src/writes.ts:846 [severity: S1] `answerReceipt` validates the manifest, question, and spent-nonce snapshots before `editOpusFrontMatter` rereads and writes the target, with no cross-process lock or compare-and-swap; two CLI/server processes can therefore accept the same receipt, or a concurrent edit can change the signed question before the answer lands, violating brief:23, brief:27, and brief:60. Sites: policy reader `writes.ts:778-784,947`, question reader `writes.ts:812-818`, nonce readers `writes.ts:967-989` through `patron-receipt.ts:215-281`, writers `writes.ts:875-915`, unlocked CLI path `main.ts:162-165`, and the server-instance-only lock `http.ts:308-322,891` — check: packages/cli/src/w666.test.ts: controlled two-process replay/interleaving accepts at most one receipt and never writes against a changed question [class: security×authorization-check-and-write-not-atomic]
+2. blocking — packages/commands/src/patron-receipt.ts:129 [severity: S1] The stamp projection is not injective: `stampedReply` ignores a newline suffix after the signed option, and the floor hashes only the first line, so an appended suffix evades both signed-reply and legacy-floor alteration checks; conversely, a valid reply containing `\n\n[stated] … patron:` is misread as another unsigned stamp. This violates brief:31, brief:33, brief:57, and brief:62; sites are reply ingress `http.ts:868-883` and `writes.ts:762-765`, writer `writes.ts:875-915`, reader/projection `patron-receipt.ts:121-138,215-252`, checker/floor `receipts.ts:34-71`, and the first-line-only b2 cases `w666.test.ts:205-226` — check: packages/cli/src/w666.test.ts: pin suffix edits for signed and floored stamps plus a valid embedded-marker reply [class: tests×security-boundary-cases-uncovered]
+3. blocking — studio/ci/reds/W-666/06.log:19 [severity: S1] Red b6 already receives HTTP 400 and fails only because `receipt must be a JSON object` differs from `receipt must be an object`; it never reaches the verifier-refusal assertion, while commit `cec2f7e1` changes only that string, so this is not pre-fix evidence for brief:134’s two response classes and falsifies brief:141. Sites are route reader/error writer `http.ts:865-880`, verifier `writes.ts:946-990`, response writer `http.ts:325-328`, row `w666.test.ts:344-354`, and red `06.log` — check: packages/cli/src/w666.test.ts: record b6 before receipt handling lands or otherwise make the red fail on the verifier-refusal response class [class: tests×assertion-satisfied-by-the-wrong-cause]
+
+## Verdict
+The required ENOENT-only timeline fix is present and pinned, but the authorization races, ambiguous stamp projection, and false b6 red evidence are blocking.
+
+VERDICT: FAIL

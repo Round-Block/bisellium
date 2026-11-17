@@ -1,0 +1,24 @@
+# opus: W-666
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-17T05:20:05.073Z
+# tree: tree:5359cae14a53cf1ed365954017bb6f9e0ec5003c
+# brief: briefs/W-666.md blob:2667a0d9ba430df86902db6d619ba004213c1d15
+# ticket: {"opus":"W-666","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-666/studio","head":"641853f71126a718f623c5fc26ee793198b829b9","brief":"2667a0d9ba430df86902db6d619ba004213c1d15","at":"2026-11-17T05:19:59.332Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-666-spec/r7/promise-ledger-r7.md
+Gate log: /home/edckt/.bisellium-evidence/W-666-spec/r5/gate-r5.log
+
+## Findings
+
+1. advisory — Codex spec review round 7 (session 01a1e2a8) holds `ci/W-666-spec-4.log` #2 open on brief:47. With no keys, `checkReceipts` ignores the reader's source problems, and `check`'s `safeList` reads an unlistable `petitiones/` as empty, so revision 6's "`petitio.parse` names the rest" overclaimed. Revision 7 takes the reviewer's wording for brief:47 and states the rest as a limit: with no keys `patron.receipt` names no source it skips, and an unlistable `petitiones/` is named by no rule. `safeList` is unchanged code that every rule in `check` reads through, so it is named as a limit, never promised (D-076 E). Making it report would change every rule's reading, which is outside this opus. — check: brief:47, packages/cli/src/rules/receipts.ts:33, packages/cli/src/check.ts:147, r7/promise-ledger-r7.md
+2. advisory — Revision 7 changes brief:3 (the revision note) and brief:47 only, by the kept `r7/amend-r7.py` and `r7/apply-r7.py`, which refuse unless the brief is revision 6. No line is inserted or removed, so no brief:NN citation moves. The ledger changes only its brief:47 row, by `r7/ledger-r7.py`. No promise, row or behaviour changes, and the source stays at 641853f7, so the gate log stays revision 5's. — check: brief:3, brief:47, r7/amend-r7.py, r7/apply-r7.py, r7/ledger-r7.py, /home/edckt/.bisellium-evidence/W-666-spec/r7/amend-r7.md
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C). Brief revision 7 is `studio/briefs/W-666.md` (sha256 8e5bf33e364f247d2d2e37b7354f9583d0f060045e57f692c99c4da804f6354f, 178 lines): the revision 6 brief with the replacement lines of `/home/edckt/.bisellium-evidence/W-666-spec/r7/amend-r7.md` applied, over opus/W-666 at 641853f7. Evidence is in `/home/edckt/.bisellium-evidence/W-666-spec/r7/`.
+
+VERDICT: PASS

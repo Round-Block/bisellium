@@ -1,0 +1,27 @@
+# opus: W-666
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-17T02:45:46.678Z
+# tree: tree:03f5f2128a198dcdbde06bff7a5092145d38fa68
+# brief: briefs/W-666.md blob:72d72945b2f09c024c54a489b45f8692dd335abd
+# ticket: {"opus":"W-666","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-666/studio","head":"494b766581b53765fab21e9d566e096b4f7e10c6","brief":"72d72945b2f09c024c54a489b45f8692dd335abd","at":"2026-11-17T02:45:37.162Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-666-spec/r5/promise-ledger-r5.md
+Gate log: /home/edckt/.bisellium-evidence/W-666-spec/r5/gate-r5.log
+
+## Findings
+
+1. advisory — Build review 1, finding 1 (check-and-write not atomic) is behaviour 7. In an officina naming `patron_receipts`, `runAnswer` takes `timeline/.answer.lock` before its petitio read and releases it in a `finally` after its timeline append. The lock is an exclusive create inside a real `timeline/`. A lock already there refuses by name and is never taken over. `answerReceipt` runs inside the `editOpusFrontMatter` callback on the body it is handed, and a refusal there writes nothing and runs no rollback. The builder's plan to compare digests there would have rolled back stale bytes over the change it caught. The `W-666-b7` rows fail on master and over the branch's built source at "an answer is refused while the answer lock is held", and pass at w666-s5. — check: brief:27, brief:59, brief:65, brief:143, r5/red-b7-master.out, r5/red-b7-branch.out, r5/k27.out, r5/k28.out, r5/k29.out
+2. advisory — Build review 1, finding 2 (stamp projection not injective) is behaviour 8. `patronStamps` takes the recorded receipts, so a signed stamp spans exactly its option and a stamp marker inside it is part of it. Text after it, other than the next Patron stamp or whitespace at the body's end, blocks. An unsigned reply runs to the next Patron stamp or the body's end, and the floor entry digests all of it. Each entry is raw only when it holds no line break and opens with no quote (the file name the same for a tab or line break), else JSON. So the digest is injective, and one-line replies keep revision 3's entry: the real studio's 22 stamps keep 914aed61. `stampedReply` is gone. This seam change reaches W-668, whose brief is re-read before it is built (brief:45). — check: brief:31, brief:33, brief:62, brief:63, brief:148, r5/red-b8-master.out, r5/red-b8-branch.out, r5/k30.out to r5/k33.out, r5/census-r5.out
+3. advisory — Build review 1, finding 3 (b6's red is no evidence for the refusal class) is answered by narrowing behaviour 6 to its own change, the body-shape error code. Its branch red (06) fails at its declared pin on that code. The refusal class is unchanged `writeResponse` over behaviours 1 and 3, kept as a regression pin with no red of its own, a stated limit (D-076 E). A restage could only add a line that never existed, which is a kill and not a red. Option 1 would also leave no red ticket, because the amended brief makes round 1 another brief's (W-468 `ofBrief`). — check: brief:37, brief:138, brief:140, red-b6-master.out, r5/red-b6-branch.out, r3/k21.out, r3/k25.out
+4. advisory — Eight behaviours against `brief_behaviour_limit: 6` are admitted by D-225, an architect decision naming W-666 in D-199's form, which a clerk records on opus/W-666. b1 to b6 keep their numbers and their reds. b7 and b8 are new, so `next` orders their reds 7 then 8. Two spec reviews have already failed (spec-2, spec-4), so this signature stands without a third (D-061 §4); Codex reads revision 5 at build review round 2. — check: brief:12, /home/edckt/.bisellium-evidence/W-666-build/D-225-draft.md, /home/edckt/.bisellium-evidence/W-666-build/architect-r1-ruling.md
+5. advisory — The r5 series is in the scratch clone over master 91300346, opus/W-666's base. w666-t5 holds rows b1 to b8. w666-s5 holds the branch's Files owned at 494b7665 with the r5 fixes, applied by the kept proto scripts. All eight rows pass at w666-s5. Kills k27 to k33 each fail their pinned row at its pinned assertion. The pre-sign gate exits 0: the officina check, typecheck and 49 test files, none deferred. Lint exits 0 with no warning in Files owned. The ledger is renumbered by script. Lines 1 to 94 are unchanged, 95 to 137 moved by 4 and 138 on moved by 14. — check: r5/reds-r5.sh, r5/w666-proto.out, r5/containment-proto.out, r5/kills-r5.py, r5/kills.log, r5/presign-r5.sh, r5/gate-r5.log, r5/lint-proto.out, r5/ledger-r5.py
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C). Brief revision 5 is `studio/briefs/W-666.md` (drafted as `/home/edckt/.bisellium-evidence/W-666-build/W-666-brief-r5.md`). The prototype is `r5/prototype-r5.mbox` over master 91300346. Evidence is in `/home/edckt/.bisellium-evidence/W-666-spec/r5/`.
+
+VERDICT: PASS

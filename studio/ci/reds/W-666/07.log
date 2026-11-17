@@ -1,0 +1,42 @@
+# behaviour: 7
+# command: node --test-reporter=tap --test-name-pattern=^W-666-b7\s --import tsx packages/cli/src/w666.test.ts
+# exit: 1
+# at: 2026-11-17T02:49:59.584Z
+# sella: builder.W-666
+# tree: tree:392f203fb89e03c6ba1eab96401ebe22c37b8210
+# ticket: {"opus":"W-666","step":"reds","action":"red","round":7,"actor":"builder","studio":".worktrees/W-666/studio","head":"e736e6ccbaf95441f2b46133ad4ef8db56a3f89e","brief":"72d72945b2f09c024c54a489b45f8692dd335abd","at":"2026-11-17T02:49:50.927Z"}
+
+TAP version 13
+# Subtest: W-666-b7 answer holds a cross-process lock from its read through its write
+not ok 1 - W-666-b7 answer holds a cross-process lock from its read through its write
+  ---
+  duration_ms: 63.558036
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:13:2669'
+  failureType: 'testCodeFailure'
+  error: |-
+    an answer is refused while the answer lock is held
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:378:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 81.480876

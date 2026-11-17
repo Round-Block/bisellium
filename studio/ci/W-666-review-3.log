@@ -1,0 +1,22 @@
+# opus: W-666
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1e708-0b76-7f90-9dd2-5bcae85afa33
+# outcome: passed
+# at: 2026-11-17T06:24:50.427Z
+# tree: tree:5359cae14a53cf1ed365954017bb6f9e0ec5003c
+# brief: briefs/W-666.md blob:2667a0d9ba430df86902db6d619ba004213c1d15
+# ticket: {"opus":"W-666","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-666/studio","head":"8b9bb375c93beb28db1b5b913a43a3aca9509467","brief":"2667a0d9ba430df86902db6d619ba004213c1d15","at":"2026-11-17T06:24:39.201Z"}
+
+## Findings
+1. advisory — packages/cli/src/w666.test.ts:461 [severity: S4] Reached through ci/W-666-review-1.log #3’s class: the concurrent-refusal row has no controlled interleaving and brief:78 admits it passed before the lock move, while the `git check-ignore` assertion at line 471 can be satisfied by a global or `.git/info/exclude` rule instead of the owned `.gitignore`; the implementation is correct, but both regression assertions can pass for the wrong cause. [class: tests×assertion-satisfied-by-the-wrong-cause] — check: packages/cli/src/w666.test.ts: add a deterministic lock interleaving seam and require `git check-ignore -v` to name the repository `.gitignore`
+
+## Earlier findings
+- ci/W-666-review-2.log #1: closed — `patron-receipt.ts:174-188` now places the lock in the already-existing officina root, and `w666.test.ts:436-465` pins that refused single and concurrent answers leave an absent timeline absent.
+
+## Verdict
+At reviewed head “8b9bb375 chore(studio): W-666 light gates”, the substantive filesystem side effect is fixed; only incomplete regression isolation remains.
+
+VERDICT: PASS

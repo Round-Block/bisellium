@@ -1,0 +1,67 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-666-b3\s --import tsx packages/cli/src/w666.test.ts
+# exit: 1
+# at: 2026-11-16T16:08:00.448Z
+# sella: builder.W-666
+# tree: tree:aa8106f3371d2bc4125591e905d1eabaffacc376
+# ticket: {"opus":"W-666","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-666/studio","head":"a587e91a685dc91c9c2a931bcb0f798937962dfb","brief":"bb2b9fb5672939798e5b781bcea805d27c5b0324","at":"2026-11-16T16:07:57.175Z"}
+
+TAP version 13
+POST /api/answer 200 2ms
+# Subtest: W-666-b3 the console's answer route forwards the receipt
+not ok 1 - W-666-b3 the console's answer route forwards the receipt
+  ---
+  duration_ms: 155.702501
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:11:631'
+  failureType: 'testCodeFailure'
+  error: |-
+    the answer route passes the receipt to answer
+    + actual - expected
+    
+    + undefined
+    - {
+    -   key: 'd1495c563576ab3937e70ed1098d0c9c16a8c597d2f696693e06098fc9560302',
+    -   payload: {
+    -     at: '2026-11-16T02:58:00.000Z',
+    -     charter_gap: false,
+    -     mode: 'resolve',
+    -     nonce: '0909460f46102869a89852b7b2bc285d',
+    -     option: 'Ship both.',
+    -     petitio: 'A-1',
+    -     question: '7501ed5e46a02cb57c869b5fb433c82b561a8e9f990dede06ca5b45a16e765f6',
+    -     v: 1
+    -   },
+    -   sig: 'tTH2ezVhnT2ksje3Z4zU+jx+r2QIuLZLU5x6lExG1SXdWZCIelRoD0ZrSzR1FqF75YqnTZcKeuDWIrPsaSzPAw=='
+    - }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    payload:
+      v: 1
+      petitio: 'A-1'
+      question: '7501ed5e46a02cb57c869b5fb433c82b561a8e9f990dede06ca5b45a16e765f6'
+      option: 'Ship both.'
+      mode: 'resolve'
+      charter_gap: false
+      nonce: '0909460f46102869a89852b7b2bc285d'
+      at: '2026-11-16T02:58:00.000Z'
+    key: 'd1495c563576ab3937e70ed1098d0c9c16a8c597d2f696693e06098fc9560302'
+    sig: 'tTH2ezVhnT2ksje3Z4zU+jx+r2QIuLZLU5x6lExG1SXdWZCIelRoD0ZrSzR1FqF75YqnTZcKeuDWIrPsaSzPAw=='
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:261:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 161.50522

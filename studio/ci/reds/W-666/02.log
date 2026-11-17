@@ -1,0 +1,43 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-666-b2\s --import tsx packages/cli/src/w666.test.ts
+# exit: 1
+# at: 2026-11-16T16:07:26.541Z
+# sella: builder.W-666
+# tree: tree:37e40db91559f9b0ce7753409af22d6526aa5bcc
+# ticket: {"opus":"W-666","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-666/studio","head":"775b4ac6825c7324fc7056d1b4aff243b4b6bc2b","brief":"bb2b9fb5672939798e5b781bcea805d27c5b0324","at":"2026-11-16T16:07:23.478Z"}
+
+TAP version 13
+# Subtest: W-666-b2 check refuses a recorded Patron answer without a valid receipt
+not ok 1 - W-666-b2 check refuses a recorded Patron answer without a valid receipt
+  ---
+  duration_ms: 89.863774
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:10:201'
+  failureType: 'testCodeFailure'
+  error: |-
+    a recorded answer with no receipt is blocked
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    blocks (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:185:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-666/packages/cli/src/w666.test.ts:194:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 98.698608

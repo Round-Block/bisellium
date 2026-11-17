@@ -1,0 +1,26 @@
+# opus: W-666
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-17T05:07:13.502Z
+# tree: tree:5359cae14a53cf1ed365954017bb6f9e0ec5003c
+# brief: briefs/W-666.md blob:8d4f643b2f373cd6a20b4c2fa98fe5eba5cb0c26
+# ticket: {"opus":"W-666","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-666/studio","head":"641853f71126a718f623c5fc26ee793198b829b9","brief":"8d4f643b2f373cd6a20b4c2fa98fe5eba5cb0c26","at":"2026-11-17T05:07:05.176Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-666-spec/r6/promise-ledger-r6.md
+Gate log: /home/edckt/.bisellium-evidence/W-666-spec/r5/gate-r5.log
+
+## Findings
+
+1. advisory — The fix check of build review 2 left two open paths: concurrent CLI and server refusals could still leave an empty `timeline/`. Revision 6 answers it by moving the answer lock to `.answer.lock` at the officina's root, which already exists, so taking or releasing the lock creates and removes no directory. No cross-process lock already exists to reuse: the server's `withWriteLock` works only inside one process. A fixed name at the root sits under the W-423 ROOT limit like `PAUSED`, so both inventory D accesses are `outside`. `check` lists no root entries, and a certificate names the source tree, so a transient file at the root moves neither. Kills k34 (no exclusive create), k35 (no release) and k36 (no `.gitignore` line) at 641853f7 each fail a `W-666-b7` row at a pinned assertion. The class census of security×authorization-check-and-write-not-atomic, repeated by reviews 1 and 2, holds seven sites and states four limits. — check: brief:27, brief:65, brief:79, brief:96, brief:178, r6/promise-ledger-r6.md, r6/kills-r6.py, r6/k34.out, r6/k35.out, r6/k36.out, r6/class-census-r6.py, r6/census-atomic.out
+2. advisory — Fix round 4 (5c93f9c9) left `.answer.lock` out of `.gitignore`, where `timeline/` had covered it. A held lock, or one a killed answer leaves behind, showed as an untracked file. Then `branch` refused with "requires a clean checkout", and `next` and `prune` read the checkout as dirty. Revision 6 adds `.gitignore` to Files owned with `**/.answer.lock` beside `**/PAUSED`. It pins this with the row "W-666-b7 the answer lock is gitignored" and its assertion "git check-ignore matches studio/.answer.lock". The row fails at that assertion at b4e6e64e, and 641853f7 adds the `.gitignore` line, after which w666.test.ts passes 13/13. — check: brief:45, brief:65, brief:80, brief:144, r6/gitignore-r6.out, r6/red-gitignore.out
+3. advisory — The brief edit in 5c93f9c9 is right on the lock path wherever it names it (brief:27, brief:65, brief:79, brief:144 and the `takeAnswerLock` interface, brief:96). One claim in brief:78 went stale: "the lock is the first reader of `timeline/`". Revision 6 rewords that claim, and names the concurrent-refusal row and the gitignore row with its assertion text as written (r6c, by the kept `r6/amend-r6.py` and `r6/apply-r6.py`). That row is a regression guard with no red of its own, a stated limit, because it passed before the move. Revision 6 changes no promise, and no brief:NN citation inside the brief moves. The ledger renumbers lines after 79 by script. — check: brief:3, brief:78, r6/ledger-r6.py, /home/edckt/.bisellium-evidence/W-666-spec/amend-r6.md
+4. advisory — A stray lock left by a killed answer keeps its stated limit (brief:45). It is never taken over and refuses every answer by name until it is removed by hand. Revision 6 names its root path there, and because the file is gitignored it leaves the checkout clean. The gate log is revision 5's, at w666-s5. Revision 6's source is the fix round's (5c93f9c9, b4e6e64e, 641853f7), so its gates are the branch's light gates and `ci`, and Codex build review round 3 reads this revision. — check: brief:45, r5/gate-r5.log
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C). Brief revision 6 is `studio/briefs/W-666.md` (sha256 23e0c40961c81a7d43de3df9e3aa4549a0b9b356a225bba243f07dabf587b4b7, 178 lines): the 5c93f9c9 brief with the replacement lines of `/home/edckt/.bisellium-evidence/W-666-spec/amend-r6.md` applied, over opus/W-666 at 641853f7. Evidence is in `/home/edckt/.bisellium-evidence/W-666-spec/r6/`.
+
+VERDICT: PASS
