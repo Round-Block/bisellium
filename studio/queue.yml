@@ -6,10 +6,16 @@ queues:
       - { opus: W-673, says: "Certificate excludes come from ci-scope's one record-path list, so a handoff-only PR voids no verify; cause fix, design×indirection-duplicates-source-of-truth; high, gap 100 (w668-meet-1116 Q11, 5/5)" }
       - { opus: W-669, says: "Host job (launch service) runs git worktree prune for sandbox-held .git/worktrees/<id> dirs; cleanup never waits on a Patron rm; high, gaps 60/80 (D-211) [absorbs W-586]" }
       - { opus: W-612, says: "one brief admission at every gate; read-only admit lists every reader's problems at once with stable rule ids, writes nothing; sign-time red/pin replay; high; process (D-221) [absorbs W-647]" }
+      - { opus: W-690, says: "Land and done check the committed head; retro-s41-meet-1117 P1+P5" }
+      - { opus: W-692, says: "Hand-back refused while a background run lives; retro-s41-meet-1117 P3" }
+      - { opus: W-691, says: "Signed briefs change only with a re-sign; retro-s41-meet-1117 P2" }
       - { opus: W-679, says: "cause fix spec×fix-opens-new-surface: judge briefs state Recognises/every other form/limit/safe error at admission and in the draft prompt; spec r1 runs them (D-221); high; process" }
       - { opus: W-680, says: "cause fix review×fix-round-census-misses-reachable-paths: a ui spec signature runs the fixture census and names every reader of each owned path (W-675 r3); high; process" }
       - { opus: W-681, says: "overlap hold names only what releases it (done or halted), row pins the text; small; w675-hold-meet-1116 Q2 3/3, D-222; process" }
       - { opus: W-554, says: "meet verb asks relevant leads with why; seats boot as real sellae, context refuses unknown; design seat = ui-lead Astra; check refuses a cited meet missing one; process top (Patron 11-16)" }
+      - { opus: W-693, says: "TaskStop of a live perform reads its lock; retro-s41-meet-1117 P4" }
+      - { opus: W-694, says: "Dossier written only by the checkpoint verb; retro-s41-meet-1117 P6" }
+      - { opus: W-695, says: "Ladder verbs run master's CLI, never a worktree's; retro-s41-meet-1117 P7" }
       - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead); qa-lead seat split out as W-644 (D-208 item 6); right after W-512 (w590-rank-meet-1112)" }
       - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114)" }
       - { opus: W-590, says: "explicit legacy signer, each magister reader moved, then magister: design-lead; red row: same-model signer and reviewer refuse; after W-531; process (w590-rank-meet-1112) [absorbs W-591]" }
@@ -162,12 +168,6 @@ queues:
       - { opus: W-670, says: "refresh timer every 30 min all day, cap 4/6h, prompt not assuming the Patron asleep (D-211); prototypes chore/refresh-all-day, chore/refresh-prompt-all-day; low; code-owned .claude/" }
       - { opus: W-672, says: "PR-time check fails source on a non-opus branch (certify refuses only in the merge group); absorbs W-327; code-owned .github/; process [absorbs W-327]" }
       - { opus: W-290, says: "orchestrator write-deny hook; audit: does today's guard already cover it; done or cut follows (w555-meet-1116)" }
-      - { opus: W-690, says: "Land and done check the committed head; retro-s41-meet-1117 P1+P5" }
-      - { opus: W-691, says: "Signed briefs change only with a re-sign; retro-s41-meet-1117 P2" }
-      - { opus: W-692, says: "Hand-back refused while a background run lives; retro-s41-meet-1117 P3" }
-      - { opus: W-693, says: "TaskStop of a live perform reads its lock; retro-s41-meet-1117 P4" }
-      - { opus: W-694, says: "Dossier written only by the checkpoint verb; retro-s41-meet-1117 P6" }
-      - { opus: W-695, says: "Ladder verbs run master's CLI, never a worktree's; retro-s41-meet-1117 P7" }
   research:
     lanes: { R1: ~ }
     next:
