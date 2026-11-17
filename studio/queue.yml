@@ -6,7 +6,9 @@ queues:
       - { opus: W-673, says: "Certificate excludes come from ci-scope's one record-path list, so a handoff-only PR voids no verify; cause fix, design×indirection-duplicates-source-of-truth; high, gap 100 (w668-meet-1116 Q11, 5/5)" }
       - { opus: W-669, says: "Host job (launch service) runs git worktree prune for sandbox-held .git/worktrees/<id> dirs; cleanup never waits on a Patron rm; high, gaps 60/80 (D-211) [absorbs W-586]" }
       - { opus: W-612, says: "one brief admission at every gate; read-only admit lists every reader's problems at once with stable rule ids, writes nothing; sign-time red/pin replay; high; process (D-221) [absorbs W-647]" }
+      - { opus: W-697, says: "non-ui merge-queue code opus goes from passed review to PR on light gates + lint/format:check; certify is the one full suite; saves ~35 min/opus (D-232; ci-local-run-meet-1117 4/4)" }
       - { opus: W-690, says: "Land and done check the committed head; retro-s41-meet-1117 P1+P5" }
+      - { opus: W-696, says: "halt records its release opera; next names the lift once all are done; check fails loud on a missed lift (D-230, halt-release-meet-1117)" }
       - { opus: W-692, says: "Hand-back refused while a background run lives; retro-s41-meet-1117 P3" }
       - { opus: W-691, says: "Signed briefs change only with a re-sign; retro-s41-meet-1117 P2" }
       - { opus: W-679, says: "cause fix spec×fix-opens-new-surface: judge briefs state Recognises/every other form/limit/safe error at admission and in the draft prompt; spec r1 runs them (D-221); high; process" }
@@ -46,6 +48,7 @@ queues:
       - { opus: W-308, says: "opus timeline; E1 (next.ts), after W-551 (D-192)", next_ts: true }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-250, says: "rescoped by D-209 item 1: the merge group runs no duplicate hosted test suite; push keeps its full suite; process (D-208)" }
+      - { opus: W-698, says: "master push skips its suite for a passed merge-group head; records-only/bypass pushes keep it; held, billed minutes only (D-232)" }
       - { opus: W-289, says: "greenlight is the Patron's alone: it refuses a run from the agent clone, so it runs only from the Patron's folder or the Board (w555-meet-1116)" }
       - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
       - { opus: W-414, says: "cause fix, ruled-case-uncovered [absorbs W-393]" }
@@ -181,7 +184,7 @@ queues:
       - { opus: W-688, says: "Daily proposals carry an id and a route: P-id minted by new --proposal, route checked against the owner map; greenlight block, co-owner verb, ballot dispatch, stall row (D-227 items 1, 3)" }
       - { opus: W-689, says: "DR meets seat owners and count ballots: six D-227 item 3 rows W-554 cannot hold (D-229)" }
   ui:
-    lanes: { UI1: W-503, UI2: ~ }
+    lanes: { UI1: W-503, UI2: W-467 }
     next:
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2) — HALTED by D-222 (W-675 first; resumes after W-675, W-648, W-645 merge)" }

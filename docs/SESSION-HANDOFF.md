@@ -56,17 +56,19 @@ Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653
 
 Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686. W-687 (DR independence) filed session 40; D-226, D-227 (DR lane, workflow) land with it.
 Also, 11-17 (greenlit by the Patron, session 42): W-687 W-688 W-689 W-690 W-691 W-692 W-693 W-694 W-695.
+Also, 11-17 (greenlit by the Patron, sessions 43-44): W-696 W-697. W-698 is filed, held.
 
 Also, 11-16: D-212, D-213, D-215 (W-467 re-specced while W-503 parks) landed; D-216 (auto-greenlight widens to small non-ui engineering/ops/process opera), D-217 (console adopts whole themes) and D-218 (W-488 re-approved at tree 51f8690d) landed #1268; W-674 (Dracula spec audit and console-wide steps) filed #1266.
 
 D-193 replaces D-178: D-223 closes E3; process opera take E1/E2 by rank. D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: W-595 after W-610. D-204: E2 and UI2 open.
 
 Lanes now:
-- E1 W-666 (signed Patron receipt): spec r6 recorded (ci/W-666-spec-6.log); Codex spec r7 FAIL on brief:47 (spec-4 #2 open); architect amends; D-225 copied to main for next.
-- E2 W-673 (cert tree excludes the handoff): spec r8 committed 54a05ca6; fix check of build r1 then build review r2.
-- UI1 W-503 halted by D-222; W-467 re-signs after W-675; W-662 held.
-- UI2 W-675 (Dracula theme layer) DONE (#1288, D-228); UI2 free; W-467 re-signs next.
-- DR (qa-lead, D-226, D-227): kept script ~/.bisellium-evidence/dr-lane/run.sh + README.md; one session cron "4 9 * * *" re-armed each boot; W-687 waits on the Patron's greenlight; W-688, W-689 filed; lessons L-198..208 wait on W-534's lesson row.
+- E1 W-666 (full ci after W-673's, then PR).
+- E2 W-673 (full ci rerun alone, then PR).
+- UI1 W-503 (lifted by D-230; b1-b3 green, light gates passed; full ci for screenshots, then Opus build review); W-662 held (ui, after W-503).
+- UI2 W-467 (r5c host scripts, then spec verdict r5, Opus UI spec review).
+- DR W-687 (brief r2 by architect, carries the credential decision; branches after W-666 and W-673 merge).
+- spec ahead W-612 (Codex spec r2 failed, architect r3, last review round).
 - Meet rules (D-227): W-554 one row, W-689 the rest (D-229); W-515 unchanged; proposal-id rows go to a qa opus not yet filed.
 W-250 (duplicate hosted suite cut), W-636 (next reads branch records), W-665 (ui build review screenshots; waits for E1/E2 by rank), W-681 (filed with W-682 in the DR lane's opera); older filings: studio/queue.yml.
 
