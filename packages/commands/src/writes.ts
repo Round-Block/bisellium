@@ -964,7 +964,6 @@ function answerReceipt(root: string, manifest: Manifest, path: string | undefine
   }
   const receipt = parseReceipt(raw);
   if ("error" in receipt) return receipt;
-  if (receipt !== undefined) return { receipt };
   // every nonce a recorded receipt has spent: the timeline's, and each petitio's recorded receipts (the committed record,
   // which a clone without the gitignored timeline still carries). A source that does not read refuses the answer, never
   // spends nothing (a skipped receipt could be replayed). Only ENOENT is an absent timeline: lstat, not existsSync, so a
