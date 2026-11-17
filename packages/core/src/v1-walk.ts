@@ -26,6 +26,14 @@ export interface WalkRow {
 /** The S5 bar script's answer: met for one opus, breached naming the value, or not run naming why. */
 export type BarResult = { ok: true; opus: string } | { ok: false; breached: string } | { ok: false; notRun: string };
 
+export interface WalkScore {
+  green: number;
+  total: 9;
+  /** every row whose own pending list is non-empty, in step order (S8 has none of its own: it is derived) */
+  pending: { step: Step; owners: string[] }[];
+  s5: { table: "empty" | string[]; bar: BarResult | "not run" };
+}
+
 export const WALK: readonly WalkRow[] = [
   { step: "S1", title: "S1: open the console and land on its first screen", owners: [], pending: [] },
   {
@@ -64,4 +72,62 @@ const DERIVED_FROM: readonly Step[] = ["S2", "S3", "S4", "S5", "S6", "S7"];
 export function isPending(step: Step, walk: readonly WalkRow[] = WALK): boolean {
   if (step === "S8") return DERIVED_FROM.some((s) => isPending(s, walk));
   return (walk.find((r) => r.step === step)?.pending.length ?? 0) > 0;
+}
+
+const OPUS_ID = /^W-\d+$/;
+const ROW_KEYS = new Set(["step", "title", "owners", "pending", "barOpus"]);
+
+const isIdList = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string" && OPUS_ID.test(x));
+
+/** Why `walk` is not a well-formed step table, or undefined (the Input domain's `WALK` row). */
+export function walkProblem(walk: unknown): string | undefined {
+  if (!Array.isArray(walk)) return "the table is not a list of rows";
+  if (walk.length !== STEPS.length) return `the table has ${walk.length} rows, not ${STEPS.length}`;
+  for (const [i, raw] of walk.entries()) {
+    const want = STEPS[i]!;
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return `row ${i + 1} is not an object`;
+    const row = raw as Record<string, unknown>;
+    const extra = Object.keys(row).find((k) => !ROW_KEYS.has(k));
+    if (extra !== undefined) return `${want} has an unknown field ${extra}`;
+    if (row["step"] !== want) return `row ${i + 1} is ${String(row["step"])}, not ${want}`;
+    if (typeof row["title"] !== "string" || row["title"].trim() === "") return `${want} has no title`;
+    const owners = row["owners"];
+    const pending = row["pending"];
+    if (!isIdList(owners)) return `${want}'s owners are not a list of W-<digits> ids`;
+    if (new Set(owners).size !== owners.length) return `${want} names an owner twice`;
+    if (!isIdList(pending)) return `${want}'s pending is not a list of W-<digits> ids`;
+    let at = 0;
+    for (const id of pending) {
+      const next = owners.indexOf(id, at);
+      if (next === -1) return `${want}'s pending ${id} is not an owner after the one before it`;
+      at = next + 1;
+    }
+    if (want === "S8" && owners.length > 0) return "S8 has owners of its own; it is derived from S2..S7";
+    const bar = row["barOpus"];
+    if (bar !== undefined && want !== "S5") return `${want} carries barOpus; only S5 does`;
+    if (want === "S5" && pending.length > 0 && bar !== undefined) return "S5 carries barOpus while its row is pending";
+    if (want === "S5" && pending.length === 0 && (typeof bar !== "string" || !OPUS_ID.test(bar)))
+      return "S5's row is empty and carries no barOpus W-<digits> id";
+  }
+  return undefined;
+}
+
+/** k: the steps green. A row counts when its case is not pending, and S5 only with a passing bar too. Throws
+ *  `v1 walk: refused: <why>` on a malformed table. */
+export function walkScore(walk: readonly WalkRow[] = WALK, bar?: BarResult): WalkScore {
+  const problem = walkProblem(walk);
+  if (problem !== undefined) throw new Error(`v1 walk: refused: ${problem}`);
+  const s5 = walk.find((r) => r.step === "S5")!;
+  let green = 0;
+  for (const step of STEPS) {
+    if (isPending(step, walk)) continue;
+    if (step === "S5" && bar?.ok !== true) continue;
+    green++;
+  }
+  return {
+    green,
+    total: 9,
+    pending: walk.filter((r) => r.pending.length > 0).map((r) => ({ step: r.step, owners: [...r.pending] })),
+    s5: { table: s5.pending.length === 0 ? "empty" : [...s5.pending], bar: bar ?? "not run" },
+  };
 }
