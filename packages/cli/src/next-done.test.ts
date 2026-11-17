@@ -1066,10 +1066,10 @@ test("W-259-b1 behaviour 1: the done perform records the merge queue's certify c
   rmSync(outside);
 
   // records alone moved since the merge: the merge commit's certificate is recorded and the done record committed
-  // a records PR after the merge: the handoff is a record (recordOnly) but inside the source tree, as on master after #541
+  // a records PR after the merge: the handoff is a record (recordOnly), and W-673 keeps it out of the source tree
   git(w.repo, ["commit", "-q", "-m", "chore(studio): a records PR", "--", "docs/SESSION-HANDOFF.md"]);
   touchHandoff(w);
-  assert.notEqual(sourceTree(w.repo), tree, "the fixture: master's tree is not the merge commit's");
+  assert.equal(sourceTree(w.repo), tree, "the fixture: a records PR keeps master's tree at the merge commit's (W-673)");
   ci();
   const done = perform();
   assert.equal(done.status, 0, ran("perform exits 0", done));
@@ -1123,7 +1123,7 @@ function chainWorld(tag: string) {
     git(w.repo, ["commit", "-q", "-m", subject]);
     return git(w.repo, ["rev-parse", "HEAD"]);
   };
-  /** A records PR on master that changes the handoff, which the source tree hashes (as #607 did after #605). */
+  /** A records PR on master that changes the handoff (as #607 did after #605), which W-673 keeps out of the source tree. */
   const records = (): string => {
     touchHandoff(w);
     git(w.repo, ["commit", "-q", "-m", "chore(studio): a records PR (#990)", "--", "docs/SESSION-HANDOFF.md"]);
@@ -1156,7 +1156,7 @@ test("W-330-b1 behaviour 1: when master's source moved since the merge only by a
   records();
   const tree = treeOf(later);
   assert.notEqual(tree, treeOf(merge), "the fixture: the later merge changed source");
-  assert.notEqual(sourceTree(w.repo), tree, "the fixture: master's tree is not the later merge's (the records PR changed the handoff)");
+  assert.equal(sourceTree(w.repo), tree, "the fixture: master's tree is the later merge's (W-673: the records PR's handoff is not in it)");
   chainScenario(w, { runs: [chainRun(later)], files: { "receipts/r.json": chainReceipt("W-902", tree), "certify.log": chainLog(903, "W-902", merge) } });
   const named = next(w, [OPUS]);
   assert.equal(named.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("the chain's rung names the done perform", named));
@@ -1231,8 +1231,8 @@ test("W-330-b2 behaviour 2: every source commit of the chain needs its own certi
   heldWith("a log for another PR than the subject names", /certify\.log does not show PR #903's mint exiting 0/);
   chainScenario(w, { runs: [chainRun(later)], files: files(903, "W-902", tree, "W-777") });
   heldWith("a receipt of another opus than the log rebased", /the receipt is not W-902's/);
-  chainScenario(w, { runs: [chainRun(later)], files: files(903, "W-902", sourceTree(w.repo)) });
-  heldWith("a receipt of master's tree, not the later merge's", new RegExp(`not the merge commit's ${tree}`));
+  chainScenario(w, { runs: [chainRun(later)], files: files(903, "W-902", treeOf(merge)) });
+  heldWith("a receipt of the opus's merge commit's tree, not the later merge's", new RegExp(`not the merge commit's ${tree}`));
   reset();
   later = lane("lane.txt", 903, "feat(W-902): a later lane with no PR number");
   chainScenario(w, { runs: [chainRun(later)], files: files() });
