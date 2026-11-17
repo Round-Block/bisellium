@@ -184,6 +184,12 @@ test("W-366-b2 behaviour 2: each accent has one non-status selector role", () =>
       ".board__project-select option => accent-yellow",
       ".board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan",
       ".board-drawer__waiting-evidence, .board-drawer__waiting-evidence:visited => accent-cyan",
+      ".home-card__head a, .home-tile a => accent-cyan",
+      ".home-needs__group h3 => accent-pink",
+      ".home-needs__id => accent-cyan",
+      ".home-needs__open => accent-cyan",
+      ".home-wip__bar > span => accent-purple",
+      ".home-wip__row strong => accent-cyan",
       ".inbox__evidence a => accent-cyan",
       ".inbox__evidence-label => accent-pink",
       ".inbox__expanded-subject => accent-purple",
@@ -259,14 +265,23 @@ function badTokenConsumers(): { source: string; selector: string; declarations: 
   return out;
 }
 
-test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and budget states keep readable cues", () => {
+test("W-361-b2 behaviour 2: bad remains non-text except D-200's large blocking Home number", () => {
   const badConsumers = badTokenConsumers();
   assert.deepEqual(
     badConsumers.map(({ source, selector }) => `${source}: ${selector}`),
-    ["components/w025.css: .gate-ladder__mark--bad-diagonal", "components/w025.css: .inbox__notice--failure::before"],
-    "only shaped failed-gate and Inbox failure marks consume --bad",
+    [
+      "components/w025.css: .gate-ladder__mark--bad-diagonal",
+      "components/w025.css: .inbox__notice--failure::before",
+      "components/w025.css: .home-tile:has(.severity-cue--blocking) .home-tile__value",
+    ],
+    "only shaped failed-gate and Inbox failure marks plus D-200's exact blocking Home value consume --bad",
   );
+  const badTextAllowlist = new Set(["components/w025.css: .home-tile:has(.severity-cue--blocking) .home-tile__value"]);
   for (const { source, selector, declarations } of badConsumers) {
+    if (badTextAllowlist.has(`${source}: ${selector}`)) {
+      assert.match(declarations, /(?:^|;)\s*color\s*:\s*var\(--bad\)/i, `${source}: ${selector} is the exact D-200 red-number exception`);
+      continue;
+    }
     assert.doesNotMatch(declarations, /(?:^|;)\s*color\s*:/i, `${source}: ${selector} never sets text colour from --bad`);
   }
   assert.match(cssRule(".home-tile__value"), /font\s*:\s*700\s+30px\//, "D-200's blocking Home number remains 700 30px large text");
