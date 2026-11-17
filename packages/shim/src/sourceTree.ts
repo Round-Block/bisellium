@@ -14,9 +14,13 @@
  * dir and `.bisellium/` excluded, so committing studio bookkeeping never
  * moves it; `isDirtyOutside` is the matching working-tree check, ignoring
  * uncommitted changes under those same paths.
+ *
+ * W-673: it also leaves out every path `recordOnly` (scripts/ci-scope.mjs, the one record-path list: the handoff and the
+ * dossier pages) takes as a record outside the officina, so a handoff-only or dossier-only commit moves no certificate.
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { recordOnly } from "../../../scripts/ci-scope.mjs";
 
 const TIMEOUT_MS = 30_000;
 
@@ -34,12 +38,20 @@ function isUnderExcluded(path: string, excludes: string[]): boolean {
 }
 
 /**
+ * W-673: a record outside every officina, as `recordOnly` reads one path. Its officina clause is `${studio}/`-prefixed;
+ * with "" that is "/", which no repo-relative `ls-tree` path opens with, so only its record paths (the handoff, a
+ * dossier page) match and the officina stays the caller's exclusion. The path is as `ls-tree` prints it: a name git
+ * quotes is not unquoted, the same in the host runner's copy (scripts/run-builder-host.mjs).
+ */
+const isRecordPath = (path: string): boolean => recordOnly([path], "");
+
+/**
  * sha1 over the lines of `git ls-tree -r <ref>` (mode, type, blob sha, path
  * — exactly what git prints, one line per entry, already path-sorted),
  * excluding any path under one of `excludeDirs` (repo-root-relative, e.g.
- * the studio dir and `.bisellium`). Deterministic for a given commit +
- * exclusion set, and unaffected by anything that only touches an excluded
- * path.
+ * the studio dir and `.bisellium`) and, W-673, every record path
+ * (`isRecordPath`). Deterministic for a given commit + exclusion set, and
+ * unaffected by anything that only touches an excluded path or a record.
  */
 export function sourceTreeHash(repo: string, excludeDirs: string[], ref = "HEAD"): string {
   const excludes = excludeDirs.map(normalizeExclude).filter((d) => d.length > 0);
@@ -49,7 +61,7 @@ export function sourceTreeHash(repo: string, excludeDirs: string[], ref = "HEAD"
     if (line.length === 0) continue;
     const tab = line.indexOf("\t");
     const path = tab === -1 ? "" : line.slice(tab + 1);
-    if (isUnderExcluded(path, excludes)) continue;
+    if (isUnderExcluded(path, excludes) || isRecordPath(path)) continue;
     hash.update(line);
     hash.update("\n");
   }

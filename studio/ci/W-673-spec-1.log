@@ -1,0 +1,27 @@
+# opus: W-673
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T11:18:36.520Z
+# tree: tree:d981b6c480c81a4aa60abb0f90889a9d20b23b21
+# brief: briefs/W-673.md blob:5200154d9fd673ce59639d03d2bc362792cc6bd9
+# ticket: {"opus":"W-673","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"22cbfaf1fadc5422c91cd181bd50bcceb4eb1aae","brief":"5200154d9fd673ce59639d03d2bc362792cc6bd9","at":"2026-11-16T11:18:30.360Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-673-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — brief:19 changes certify's host runner in the same opus as the shim, not split out to land first as D-129 B (W-323) asks. The host's `finalSourceTree` must equal the shim's tree (builder-run.ts:386), and the host keys red claims by its own tree (run-builder-host.mjs:687). Either half landed alone leaves the tooling with two disagreeing hashers, and every certify mint then refuses, the other half's included. This PR's own certify runs master's tooling, the old pair, so it needs nothing new from the host. The departure is reasoned in the brief; the orchestrator should name it to the leads before the build — check: brief.md (brief:19), census.out, prototype.mbox
+2. advisory — the fixture census named two flipped rows (next-done.test.ts:1072 W-259-b1, :1159 W-330-b1). The prototype's next-done.test.ts run found a third, W-330-b2 at :1235, whose wrong-tree receipt was master's tree, which now equals the later merge's. All three are fixture edits in Files owned (brief:58) and named in Acceptance (brief:99); they pass edited, and the 17-file next suite passes on the prototype (347 pass, 0 fail) — check: fixture-census.md, next-done-proto.out, next-done-flips-proto.out, next-suite-proto.out
+3. advisory — the host runner's half of "one list" is pinned by source text only, because run-builder-host.mjs runs on load and cannot be imported. brief:29 and brief:47 state this as a limit. The behavioural kill for brief:29 (k3) mutates the shim; kill-host.out shows W-673-b2 failing when the host is left as on master. A builder must not reword the host's `sourceTree` without re-checking the row's regex — check: kill-host.out, k3.patch, k3.out, pin-dryrun.out
+4. advisory — the switch moves every SOURCE tree once, and W-673's own certificates can be read across it (brief:33). The opus should land with no other opus holding an unmerged certificate, receipt or red. W-645 and W-669 are building now, so they land first or re-run `verify` once. Its reds are recorded at the red commit (the rows only), so certify's master tooling reads them under the old hasher. If `next W-673` holds done on "is not passed at the trunk's source tree", one `verify` at the trunk re-mints — check: brief.md (brief:33), master packages/cli/src/next.ts:646
+5. advisory — the order called scripts/ci-scope.mjs code-owned. .github/CODEOWNERS lists only scripts/ci-certify.mjs and scripts/ci-certificate.mjs among scripts, and docs/SESSION-HANDOFF.md agrees. The design only reads ci-scope.mjs and touches neither certify file, so no code-owner review is owed; scripts/run-builder-host.mjs is on brief admission's risky list, which is why this is a full brief — check: prototype.mbox (four paths: packages/shim/src/sourceTree.ts, scripts/run-builder-host.mjs, scripts/ci-scope.test.mjs, packages/cli/src/next-done.test.ts)
+6. advisory — the reds and gates run on the prototype. Reds at w673-t0 fail by assertion at their declared pins: red-b1-master.out at "a handoff-only commit keeps the SOURCE tree", red-b2-master.out at "a record path added to ci-scope's list leaves the shim's SOURCE tree". Greens at w673-s1 pass. Three one-hunk kills (k1..k3) each prove their lines' pins. These pass on the prototype: the whole of ci-scope.test.mjs (24/24), the shim, pipeline, branch, stage-states, w364, run, ci-certify, review-packet, red-order, verdict, check, w382, ladder-followon and w543 files, typecheck, lint, prettier and both officina checks. declared-reds-check gives 0 problems, the pin dry-run ALL PASS, and the admission and ledger check problem_count=0 — check: gates-status.out, suite2-status.out, pin-dryrun.out, admission.out, kills.log
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-673.md` (brief.md, sha256 4e36a8bcae5e9c8fe094f005016a4846c1dd220e1a09c621c070b7e3ad405128), prototype over master 22cbfaf1 (prototype.mbox, tags w673-t0 and w673-s1); evidence in `/home/edckt/.bisellium-evidence/W-673-spec/`.
+
+VERDICT: PASS

@@ -49,6 +49,7 @@ import {
 } from "./host-cells.mjs";
 import { classifyReplay, readRedBehaviour } from "./replay-accept.mjs";
 import { countBehaviours } from "../packages/commands/src/brief-admission.ts";
+import { recordOnly } from "./ci-scope.mjs";
 
 const argv = process.argv.slice(2);
 const requestAt = argv.indexOf("--request");
@@ -126,6 +127,8 @@ const contained = (root, child) => {
   const rel = relative(root, child);
   return !isAbsolute(rel) && rel.split(sep)[0] !== "..";
 };
+// W-673: the shim's SOURCE tree (packages/shim/src/sourceTree.ts): a record outside every officina, as ci-scope's
+// `recordOnly` takes one path ("" matches no officina), is left out as the shim leaves it out.
 const sourceTree = (repo, ref, excludes) => {
   const normalized = excludes
     .map((value) => value.replaceAll("\\", "/").replace(/^\.\//, "").replace(/\/+$/, ""))
@@ -134,7 +137,8 @@ const sourceTree = (repo, ref, excludes) => {
   const hash = createHash("sha1");
   for (const line of lines) {
     const path = line.slice(line.indexOf("\t") + 1);
-    if (!normalized.some((ex) => path === ex || path.startsWith(`${ex}/`))) hash.update(`${line}\n`);
+    if (!normalized.some((ex) => path === ex || path.startsWith(`${ex}/`)) && !recordOnly([path], ""))
+      hash.update(`${line}\n`);
   }
   return hash.digest("hex");
 };

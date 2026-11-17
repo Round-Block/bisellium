@@ -1,0 +1,21 @@
+# opus: W-673
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1e799-abb9-71e0-a3ad-c7b8dede5e61
+# outcome: passed
+# at: 2026-11-17T05:17:52.781Z
+# tree: tree:c3c3f28bf1c9b5b1332062bc35635f1011fe2a4c
+# brief: briefs/W-673.md blob:4ad54118cfeeb0498945b6afddda07e4c6042b67
+# ticket: {"opus":"W-673","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-673/studio","head":"54a05ca6cdc73b1bb97711117a8219f39bc3bb72","brief":"4ad54118cfeeb0498945b6afddda07e4c6042b67","at":"2026-11-17T05:17:45.449Z"}
+
+## Findings
+1. advisory — studio/briefs/W-673.md:3 [severity: S4] The status still says “signed spec, revision 3” although this line declares revision 4 and the new signatures cover revision 4. [class: spec×prose-contradiction-under-revision] — check: none: compare the status revision with the latest revision sentence and signature
+
+## Earlier findings
+- ci/W-673-review-1.log #1: closed — brief:61 and brief:108 now describe both source commits, retain that the squash merge lands both hashers in one master commit, and the spec re-review confirms branch mint, replay, receipt, and certify paths use master-resolved tooling.
+
+## Verdict
+`54a05ca6 spec(W-673): re-signed on opus/W-673`; the earlier blocker is closed, both meet conditions pass, and only the revision-label advisory remains.
+VERDICT: PASS

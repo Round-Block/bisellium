@@ -1,0 +1,21 @@
+# opus: W-673
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e489-bcdb-7710-9540-4a22d53bad55
+# outcome: passed
+# at: 2026-11-16T14:41:50.259Z
+# tree: tree:536219a9a4ff36b416b577509eae7762284882c3
+# brief: briefs/W-673.md blob:8932745e0dbcea574de26d441f45736b82327009
+# ticket: {"opus":"W-673","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"30cbfff2c819a417cc98621ff13f502711dc0498","brief":"8932745e0dbcea574de26d441f45736b82327009","at":"2026-11-16T14:41:44.902Z"}
+
+## Findings
+1. advisory — brief:34 The census’s refusal on 51 stale local branches is the promised safe behavior, not a defect: it fails closed without an allow-list and names lead-confirmed branch pruning as the remedy before its final rerun. [severity: S4] [class: spec×fix-opens-new-surface] — check: /home/edckt/.bisellium-evidence/W-673-spec/premerge-census.mjs
+
+## Earlier findings
+- ci/W-673-spec-2.log #1: closed — brief:33-34 now specify the executable fail-closed census across W-645, W-669, every local and origin opus branch, and the merge queue, with exit semantics and a last-step rerun.
+
+## Verdict
+`30cbfff2 chore(studio): W-673 handoff (spec r3 signed); file W-677..W-680; queue re-rank per D-221 (#1279)`; `2eb2a2bbeb69e761c8521678e4e03f219f67fc2236fedcff1a2ed9a1099b7451  /home/edckt/agents/bisellium/studio/briefs/W-673.md`; the revision closes the standing round-2 blocker, and the census’s current refusal is its specified fail-closed precondition.
+VERDICT: PASS

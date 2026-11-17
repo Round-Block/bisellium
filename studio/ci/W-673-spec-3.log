@@ -1,0 +1,27 @@
+# opus: W-673
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-16T14:18:28.450Z
+# tree: tree:c267c6bfa956f355dd6a0151d5ed27d44b110b36
+# brief: briefs/W-673.md blob:8932745e0dbcea574de26d441f45736b82327009
+# ticket: {"opus":"W-673","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"56ed80b6affec26cfe22f867d19b14f9e2b1912f","brief":"8932745e0dbcea574de26d441f45736b82327009","at":"2026-11-16T14:18:22.972Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-673-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — closes r2 finding 1 (blocking, brief:33, spec×fix-opens-new-surface): brief:33 now carries the review's replacement text word for word, and brief:34 makes it executable. The kept `premerge-census.mjs`, run from main as `node /home/edckt/.bisellium-evidence/W-673-spec/premerge-census.mjs --repo .`, is the last step before W-673's PR enters the merge queue. It fetches origin and fails closed: exit 1 holds on (a) W-645 or W-669 not `done` on origin/master, (b) any local or `origin/opus/*` branch but W-673's own holding reds, receipts, a `run_receipt` or a passed probatio that master lacks, or (c) any merge-queue entry. Exit 2 means a check could not run. On today's repo (master 56ed80b6) it refuses with exit 1 and 0 errors. W-645 is `greenlit` on master. 52 of 497 local branches hold: `opus/W-645` and 51 stale branches of long-merged opera. The one `origin/opus/*` branch is clean and the queue is empty. The script has no allow-list, so the stale branches must be deleted before it permits — check: premerge-census.mjs, premerge-census.out, brief.md (brief:33, brief:34), D-219 3
+2. advisory — closes r2 finding 2 (brief:97, now brief:108): Acceptance's first line is the review's replacement text: the red commit holds the rows only, one source commit changes both hashers, and the host diff is the import, the one skip after the `mustGit` trim and the comment (D-219 2a, 2b). The same source commit carries the three next-done fixture edits. brief:68 now names the comment as the two-line one the prototype has. brief:113 adds D-219 2e (the PR body names certify's old pair) and the census's exit 0. The prototype is rebased cleanly onto master 56ed80b6 as exactly two commits — check: prototype-r3.mbox, brief.md (brief:68, brief:108, brief:113)
+3. advisory — closes r2 finding 3 (brief:47, now brief:48): the host row now states the review's limit. `mustGit` trims the whole output (master scripts/run-builder-host.mjs:123), so a lexicographically final pathname ending in whitespace is altered before the host's record check and can diverge from the shim. brief:62 records that `sourceTree` (:133) is the only host site that trims a path list. Every other `mustGit` read (:466 to :808) reads commits or refs — check: brief.md (brief:48, brief:62), master scripts/run-builder-host.mjs:117
+4. advisory — closes r2 finding 4 (brief:51): a new Input domain row, brief:53, covers the rows' own readers. These are `w673Hashers`' walk of packages/, apps/, adapters/ and scripts/, the dynamic imports, the `copyFileSync`, the host-source read and the scratch git helpers. The domain is regular readable entries and git calls that exit 0. The rejectors are each one's exception, thrown through the `node:test` callback. Two census limits are stated: a symlinked directory is never walked, and a symlinked source-named file is read through its link — check: brief.md (brief:53), clone/scripts/ci-scope.test.mjs:977 at w673-r3-s1, ci-scope-proto-r3.out
+5. advisory — D-189 every site: brief:56 to brief:63 list every reader, writer, path and population for each class the review named. spec×fix-opens-new-surface was found to be a repeated class, so it has its own Class census line. `fix-surface-census.mjs` writes `fix-surface-census.out`: 25 readers, 2 hashers, 3 writers, 3 paths, the populations and the commit sequence, plus 2 limits with follow-ons. The read census was re-run on master 56ed80b6: hashers=2, calls=25. integrate.ts moved to :936 and :944, and brief:11 is updated to match. The overlap check: W-673's four files are none of W-645's six or W-666's eleven, and W-669 is done (#1275) — check: fix-surface-census.out, census-master-r3.out, brief.md (brief:58 to brief:63, brief:72)
+6. advisory — re-runs. The kept `rows-r3.sh` ran the prototype rebased onto master 56ed80b6. The reds fail at w673-r3-t0 by assertion at their declared pins (red-b1-master-r3.out, red-b2-master-r3.out). At w673-r3-s1 these pass: both greens, the whole of ci-scope.test.mjs (24/24), next-done.test.ts (40/0), shim, w364 and typecheck. declared-reds-check gives 0 problems, `pin-dryrun-r3.mts` gives ALL PASS (13 pins), and the admission replay gives problem_count=0. Not re-run: the kills k1 to k3 and the wider r1 suites. No source or test file they read changed between 22cbfaf1 and 56ed80b6, and the rebase was clean — check: rows-r3-status.out, pin-dryrun-r3.out, declared-reds-r3.out, admission-r3.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C). Brief revision 2 (spec round 3) is at `studio/briefs/W-673.md` (brief.md, sha256 2eb2a2bbeb69e761c8521678e4e03f219f67fc2236fedcff1a2ed9a1099b7451). The prototype is over master 56ed80b6 (prototype-r3.mbox, tags w673-r3-t0 and w673-r3-s1), and the evidence is in `/home/edckt/.bisellium-evidence/W-673-spec/`. The merge stays held by the pre-merge census until it exits 0.
+
+VERDICT: PASS

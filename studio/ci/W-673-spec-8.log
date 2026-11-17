@@ -1,0 +1,18 @@
+# opus: W-673
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e489-bcdb-7710-9540-4a22d53bad55
+# outcome: passed
+# at: 2026-11-17T04:45:38.583Z
+# tree: tree:c3c3f28bf1c9b5b1332062bc35635f1011fe2a4c
+# brief: briefs/W-673.md blob:4ad54118cfeeb0498945b6afddda07e4c6042b67
+# ticket: {"opus":"W-673","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-673/studio","head":"47c5e335fac45b3c14eda855148c105e53418053","brief":"4ad54118cfeeb0498945b6afddda07e4c6042b67","at":"2026-11-17T04:45:34.346Z"}
+
+## Findings
+1. advisory — brief:3 [severity: S4] The status still says “signed spec, revision 3” although the same line declares revision 4 and the round-7 signature signs revision 4. Replace `Status: **signed spec, revision 3**` with `Status: **signed spec, revision 4**`. [class: spec×prose-contradiction-under-revision] — check: none: compare the status revision with the latest revision sentence and signature
+
+## Verdict
+`47c5e335 chore(studio): W-673 handover before spec round 7`; `cba618b1f88aca88cce6ea78519f21d65503a6795f22c017b7ca84ad864aca36  /home/edckt/agents/bisellium/.worktrees/W-673/studio/briefs/W-673.md`; lines 61 and 108 now agree with brief:124, changing only the commit-sequence acceptance promise while leaving the reds and `brief:NN` citations unchanged, master-resolved tooling keeps the interim shim out of mint, replay, receipt and certify paths, and the final-tree claim is true except for the named comment-only line.
+VERDICT: PASS
