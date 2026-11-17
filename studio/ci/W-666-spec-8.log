@@ -1,0 +1,22 @@
+# opus: W-666
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e2a8-1a7d-71a2-a229-30538a7b7015
+# outcome: passed
+# at: 2026-11-17T05:23:05.044Z
+# tree: tree:5359cae14a53cf1ed365954017bb6f9e0ec5003c
+# brief: briefs/W-666.md blob:2667a0d9ba430df86902db6d619ba004213c1d15
+# ticket: {"opus":"W-666","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-666/studio","head":"641853f71126a718f623c5fc26ee793198b829b9","brief":"2667a0d9ba430df86902db6d619ba004213c1d15","at":"2026-11-17T05:23:00.603Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-666-spec-4.log #1: closed — packages/commands/src/writes.ts:993-1001 treats only ENOENT as timeline absence and routes every other access failure through `readContainedRegularFile`; packages/cli/src/w666.test.ts:307-312 pins the named refusal.
+
+## Verdict
+At “641853f7 fix(W-666): gitignore the answer lock” with “8e5bf33e364f247d2d2e37b7354f9583d0f060045e57f692c99c4da804f6354f  /home/edckt/agents/bisellium/.worktrees/W-666/studio/briefs/W-666.md”, revision 7 truthfully states the no-key reader limit at brief:47, resolving the former advisory, and closes the standing blocking finding.
+
+VERDICT: PASS
