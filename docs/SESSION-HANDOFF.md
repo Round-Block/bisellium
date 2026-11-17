@@ -55,10 +55,10 @@ Process slot order (D-234, one at a time): W-673 (a handoff-only PR no longer vo
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- E1 W-666 done (#1295); W-576 (one browser test walks the End state v1 walk from the console): architect spec r2 from leads' meet w576-questions-meet-1117 (collated.md); then prototype and reds; qa-lead signs after D-234's queue cut lands. Next on E1: W-555.
-- E2 W-673 done (#1297, verify logs #1296); process slot W-697 (a passed-review opus goes to PR on light gates; one full suite at certify): architect spec draft r1.
-- UI1 W-503 (Home on the Dracula palette): spec signature round 17 recorded (brief r12d); Opus UI spec review round 18 next; then spec perform, reds by builder, Codex terra fix, full ci alone, Opus build review, Patron screens. W-662 held after W-503.
-- UI2 W-467 (Officina page on Home's palette): spec committed on opus/W-467; ui-lead input round 7 (design digest went stale with the re-sign commit).
+- E1 W-576 (one browser test walks the End state v1 walk from the console): architect spec r2 done (from leads' meet w576-questions-meet-1117); the qa-lead settles r2's two open points, then architect prototype and reds, qa-lead signs, through to done. Then E1 pauses until the Claude reset (Thu 19 Nov 14:00 SGT); Patron: "finish up whatever is in the eng lanes first, then pause the lanes after, UI lanes keep going" / "what i mean by finish is completing the tasks".
+- E2 W-697 (a passed-review opus goes to PR on light gates; one full suite at certify): architect draft r1 done (5 questions); leads' meet w697-questions-meet-1117, then architect r2, signature, through to done; then E2 pauses until the reset.
+- UI1 W-503 (Home on the Dracula palette): spec committed on opus/W-503 (33a81b57); ui-lead input round 19 being recorded; then reds by builder, Codex terra fix, full ci alone, Opus build review, Patron screens. W-662 held after W-503. Stash 2e74e004 (old failed-ci evidence) stays stashed.
+- UI2 W-467 (Officina page on Home's palette): spec committed on opus/W-467 (d64f2a86); ready being recorded; then the Codex terra build.
 - DR runs from its own clone (W-687 deferred).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
