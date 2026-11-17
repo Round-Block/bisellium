@@ -11,7 +11,7 @@
  */
 import assert from "node:assert/strict";
 import { createHash, generateKeyPairSync, randomBytes, sign as cryptoSign, type KeyObject } from "node:crypto";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -462,4 +462,12 @@ test("W-666-b7 concurrent receipt-less answers leave an absent timeline absent",
   assert.deepEqual(codes.filter((c) => c !== 2), [], "every receipt-less answer is refused");
   assert.equal(existsSync(join(dir, "timeline")), false, "concurrent refusals leave the absent timeline absent");
   assert.equal(existsSync(join(dir, ".answer.lock")), false, "no lock remains");
+});
+
+// W-666 r6 (brief revision 6): timeline/ is gitignored but the root lock was not, so a held or stale lock made the checkout
+// dirty and `branch` refused it; the lock is ignored like the timeline.
+test("W-666-b7 the answer lock is gitignored", () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+  const r = spawnSync("git", ["check-ignore", "-q", "studio/.answer.lock"], { cwd: root });
+  assert.equal(r.status, 0, "git check-ignore matches studio/.answer.lock");
 });
