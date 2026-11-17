@@ -1,6 +1,6 @@
 queues:
   engineering:
-    lanes: { E1: W-666, E2: W-645, E3: W-648 }
+    lanes: { E1: W-666, E2: W-645 }
     next:
       - { opus: W-666, says: "Patron answers carry a signed receipt (key outside agent reads); guard refuses unsigned, forged, replayed or agent-authored writes; high, first of D-211's order (console-only-meet-1116)" }
       - { opus: W-673, says: "Certificate excludes come from ci-scope's one record-path list, so a handoff-only PR voids no verify; cause fix, design×indirection-duplicates-source-of-truth; high, gap 100 (w668-meet-1116 Q11, 5/5)" }
