@@ -11,6 +11,7 @@
  */
 import assert from "node:assert/strict";
 import { createHash, generateKeyPairSync, randomBytes, sign as cryptoSign, type KeyObject } from "node:crypto";
+import { spawn } from "node:child_process";
 import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -353,4 +354,50 @@ test("W-666-b6 the answer route answers 400 for a body-shape error and 200 ok fa
     assert.deepEqual([refused.status, out.ok, out.exitCode, out.output?.includes("answer refused: patron receipt key is not a Patron key")], [200, false, 2, true], "a verifier refusal is HTTP 200 with ok false and exit 2");
     assert.equal(petitio(dir), A1_BODY_RAW(), "a verifier refusal writes nothing");
   });
+});
+
+// W-666 r5 (build review 1, finding 1): the check and the write are one critical section across processes. An officina
+// naming patron_receipts lets one `answer` at a time hold timeline/.answer.lock, from its petitio read through its timeline
+// append; a lock already there refuses, and is never taken over.
+const MAIN = join(dirname(fileURLToPath(import.meta.url)), "main.ts");
+function answerProcess(args: string[]): Promise<number> {
+  return new Promise((done) => {
+    const child = spawn(process.execPath, ["--import", "tsx", MAIN, "answer", ...args], { stdio: "ignore" });
+    child.on("exit", (code) => done(code ?? -1));
+    child.on("error", () => done(-1));
+  });
+}
+test("W-666-b7 answer holds a cross-process lock from its read through its write", async () => {
+  const patron = ed();
+  const dir = officina("b7", [patron.pub]);
+  const base = ["--petitio", "A-1", "Ship both.", "--studio", dir, "--now", NOW];
+  const lock = join(dir, "timeline", ".answer.lock");
+  mkdirSync(join(dir, "timeline"), { recursive: true });
+  writeFileSync(lock, "4242\n");
+  const held = answer([...base, "--receipt", receiptFile(dir, receiptOf(patron, payload()))]);
+  assert.equal(held.code === 2 && held.err.includes("answer refused: another answer holds timeline/.answer.lock"), true, "an answer is refused while the answer lock is held");
+  assert.equal(petitio(dir), A1_BODY_RAW(), "a held lock leaves the petitio untouched");
+  assert.equal(timeline(dir), "", "a held lock writes no timeline line");
+  assert.equal(existsSync(lock), true, "a held lock is left in place");
+  rmSync(lock);
+
+  assert.equal(answer(base).code, 2, "an answer with no receipt is refused");
+  assert.equal(existsSync(lock), false, "the answer lock is released after an answer");
+  assert.equal(answer([...base, "--receipt", receiptFile(dir, receiptOf(patron, payload()))]).code, 0, "an answer is accepted once the lock is free");
+  assert.equal(existsSync(lock), false, "the answer lock is released after an accepted answer");
+  const a2 = payload({ petitio: "A-2", question: sha(bodyOf(A2_RAW()).trim()) });
+  const second = answer(["--petitio", "A-2", "Ship both.", "--studio", dir, "--now", NOW, "--receipt", receiptFile(dir, receiptOf(patron, a2))]);
+  assert.equal(second.code, 0, "a second answer is accepted after the first");
+
+  const open = officina("b7-open", undefined);
+  mkdirSync(join(open, "timeline"), { recursive: true });
+  writeFileSync(join(open, "timeline", ".answer.lock"), "4242\n");
+  assert.equal(answer(["--petitio", "A-1", "Ship both.", "--studio", open, "--now", NOW]).code, 0, "an officina naming no Patron keys takes no answer lock");
+
+  const race = officina("b7-race", [patron.pub]);
+  const once = receiptFile(race, receiptOf(patron, payload()));
+  const args = ["--petitio", "A-1", "Ship both.", "--studio", race, "--now", NOW, "--receipt", once];
+  const codes = await Promise.all([answerProcess(args), answerProcess(args)]);
+  const stamps = petitio(race).split("\n\n[stated] ").length - 1;
+  assert.deepEqual([codes.filter((c) => c === 0).length <= 1, stamps <= 1], [true, true], "two processes replaying one receipt accept at most one");
 });
