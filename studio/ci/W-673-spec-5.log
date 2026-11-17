@@ -1,0 +1,24 @@
+# opus: W-673
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-17T02:46:18.555Z
+# tree: tree:6cdc34a83fb7dad0c39b5ddc941d0a63690de383
+# brief: briefs/W-673.md blob:93a55fb40a2e945fb10c2aaf5cf6b5f5c1a8f43b
+# ticket: {"opus":"W-673","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-673/studio","head":"e0026f9506ac78e50fb49a11aebb241382485b0d","brief":"93a55fb40a2e945fb10c2aaf5cf6b5f5c1a8f43b","at":"2026-11-17T02:46:10.217Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-673-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — closes the `ready` refusal (brief.admission: "declares no red order; add the line \"Red order: one at a time\""): brief-r5.md is brief revision 2 (brief.md, sha256 2eb2a2bbeb69e761c8521678e4e03f219f67fc2236fedcff1a2ed9a1099b7451) with two changes only. brief:3 now says revision 3 and adds one sentence stating the change. The line `Red order: one at a time` and the blank line before it are appended after the last line, brief:124. Placing it at the end keeps every earlier line number. A first try placed it before Intent, as W-093 does, and shifted the promise ledger's `brief:NN` citations: the admission replay gave problem_count=8. readRedOrder (packages/commands/src/brief-admission.ts:679) accepts the line anywhere outside fences and comments — check: brief-r5.md (brief:3, brief:124), `diff brief.md brief-r5.md`
+2. advisory — admission dry-run. The kept `ready-dryrun-r5.mts` runs `ready`'s admission order from packages/commands/src/lifecycle.ts:314 to :343: briefAdmissionProblems under the declared limit (6), then readRedOrder, then declaredRedProblems. On the worktree brief it gives problem_count=1, the refusal reproduced (ready-dryrun-r5-before.out). On brief-r5.md it gives red_order declared and problem_count=0 (ready-dryrun-r5.out). The kept `admission.mts` (brief admission, promise ledger, evidence citations, red commands, class census) gives problem_count=0 on brief-r5.md with the unchanged promise-ledger.md (admission-r5.out) — check: ready-dryrun-r5.out, ready-dryrun-r5-before.out, admission-r5.out
+3. advisory — not re-run: the prototype, rows, reds, greens, kills and pin dry-run. Revision 3 changes no promise, no behaviour, no pin and no Files owned line. The r3 evidence stands as cited in signature-r3.md. It is a stated limit, not re-proved — check: signature-r3.md, rows-r3-status.out, pin-dryrun-r3.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C). Brief revision 3 is brief-r5.md, sha256 5193ab3c0a66d98a6e13faec1bd6b3db9480610bf3c5aedd414b774e1c05cc58. The evidence is in `/home/edckt/.bisellium-evidence/W-673-spec/`. As revision 2 required, the merge stays held by the pre-merge census until it exits 0.
+
+VERDICT: PASS
