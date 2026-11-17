@@ -433,3 +433,22 @@ test("W-666-b8 a stamp's reply is read exactly, signed or floored", () => {
   record(twoLine, [[LEGACY, two]], {}, "A-2.md");
   assert.deepEqual(receiptFindings(twoLine), [], "a floor over a two-line unsigned reply passes");
 });
+
+// W-666 r5 (build review 2, finding S1): the check precedes every write, so a refused answer creates no directory either.
+test("W-666-b7 a refused answer leaves an absent timeline absent", () => {
+  const patron = ed();
+  const dir = officina("b7-absent", [patron.pub]);
+  rmSync(join(dir, "timeline"), { recursive: true, force: true });
+  const refused = answer(["--petitio", "A-1", "Ship both.", "--studio", dir, "--now", NOW]);
+  assert.equal(refused.code === 2 && refused.err.includes("patron receipt required"), true, "a receipt-less answer is refused by name");
+  assert.equal(existsSync(join(dir, "timeline")), false, "a refused answer leaves the absent timeline absent");
+  assert.equal(petitio(dir), A1_BODY_RAW(), "a refused answer leaves the petitio untouched");
+});
+test("W-666-b7 a refused charter-gap answer leaves an absent acta absent", () => {
+  const patron = ed();
+  const dir = officina("b7-acta", [patron.pub]);
+  rmSync(join(dir, "acta"), { recursive: true, force: true });
+  const refused = answer(["--petitio", "A-1", "Ship both.", "--charter-gap", "--studio", dir, "--now", NOW]);
+  assert.equal(refused.code === 2 && refused.err.includes("patron receipt required"), true, "a receipt-less charter-gap answer is refused by name");
+  assert.equal(existsSync(join(dir, "acta")), false, "a refused charter-gap answer leaves the absent acta absent");
+});
