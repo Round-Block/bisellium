@@ -44,13 +44,29 @@ Current state only, after CLAUDE.md. Rules: lex `production.md`.
 
 ## Queue
 
-**D-181 is the plan, as D-182 changes its lanes and D-183, D-187, D-188 its head.**
+**D-234 (End state v1) is the plan: 19 kept opera ranked by v1 walk step; everything else deferred (studio/queue.yml).**
 
-Ranked lists, lanes, halted, cut, deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first. D-223: two engineering lanes (E1, E2) and two ui lanes (UI1, UI2).
+Ranked lists, lanes, halted, cut, deferred: studio/queue.yml. Tracked number (D-234): v1 walk 1/9 steps green on master (S1, Home opens in the served e2e; a hand count until W-576's skeleton lands).
+
+Filing rule from now on (D-234): a lesson by default; fold a point into a kept opus's brief if it touches that opus's files; file its own opus only if it blocks a kept opus, its lesson class recurs 3+ times, or the Patron asks.
+
+Process slot order (D-234, one at a time): W-673 (a handoff-only PR no longer voids a verify) -> W-697 (a passed-review opus goes to PR on light gates, one full suite at certify) -> W-372 (an agent waits for its own background run) -> W-557 (merge, cleanup and done run as one chain).
+
+D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
+
+Lanes now:
+- E1 W-666 done (#1295); W-576 (one browser test walks the End state v1 walk from the console): architect spec r2 from leads' meet w576-questions-meet-1117 (collated.md); then prototype and reds; qa-lead signs after D-234's queue cut lands. Next on E1: W-555.
+- E2 W-673 done (#1297, verify logs #1296); process slot W-697 (a passed-review opus goes to PR on light gates; one full suite at certify): architect spec draft r1.
+- UI1 W-503 (Home on the Dracula palette): spec signature round 17 recorded (brief r12d); Opus UI spec review round 18 next; then spec perform, reds by builder, Codex terra fix, full ci alone, Opus build review, Patron screens. W-662 held after W-503.
+- UI2 W-467 (Officina page on Home's palette): spec committed on opus/W-467; ui-lead input round 7 (design digest went stale with the re-sign commit).
+- DR runs from its own clone (W-687 deferred).
+
+Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
 
 Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624 W-625 W-626 W-627 W-628 W-629 W-630 W-631 W-632 W-633.
 
 Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-644.
+Also: W-636 (next reads branch records), W-662 (ui, held after W-503), W-665 (ui build review screenshots), W-681 and W-682 (both the DR lane's opera).
 
 Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672 W-673 W-675 W-676 W-677 W-678 W-679 W-680.
 
@@ -58,25 +74,4 @@ Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686. W-687
 Also, 11-17 (greenlit by the Patron, session 42): W-687 W-688 W-689 W-690 W-691 W-692 W-693 W-694 W-695.
 Also, 11-17 (greenlit by the Patron, sessions 43-44): W-696 W-697. W-698 is filed, held.
 
-Also, 11-16: D-212, D-213, D-215 (W-467 re-specced while W-503 parks) landed; D-216 (auto-greenlight widens to small non-ui engineering/ops/process opera), D-217 (console adopts whole themes) and D-218 (W-488 re-approved at tree 51f8690d) landed #1268; W-674 (Dracula spec audit and console-wide steps) filed #1266.
-
-D-193 replaces D-178: D-223 closes E3; process opera take E1/E2 by rank. D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: W-595 after W-610. D-204: E2 and UI2 open.
-
-Lanes now:
-- E1 W-666 (full ci after W-673's, then PR).
-- E2 W-673 (full ci rerun alone, then PR).
-- UI1 W-503 (lifted by D-230; b1-b3 green, light gates passed; full ci for screenshots, then Opus build review); W-662 held (ui, after W-503).
-- UI2 W-467 (r5c host scripts, then spec verdict r5, Opus UI spec review).
-- DR W-687 (brief r2 by architect, carries the credential decision; branches after W-666 and W-673 merge).
-- spec ahead W-612 (Codex spec r2 failed, architect r3, last review round).
-- Meet rules (D-227): W-554 one row, W-689 the rest (D-229); W-515 unchanged; proposal-id rows go to a qa opus not yet filed.
-W-250 (duplicate hosted suite cut), W-636 (next reads branch records), W-665 (ui build review screenshots; waits for E1/E2 by rank), W-681 (filed with W-682 in the DR lane's opera); older filings: studio/queue.yml.
-
-Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`. W-507 halted (D-181, D-206), tag archive/W-507.
-
-Lanes by file overlap (D-192); meets ~/.bisellium-evidence/*-meet-11*/. Sessions 21-30 meets and gaps 56-98: ~/.bisellium-evidence/current-state.md.
-Session 35: W-669 merged #1275; W-645 fix r3 check 3 open; W-675 r2 signed; W-673 meet.
-Session 36: W-669 done (checkpoint row 246); rules audit (rules-audit-1116/); decisions owed: W-673 D-129 B departure, signer rulings.
-Next: W-645 r4 per ruling -> W-673 Codex spec review -> decisions records PR (code-owner) -> file opera per audit rulings.
-
-Unruled notes: top NOW of ~/.bisellium-evidence/current-state.md; older gaps: current-state-until-1106.md there. Research is its own lane. Codex stays the one gate (D-066 C).
+Research is its own lane. Codex stays the one gate (D-066 C). Unruled notes: top NOW of ~/.bisellium-evidence/current-state.md; older gaps: current-state-until-1106.md there.
