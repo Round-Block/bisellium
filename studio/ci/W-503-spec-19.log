@@ -1,0 +1,40 @@
+# opus: W-503
+# phase: spec
+# round: 19
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1e988-d74c-71e0-ab00-c7be7319b041
+# session_reason: round 16's session 01a1abba is not resumed: this round's input is a fresh read of the r12d brief and new captures, so a fresh Astra session ran it
+# outcome: passed
+# at: 2026-11-17T12:50:39.904Z
+# tree: tree:01d2019e7ffbdeb737f540244f501086e6a2a00e
+# dispatch_prompt: ci/W-503-ui-prompt-19.md
+# design_digest: sha256:7fffb80c2955426c9dfe3b23b46f9ec12a97404e5743d3aaded87946c07a047d
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":19,"actor":"ui-lead","studio":".worktrees/W-503/studio","head":"33a81b57b451f2a7ce13f70457606efa7458c597","brief":"dad49132505326e0cb8ea458714b5d445d39bbbc","at":"2026-11-17T12:50:32.111Z"}
+
+## Findings
+
+1. advisory — brief:65 — The promise understates b5: eviction also covers server 401, 503 and network failures. This changes recovery on a subsequent shared read, although the successfully loaded Home and Inbox layouts remain unchanged — replace with: “Promise rejected-share-is-evicted: any rejected Inbox read is removed from the shared slot if it still owns that slot, so subsequent shared calls cannot reuse that rejection; successful reads retain the existing 50ms sharing window. W-503-b5 pins the token-less 401, saved-token retry and successful sharing; other rejection forms use the same eviction handler but lack dedicated assertions. Eviction does not itself initiate a retry; retry policy, backoff, cancellation and token lifetime remain unchanged.” — check: prototype-r12b.mbox:181–184; apps/web/test/w503-r12.test.ts, with an additional 503-then-success shared-read case.
+
+## Recommendation
+
+Round-3 #1 remains closed: `apps/web/src/lib/home.ts` excludes done and halted failures, and served b3 counts an active opus with several failed gates once.
+Round-3 #2 remains closed: every current Home capture retains “Work items with failed gates,” also asserted by served b3.
+Round-3 #3 is closed with its two-column remedy superseded by the Patron’s D-200 ruling: the three-column desktop treatment wraps titles and combined asks without clipping or losing information.
+Round-3 #4 remains closed: the current Health captures show the shared high-advisory diamond, as required by brief:19.
+Round-6 #1 remains closed: both `home-one-group-1280` captures show the populated group spanning the card.
+Round-11 #1 remains closed: brief:95 and served b3 retain the 50%/25%/25% assertions within 1px and blocking Health’s red number and square cue at all three widths.
+
+All ten current Home captures are pixel-identical to their revision-10 counterparts reviewed in round 16; titles, combined asks, Open links, counts and phase labels remain legible without visible information loss at 1280 expanded/collapsed, 640 and 390.
+The 640 capture is the documented CSS-viewport proxy for 200% zoom; it demonstrates readable reflow, not an independently exercised browser-zoom setting.
+The amendment adds token-role guards and rejected-read eviction, with no visible Home change.
+
+The agent-written grouping precedence, work-item counting and single-group span make sense on these screens; I find no agent-written visual rule requiring correction.
+D-200 explicitly authorizes the bars, white headings, signed Needs you treatment and sparse empty card, so the older agent-written prohibitions in DIRECTION do not justify reversing those choices.
+
+Home reads as part of the same console through its shared sidebar, typography, surfaces, cyan links, identifiers and severity cues; Inbox, Board, Seats and Officina remain recognizable destinations.
+Inbox’s purple headings and denser reading pane differ from Home’s white card headings, but that Patron-approved distinction suits their different jobs.
+The Inbox capture shows the successful reading surface; b5 can help Home or Inbox reach that surface after a rejected read, but the capture alone does not demonstrate error recovery.
+The wording advisory warrants clarification without blocking this UI input.
+
+Verdict: passed
