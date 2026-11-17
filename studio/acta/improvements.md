@@ -1492,3 +1492,76 @@ Classes in more than one opus, 2026-11-02..2026-11-15:
 - prompt×runner-handback (RETRO s26 (4), placeholder hand-back re-dispatched; RETRO s21 (3), dependent ladder parts in one runner): covered by W-639 "cap subagent hand-backs, detail in a file" (greenlit, queue.yml:44); W-653 (greenlit, queue.yml:24) routes each session RETRO point. Owner: ops-lead.
 - none for `new`'s refused title and flags (gap 63c, RETRO s26 (3)), because `new` refused loudly before writing anything (opus.title.words); the miss was in a hand kit, and W-631 makes kits print commands from next.
 - spec, UI spec and design quality: none, because the entry has no failed spec round on 11-15 (W-280, W-467, W-661 and W-662 all passed), and the D-050 input-domain refusals of W-467 and W-488 (gaps 59, 63b) are admission work covered by W-612 and W-393 (greenlit, queue.yml:32). Owner: design lead.
+
+### 2026-11-16
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-488 | 4044 | 3 | S1 2, untagged 2 |
+| W-645 | 2945 | 3 | S1 4 |
+| W-648 | 2671 | 1 | S1 1 |
+| W-661 | 671 | 0 |  |
+| W-669 | 517 | 2 | S1 2 |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-645 | review | 1 | failed | - | mechanism×red-certifies-wrong-tree S1 |
+| W-645 | review | 2 | passed | 249 |  |
+| W-645 | spec | 5 | passed | 2476 |  |
+| W-645 | spec | 6 | passed | 225 |  |
+| W-645 | spec | 7 | passed | 3 |  |
+| W-648 | review | 1 | passed | - |  |
+| W-648 | review | 2 | passed | 147 |  |
+| W-648 | spec | 5 | passed | 2258 |  |
+| W-648 | spec | 6 | passed | 4 |  |
+| W-665 | spec | 1 | passed | - |  |
+| W-665 | spec | 2 | failed | 54 | spec×input-domain-missing-or-unenforceable S1 |
+| W-665 | spec | 3 | passed | 59 |  |
+| W-665 | spec | 4 | passed | 78 |  |
+| W-666 | spec | 1 | passed | - |  |
+| W-666 | spec | 2 | failed | 79 | spec×input-domain-missing-or-unenforceable S1, spec×input-domain-missing-or-unenforceable S1 |
+| W-666 | spec | 3 | passed | 198 |  |
+| W-666 | spec | 4 | failed | 68 | spec×input-domain-missing-or-unenforceable S1 |
+| W-669 | review | 1 | failed | - | review×evidence-backfilled-or-absent S1 |
+| W-669 | review | 2 | passed | 93 |  |
+| W-669 | spec | 1 | passed | - |  |
+| W-669 | spec | 2 | failed | 19 | review×evidence-backfilled-or-absent S1 |
+| W-669 | spec | 3 | passed | 372 |  |
+| W-669 | spec | 4 | passed | 39 |  |
+
+- no loop
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| W-648 | ci/W-648-tests-05a4f641.log | gate×tests |  |
+
+Classes in more than one opus, 2026-11-03..2026-11-16:
+- class gate×tests seen in 7 opera: W-364, W-502, W-509, W-558, W-563, W-572, W-648
+- class interface×validation-order-masks-errors seen in 3 opera: W-543, W-547, W-648
+- class review×evidence-backfilled-or-absent seen in 6 opera: W-300, W-413, W-488, W-502, W-541, W-669
+- class review×fail-open-on-malformed-records-patched-per-site seen in 4 opera: W-525, W-547, W-558, W-563
+- class security×symlink-parent-write-escape seen in 2 opera: W-542, W-543
+- class spec×input-domain-missing-or-unenforceable seen in 10 opera: W-227, W-298, W-525, W-530, W-547, W-558, W-573, W-610, W-665, W-666
+- class spec×promise-unattainable-under-accepted-domain seen in 10 opera: W-227, W-298, W-333, W-488, W-509, W-512, W-525, W-543, W-547, W-604
+- class tests×one-sided-bound-assertion seen in 2 opera: W-604, W-645
+- class tests×ruled-case-uncovered seen in 6 opera: W-364, W-496, W-525, W-542, W-547, W-608
+
+#### Owed cause fixes
+
+- OWED class gate×tests (W-364, W-502, W-509, W-558, W-563, W-572, W-648): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class tests×one-sided-bound-assertion (W-604, W-645): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- Change: write W-603's lesson-landing row into W-534's body (D-213 merged W-603 into W-534, but W-534's body still names only notice.ok, the remote arm and pending checks) and rank that row first in the process lane, outside D-178's freeze; the same records land then carries L-198..L-208, the gate×tests lesson with `addressed_by: "W-596"` and L-115's restamp to `"W-659"` (the 2026-11-14 and 2026-11-15 owed proposals still stand, unrun because lessons cannot land). Evidence: session 38b point (18) and 38c's L-198..208 line (current-state.md); opera W-603, W-534; this entry's two OWED lines, repeated from the 2026-11-14 and 2026-11-15 entries. Owner: eng-lead.
+- Change: exempt W-581 from D-178, because W-648's tests gate failed with no cause in its log, the same "last 0 of 0 failing lines" W-558 showed, so gate×tests (7 opera) cannot be diagnosed from its logs. Evidence: ci/W-648-tests-05a4f641.log:152 (exit code 1, `fail 0`); this entry's Gate failures row; W-581, W-596. Owner: eng-lead.
+- Change: the Patron's ruling on point 25 ("QA own lane, but called DR or Daily Retro") replaces daily-retro-lane-meet-1116 Q3's "on main". A clerk records it as a decision: the DR lane runs in its own clone, never from the orchestrator thread or main, and is named DR in queue.yml's retro lane comment and the handoff. W-682's host cron is the DR lane's only trigger, so no session cron is re-armed. Evidence: session 39 points (25), (26); W-682; studio/queue.yml:170. Owner: qa-lead.
+- Change: verdict sections were hand-briefed again after the 11-16 disposition's "no hand-written verdict section in a prompt" proposal, a prose rule that failed twice. Rank W-662's packet half (the exact Earlier-findings list) and W-549 (the review perform writes the section) as one high process slot, ahead of further Claude reviewer rounds. Evidence: session 38c point (24), session 39 point (32); L-201; retro-1116/disposition.md proposal 3. Owner: ops-lead.
+- Change: send W-638 (backlog) to the Patron for greenlight, with two rows added. Point 23: a round>1 review packet for a branch-only opus takes --repo <worktree>. Point 30: an off-ladder clone under ~/.bisellium-evidence uses a plain `git clone` and fetches into a ref that is not checked out. A clerk corrects docs/SESSION-HANDOFF.md:74's off-ladder line to that form. Evidence: session 38b point (23), session 39 point (30); W-638, W-622. Owner: ops-lead.
+- Change: once D-225 (pending, not yet filed) rules, add a W-551 row. A blocking review finding that contradicts a signed brief's declared red assertion gets its own red ticket naming the architect's amended assertion, and next holds only that red, not every red behind it. Evidence: session 39 point (31); W-551, W-598. Owner: eng-lead.
+- Change: W-556 gains a row: greenlight also writes the handoff Queue line that process.handoff.queue reads (packages/cli/src/rules/process.ts:508), so a greenlight lands alone. W-537's ladder-brief template gains a line: a brief that records a Patron call quotes the Patron's words and direction verbatim. Evidence: session 39 points (27), (28); W-556, W-537. Owner: eng-lead.
+- Points (19), (20), (21), (22), (29): none, because each repeats a class already routed. (19) is point 15 (W-585). (21) and (29) are point 16 (W-686, W-639, W-611). (20) is a one-off hand sed with no kept script. (22) is the clerk's designed tool set, and its verify steps go to a ladder-runner, not to a new opus.
