@@ -1037,6 +1037,7 @@ test("W-673-b2 behaviour 2: each SOURCE-tree hasher reads ci-scope's one record 
   const host = readFileSync(join(REPO, "scripts", "run-builder-host.mjs"), "utf8");
   assert.match(
     host,
+    // one-sided: matches one fixed ASCII import line of ci-scope.mjs, not prose; an ASCII \b is the exact bound there
     /^import \{[^}]*\brecordOnly\b[^}]*\} from "\.\/ci-scope\.mjs";$/m,
     "the host runner imports recordOnly from ci-scope.mjs",
   );
