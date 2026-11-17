@@ -889,6 +889,7 @@ async function route(
         args.push("--receipt", path);
       }
       const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runners.answer(args))));
+      if (result.exitCode !== 0) return sendError(res, 400, "receipt must be an object");
       return writeResponse(res, result.exitCode, stdout, stderr);
     } finally {
       if (receiptDir !== undefined) rmSync(receiptDir, { recursive: true, force: true });
