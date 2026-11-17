@@ -54,7 +54,8 @@ Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-
 
 Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672 W-673 W-675 W-676 W-677 W-678 W-679 W-680.
 
-Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686. W-687 (DR independence is mechanical, qa) filed session 40; D-226 (DR lane) and D-227 (DR workflow, multi-lead changes, meets, owner map; Patron session 40) land with it.
+Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686. W-687 (DR independence) filed session 40; D-226, D-227 (DR lane, workflow) land with it.
+Also, 11-17 (greenlit by the Patron, session 42): W-687 W-688 W-689 W-690 W-691 W-692 W-693 W-694 W-695.
 
 Also, 11-16: D-212, D-213, D-215 (W-467 re-specced while W-503 parks) landed; D-216 (auto-greenlight widens to small non-ui engineering/ops/process opera), D-217 (console adopts whole themes) and D-218 (W-488 re-approved at tree 51f8690d) landed #1268; W-674 (Dracula spec audit and console-wide steps) filed #1266.
 
