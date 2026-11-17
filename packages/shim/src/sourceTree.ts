@@ -41,6 +41,8 @@ function isUnderExcluded(path: string, excludes: string[]): boolean {
  * exclusion set, and unaffected by anything that only touches an excluded
  * path.
  */
+const isRecordPath = (path: string): boolean => path === "docs/SESSION-HANDOFF.md" || /^docs\/design\/dossier\/[^/]+\.html$/.test(path);
+
 export function sourceTreeHash(repo: string, excludeDirs: string[], ref = "HEAD"): string {
   const excludes = excludeDirs.map(normalizeExclude).filter((d) => d.length > 0);
   const out = execFileSync("git", ["ls-tree", "-r", ref], { cwd: repo, encoding: "utf8", timeout: TIMEOUT_MS });
@@ -49,7 +51,7 @@ export function sourceTreeHash(repo: string, excludeDirs: string[], ref = "HEAD"
     if (line.length === 0) continue;
     const tab = line.indexOf("\t");
     const path = tab === -1 ? "" : line.slice(tab + 1);
-    if (isUnderExcluded(path, excludes)) continue;
+    if (isUnderExcluded(path, excludes) || isRecordPath(path)) continue;
     hash.update(line);
     hash.update("\n");
   }
