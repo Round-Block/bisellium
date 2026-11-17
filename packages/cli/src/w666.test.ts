@@ -371,11 +371,10 @@ test("W-666-b7 answer holds a cross-process lock from its read through its write
   const patron = ed();
   const dir = officina("b7", [patron.pub]);
   const base = ["--petitio", "A-1", "Ship both.", "--studio", dir, "--now", NOW];
-  const lock = join(dir, "timeline", ".answer.lock");
-  mkdirSync(join(dir, "timeline"), { recursive: true });
+  const lock = join(dir, ".answer.lock");
   writeFileSync(lock, "4242\n");
   const held = answer([...base, "--receipt", receiptFile(dir, receiptOf(patron, payload()))]);
-  assert.equal(held.code === 2 && held.err.includes("answer refused: another answer holds timeline/.answer.lock"), true, "an answer is refused while the answer lock is held");
+  assert.equal(held.code === 2 && held.err.includes("answer refused: another answer holds .answer.lock"), true, "an answer is refused while the answer lock is held");
   assert.equal(petitio(dir), A1_BODY_RAW(), "a held lock leaves the petitio untouched");
   assert.equal(timeline(dir), "", "a held lock writes no timeline line");
   assert.equal(existsSync(lock), true, "a held lock is left in place");
@@ -390,8 +389,7 @@ test("W-666-b7 answer holds a cross-process lock from its read through its write
   assert.equal(second.code, 0, "a second answer is accepted after the first");
 
   const open = officina("b7-open", undefined);
-  mkdirSync(join(open, "timeline"), { recursive: true });
-  writeFileSync(join(open, "timeline", ".answer.lock"), "4242\n");
+  writeFileSync(join(open, ".answer.lock"), "4242\n");
   assert.equal(answer(["--petitio", "A-1", "Ship both.", "--studio", open, "--now", NOW]).code, 0, "an officina naming no Patron keys takes no answer lock");
 
   const race = officina("b7-race", [patron.pub]);
@@ -451,4 +449,17 @@ test("W-666-b7 a refused charter-gap answer leaves an absent acta absent", () =>
   const refused = answer(["--petitio", "A-1", "Ship both.", "--charter-gap", "--studio", dir, "--now", NOW]);
   assert.equal(refused.code === 2 && refused.err.includes("patron receipt required"), true, "a receipt-less charter-gap answer is refused by name");
   assert.equal(existsSync(join(dir, "acta")), false, "a refused charter-gap answer leaves the absent acta absent");
+});
+
+// W-666 r5 (build review 2, fix check): a refusal writes nothing under any interleaving, so the answer lock is taken at the
+// officina's root, which already exists, and never creates or removes a directory.
+test("W-666-b7 concurrent receipt-less answers leave an absent timeline absent", async () => {
+  const patron = ed();
+  const dir = officina("b7-concurrent", [patron.pub]);
+  rmSync(join(dir, "timeline"), { recursive: true, force: true });
+  const args = ["--petitio", "A-1", "Ship both.", "--studio", dir, "--now", NOW];
+  const codes = await Promise.all(Array.from({ length: 8 }, () => answerProcess(args)));
+  assert.deepEqual(codes.filter((c) => c !== 2), [], "every receipt-less answer is refused");
+  assert.equal(existsSync(join(dir, "timeline")), false, "concurrent refusals leave the absent timeline absent");
+  assert.equal(existsSync(join(dir, ".answer.lock")), false, "no lock remains");
 });
