@@ -13,12 +13,12 @@
  * Readers: `runAnswer` (writes.ts, the write path) and the `patron.receipt` rule (packages/cli/src/rules/receipts.ts).
  */
 import { createHash, createPublicKey, verify as cryptoVerify, type KeyObject } from "node:crypto";
-import { lstatSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { lstatSync, readdirSync, rmdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "yaml";
 import { instant } from "@bisellium/schema";
 import { splitFront } from "./frontmatter.js";
-import { ensureRealDirectory } from "./ids.js";
+import { ensureRealDirectory, existingRealDirectory } from "./ids.js";
 import { readContainedRegularFile } from "./opus-model.js";
 
 /** The first line of the signed bytes: a receipt signs this domain, never a bare payload another protocol could reuse. */
@@ -176,7 +176,9 @@ export function unsignedDigest(unsigned: readonly { where: string; at: string; r
  *  left by a killed answer refuses until it is removed. */
 export function takeAnswerLock(root: string): { release: () => void } | { error: string } {
   let path: string;
+  let made = false;
   try {
+    made = existingRealDirectory(root, "timeline") === undefined;
     path = join(ensureRealDirectory(root, "timeline"), ANSWER_LOCK);
   } catch (e) {
     return { error: `timeline/ cannot hold the answer lock: ${(e as Error).message}` };
@@ -189,7 +191,11 @@ export function takeAnswerLock(root: string): { release: () => void } | { error:
   return {
     release: () => {
       try {
-        unlinkSync(join(ensureRealDirectory(root, "timeline"), ANSWER_LOCK));
+        const dir = ensureRealDirectory(root, "timeline");
+        unlinkSync(join(dir, ANSWER_LOCK));
+        // S1 (review 2): a timeline/ this lock created is removed with it when still empty, so a refused answer leaves the
+        // officina as it found it; an answer that wrote its timeline line leaves the directory non-empty and it stays
+        if (made) rmdirSync(dir);
       } catch {
         /* a lock that cannot be removed refuses the next answer by name */
       }

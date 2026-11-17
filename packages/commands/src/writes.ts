@@ -25,7 +25,7 @@ import { isBuilderClassSeat, parseFrontMatter, readManifest, resolveSeat, retire
 import { appendEvents, EVENTS_LOG_REL, readLog } from "@bisellium/core";
 import { WF, instant, type GantryEvent } from "@bisellium/schema";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
-import { createNextRecord, ensureRealDirectory } from "./ids.js";
+import { createNextRecord, ensureRealDirectory, existingRealDirectory } from "./ids.js";
 import { readContainedRegularFile, readRecordAt } from "./opus-model.js";
 import { autoGrant } from "./auto-greenlight.js";
 import { parseReceipt, questionDigest, readPetitioReceipts, readReceiptPolicy, receiptProblem, spentNonces, takeAnswerLock, RECEIPT_MAX_BYTES, type AnswerFacts, type Receipt } from "./patron-receipt.js";
@@ -856,7 +856,8 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
     let actaDir: string | undefined;
     if (charterGap) {
       try {
-        actaDir = ensureRealDirectory(root, "acta");
+        // S1 (review 2): only proved here, never created: the directory is made after the receipt authorizes the answer
+        existingRealDirectory(root, "acta");
       } catch (e) {
         console.error(`answer failed: ${(e as Error).message}`);
         return { exitCode: 2 };
@@ -896,7 +897,8 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
         return `${body}\n\n[stated] ${now.toISOString()} ${patronId}: ${reply}`;
       });
 
-      if (actaDir !== undefined) {
+      if (charterGap) {
+        actaDir = ensureRealDirectory(root, "acta");
         const dateStr = now.toISOString().slice(0, 10);
         const slug = slugify(`lex-gap-${firstLine}`);
         actaPath = join(actaDir, `${dateStr}-${slug}.md`);
