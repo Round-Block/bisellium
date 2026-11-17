@@ -1,0 +1,28 @@
+# opus: W-576
+# phase: spec
+# round: 1
+# sella: qa-lead
+# outcome: passed
+# at: 2026-11-17T13:56:27.611Z
+# tree: dirty:7068bd27e229c02ce19bd1e25b700d11e79d1101
+# brief: briefs/W-576.md blob:f68d7e9bef0d37849697c0cf0c8c4a827325e814
+# ticket: {"opus":"W-576","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"cca7458be3ac1c3c97c7b79f838a9d8013f505c4","brief":"f68d7e9bef0d37849697c0cf0c8c4a827325e814","at":"2026-11-17T13:56:18.236Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-576-spec/r3/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-576-spec/r3/gate-r3.log
+
+## Findings
+
+1. advisory — Revision 3 adopts both of the qa-lead's answers to r2's points. k shows on Home only. The console has no Status route, and the dossier Status page is not a v1 surface for k. `WALK` lives in `packages/core/src/v1-walk.ts` with no imports, because the server never imports `@bisellium/commands`. changes.md maps each edit (r2 lines 71, 81, 92-93, 96, 134-149, 163) to its r3 line. — check: brief:74, brief:75, /home/edckt/.bisellium-evidence/W-576-spec/r3/changes.md
+2. advisory — The prototype is four commits over master 4eefff92: the rows (red), then one commit per behaviour. The kept build.sh writes the series to prototype-r3.mbox and each stage's sha to stages.env. W-673 went done after r2, so W-666's and W-673's sub-steps are real at landing, and S5 pends on W-697, W-372, W-557 and W-308. — check: brief:36, brief:69, /home/edckt/.bisellium-evidence/W-576-spec/r3/stages.env
+3. advisory — Each of the three reds was recorded on master (the rows over 4eefff92, no source). Each fails by assertion at its declared pin, with no module-load failure, and the replay classifier accepts all three. b2 also fails at its pin on behaviour 1's commit, and b3 on behaviour 2's. All three rows pass at the last commit. b1's absent-spec message no longer names the spec's path. — check: /home/edckt/.bisellium-evidence/W-576-spec/r3/red-b1-master.out, /home/edckt/.bisellium-evidence/W-576-spec/r3/red-accept.out
+4. advisory — Two served runs at the series' last commit, with the spec unchanged. With the marks lifted, S1 prints `ok` and S2..S9 print `not ok`, each at its declared first failing assertion, with no case timeout or harness error. With the marks in place, all nine print `ok` and the run exits 0. served-check.mjs judges both runs, with 0 problems. — check: /home/edckt/.bisellium-evidence/W-576-spec/r3/served-unmark.out, /home/edckt/.bisellium-evidence/W-576-spec/r3/served-check.out
+5. advisory — Ten one-line mutations (k1-k10) of the prototype's source and the S2 fixture. Each fails its pinned row at a pinned assertion through `assert.ok`, so none is a text kill. They cover every pinned Promise line and every pinned Input domain row in the ledger. — check: /home/edckt/.bisellium-evidence/W-576-spec/r3/kills/kills.log, /home/edckt/.bisellium-evidence/W-576-spec/r3/promise-ledger.md
+6. advisory — The Codex fixture census found no flips and none unnamed. It ran on brief r3 before two later edits, neither of which names a test row: the Prototype line's final digest, and a code span added to the `BISELLIUM_WALK_TABLE` row's forms clause. Its four must-stay-green rows that read the edited `test:suite` were run alone in the gate clone. — check: /home/edckt/.bisellium-evidence/W-576-spec/r3/fixture-census.md, /home/edckt/.bisellium-evidence/W-576-spec/r3/stay-green/status.out
+7. advisory — The pre-sign gate ran in a fresh clone on branch presign/W-576, with a real `npm ci` and the mbox applied by `git am` over 4eefff92. All four owed rows exit 0: the officina check, typecheck, and the reads and test rows of `packages/core/src/v1-walk.test.ts`. Lint and format pass on the touched files. — check: /home/edckt/.bisellium-evidence/W-576-spec/r3/gate-r3.log, /home/edckt/.bisellium-evidence/W-576-spec/r3/lint-proto.out
+8. advisory — The brief passes admission under the real studio's limit of 6, with its red order and one declared failing assertion per behaviour. The reader's acceptance line prints `v1 walk: 1 of 9 steps green` and the S5 line. — check: /home/edckt/.bisellium-evidence/W-576-spec/r3/admission.out, /home/edckt/.bisellium-evidence/W-576-spec/r3/declared-reds.out, /home/edckt/.bisellium-evidence/W-576-spec/r3/reader-proto.out
+9. advisory — Unchanged code the promises lean on is named as a limit and never promised (D-076 E): the served harness, serve, init, new, branch, check, `recordOnly`, the answer route's receipt check, Playwright's expected-failure semantics and retries, and the TAP reporter. Promise red is unpinned by a node row and scoped. — check: brief:77, brief:54
+
+## Verdict
+
+passed — signed by the qa-lead (`claude-opus-5-5`), W-576's spec signer for `collegium: qa`. Brief revision 3 is `/home/edckt/.bisellium-evidence/W-576-spec/r3/brief.md`, to be placed at `studio/briefs/W-576.md`. The prototype is `/home/edckt/.bisellium-evidence/W-576-spec/r3/prototype-r3.mbox` over master 4eefff92.
