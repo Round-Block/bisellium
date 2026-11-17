@@ -1,0 +1,19 @@
+/* W-467: Officina consumes W-675's meaning-based roles. Shared severity,
+ * navigation, interaction and geometry rules remain in w025.css. */
+.officina__title,
+.panel--work .officina__panel-heading {
+  color: var(--color-heading);
+}
+
+.panel--work .officina__work-group h3 {
+  color: var(--color-category);
+}
+
+.panel--work .officina__value-mono,
+.panel--work .officina__work-group h3 span {
+  color: var(--color-fact);
+}
+
+.panel--work .officina__work-row > span:nth-child(2) {
+  color: var(--color-text-secondary);
+}
