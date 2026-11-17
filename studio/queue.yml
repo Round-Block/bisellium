@@ -162,6 +162,12 @@ queues:
       - { opus: W-670, says: "refresh timer every 30 min all day, cap 4/6h, prompt not assuming the Patron asleep (D-211); prototypes chore/refresh-all-day, chore/refresh-prompt-all-day; low; code-owned .claude/" }
       - { opus: W-672, says: "PR-time check fails source on a non-opus branch (certify refuses only in the merge group); absorbs W-327; code-owned .github/; process [absorbs W-327]" }
       - { opus: W-290, says: "orchestrator write-deny hook; audit: does today's guard already cover it; done or cut follows (w555-meet-1116)" }
+      - { opus: W-690, says: "Land and done check the committed head; retro-s41-meet-1117 P1+P5" }
+      - { opus: W-691, says: "Signed briefs change only with a re-sign; retro-s41-meet-1117 P2" }
+      - { opus: W-692, says: "Hand-back refused while a background run lives; retro-s41-meet-1117 P3" }
+      - { opus: W-693, says: "TaskStop of a live perform reads its lock; retro-s41-meet-1117 P4" }
+      - { opus: W-694, says: "Dossier written only by the checkpoint verb; retro-s41-meet-1117 P6" }
+      - { opus: W-695, says: "Ladder verbs run master's CLI, never a worktree's; retro-s41-meet-1117 P7" }
   research:
     lanes: { R1: ~ }
     next:
@@ -172,6 +178,8 @@ queues:
     next:
       - { opus: W-687, says: "DR independence is mechanical: lane row, occupancy skip, guard refuses DR from main, land from DR's clone, check pin (D-226 item 3, D-227)" }
       - { opus: W-682, says: "qa-lead: host cron (W-669 shape) persists the daily retro run; next OVERDUE from the first missed day, check names the date; never blocks (Patron 11-16)", folded: [W-486] }
+      - { opus: W-688, says: "Daily proposals carry an id and a route: P-id minted by new --proposal, route checked against the owner map; greenlight block, co-owner verb, ballot dispatch, stall row (D-227 items 1, 3)" }
+      - { opus: W-689, says: "DR meets seat owners and count ballots: six D-227 item 3 rows W-554 cannot hold (D-229)" }
   ui:
     lanes: { UI1: W-503, UI2: ~ }
     next:

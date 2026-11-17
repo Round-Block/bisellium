@@ -61,12 +61,12 @@ Also, 11-16: D-212, D-213, D-215 (W-467 re-specced while W-503 parks) landed; D-
 D-193 replaces D-178: D-223 closes E3; process opera take E1/E2 by rank. D-174's items 3-7 keep 2026-11-17. W-506 waits in the process lane. D-201: W-595 after W-610. D-204: E2 and UI2 open.
 
 Lanes now:
-- E1 W-666 (signed Patron receipt): build review r2 failed (a refused answer left an empty timeline/); fix rounds 3-5 done; brief revision 6 (architect) uncommitted, its signature refused on three admission lines, being fixed; then spec review, fix check, light gates, build review r3.
-- E2 W-673 (cert tree excludes the handoff): build review r1 failed (brief:108 vs brief:124 order); brief revision 4 (architect), leads meet w673-d219-meet-1117 3/3, spec round 7 signed (uncommitted); Codex spec review round 8 running; then build review r2.
+- E1 W-666 (signed Patron receipt): spec r6 recorded (ci/W-666-spec-6.log); Codex spec r7 FAIL on brief:47 (spec-4 #2 open); architect amends; D-225 copied to main for next.
+- E2 W-673 (cert tree excludes the handoff): spec r8 committed 54a05ca6; fix check of build r1 then build review r2.
 - UI1 W-503 halted by D-222; W-467 re-signs after W-675; W-662 held.
 - UI2 W-675 (Dracula theme layer) DONE (#1288, D-228); UI2 free; W-467 re-signs next.
-- DR (qa-lead, D-226, D-227): kept script ~/.bisellium-evidence/dr-lane/run.sh + README.md; one session cron "4 9 * * *" re-armed each boot; next W-687, then W-682; lessons L-198..208 wait on W-534's lesson row.
-- Meet rules (D-227): rows amended into W-554; W-515 unchanged; proposal-id rows go to a qa opus not yet filed.
+- DR (qa-lead, D-226, D-227): kept script ~/.bisellium-evidence/dr-lane/run.sh + README.md; one session cron "4 9 * * *" re-armed each boot; W-687 waits on the Patron's greenlight; W-688, W-689 filed; lessons L-198..208 wait on W-534's lesson row.
+- Meet rules (D-227): W-554 one row, W-689 the rest (D-229); W-515 unchanged; proposal-id rows go to a qa opus not yet filed.
 W-250 (duplicate hosted suite cut), W-636 (next reads branch records), W-665 (ui build review screenshots; waits for E1/E2 by rank), W-681 (filed with W-682 in the DR lane's opera); older filings: studio/queue.yml.
 
 Off the ladder: until W-622: `git clone --local` plus `git -C <clone> fetch origin master:master`. W-507 halted (D-181, D-206), tag archive/W-507.
