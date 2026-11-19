@@ -51,6 +51,7 @@ const ALIASES = {
 } as const;
 
 const READY_SELECTORS = {
+  home: ".home-card--needs",
   inbox: ".inbox__row",
   board: "[data-card-id]",
   seats: ".seats__table",
