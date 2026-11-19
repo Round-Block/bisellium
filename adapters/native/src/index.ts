@@ -266,6 +266,8 @@ export interface ResolvedSeat<T extends SeatLike> {
   /** Present only when `id` was `<seat>.<instance>` — an exact declared id
    *  (template or a historical tombstone) resolves with none. */
   instance?: string;
+  /** W-531: present when `id` (or its seat prefix) was an old id read through `sella_aliases.ids`. */
+  alias?: string;
 }
 
 /**
@@ -286,19 +288,42 @@ export interface ResolvedSeat<T extends SeatLike> {
  * permission to dispatch: the caller reads `resolved.seat.retired` and
  * applies its own live/historical policy (behaviour 6).
  */
-export function resolveSeat<T extends SeatLike>(manifest: { sellae?: readonly T[] }, id: string): ResolvedSeat<T> | undefined {
+export function resolveSeat<T extends SeatLike>(manifest: { sellae?: readonly T[]; sella_aliases?: unknown }, id: string): ResolvedSeat<T> | undefined {
   if (!id) return undefined;
   const rows = manifest.sellae ?? [];
   const exact = rows.find((r) => r.id === id);
   if (exact) return { seat: exact };
+  // W-531: an old id is read through the alias table, one hop, forever (a `from` is never a row, check: manifest.aliases).
+  const aliases = aliasTable(manifest);
+  const viaAlias = (old: string): T | undefined => {
+    const to = aliases.get(old);
+    return to === undefined ? undefined : rows.find((r) => r.id === to);
+  };
+  const aliased = viaAlias(id);
+  if (aliased) return { seat: aliased, alias: id };
 
   const dot = id.indexOf(".");
   if (dot <= 0) return undefined; // no "." at all, or an empty seat prefix
   const instance = id.slice(dot + 1);
   if (instance.length === 0) return undefined; // "builder." — empty instance
-  const seat = rows.find((r) => r.id === id.slice(0, dot));
-  if (!seat) return undefined;
-  return { seat, instance };
+  const prefix = id.slice(0, dot);
+  const seat = rows.find((r) => r.id === prefix);
+  if (seat) return { seat, instance };
+  const aliasedSeat = viaAlias(prefix);
+  return aliasedSeat ? { seat: aliasedSeat, instance, alias: prefix } : undefined;
+}
+
+/** W-531: the id a record written now names for `id`: its canonical seat (and instance); an unresolved id unchanged. */
+export function canonicalSella(manifest: { sellae?: readonly SeatLike[]; sella_aliases?: unknown }, id: string): string {
+  const r = resolveSeat(manifest, id);
+  if (r === undefined) return id;
+  return r.instance === undefined ? r.seat.id : `${r.seat.id}.${r.instance}`;
+}
+
+/** W-531: two sella ids name the same seat (and instance), an old id read as its canonical one. */
+export function sameSella(manifest: { sellae?: readonly SeatLike[]; sella_aliases?: unknown }, a: string | undefined, b: string | undefined): boolean {
+  if (a === undefined || b === undefined) return a === b;
+  return a === b || canonicalSella(manifest, a) === canonicalSella(manifest, b);
 }
 
 // Mirrors packages/cli/src/check.ts's ID_RE exactly (S2's own containment
