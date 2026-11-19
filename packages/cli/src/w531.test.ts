@@ -187,3 +187,64 @@ test("W-531-b3 behaviour 3: a write names the canonical seat; an old id's live u
   assert.deepEqual(checkStudio(dir, new Date(AFTER)).findings.filter((f) => f.rule === "traditio.sella"), [], "after live_until an old id still reads");
 });
 
+/** The census's identity-bearing raw compares on master (compare-classification.md, "Converted"), each gone after b4. */
+const CONVERTED: [string, string][] = [
+  ["packages/cli/src/next.ts", "if (magister === sella) return bad("],
+  ["packages/cli/src/next.ts", 'if (once("sella") !== sella) return bad('],
+  ["packages/cli/src/next.ts", 'h.get("sella") === design && '],
+  ["packages/cli/src/next.ts", 'if (h.get("sella") === sella) newest'],
+  ["packages/cli/src/next.ts", '.get("sella") !== f.design) return false;'],
+  ["packages/cli/src/next.ts", 'if (g["sella"] !== censor) return bad('],
+  ["packages/cli/src/next.ts", "isUiLeadLog(l.text)))"],
+  ["packages/cli/src/next.ts", "isUiLeadLog(text)) return false"],
+  ["packages/cli/src/rules/brief-stale.ts", 'l.h.get("sella") === signer'],
+  ["packages/cli/src/retro.ts", 'headerBlock(text).get("sella") === signedBy'],
+  ["packages/cli/src/retro.ts", 'h.get("sella") === signer.design'],
+  ["packages/cli/src/hooks.ts", "seatInstance(resolved.seat.id, resolved.instance) === sella;"],
+  ["packages/cli/src/hooks.ts", 'if (data["sella"] !== sella) continue;'],
+  ["packages/cli/src/land.ts", "sellae?.some((s) => s.id === sella)"],
+  ["packages/commands/src/verdict.ts", 'if (header.get("sella") !== sella ||'],
+  ["packages/commands/src/verdict.ts", "    if (sella !== censor) {"],
+  ["packages/commands/src/verdict.ts", "    if (sella === signer) {"],
+  ["packages/commands/src/verdict.ts", 'sella !== "ui-lead"'],
+  ["packages/commands/src/verdict.ts", 'if (once["sella"] !== censor) return bad('],
+  ["packages/commands/src/lifecycle.ts", "    if (sella !== censor) {"],
+  ["packages/commands/src/lifecycle.ts", 'evidenceHeader.values.get("sella") !== censor'],
+  ["packages/commands/src/lifecycle.ts", "manifest.sellae.some((s) => s.id === sella)"],
+  ["packages/commands/src/opus-model.ts", 'gate["sella"] !== censor'],
+  ["packages/commands/src/opus-model.ts", 'header.values.get("sella") !== censor'],
+  ["packages/commands/src/opus-model.ts", 'values.get("sella") === "ui-lead"'],
+  ["packages/commands/src/opus-model.ts", 'h.values.get("sella") !== "ui-lead"'],
+  ["packages/commands/src/opus-model.ts", 'seat.id === "ui-lead"'],
+  ["packages/commands/src/auto-greenlight.ts", "if (sella !== reviewer) continue;"],
+  ["packages/commands/src/context.ts", 'w.meta["sella"] === sella'],
+  ["packages/commands/src/context.ts", "const addressedToMe = to === sella"],
+  ["packages/commands/src/context.ts", "const myAwaitingReply = from === sella"],
+  ["packages/commands/src/context.ts", "(from === sella && to === patron)"],
+  ["packages/commands/src/talk.ts", "resolvedTalkSella.instance) !== sella"],
+  ["apps/server/src/store.ts", 'join(this.studioDir, "timeline", `${sella}.jsonl`)'],
+];
+
+test("W-531-b4 behaviour 4: a record written under an old id still counts for the seat it was written for", () => {
+  const rows = ROWS.replace("sellae:\n", "  - { id: design, name: Design, magister: engineering-architect, lex: leges/engineering.md }\nsellae:\n");
+  const dir = officina("b4", rows + ALIASES);
+  writeFileSync(join(dir, "opera", "W-001.md"), `---\nid: "W-001"\ntitle: "t2"\nkind: "feature"\ncollegium: "engineering"\nstate: greenlit\nprobationes: {}\namendments:\n  - at: 2026-11-21T01:00:00.000Z\n    sella: engineering-lead\n    field: title\n    reason: r\n    superseded: "t1"\n---\n`);
+  mkdirSync(join(dir, "ci"), { recursive: true });
+  // the signature, written before the cutover under the old id
+  writeFileSync(join(dir, "ci", "W-001-spec-1.log"), "# opus: W-001\n# phase: spec\n# round: 1\n# sella: architect\n# outcome: passed\n# at: 2026-11-19T00:00:00Z\n\nsigned\n");
+  const stale = checkStudio(dir, NOW).findings.filter((f) => f.rule === "brief.stale");
+  assert.equal(stale.length, 1, "a signature under the old id is the signer's: the retitle after it is found");
+  assert.match(stale[0]?.message ?? "", /after the newest signature ci\/W-001-spec-1\.log/, "the finding names the old id's signature");
+  // a signature by another seat is still not the signer's
+  writeFileSync(join(dir, "ci", "W-001-spec-1.log"), "# opus: W-001\n# phase: spec\n# round: 1\n# sella: eng-lead\n# outcome: passed\n# at: 2026-11-19T00:00:00Z\n\nsigned\n");
+  assert.deepEqual(checkStudio(dir, NOW).findings.filter((f) => f.rule === "brief.stale"), [], "another seat's old id is not the signer's signature");
+  // the canonical id, as before
+  writeFileSync(join(dir, "ci", "W-001-spec-1.log"), "# opus: W-001\n# phase: spec\n# round: 1\n# sella: engineering-architect\n# outcome: passed\n# at: 2026-11-19T00:00:00Z\n\nsigned\n");
+  assert.equal(checkStudio(dir, NOW).findings.filter((f) => f.rule === "brief.stale").length, 1, "a canonical signature still counts");
+  // the verdict sequence reads a round written under the old id as the seat's
+  writeFileSync(join(dir, "ci", "W-001-spec-1.log"), "# opus: W-001\n# phase: spec\n# round: 1\n# sella: architect\n# outcome: passed\n# at: 2026-11-19T00:00:00Z\n\nsigned\n");
+  const seq = verdict.readSequence(dir, "W-001", "spec", "engineering-architect", native.readManifest(dir));
+  assert.equal("last" in seq ? seq.last?.round : undefined, 1, "a spec round under the old id is the seat's round");
+  // every identity-bearing raw compare in the census reads through the alias table (compare-classification.md)
+  assert.deepEqual(CONVERTED.filter(([rel, raw]) => readFileSync(join(REPO, rel), "utf8").includes(raw)), [], "no census site compares a sella raw");
+});
