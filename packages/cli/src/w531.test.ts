@@ -136,3 +136,54 @@ test("W-531-b2 behaviour 2: an old id resolves to its canonical seat, forever, t
   const r2 = checkStudio(dir, NOW);
   assert.equal(r2.blocks, 0, `the officina stays blocking-clean: ${r2.findings.filter((f) => f.level === "block").map((f) => `${f.rule}: ${f.message}`).join("; ")}`);
 });
+
+test("W-531-b3 behaviour 3: a write names the canonical seat; an old id's live use warns, then is refused", () => {
+  const dir = officina("b3", ROWS + ALIASES);
+  const made = cli(["new", "--kind", "feature", "--collegium", "engineering", "--title", "t", dir]);
+  assert.equal(made.status, 0, `new exits 0: ${made.err}`);
+  const h = cli(["handoff", "--opus", "W-001", "--sella", "architect", "--next", "draft", "--studio", dir, "--now", NOW.toISOString()]);
+  assert.equal(h.status, 0, `a handoff under an old id is accepted while old ids are live: ${h.err}`);
+  assert.match(readFileSync(join(dir, "opera", "W-001.md"), "utf8"), /traditio:\n {2}sella: engineering-architect\n/, "the handoff records the canonical id");
+  assert.match(h.err, /sella "architect" is now "engineering-architect"/, "the handoff says the id moved");
+  const a = cli(["amend", "W-001", "--title", "t2", "--reason", "r", "--sella", "eng-lead", "--studio", dir, "--now", NOW.toISOString()]);
+  assert.equal(a.status, 0, `an amendment under an old id is accepted: ${a.err}`);
+  assert.match(readFileSync(join(dir, "opera", "W-001.md"), "utf8"), /- at: [^\n]+\n {4}sella: engineering-lead\n/, "the amendment records the canonical id");
+  const same = cli(["handoff", "--opus", "W-001", "--sella", "engineering-architect", "--next", "draft", "--studio", dir, "--now", NOW.toISOString()]);
+  assert.equal(same.status, 0, `a canonical id is accepted: ${same.err}`);
+  assert.doesNotMatch(same.err, /is now/, "a canonical id draws no notice");
+  const late = cli(["handoff", "--opus", "W-001", "--sella", "architect", "--next", "draft", "--studio", dir, "--now", AFTER]);
+  assert.equal(late.status, 2, "after live_until an old id's live use is refused");
+  assert.match(late.err, /sella "architect" is now "engineering-architect": old ids are read-only since 2027-02-18T00:00:00Z/, "the refusal names the canonical id");
+  const ctx = cli(["context", "--sella", "architect", dir, "--now", AFTER]);
+  assert.equal(ctx.status, 1, "booting as an old id after live_until exits 1");
+  assert.match(ctx.err, /sella "architect" is now "engineering-architect"/, "booting as an old id after live_until is refused with the reason");
+  // an old id that ran on another model never runs silently on the canonical row's: refused, inside the window too
+  // a refused table refuses every runtime reader before any write, a canonical id included
+  const refused = officina("b3-refused", ROWS + ALIASES.replace("live_until: 2027-02-18T00:00:00Z", "live_until: 2027-02-30T00:00:00Z"));
+  assert.equal(cli(["new", "--kind", "feature", "--collegium", "engineering", "--title", "t", refused]).status, 0, "new on the refused fixture exits 0 before any table read matters");
+  const before = readFileSync(join(refused, "opera", "W-001.md"), "utf8");
+  const r = cli(["handoff", "--opus", "W-001", "--sella", "engineering-architect", "--next", "draft", "--studio", refused, "--now", NOW.toISOString()]);
+  assert.equal(r.status, 2, "a verb on a refused table exits 2");
+  assert.match(r.err, /sella_aliases is refused/, "a verb refuses a refused table before any write");
+  assert.equal(readFileSync(join(refused, "opera", "W-001.md"), "utf8"), before, "nothing is written under a refused table");
+  const codex = cli(["handoff", "--opus", "W-001", "--sella", "builder-codex.W-001", "--next", "build", "--studio", dir, "--now", NOW.toISOString()]);
+  assert.equal(codex.status, 2, "a Codex build's old id is refused live while old ids are live");
+  assert.match(codex.err, /sella "builder-codex" is now "engineering-builder", which runs claude-sonnet-5 on claude-code, not gpt-5.6-sol on codex/, "the refusal names both routings");
+  // the window is extended while a pre-cutover opus is in flight, and check names it before the expiry
+  const ext = officina("b3-ext", ROWS + ALIASES.replace("  ids:", "  last_opus: W-001\n  ids:"));
+  assert.equal(cli(["new", "--kind", "feature", "--collegium", "engineering", "--title", "t", ext]).status, 0, "new exits 0");
+  const rec = join(ext, "opera", "W-001.md");
+  writeFileSync(rec, readFileSync(rec, "utf8").replace("state: backlog", "state: greenlit"));
+  const kept = cli(["handoff", "--opus", "W-001", "--sella", "architect", "--next", "draft", "--studio", ext, "--now", AFTER]);
+  assert.equal(kept.status, 0, `past live_until an old id stays live while a pre-cutover opus is open: ${kept.err}`);
+  assert.match(kept.err, /old ids stay live past 2027-02-18T00:00:00Z while pre-cutover opera are open \(W-001\)/, "the notice names the open opus");
+  const soon = checkStudio(ext, new Date("2027-02-10T00:00:00Z")).findings.filter((f) => f.rule === "manifest.aliases.window");
+  assert.deepEqual(soon.map((f) => f.message), ["old ids stay live past 2027-02-18T00:00:00Z while these pre-cutover opera are open: W-001"], "check names the open pre-cutover opera before the expiry");
+  assert.deepEqual(checkStudio(ext, new Date("2026-12-01T00:00:00Z")).findings.filter((f) => f.rule === "manifest.aliases.window"), [], "check is silent long before the expiry");
+  writeFileSync(rec, readFileSync(rec, "utf8").replace("state: greenlit", "state: done"));
+  assert.equal(cli(["handoff", "--opus", "W-001", "--sella", "architect", "--next", "draft", "--studio", ext, "--now", AFTER]).status, 2, "once no pre-cutover opus is open, an old id is refused");
+  // history stays readable after the window: the check reads the old id still
+  writeFileSync(join(dir, "opera", "W-002.md"), `---\nid: "W-002"\ntitle: "t"\nkind: "feature"\ncollegium: "engineering"\nstate: backlog\nprobationes: {}\ntraditio:\n  sella: architect\n  stage: backlog\n  next: x\n  blocked_on: none\n  at: 2026-11-19T00:00:00.000Z\n---\n`);
+  assert.deepEqual(checkStudio(dir, new Date(AFTER)).findings.filter((f) => f.rule === "traditio.sella"), [], "after live_until an old id still reads");
+});
+
