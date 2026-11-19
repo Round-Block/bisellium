@@ -5,14 +5,16 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as native from "@bisellium/adapter-native";
+import { runCommand } from "@bisellium/commands/run.js";
 import * as verdict from "@bisellium/commands/verdict.js";
 import { checkStudio } from "./check.js";
+import * as nextMod from "./next.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..", "..");
@@ -278,4 +280,14 @@ test("W-531-b5 behaviour 5: the officina's own seats decide, not bisellium's ids
   // the owned literals read the manifest (compare-classification.md): next names "ui-lead" only as a role label
   const nextSrc = readFileSync(join(REPO, "packages/cli/src/next.ts"), "utf8");
   assert.deepEqual(nextSrc.split("\n").filter((l) => l.includes('"ui-lead"') && !/role = "ui-lead";|o\.uiLead === true \? "ui-lead"|canonicalSella\(f\.manifest, "ui-lead"\)/.test(l)), [], "next.ts names the UI lead's seat through the alias table");
+});
+
+test("W-531-b1 behaviour 1: a four-digit year below 0100 is a real instant, not a 19xx one", () => {
+  for (const [text, iso] of [["0050-06-15T12:30:45Z", "0050-06-15T12:30:45.000Z"], ["0000-01-01T00:00:00Z", "0000-01-01T00:00:00.000Z"], ["0099-12-31T23:59:59.999Z", "0099-12-31T23:59:59.999Z"], ["2027-02-18T00:00:00Z", "2027-02-18T00:00:00.000Z"]] as const) {
+    const t = native.strictInstant(text);
+    assert.equal(typeof t === "number" ? new Date(t).toISOString() : t, iso, `${text} round-trips`);
+  }
+  assert.equal(native.strictInstant("2027-02-30T00:00:00Z"), undefined, "an impossible date is still refused");
+  const dir = officina("b1-lowyear", ROWS + ALIASES.replace("since: 2026-11-20T00:00:00Z", "since: 0050-01-01T00:00:00Z").replace("live_until: 2027-02-18T00:00:00Z", "live_until: 0090-01-01T00:00:00Z"));
+  assert.deepEqual(findings(dir, "manifest.aliases"), [], "a low-year since and live_until are a valid table");
 });
