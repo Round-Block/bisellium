@@ -1,11 +1,11 @@
 shots: 10 ci/shots/W-503
-shot: board-1280.png 1280x900 83553
+shot: board-1280.png 1280x900 83554
 shot: board-390.png 390x900 45880
 shot: home-1280.png 1280x900 52247
 shot: home-390.png 390x900 43662
 shot: inbox-1280.png 1280x900 114578
 shot: inbox-390.png 390x900 23955
-shot: officina-1280.png 1280x900 72479
-shot: officina-390.png 390x900 44720
-shot: seats-1280.png 1280x900 72380
-shot: seats-390.png 390x900 42780
+shot: officina-1280.png 1280x900 72438
+shot: officina-390.png 390x900 44716
+shot: seats-1280.png 1280x900 72398
+shot: seats-390.png 390x900 42815
