@@ -174,6 +174,19 @@ function recordOf(src: Src | undefined, id: string): Dict | undefined {
   }
 }
 
+/** W-531: an opus record read under the roster it was written for: the seats it names (`sella`, `traditio.sella`, each
+ *  gate's `sella`) as their canonical ids, so no reader meets an old id. The record on disk is never rewritten. */
+export function canonRecord(rec: Dict | undefined, m: Manifest): Dict | undefined {
+  if (rec === undefined) return rec;
+  const seat = (d: unknown): unknown => (isDict(d) && typeof d["sella"] === "string" ? { ...d, sella: canonicalSella(m, d["sella"]) } : d);
+  const gates = rec["probationes"];
+  return {
+    ...seat(rec) as Dict,
+    ...(rec["traditio"] === undefined ? {} : { traditio: seat(rec["traditio"]) }),
+    ...(isDict(gates) ? { probationes: Object.fromEntries(Object.entries(gates).map(([k, g]) => [k, seat(g)])) } : {}),
+  };
+}
+
 /**
  * W-355: the checkout that owns a spec's evidence (the main checkout before opus/<id>, its usable worktree after, else the committed
  * branch) and the opus record and manifest read there: the spec's kind and seat pairing come from this owner alone. An absent,
@@ -195,7 +208,7 @@ function readSpecOwner(src: Src | undefined, id: string, where: string, manifest
   if (!isDict(data)) return held("is not a mapping");
   const m = manifest();
   if ("error" in m) return { error: `${m.error}; the spec's seat pairing is read only from the checkout that owns its evidence, ${where} (W-355)` };
-  return { where, record: data, manifest: m.manifest };
+  return { where, record: canonRecord(data, m.manifest)!, manifest: m.manifest };
 }
 /** W-355: the committed opus branch's manifest, read strictly (the branch has no usable worktree). */
 function branchManifest(src: Src | undefined, id: string): { manifest: Manifest } | { error: string } {
@@ -819,8 +832,8 @@ export function gather(repo: string, studioAbs: string, id: string, states: Map<
   const wt = { dir, studio: join(dir, studioRel), usable };
   const trunk = refExists(repo, "refs/heads/master") ? gitSrc(repo, "refs/heads/master", studioRel) : undefined;
   const branch = usable ? fsSrc(wt.studio) : tip !== undefined ? gitSrc(repo, branchRef, studioRel) : undefined;
-  const trunkRecord = recordOf(trunk, id);
-  const branchRecord = recordOf(branch, id);
+  const trunkRecord = canonRecord(recordOf(trunk, id), manifest);
+  const branchRecord = canonRecord(recordOf(branch, id), manifest);
   const defaultDesign = manifest.collegia.find((c) => c.id === "design")?.magister ?? "architect";
   // W-355: the spec's kind and seat pairing come from the checkout that owns its evidence, read strictly
   const ownerWhere = tip === undefined ? `the main checkout (${studioRel})` : usable ? join(".worktrees", id, studioRel) : `opus/${id}`;
