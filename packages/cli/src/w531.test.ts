@@ -315,3 +315,15 @@ test("W-531-b3 behaviour 3: an old id is translated once where it enters: run, t
   assert.match(old.err, /sella "eng-lead" is now "engineering-lead"/, "context prints the pre-expiry notice");
   assert.equal(old.out, canon.out, "an old id's instance boots as the canonical instance");
 });
+
+test("W-531-b4 behaviour 4: opus records are read under their canonical ids", () => {
+  const canon = (nextMod as unknown as { canonRecord?: (rec: Record<string, unknown> | undefined, m: unknown) => Record<string, unknown> | undefined }).canonRecord;
+  assert.equal(typeof canon, "function", "next.ts reads an opus record through canonRecord");
+  const m = native.readManifest(officina("b4-canon", ROWS + ALIASES));
+  const rec = { id: "W-001", traditio: { sella: "builder-codex.W-001", at: "x" }, probationes: { spec: { status: "passed", sella: "architect" }, other: "x" } };
+  const got = canon!(rec, m) as { traditio: { sella: string }; probationes: { spec: { sella: string } } };
+  assert.equal(got.traditio.sella, "engineering-builder.W-001", "an old builder instance in the traditio reads as the canonical instance");
+  assert.equal(got.probationes.spec.sella, "engineering-architect", "an old ready signer reads as the canonical seat");
+  assert.equal(rec.traditio.sella, "builder-codex.W-001", "the record itself is never rewritten");
+  assert.equal(canon!(undefined, m), undefined, "no record stays none");
+});
