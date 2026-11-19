@@ -55,12 +55,12 @@ Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, bri
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- Open for a leads' meet (ops-lead): handoff goes stale when a running task ends after it's written (Patron, 11-19); see current-state.md s61.
-- E1 W-531: spec r9 passed, No findings, recorded 56d176fe; next: `next W-531 --perform --expect build` (.worktrees/W-531), full ci --opus (producer --no-worktree), Codex build review r1.
-- E2 W-699 (path check, delta rule, verdict --check, stale-gate, D-246): r2 signed, not recorded; design-lead BLOCKED b5 (w699-b5-check-1119/design-lead.md); next: Opus architect r3 (b5 fixes, delta-rule off switch: bisellium.yml key `next` reads +check row), design-lead re-checks; record kit (dry), branch; D-245-247 ride it; code-owned (Patron merges); W-697 rebases after.
-- UI1 W-503: build review r1 passed (3 advisories), recorded f07cc2e3; PR awaits Patron's ruling (11-19); on word, clerk writes ruling, .worktrees/W-503/studio, amend --ui-ruling, commit, next.
-- UI2 W-504: pre-sign gate r2 passed; Codex Sol ui-architect signed (W-504-spec/sign-r1/signature-r1.md, brief-r1.md diff: Status line only); next: record kit (dry) copies brief-r1.md to studio/briefs/W-504.md, records spec r1, branch.
-- DR runs from its own clone (session cron 09:04 SGT).
+- Ops (owner ops-lead): stale handoff + kits at a switch decided by a leads' meet (handoff-stale-meet-1119/collated.md) -> D-247 (untracked, rides W-699's branch with D-245/D-246); the Patron asked why meets use 9 seats when D-189 says relevant leads (offer: meet script requires a Seats: line; not done).
+- E1 W-531: build review r1 FAILED (3 blocking) recorded 38a01921; title names the class (8e6b42f9), class hold cleared; next = builder fix round (handoff first). Patron choice pending: finish under the current brief (translate old ids at the two entry points, fix strictInstant) vs cut dates/notice to a plain map (brief re-sign). Lead in charge eng-lead. Not pushed.
+- E2 W-699: architect r3 signed, unrecorded (W-699-spec/signature-r3.md; b5 fixed; spec.delta_review on|off key, missing = off, check rule); next: design-lead re-checks b5, record kit (dry), branch.
+- UI1 W-503: waits the Patron's Home screens ruling.
+- UI2 W-504: sign r1 record refused (ledger); design-lead route; r1c: test strengthened, prototype-r1c.mbox, 12/12 kills; next: presign gate on prototype-r1c, Sol sign with a real-verdict preflight, record (dry), branch.
+- DR from its own clone (cron 09:04 SGT).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
 Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624 W-625 W-626 W-627 W-628 W-629 W-630 W-631 W-632 W-633.
