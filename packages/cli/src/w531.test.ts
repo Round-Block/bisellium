@@ -107,3 +107,32 @@ test("W-531-b1 behaviour 1: the alias table and the name rule are checked", () =
   const off = officina("b1-off", ROWS.replace("engineering-architect", "architect"));
   assert.deepEqual(findings(off, "sella.name"), [], "no sella_aliases: the switch is off and no name is refused");
 });
+
+test("W-531-b2 behaviour 2: an old id resolves to its canonical seat, forever, through the one resolver", () => {
+  const dir = officina("b2", ROWS + ALIASES);
+  const m = native.readManifest(dir);
+  const r = native.resolveSeat(m, "architect");
+  assert.equal(r?.seat.id, "engineering-architect", "an old id resolves to its canonical row");
+  assert.equal((r as { alias?: string } | undefined)?.alias, "architect", "the resolution says which old id named it");
+  assert.equal(native.resolveSeat(m, "engineering-architect")?.seat.id, "engineering-architect", "a canonical id resolves as before");
+  assert.equal((native.resolveSeat(m, "engineering-architect") as { alias?: string } | undefined)?.alias, undefined, "a canonical id carries no alias");
+  const inst = native.resolveSeat(m, "eng-lead.W-001");
+  assert.deepEqual([inst?.seat.id, inst?.instance], ["engineering-lead", "W-001"], "an old id's instance resolves to the canonical seat's instance");
+  assert.equal(native.resolveSeat(m, "ghost"), undefined, "an id neither declared nor aliased resolves to nothing");
+  assert.equal(native.resolveSeat(m, "builder-a")?.seat.retired, true, "a retired tombstone still resolves as itself");
+  const canonical = (native as unknown as { canonicalSella?: (m: unknown, id: string) => string }).canonicalSella;
+  const same = (native as unknown as { sameSella?: (m: unknown, a: string, b: string) => boolean }).sameSella;
+  assert.equal(typeof canonical, "function", "canonicalSella is exported");
+  assert.equal(typeof same, "function", "sameSella is exported");
+  assert.equal(canonical!(m, "producer"), "production-lead", "canonicalSella names the canonical seat");
+  assert.equal(canonical!(m, "eng-lead.W-001"), "engineering-lead.W-001", "canonicalSella keeps the instance");
+  assert.equal(canonical!(m, "ghost"), "ghost", "canonicalSella leaves an unresolved id as written");
+  assert.equal(same!(m, "architect", "engineering-architect"), true, "an old id and its canonical id are the same seat");
+  assert.equal(same!(m, "architect", "engineering-lead"), false, "two seats are not the same seat");
+
+  // a record written before the cutover, naming an old id, stays blocking-clean
+  writeFileSync(join(dir, "opera", "W-001.md"), `---\nid: "W-001"\ntitle: "t"\nkind: "feature"\ncollegium: "engineering"\nstate: backlog\nprobationes: {}\ntraditio:\n  sella: architect\n  stage: backlog\n  next: x\n  blocked_on: none\n  at: 2026-11-19T00:00:00.000Z\n---\n`);
+  assert.deepEqual(findings(dir, "traditio.sella"), [], "a handoff naming an old id stays declared");
+  const r2 = checkStudio(dir, NOW);
+  assert.equal(r2.blocks, 0, `the officina stays blocking-clean: ${r2.findings.filter((f) => f.level === "block").map((f) => `${f.rule}: ${f.message}`).join("; ")}`);
+});
