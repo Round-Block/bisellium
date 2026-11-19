@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, realpathSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
+import { resolveSeat } from "@bisellium/adapter-native";
 import { openStudio, parseFlags } from "@bisellium/commands/writes.js";
 import { instant } from "@bisellium/schema";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
@@ -193,7 +194,8 @@ export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
   if ("error" in opened) return usage(opened.error);
   const studioRel = relative(realpathSync(repo), realpathSync(opened.root)).split("\\").join("/");
   if (studioRel === "" || studioRel.startsWith("..")) return usage("--studio must be a folder inside the repository");
-  const known = (opened.manifest as { sellae?: { id?: unknown }[] }).sellae?.some((s) => s.id === sella) === true;
+  // W-531: an old id is the seat it names (sella_aliases)
+  const known = resolveSeat(opened.manifest, sella) !== undefined;
   if (!known) return usage(`--sella ${sella} is not a sella of ${studioRel}/bisellium.yml`);
 
   const say = (code: number, name: string, lines: string[]): { exitCode: number } => {

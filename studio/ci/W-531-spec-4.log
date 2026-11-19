@@ -1,0 +1,24 @@
+# opus: W-531
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1f261-d6a3-76f0-b667-851ba2e294ca
+# outcome: failed
+# at: 2026-11-19T07:05:28.021Z
+# tree: tree:697599329b6847c4172a3b8840c0c62d86f5416a
+# brief: briefs/W-531.md blob:e35d9f323f871fa84c2773ac8eb512b9d79de99b
+# ticket: {"opus":"W-531","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"5a47dd1940794237b35820fb7107252da3735681","brief":"e35d9f323f871fa84c2773ac8eb512b9d79de99b","at":"2026-11-19T07:05:27.185Z"}
+
+## Findings
+1. blocking — brief:55 [severity: S1] [design: changes] Reached through ci/W-531-spec-2.log #4’s class: a plausible `production.magister: production-laed` typo is accepted by `producerSella`, so `bisellium next` emits an undeclared actor and can feed it to actor/hold/named output, refresh-ticket, meanwhile and done-subprocess paths; the separate `checkStudio` rule cannot refuse this caller, while `producerOf` reaches sweep’s handoff subprocess. Replacement text for brief:55: `| A sella id a record, hooks.default_sella, a verb, or the production collegium's magister names | a row, row instance, old id or old-id instance; hooks.default_sella and the production magister may be absent, with the stated fallbacks | resolveSeat and defaultSella refuse unresolved ids; producerSella returns a refusal for a nonempty production magister that does not resolve and every next output/perform path propagates it; sweep's execFileSync turns handoff's nonzero exit into refusal before another write |`. [class: spec×input-without-named-rejector] — check: packages/cli/src/w531.test.ts W-531-b5 “next refuses an undeclared production magister”
+
+## Earlier findings
+- ci/W-531-spec-2.log #1: closed — brief:53 now centralizes full validation in `readSellaAliases`, rejects impossible/non-normalized instants, and makes `readManifest` refuse runtime use
+- ci/W-531-spec-2.log #2: closed — brief:54 now states the lower-case collegium domain and names `sellaNameProblem`/`sella.name` as its rejector
+- ci/W-531-spec-2.log #3: closed — brief:39 now parses role relative to the row’s collegium with `sellaRole` and pins `qa-reviewer-builder` as reviewer-class
+- ci/W-531-spec-2.log #4: closed — brief:39 and brief:55 now make `defaultSella` return an unresolved-default refusal propagated through lifecycle verbs and amend before writing
+
+## Verdict
+Revision 2 closes the four original blockers, but the newly censused production-magister path still fails open in `next`.
+VERDICT: FAIL

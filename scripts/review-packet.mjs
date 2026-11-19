@@ -403,7 +403,7 @@ export function buildPacket(args) {
     refuse("--studio is outside --repo");
   const studioRel = studioUp.split("\\").join("/");
 
-  const sequence = readSequence(studio, opus, phase, sella);
+  const sequence = readSequence(studio, opus, phase, sella, manifest);
   if ("error" in sequence) refuse(sequence.error);
   const previous = sequence.last?.session === undefined ? undefined : sequence.last;
 

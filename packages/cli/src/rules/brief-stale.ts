@@ -8,7 +8,7 @@
  */
 import { readdirSync } from "node:fs";
 import { basename, join } from "node:path";
-import { listMd, parseFrontMatter } from "@bisellium/adapter-native";
+import { listMd, parseFrontMatter, sameSella } from "@bisellium/adapter-native";
 import { instant } from "@bisellium/schema";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { readUiSpecPairing } from "@bisellium/commands/verdict.js";
@@ -37,6 +37,8 @@ export function checkBriefStale(root: string, opts: RuleOpts): Finding[] {
   const design = Array.isArray(collegia) ? collegia.find((c) => isDict(c) && c["id"] === "design") : undefined;
   const architect = isDict(design) && typeof design["magister"] === "string" ? design["magister"] : undefined;
   if (architect === undefined) return [];
+  // W-531: a signature written under an old id is the seat's own signature (sella_aliases)
+  const roster = isDict(opts.manifest) ? (opts.manifest as { sellae?: { id: string }[]; sella_aliases?: unknown }) : {};
   const logs = names(() => readdirSync(join(root, "ci")));
   const findings: Finding[] = [];
   for (const path of names(() => listMd(join(root, "opera")))) {
@@ -61,7 +63,7 @@ export function checkBriefStale(root: string, opts: RuleOpts): Finding[] {
       .map((name) => ({ name, n: BigInt(name.slice(id.length + 6, -4)) }))
       .sort((a, b) => (a.n < b.n ? 1 : a.n > b.n ? -1 : 0))
       .map((l) => ({ ...l, h: parseLogHeader(read(root, `ci/${l.name}`, "ci") ?? "") }))
-      .find((l) => l.h.get("phase") === "spec" && l.h.get("opus") === id && l.h.get("sella") === signer && (l.h.get("outcome") ?? "").startsWith("passed"));
+      .find((l) => l.h.get("phase") === "spec" && l.h.get("opus") === id && sameSella(roster, l.h.get("sella"), signer) && (l.h.get("outcome") ?? "").startsWith("passed"));
     const signedAt = instant(sig?.h.get("at"));
     if (sig === undefined || signedAt === undefined) continue;
     const later = (Array.isArray(d["amendments"]) ? d["amendments"] : []).filter((a): a is Dict => isDict(a) && a["field"] === "title" && (instant(a["at"])?.getTime() ?? 0) > signedAt.getTime());

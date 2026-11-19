@@ -15,7 +15,7 @@ import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { USAGE } from "./usage.js";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
-import { isBuilderClassSeat, readFront, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, readFront, readManifest, resolveSeat, type Manifest, rosterAt, sameSella, type SeatRoster } from "@bisellium/adapter-native";
 import {
   censorSella,
   contentLines,
@@ -401,7 +401,7 @@ export interface SequenceRound {
  * `ci/<opus>-<spec|review|handoff>-<m>.log` whose header block names `sella`. A sessioned one is parsed
  * strictly. An unreadable entry, or a sessioned one that does not parse, is an error.
  */
-export function readSequence(root: string, opus: string, phase: SequencePhase, sella: string): { last: SequenceRound | undefined } | Refusal {
+export function readSequence(root: string, opus: string, phase: SequencePhase, sella: string, roster: SeatRoster = rosterAt(root)): { last: SequenceRound | undefined } | Refusal {
   const contained = safeItemPath(join(root, "ci"), opus);
   if (typeof contained !== "string") return contained;
   let names: string[];
@@ -420,7 +420,7 @@ export function readSequence(root: string, opus: string, phase: SequencePhase, s
     if ("error" in file) return { error: `${rel}: ${file.error}` };
     const text = file.bytes.toString("utf8");
     const header = headerBlock(text);
-    if (header.get("sella") !== sella || (last !== undefined && Number(m[1]) < last.round)) continue;
+    if (!sameSella(roster, header.get("sella"), sella) || (last !== undefined && Number(m[1]) < last.round)) continue;
     last = { round: Number(m[1]), rel, text, session: header.get("session") };
   }
   if (last === undefined) return { last: undefined };
@@ -1075,7 +1075,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   const uiInput = values.get("--ui-input");
   // W-338: on a kind: ui opus only the ui-lead's spec verdict is the UI input; every other seat's (the architect's
   // signature, the spec review) is a plain spec verdict, judged as on any other opus
-  const plain = !isUi || (phase === "spec" && sella !== "ui-lead");
+  const plain = !isUi || (phase === "spec" && !sameSella(manifest, sella, "ui-lead"));
   // W-452: every spec verdict path, the ui-lead's UI input included, reads bisellium.yml#spec_seats as next does; a setting it
   // refuses holds next at spec, so the verdict exits 2 here, before anything is written
   const seats = phase === "spec" ? readSpecSeats(manifest, opusId, record as unknown as Record<string, unknown>, specLogSource(root)) : undefined;
@@ -1161,7 +1161,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       console.error("UI build verdict cannot identify the manifest QA magister censor");
       return { exitCode: 2 };
     }
-    if (sella !== censor) {
+    if (!sameSella(manifest, sella, censor)) {
       console.error(`UI build verdict must be attributed to the censor ${censor}`);
       return { exitCode: 2 };
     }
@@ -1225,7 +1225,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       return { exitCode: 2 };
     }
     const signer = uiPair.pairing?.signer ?? design.magister;
-    if (sella === signer) {
+    if (sameSella(manifest, sella, signer)) {
       const problems = [
         ...promiseLedgerProblems(read.bytes.toString("utf8"), transcript.toString("utf8"), briefRel).map((p) => `promise ledger: ${p}`),
         // W-445: a quoted claim's cited evidence holds it
@@ -1261,7 +1261,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   }
 
   // W-215: a sequence (opus, phase, sella) keeps the reviewer session its first sessioned round recorded
-  const sequence = readSequence(root, opusId, phase, sella);
+  const sequence = readSequence(root, opusId, phase, sella, manifest);
   if ("error" in sequence) {
     console.error(sequence.error);
     return { exitCode: 2 };
@@ -1526,7 +1526,7 @@ export function buildReviewDrift(main: Manifest, worktree: Manifest): string | u
 }
 
 /** One build-review log, strictly: the parser's grammar, then this opus's phase, round, censor, time, tree and outcome. */
-function parseBuildReviewLog(text: string, id: string, rel: string, n: number, censor: string): BuildReviewRound | { error: string } {
+function parseBuildReviewLog(text: string, id: string, rel: string, n: number, censor: string, roster: SeatRoster): BuildReviewRound | { error: string } {
   const p = parseVerdictLog(text, id, rel);
   if ("error" in p) return p;
   const bad = (why: string): { error: string } => ({ error: `${rel}: ${why}` });
@@ -1538,7 +1538,7 @@ function parseBuildReviewLog(text: string, id: string, rel: string, n: number, c
   }
   if (once["phase"] !== "build") return bad('the header "# phase:" must be build');
   if (once["round"] !== String(n)) return bad(`the header "# round:" must equal the filename's round ${n}`);
-  if (once["sella"] !== censor) return bad(`the header "# sella:" must be the censor ${censor}`);
+  if (!sameSella(roster, once["sella"], censor)) return bad(`the header "# sella:" must be the censor ${censor}`);
   const brief = p.headers.get("brief") ?? [];
   if (brief.length > 1) return bad('the header "# brief:" must appear at most once');
   const at = utcTimestampProblem(once["at"]);
@@ -1580,7 +1580,7 @@ export function readBuildRounds(root: string, id: string, config: BuildReviewCon
     const rel = `ci/${name}`;
     const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
     if ("error" in file) return { error: `${rel}: ${file.error}` };
-    const round = parseBuildReviewLog(file.bytes.toString("utf8"), id, rel, Number(m[1]), config.censor);
+    const round = parseBuildReviewLog(file.bytes.toString("utf8"), id, rel, Number(m[1]), config.censor, rosterAt(root));
     if ("error" in round) return round;
     rounds.push(round);
   }

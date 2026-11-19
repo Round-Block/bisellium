@@ -19,7 +19,7 @@ import {
   PETITIO_STATES,
   instant,
 } from "@bisellium/schema";
-import { listMd, readFront, resolveSeat, STATES, type Manifest } from "@bisellium/adapter-native";
+import { aliasTable, listMd, readFront, resolveSeat, sellaNameProblem, STATES, type Manifest, preCutoverInFlight, readSellaAliases, strictInstant } from "@bisellium/adapter-native";
 import { admissionLimit, readBriefLimit } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
@@ -291,6 +291,33 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const sellaIds = uniq("sellae", sellae);
   uniq("probationes", probationes);
   const sellaCollegium = new Map(sellae.map((s) => [str(s["id"]) ?? "", str(s["collegium"]) ?? ""] as const));
+  // W-531 (D-241): the role contract. Declaring `sella_aliases` is the switch: its table is checked (manifest.aliases)
+  // and every live row keeps the name rule (sella.name). A `from` is never a declared row and a `to` always a live
+  // one, so no alias chains and the table is acyclic by construction.
+  const aliasesRaw = m["sella_aliases"];
+  if (aliasesRaw !== undefined) {
+    const at = "bisellium.yml#sella_aliases";
+    // the one reading of the table (readSellaAliases): every runtime reader refuses what this reports
+    const aliasRoster = { sellae: sellae.map((s) => ({ id: str(s["id"]) ?? "", retired: s["retired"] === true })), sella_aliases: aliasesRaw };
+    const read = readSellaAliases(aliasRoster);
+    if ("error" in read) for (const e of read.error) add("manifest.aliases", "block", at, e);
+    else {
+    const untilMs = read.table?.live_until === undefined ? undefined : strictInstant(read.table.live_until);
+    if (untilMs !== undefined && now.getTime() >= untilMs - 14 * 86_400_000) {
+      const open = preCutoverInFlight(root, aliasRoster);
+      if (open.length > 0)
+        add("manifest.aliases.window", "advise", `${at}.live_until`, `old ids stay live past ${read.table!.live_until!} while these pre-cutover opera are open: ${open.join(", ")}`);
+    }
+    }
+    {
+      for (const s of sellae) {
+        const id = str(s["id"]);
+        if (id === undefined || s["retired"] === true) continue;
+        const why = sellaNameProblem(id, str(s["collegium"]) ?? "");
+        if (why !== undefined) add("sella.name", "block", "bisellium.yml#sellae", why);
+      }
+    }
+  }
   // W-089 behaviour 7: `resolveSeat`'s own minimal row shape, built off the
   // same raw `sellae` this rule module already parsed — `traditio.sella`/
   // `opus.sella` route their membership test through it (S1) rather than
@@ -299,8 +326,13 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   // instance directory's harness off this same roster.
   const seatRoster = {
     sellae: sellae.map((s) => ({ id: str(s["id"]) ?? "", retired: s["retired"] === true, collegium: str(s["collegium"]) ?? "", harness: str(s["harness"]) })),
+    // W-531: a record naming an old id resolves through the alias table, so history stays blocking-clean forever.
+    sella_aliases: m["sella_aliases"],
   };
   const magisterOf = new Map(collegia.map((d) => [str(d["id"]) ?? "", str(d["magister"]) ?? ""] as const));
+  // W-531: an old id a record names (a petitio party, an acta author) reads as its canonical seat; config keys do not.
+  const aliasOf = aliasTable(seatRoster);
+  const isOldId = (v: string): boolean => sellaIds.has(aliasOf.get(v) ?? "") && !sellaIds.has(v);
   const stateIds = new Set(STATES.map((s) => s.id));
 
   const defaults = { ...DEFAULTS };
@@ -746,7 +778,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const from = str(d["from"]);
     const to = str(d["to"]);
     for (const [k, v] of [["from", from], ["to", to]] as const)
-      if (v && v !== patron && !sellaIds.has(v)) add("petitio.party", "block", where, `${k} "${v}" is neither a sella nor the patron`);
+      if (v && v !== patron && !sellaIds.has(v) && !isOldId(v)) add("petitio.party", "block", where, `${k} "${v}" is neither a sella nor the patron`);
     if (s === "needs_you" && to && to !== patron) add("petitio.direction", "block", where, `needs_you must be addressed to the patron (to: ${to})`);
     if (s === "awaiting_reply" && from && from !== patron) add("petitio.direction", "block", where, `awaiting_reply means the patron asked (from: ${from})`);
     if (d["opus"] !== undefined) {
@@ -754,7 +786,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
       if (!w || !itemIds.has(w)) add("petitio.opus", "block", where, `opus "${w ?? ""}" does not exist`);
     }
     if (s !== "resolved") {
-      const collegium = from ? sellaCollegium.get(from) : undefined;
+      const collegium = from ? sellaCollegium.get(from) ?? sellaCollegium.get(aliasOf.get(from) ?? "") : undefined;
       if (collegium) openByCollegium.set(collegium, (openByCollegium.get(collegium) ?? 0) + 1);
       if (d["opened"] !== undefined) {
         const opened = instant(d["opened"]);
@@ -776,7 +808,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const d = fm.data;
     for (const k of ["author", "kind", "title", "at"]) if (d[k] === undefined) add("acta.keys", "block", where, `missing "${k}"`);
     const a = str(d["author"]);
-    if (d["author"] !== undefined && (!a || (!sellaIds.has(a) && a !== patron))) add("acta.author", "block", where, `author "${a ?? ""}" not a sella`);
+    if (d["author"] !== undefined && (!a || (!sellaIds.has(a) && !isOldId(a) && a !== patron))) add("acta.author", "block", where, `author "${a ?? ""}" not a sella`);
     const k = str(d["kind"]) ?? "";
     if (!(ACTUM_KINDS as readonly string[]).includes(k)) add("acta.kind", "block", where, `kind "${k}" invalid`);
     const at = instant(d["at"]);

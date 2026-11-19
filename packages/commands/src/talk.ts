@@ -19,7 +19,7 @@
  */
 import { appendFileSync, closeSync, constants, existsSync, lstatSync, openSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest, enterSeat } from "@bisellium/adapter-native";
 import { filterEnv, HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, writeReceiptStart, type HarnessProfile, type Turn } from "@bisellium/shim";
 import { answer } from "./query.js";
 import { buildContext } from "./context.js";
@@ -327,7 +327,8 @@ type PerformTalkOutcome =
   | { ok: false; exitCode: number; message: string };
 
 async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcome> {
-  const { sella, message, now } = params;
+  const { message, now } = params;
+  let sella = params.sella;
   const modelOnly = params.modelOnly ?? false;
 
   const root = resolve(params.studio);
@@ -345,6 +346,10 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
 
   // W-089 behaviour 3: a template or one of its instance ids resolves the
   // same row's harness/model (S1).
+  const entered = enterSeat(root, manifest, sella, now);
+  if ("error" in entered) return { ok: false, exitCode: 2, message: entered.error };
+  if (entered.notice !== undefined) console.error(entered.notice);
+  sella = entered.id;
   const resolvedTalkSella = resolveSeat(manifest, sella);
   if (!resolvedTalkSella) {
     return { ok: false, exitCode: 2, message: `unknown sella "${sella}" — not declared in ${manifestPath}` };
@@ -371,7 +376,8 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
         message: `talk: "${sella}" is a builder-class template — pass an already-minted instance (e.g. "${resolvedTalkSella.seat.id}.<opus-id>")`,
       };
     }
-    if (seatInstance(resolvedTalkSella.seat.id, resolvedTalkSella.instance) !== sella) {
+    const reminted = seatInstance(resolvedTalkSella.seat.id, resolvedTalkSella.instance);
+    if (reminted !== sella) {
       return { ok: false, exitCode: 2, message: `talk: "${sella}" does not round-trip through the minter — refused` };
     }
   }

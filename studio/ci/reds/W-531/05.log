@@ -1,0 +1,42 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-531-b5\s --import tsx packages/cli/src/w531.test.ts
+# exit: 1
+# at: 2026-11-19T08:01:16.297Z
+# sella: builder.W-531
+# tree: tree:6e0718d8c1a4b008cd230a9d3951ef7f4ea8d39a
+# ticket: {"opus":"W-531","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-531/studio","head":"c4a6ef1ec402e0e78962b5bd924457427f665615","brief":"1a7b7980190d41911c58a310e10d0c93b762de73","at":"2026-11-19T08:01:14.151Z"}
+
+TAP version 13
+# Subtest: W-531-b5 behaviour 5: the officina's own seats decide, not bisellium's ids
+not ok 1 - W-531-b5 behaviour 5: the officina's own seats decide, not bisellium's ids
+  ---
+  duration_ms: 649.169417
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-531/packages/cli/src/w531.test.ts:66:1664'
+  failureType: 'testCodeFailure'
+  error: |-
+    a {collegium}-builder-<qualifier> row is builder-class
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-531/packages/cli/src/w531.test.ts:257:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 656.013698

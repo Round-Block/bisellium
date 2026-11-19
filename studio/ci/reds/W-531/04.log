@@ -1,0 +1,42 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-531-b4\s --import tsx packages/cli/src/w531.test.ts
+# exit: 1
+# at: 2026-11-19T08:00:36.453Z
+# sella: builder.W-531
+# tree: tree:23dd76677bb7d968a5ec9e1da64644cd7c89bb7f
+# ticket: {"opus":"W-531","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-531/studio","head":"b3f24a4e0d8091b2831deee75f88864d380ff12f","brief":"1a7b7980190d41911c58a310e10d0c93b762de73","at":"2026-11-19T08:00:34.467Z"}
+
+TAP version 13
+# Subtest: W-531-b4 behaviour 4: a record written under an old id still counts for the seat it was written for
+not ok 1 - W-531-b4 behaviour 4: a record written under an old id still counts for the seat it was written for
+  ---
+  duration_ms: 354.961516
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-531/packages/cli/src/w531.test.ts:52:2619'
+  failureType: 'testCodeFailure'
+  error: |-
+    a signature under the old id is the signer's: the retitle after it is found
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-531/packages/cli/src/w531.test.ts:236:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 363.255564

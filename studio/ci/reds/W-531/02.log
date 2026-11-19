@@ -1,0 +1,43 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-531-b2\s --import tsx packages/cli/src/w531.test.ts
+# exit: 1
+# at: 2026-11-19T07:59:34.130Z
+# sella: builder.W-531
+# tree: tree:17e8dcc1f77a17e6a7f8a030a5b5263b111652b8
+# ticket: {"opus":"W-531","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-531/studio","head":"fa25ec69975f2778f9403fafd1b93171199eb8cf","brief":"1a7b7980190d41911c58a310e10d0c93b762de73","at":"2026-11-19T07:59:26.423Z"}
+
+TAP version 13
+# Subtest: W-531-b2 behaviour 2: an old id resolves to its canonical seat, forever, through the one resolver
+not ok 1 - W-531-b2 behaviour 2: an old id resolves to its canonical seat, forever, through the one resolver
+  ---
+  duration_ms: 448.259899
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-531/packages/cli/src/w531.test.ts:24:6460'
+  failureType: 'testCodeFailure'
+  error: |-
+    an old id resolves to its canonical row
+    + actual - expected
+    
+    + undefined
+    - 'engineering-architect'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'engineering-architect'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-531/packages/cli/src/w531.test.ts:115:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 457.003933

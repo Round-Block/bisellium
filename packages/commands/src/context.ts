@@ -8,7 +8,7 @@
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { listMd, readFront, readManifest, resolveSeat, snapshotDir } from "@bisellium/adapter-native";
+import { enterSeat, listMd, readFront, readManifest, resolveSeat, snapshotDir, sameSella } from "@bisellium/adapter-native";
 import { openLessons } from "./lessons.js";
 import { readRecordedFile } from "./opus-model.js";
 import { instant } from "@bisellium/schema";
@@ -17,6 +17,8 @@ export interface ContextBundle {
   text: string;
   tokens: number;
   truncated: string[];
+  /** W-531: the old-id live-use notice, for the CLI to print. */
+  notice?: string;
 }
 
 const DEFAULT_MAX_TOKENS = 4000;
@@ -96,6 +98,10 @@ export function buildContext(root: string, sella: string, opts: { now: Date; max
     return notAStudio;
   }
   const patron = manifest.patron ?? "patron";
+  // W-531: an old id boots as its canonical seat while old ids are live, and is refused (with the reason) after.
+  const entered = enterSeat(root, manifest, sella, opts.now);
+  if ("error" in entered) return { text: "", tokens: 0, truncated: [entered.error] };
+  sella = entered.id;
   const isPatron = sella === patron;
   // W-089 behaviour 3: a template or one of its instance ids resolves the
   // same row (S1).
@@ -112,7 +118,8 @@ export function buildContext(root: string, sella: string, opts: { now: Date; max
   const sellaRow = resolved?.seat;
 
   try {
-    return buildContextFor(root, manifest, sella, sellaRow, maxTokens, opts.now);
+    const bundle = buildContextFor(root, manifest, sella, sellaRow, maxTokens, opts.now);
+    return entered.notice === undefined ? bundle : { ...bundle, notice: entered.notice };
   } catch {
     return notAStudio;
   }
@@ -207,7 +214,7 @@ function buildContextFor(
   }
 
   // 4. the sella's active opera, with traditio ---------------------------
-  const mine = snap.opera.filter((w) => ACTIVE_STATES.has(w.state) && w.meta["sella"] === sella);
+  const mine = snap.opera.filter((w) => ACTIVE_STATES.has(w.state) && sameSella(manifest, typeof w.meta["sella"] === "string" ? w.meta["sella"] : undefined, sella));
   if (mine.length) {
     const lines = mine.map((w) => {
       const h = w.meta["traditio"] as Record<string, string> | undefined;
@@ -234,10 +241,10 @@ function buildContextFor(
     const from = typeof data["from"] === "string" ? data["from"] : undefined;
     const state = typeof data["state"] === "string" ? data["state"] : undefined;
     if (!id) continue;
-    const addressedToMe = to === sella && state !== "resolved";
-    const myAwaitingReply = from === sella && state === "awaiting_reply";
+    const addressedToMe = sameSella(manifest, to, sella) && state !== "resolved";
+    const myAwaitingReply = sameSella(manifest, from, sella) && state === "awaiting_reply";
     const pending = addressedToMe || myAwaitingReply;
-    const patronParty = (from === sella && to === patron) || (to === sella && from === patron);
+    const patronParty = (sameSella(manifest, from, sella) && to === patron) || (sameSella(manifest, to, sella) && from === patron);
     const at = !pending && state === "resolved" && sella !== patron && patronParty ? carryStamp(body, now) : undefined;
     if (!pending && at === undefined) continue;
     const relPath = p.startsWith(root) ? p.slice(root.length + 1).replace(/\\/g, "/") : p;

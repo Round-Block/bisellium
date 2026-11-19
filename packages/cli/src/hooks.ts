@@ -25,7 +25,7 @@ import { spawnSync } from "node:child_process";
 import { accessSync, appendFileSync, constants, readFileSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFront, readManifest, listMd, isBuilderClassSeat, resolveSeat, seatInstance, type Manifest } from "@bisellium/adapter-native";
+import { readFront, readManifest, listMd, isBuilderClassSeat, resolveSeat, seatInstance, type Manifest, canonicalSella, sameSella } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, instant, type GantryEvent } from "@bisellium/schema";
 import { ensureRealDirectory } from "@bisellium/commands/ids.js";
@@ -308,7 +308,7 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
     const manifest = readManifestSafe(studio);
     const resolved = manifest ? resolveSeat(manifest, sella) : undefined;
     if (resolved && isBuilderClassSeat(resolved)) {
-      const ok = resolved.instance !== undefined && seatInstance(resolved.seat.id, resolved.instance) === sella;
+      const ok = resolved.instance !== undefined && seatInstance(resolved.seat.id, resolved.instance) === canonicalSella(manifest!, sella);
       if (!ok) {
         console.error(`hook-event ${sub}: "${sella}" is a bare builder-class template — refusing to write without a minted instance`);
         return { exitCode: 0 };
@@ -421,6 +421,7 @@ function handleStop(studio: string, sella: string, payload: Record<string, unkno
  *  whose traditio.at is older than TRADITIO_STALE_MS — or undefined. Never
  *  throws: an unreadable opera/ or a malformed opus just yields no reminder. */
 function staleTraditioReminder(studio: string, sella: string, now: Date): string | undefined {
+  const roster = readManifestSafe(studio) ?? {};
   let files: string[];
   try {
     files = listMd(join(studio, "opera"));
@@ -434,7 +435,7 @@ function staleTraditioReminder(studio: string, sella: string, now: Date): string
     } catch {
       continue;
     }
-    if (data["sella"] !== sella) continue;
+    if (!sameSella(roster, typeof data["sella"] === "string" ? data["sella"] : undefined, sella)) continue;
     if (typeof data["state"] !== "string" || !ACTIVE_STATES.has(data["state"])) continue;
     const traditio = data["traditio"];
     if (!isDict(traditio) || typeof traditio["at"] !== "string") continue;

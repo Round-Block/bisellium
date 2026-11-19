@@ -1,0 +1,23 @@
+# opus: W-531
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1f404-c995-7c70-b099-c2b874b87742
+# outcome: passed
+# at: 2026-11-19T15:15:16.670Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# brief: briefs/W-531.md blob:67394500783bb55151f4352426500707089b324f
+# ticket: {"opus":"W-531","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-531/studio","head":"5afa46d9c5f89499a35c8e0450e4cfe87e5a8ba8","brief":"67394500783bb55151f4352426500707089b324f","at":"2026-11-19T15:15:14.680Z"}
+
+## Findings
+1. advisory — packages/cli/src/tick.ts:157,167-177,182-184,326-379,485-486,520-549 Reached by round 1 finding #2’s class: old-id daily authors and filenames still compare raw against canonical magisters, affecting paused health, dry-run reporting, and live daily writes. This form is outside the declared census by brief:44, so it is a stated-limit advisory. [severity: S2] [class: review×census-misses-ordinary-direct-binding-forms] — check: packages/cli/src/tick.test.ts old daily-author and filename deduplication under an alias
+
+## Earlier findings
+- ci/W-531-review-1.log #1: closed — `enterSeat` canonicalizes old ids and instances under the command clock before all six live paths write; the b3 red fails by assertion on the old receipt, and the fixed row passes.
+- ci/W-531-review-1.log #2: closed — `canonRecord` canonicalizes record, traditio and gate sellas at spec-owner and trunk/branch read boundaries; the b4 red fails by assertion before that function exists, and the fixed row passes.
+- ci/W-531-review-1.log #3: closed — `strictInstant` now uses `setUTCFullYear`, preserving years 0000–0099; the b1 red fails by assertion on year 0050, and the fixed row passes.
+
+## Verdict
+At reviewed head `5afa46d9 chore(studio): W-531 gates`, all blocking findings are closed and only the stated-limit advisory remains.
+VERDICT: PASS

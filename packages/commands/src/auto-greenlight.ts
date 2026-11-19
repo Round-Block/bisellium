@@ -20,7 +20,7 @@ import { spawnSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "yaml";
-import { STATES, type Manifest } from "@bisellium/adapter-native";
+import { STATES, type Manifest, sameSella } from "@bisellium/adapter-native";
 import type { NativeOpusKind } from "@bisellium/schema";
 import { splitFront } from "./frontmatter.js";
 import { patronDecisionProblem } from "./lifecycle.js";
@@ -112,7 +112,7 @@ function remainder(root: string, manifest: Manifest, rec: Dict): Kind {
     if ("why" in p) return { refuse: `parent ${parent}'s spec log ci/${name} cannot be read (${p.why})` };
     const [phase, sella, outcome] = [header(p, "phase"), header(p, "sella"), header(p, "outcome")];
     if (phase !== "spec" || sella === undefined || outcome === undefined) return { refuse: `parent ${parent}'s spec log ci/${name} does not hold exactly one # phase: spec, one # sella: and one # outcome:` };
-    if (sella !== reviewer) continue;
+    if (!sameSella(manifest, sella, typeof reviewer === "string" ? reviewer : undefined)) continue;
     if (outcome !== "passed" && outcome !== "failed") return { refuse: `parent ${parent}'s spec review ci/${name} has outcome ${show(outcome)}, not passed or failed` };
     if (outcome === "passed") run = [];
     else run.push(`ci/${name}`);

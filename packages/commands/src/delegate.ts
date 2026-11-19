@@ -166,6 +166,8 @@ export function runDelegate(args: string[], opts: WriteOptions = {}): WriteResul
       console.error(retiredDispatchMessage(manifest, resolved.seat));
       return { exitCode: 2 };
     }
+    // W-531: delegate edits the canonical row; an old id says so
+    if (resolved.alias !== undefined) console.error(`sella "${resolved.alias}" is now "${resolved.seat.id}"; delegate edits "${resolved.seat.id}"`);
     const row = resolved.seat;
     currentValue = row.model;
     target = { kind: "sella", id: row.id, field: "model", value: model! };
