@@ -55,11 +55,12 @@ Process slot order (D-234, one at a time): W-673 (a handoff-only PR no longer vo
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- E1 W-479 (an expiring audit allowlist so an outside advisory stops blocking every merge), then W-576 (one browser test walks the End state v1 walk from the console): W-479 rank 0 (D-236, Patron: "B: allowlist via halted W-479"), architect spec r1 running, to done before any merge; W-576 build review passed (00a11a3d), its full ci, PR, merge, done follow W-479; then E1 pauses until the Claude reset (Thu 19 Nov 14:00 SGT). Patron: "finish up whatever is in the eng lanes first, then pause the lanes after, UI lanes keep going" / "what i mean by finish is completing the tasks".
-- E2 W-697 (a passed-review opus goes to PR on light gates; one full suite at certify): r3 signed; Codex spec review round 4; to done (the Patron merges); then E2 pauses. Stays on Claude (Patron: "i meant hold off on moving workload to codex").
-- UI1 W-503 (Home on the Dracula palette): full ci with main's CLI refused at audit (waits on W-479); then the review script fix, build review, Patron screens. W-662 held after W-503.
-- UI2 W-467 (Officina page on Home's palette): build review passed (4f7c55f0); PR #1301 open, Patron approved; merge waits on W-479.
-- DR runs from its own clone (W-687 deferred).
+- Priority, E1 W-531 (role contract {collegium}-{role}, bisellium roster, sella_aliases migration; absorbs W-294, W-644, W-590): rank 0 by D-241 (the Patron, 11-19: lead and architect stay two roles, superseding D-191 item 2; co-leads by cause; then W-546, then W-284). Next: engineering-architect (Opus 5.5) spec, after the Claude week reset. Leads' meet: ~/.bisellium-evidence/role-cleanup-meet-1119/collated.md. D-241.md is untracked in main and rides W-531's branch (D-240).
+- E1 W-576 (one browser test walks the End state v1 walk): done 11-19 (#1308, #1310).
+- E2 W-697 (a passed-review opus goes to PR on light gates): waits behind W-531.
+- UI1 W-503 (Home on the Dracula palette): route named by design-lead (D-241; ~/.bisellium-evidence/w503-route-1119/design-lead.md); failed-ci evidence committed (b89a4a56); ui-architect signed brief r13 (Files owned 27, w675.spec.ts home selector) and its host pre-sign gate passed (W-503-spec/r13/host/gate-r13.log). Next: record spec round 20 (dry first), Opus ui-spec-reviewer review, ui-lead input, then route steps 4-8.
+- UI2 W-467 (Officina page on Home's palette): master verify passed, logs landed (#1309); the Patron approved the screens as served on master 11-19 ("Yes, approve"). Next: clerk writes the UI ruling decision (D-228 shape), amend --ui-ruling, done twice.
+- DR runs from its own clone (session cron 09:04 SGT).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
 
