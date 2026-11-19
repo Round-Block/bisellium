@@ -55,10 +55,10 @@ Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, bri
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- E1 W-531 (role contract {collegium}-{role}, roster, sella_aliases migration; rank 0, D-241): spec committed 8ddc1afd; light gates, then one full ci --opus, then Codex build review round 1; its later round is cut per D-245 item 1.
-- E2 W-699 (path check at sign, brief delta rule, verdict --check; D-245 item 6): filed 11-19; next, architect (Opus 5.5) spec from ~/.bisellium-evidence/process-fix-meet-1119/collated.md; D-245 rides its branch.
-- UI1 W-503 (Home on the Dracula palette): red b6 recorded (ecab380c); `next` names the build review before route 1119c step 12 (selector fix); design-lead asked why (~/.bisellium-evidence/w503-route-1119d/).
-- UI2 W-504 (Home completion row): the Patron ruled "Completion only" (W-504-spec/patron-ruling.md); next, host pre-sign gate, then Codex Sol ui-architect sign.
+- E1 W-531 (role contract): ci/W-531-spec-8.log committed (87b82027); Codex Sol spec review round 9 running; then record it, one full ci --opus (main's CLI, producer --no-worktree), Codex build review round 1.
+- E2 W-699 (path check at sign, brief delta rule, verdict --check, stale-gate check, D-246 measure): revision 2 signed by the architect, not recorded (~/.bisellium-evidence/W-699-spec/signature-r2.md, brief.md, gate-r2.log 46 rows pass); design-lead checks the b5 stale-gate row, then a kit records the signature as `next` names it, then branch; D-245 and D-246 ride its branch; its lex and prompt edits are code-owned (the Patron merges). W-697 rebases after W-699 lands.
+- UI1 W-503 (Home on the Dracula palette): full ci passed at tree 5d9b14af, records committed (3b7a816b); fresh qa-lead build review round 1 running; then record it, dry first.
+- UI2 W-504 (Home completion row): pre-sign gate r2 passed (host-g2); Codex Sol ui-architect sign running; then record it as spec round 1 per `next`, dry first.
 - DR runs from its own clone (session cron 09:04 SGT).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
