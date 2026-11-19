@@ -19,7 +19,7 @@ import {
   PETITIO_STATES,
   instant,
 } from "@bisellium/schema";
-import { listMd, readFront, resolveSeat, STATES, type Manifest } from "@bisellium/adapter-native";
+import { listMd, readFront, resolveSeat, sellaNameProblem, STATES, type Manifest, readSellaAliases, strictInstant } from "@bisellium/adapter-native";
 import { admissionLimit, readBriefLimit } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
@@ -291,6 +291,27 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const sellaIds = uniq("sellae", sellae);
   uniq("probationes", probationes);
   const sellaCollegium = new Map(sellae.map((s) => [str(s["id"]) ?? "", str(s["collegium"]) ?? ""] as const));
+  // W-531 (D-241): the role contract. Declaring `sella_aliases` is the switch: its table is checked (manifest.aliases)
+  // and every live row keeps the name rule (sella.name). A `from` is never a declared row and a `to` always a live
+  // one, so no alias chains and the table is acyclic by construction.
+  const aliasesRaw = m["sella_aliases"];
+  if (aliasesRaw !== undefined) {
+    const at = "bisellium.yml#sella_aliases";
+    // the one reading of the table (readSellaAliases): every runtime reader refuses what this reports
+    const aliasRoster = { sellae: sellae.map((s) => ({ id: str(s["id"]) ?? "", retired: s["retired"] === true })), sella_aliases: aliasesRaw };
+    const read = readSellaAliases(aliasRoster);
+    if ("error" in read) for (const e of read.error) add("manifest.aliases", "block", at, e);
+    else {
+    }
+    {
+      for (const s of sellae) {
+        const id = str(s["id"]);
+        if (id === undefined || s["retired"] === true) continue;
+        const why = sellaNameProblem(id, str(s["collegium"]) ?? "");
+        if (why !== undefined) add("sella.name", "block", "bisellium.yml#sellae", why);
+      }
+    }
+  }
   // W-089 behaviour 7: `resolveSeat`'s own minimal row shape, built off the
   // same raw `sellae` this rule module already parsed — `traditio.sella`/
   // `opus.sella` route their membership test through it (S1) rather than

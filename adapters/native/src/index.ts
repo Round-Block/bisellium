@@ -66,6 +66,9 @@ export interface Manifest {
    *  membership rules stay blocking forever, but `resolveSeat`'s callers
    *  must refuse it as a live dispatch target (S3). Absent means live. */
   sellae: { id: string; collegium: string; kind?: ActorKind; model?: string; harness?: string; retired?: boolean }[];
+  /** W-531 (D-241): the role contract's switch and migration table. `since` is the cutover; `ids` maps each old
+   *  sella id to its canonical seat (read forever); `live_until`, when set, ends an old id's live use. */
+  sella_aliases?: SellaAliases;
   probationes: { id: string; name: string; kind: ProbatioKind; command?: string }[];
   wip_limit?: number;
   /** Overrides for the Defaults table in the dossier. */
@@ -213,8 +216,17 @@ function posture(allowance: number | undefined, burn: number | undefined): Provi
 }
 
 export function readManifest(root: string): Manifest {
-  return parseYaml(readFileSync(join(root, "bisellium.yml"), "utf8")) as Manifest;
+  const m = parseYaml(readFileSync(join(root, "bisellium.yml"), "utf8")) as Manifest;
+  // W-531: a refused alias table refuses the manifest, so no runtime reader resolves, writes or dispatches through it
+  if (typeof m === "object" && m !== null && (m as { sella_aliases?: unknown }).sella_aliases !== undefined) {
+    const read = readSellaAliases(m);
+    if ("error" in read) throw new Error(`${SELLA_ALIASES_REFUSED}: ${read.error.join("; ")}`);
+  }
+  return m;
 }
+
+/** W-531: the prefix of `readManifest`'s refusal of a bad `sella_aliases` table. */
+export const SELLA_ALIASES_REFUSED = "bisellium.yml#sella_aliases is refused";
 
 /** W-153: the declared milestones of `<root>/milestones.yml` — the Status page script's own reader's contract:
  *  undefined when the file is absent; throws naming the file when it does not parse or has no `milestones` list. */
@@ -360,6 +372,154 @@ export function retiredDispatchMessage<T extends SeatLike & { collegium?: string
   return replacement
     ? `sella "${seat.id}" is retired — dispatch "${replacement.id}" instead`
     : `sella "${seat.id}" is retired — no live replacement is declared for it`;
+}
+
+// ---------------------------------------------------------------------------
+// W-531 (D-241) — the role contract: every live sella id is `{collegium}-{role}` (an optional `-<qualifier>` for a
+// parallel variant), the collegium the row's own, the role one of ROLES. Old ids live on in `sella_aliases.ids`.
+// ---------------------------------------------------------------------------
+
+/** The role vocabulary (D-241 item 1; collated item 0(b)). */
+export const ROLES = ["lead", "architect", "builder", "reviewer", "clerk", "runner", "guest"] as const;
+
+export interface SellaAliases {
+  since?: unknown;
+  live_until?: unknown;
+  ids?: unknown;
+}
+
+const QUALIFIER_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** Why `id` breaks the name rule for a live row of `collegium`, or undefined when it keeps it. */
+export function sellaNameProblem(id: string, collegium: string): string | undefined {
+  if (!QUALIFIER_RE.test(collegium)) return `sella "${id}": collegium "${collegium}" is not lower-case words joined by "-" ([a-z0-9]+(-[a-z0-9]+)*)`;
+  if (sellaRole(id, collegium) !== undefined) return undefined;
+  return `sella "${id}" is not {collegium}-{role}: expected ${collegium}-<${ROLES.join("|")}>[-<qualifier>]`;
+}
+
+/** W-531: the role of `id` read relative to its row's `collegium`: `{collegium}-{role}` or `{collegium}-{role}-<qualifier>`,
+ *  the role the first word after the collegium (so `qa-reviewer-builder` is a reviewer); undefined when the id keeps no
+ *  role of ROLES or the collegium is not lower-case words. */
+export function sellaRole(id: string, collegium: string): (typeof ROLES)[number] | undefined {
+  if (!QUALIFIER_RE.test(collegium) || !id.startsWith(`${collegium}-`)) return undefined;
+  const rest = id.slice(collegium.length + 1);
+  const dash = rest.indexOf("-");
+  const role = dash < 0 ? rest : rest.slice(0, dash);
+  if (dash >= 0 && !QUALIFIER_RE.test(rest.slice(dash + 1))) return undefined;
+  return (ROLES as readonly string[]).includes(role) ? (role as (typeof ROLES)[number]) : undefined;
+}
+
+/** W-531: one alias entry: the canonical seat, and the routing the old id ran on when the entry records one. */
+export interface AliasEntry {
+  to: string;
+  model?: string;
+  harness?: string;
+}
+
+/** W-531: a fully valid `sella_aliases` table (readSellaAliases). */
+export interface SellaAliasTable {
+  since: string;
+  live_until?: string;
+  last_opus?: string;
+  ids: Map<string, AliasEntry>;
+}
+
+const INSTANT_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{3}))?Z$/;
+const PLAIN_SELLA_RE = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
+
+/** W-531: the epoch ms of a real, non-normalized UTC instant `YYYY-MM-DDTHH:MM:SS[.mmm]Z`; undefined for any other
+ *  value, an impossible date (2027-02-30) or time (24:00:00) among them, which Date.parse would roll over. */
+export function strictInstant(v: unknown): number | undefined {
+  const m = typeof v === "string" ? INSTANT_RE.exec(v) : null;
+  if (m === null) return undefined;
+  const [y, mo, d, h, mi, s] = [m[1], m[2], m[3], m[4], m[5], m[6]].map(Number) as [number, number, number, number, number, number];
+  const t = Date.UTC(y, mo - 1, d, h, mi, s, m[7] === undefined ? 0 : Number(m[7]));
+  const back = new Date(t);
+  if (back.getUTCFullYear() !== y || back.getUTCMonth() !== mo - 1 || back.getUTCDate() !== d || back.getUTCHours() !== h || back.getUTCMinutes() !== mi || back.getUTCSeconds() !== s) return undefined;
+  return t;
+}
+
+/** W-531: the one reading of `sella_aliases`. Absent: no table. Otherwise the table only when every part is valid (a
+ *  mapping; `since` and `live_until` real instants, `live_until` after `since`; `last_opus` an opus id; `ids` a mapping
+ *  of plain old ids, none a declared row, to a live declared row, as an id or `{ to, model?, harness? }`); any problem
+ *  refuses the whole table, every problem named. `check` reports these as manifest.aliases; `readManifest` throws them;
+ *  `aliasTable`, `aliasRouting`, `preCutoverInFlight` and `aliasLiveUse` read nothing from a refused table. */
+export function readSellaAliases(manifest: { sellae?: readonly (SeatLike & { collegium?: string })[]; sella_aliases?: unknown }): { table: SellaAliasTable | undefined } | { error: string[] } {
+  const t = manifest.sella_aliases;
+  if (t === undefined) return { table: undefined };
+  const isMap = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v) && !(v instanceof Date);
+  if (!isMap(t)) return { error: ["sella_aliases must be a mapping { since, live_until?, last_opus?, ids }"] };
+  const errors: string[] = [];
+  const since = strictInstant(t["since"]);
+  if (since === undefined) errors.push("since must be an ISO instant: a real UTC date and time, YYYY-MM-DDTHH:MM:SS[.mmm]Z (the cutover)");
+  const untilRaw = t["live_until"];
+  const until = untilRaw === undefined ? undefined : strictInstant(untilRaw);
+  if (untilRaw !== undefined && (until === undefined || (since !== undefined && until <= since))) errors.push("live_until must be an ISO instant after since: a real UTC date and time, YYYY-MM-DDTHH:MM:SS[.mmm]Z");
+  const last = t["last_opus"];
+  if (last !== undefined && !(typeof last === "string" && /^[A-Za-z]+-[0-9]{1,15}$/.test(last))) errors.push("last_opus must be an opus id (the newest at the cutover)");
+  const rows = manifest.sellae ?? [];
+  const ids = new Map<string, AliasEntry>();
+  const raw = t["ids"];
+  if (!isMap(raw)) errors.push("ids must be a mapping of old sella id to canonical sella id");
+  else
+    for (const [from, entry] of Object.entries(raw)) {
+      const shaped = typeof entry === "string" || (isMap(entry) && Object.keys(entry).every((k) => ["to", "model", "harness"].includes(k)) && ["model", "harness"].every((k) => entry[k] === undefined || (typeof entry[k] === "string" && entry[k] !== "")));
+      if (!shaped) errors.push(`alias "${from}" must be a sella id or { to, model?, harness? } with non-empty strings`);
+      if (!PLAIN_SELLA_RE.test(from)) errors.push(`alias "${from}" must be a plain sella id`);
+      if (rows.some((r) => r.id === from)) errors.push(`alias "${from}" is a declared sella; an old id is a row or an alias, never both`);
+      const to = typeof entry === "string" ? entry : isMap(entry) ? entry["to"] : undefined;
+      const target = typeof to === "string" ? rows.find((r) => r.id === to) : undefined;
+      if (target === undefined || target.retired === true) errors.push(`alias "${from}" must name a live declared sella, not ${JSON.stringify(to)}`);
+      else if (shaped) {
+        const e = entry as string | Record<string, unknown>;
+        ids.set(from, typeof e === "string" ? { to: e } : { to: target.id, ...(typeof e["model"] === "string" ? { model: e["model"] } : {}), ...(typeof e["harness"] === "string" ? { harness: e["harness"] } : {}) });
+      }
+    }
+  if (errors.length > 0) return { error: errors };
+  return { table: { since: t["since"] as string, ...(typeof untilRaw === "string" ? { live_until: untilRaw } : {}), ...(typeof last === "string" ? { last_opus: last } : {}), ids } };
+}
+
+/** The entries of a valid `sella_aliases.ids` (old id -> canonical id); a refused table (readSellaAliases) reads as
+ *  empty, so no old id resolves through it. */
+export function aliasTable(manifest: { sellae?: readonly SeatLike[]; sella_aliases?: unknown }): Map<string, string> {
+  const read = readSellaAliases(manifest);
+  return "error" in read || read.table === undefined ? new Map() : new Map([...read.table.ids].map(([from, e]) => [from, e.to]));
+}
+
+/** W-531: the model and harness an old id ran on, when its entry is `{ to, model?, harness? }` (a string entry has none). */
+export function aliasRouting(manifest: { sellae?: readonly SeatLike[]; sella_aliases?: unknown }, old: string): { model?: string; harness?: string } | undefined {
+  const read = readSellaAliases(manifest);
+  const e = "error" in read ? undefined : read.table?.ids.get(old);
+  if (e === undefined || (e.model === undefined && e.harness === undefined)) return undefined;
+  return { ...(e.model !== undefined ? { model: e.model } : {}), ...(e.harness !== undefined ? { harness: e.harness } : {}) };
+}
+
+/** W-531 (SPLIT 5): the opera that keep old ids live past `live_until`: every opus numbered at or below
+ *  `sella_aliases.last_opus` (the newest id at the cutover) that is in flight (greenlit, building, verifying, review). */
+export function preCutoverInFlight(root: string, manifest: { sellae?: readonly SeatLike[]; sella_aliases?: unknown }): string[] {
+  const read = readSellaAliases(manifest);
+  const last = "error" in read ? undefined : read.table?.last_opus;
+  const m = typeof last === "string" ? /^([A-Za-z]+)-(\d{1,15})$/.exec(last) : null;
+  if (m === null) return [];
+  const out: string[] = [];
+  let files: string[];
+  try {
+    files = listMd(join(root, "opera"));
+  } catch {
+    return [];
+  }
+  for (const p of files) {
+    const id = p.slice(p.lastIndexOf("/") + 1, -3);
+    const n = new RegExp(`^${m[1]}-(\\d{1,15})$`).exec(id);
+    if (n === null || Number(n[1]) > Number(m[2])) continue;
+    try {
+      const state = readFront<{ state?: unknown }>(p).data.state;
+      if (state === "greenlit" || state === "building" || state === "verifying" || state === "review") out.push(id);
+    } catch {
+      continue;
+    }
+  }
+  return out.sort();
 }
 
 export function describeLifecycle(manifest: Manifest): Lifecycle {
