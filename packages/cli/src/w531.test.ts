@@ -291,3 +291,27 @@ test("W-531-b1 behaviour 1: a four-digit year below 0100 is a real instant, not 
   const dir = officina("b1-lowyear", ROWS + ALIASES.replace("since: 2026-11-20T00:00:00Z", "since: 0050-01-01T00:00:00Z").replace("live_until: 2027-02-18T00:00:00Z", "live_until: 0090-01-01T00:00:00Z"));
   assert.deepEqual(findings(dir, "manifest.aliases"), [], "a low-year since and live_until are a valid table");
 });
+
+test("W-531-b3 behaviour 3: an old id is translated once where it enters: run, talk and context", async () => {
+  const dir = officina("b3-enter", ROWS + ALIASES);
+  assert.equal(cli(["new", "--kind", "feature", "--collegium", "engineering", "--title", "t", dir]).status, 0, "new exits 0");
+  // run judges the supplied clock, never the wall clock, and records the canonical id
+  const ran = await runCommand(["--sella", "eng-lead", "--studio", dir, "--no-worktree", "--", "node", "-e", "0"], { now: NOW });
+  assert.equal(ran.exitCode, 0, "run under an old id inside the window is accepted");
+  assert.deepEqual(readdirSync(join(dir, "receipts")), ["engineering-lead"], "run's receipt names the canonical id");
+  const late = await runCommand(["--sella", "eng-lead", "--studio", dir, "--no-worktree", "--", "node", "-e", "0"], { now: new Date(AFTER) });
+  assert.equal(late.exitCode, 2, "run after live_until, by the supplied now, is refused");
+  // talk judges its --now and prints the notice
+  const talkLate = cli(["talk", "--sella", "architect", "--studio", dir, "--now", AFTER, "--model-only", "hello"]);
+  assert.equal(talkLate.status, 2, "talk after live_until, by --now, is refused");
+  assert.match(talkLate.err, /sella "architect" is now "engineering-architect": old ids are read-only/, "talk's refusal names the canonical id");
+  const talkLive = cli(["talk", "--sella", "architect", "--studio", dir, "--now", NOW.toISOString(), "--harness", "no-such-harness", "--model-only", "hello"]);
+  assert.match(talkLive.err, /sella "architect" is now "engineering-architect"; this write records "engineering-architect"/, "talk prints the pre-expiry notice");
+  // context keeps the instance, prints the notice, and boots exactly as the canonical id does
+  writeFileSync(join(dir, "opera", "W-001.md"), readFileSync(join(dir, "opera", "W-001.md"), "utf8").replace("state: backlog", "state: greenlit\nsella: engineering-lead.W-001"));
+  const canon = cli(["context", "--sella", "engineering-lead.W-001", dir, "--now", NOW.toISOString()]);
+  const old = cli(["context", "--sella", "eng-lead.W-001", dir, "--now", NOW.toISOString()]);
+  assert.equal(old.status, 0, `context under an old id exits 0: ${old.err}`);
+  assert.match(old.err, /sella "eng-lead" is now "engineering-lead"/, "context prints the pre-expiry notice");
+  assert.equal(old.out, canon.out, "an old id's instance boots as the canonical instance");
+});
