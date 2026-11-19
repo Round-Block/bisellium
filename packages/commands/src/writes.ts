@@ -21,7 +21,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, lstatSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
-import { aliasLiveUse, isBuilderClassSeat, parseFrontMatter, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest, preCutoverInFlight } from "@bisellium/adapter-native";
+import { enterSeat, isBuilderClassSeat, parseFrontMatter, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL, readLog } from "@bisellium/core";
 import { WF, instant, type GantryEvent } from "@bisellium/schema";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
@@ -366,7 +366,7 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
   }
   const { values } = parsed;
   const opusId = values.get("--opus");
-  const sella = values.get("--sella");
+  let sella = values.get("--sella");
   const next = values.get("--next");
   if (!opusId || !sella || !next) {
     console.error(HANDOFF_USAGE);
@@ -388,6 +388,13 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
   }
   const { root, manifest } = opened;
 
+  const enteredHandoff = enterSeat(root, manifest, sella, now);
+  if ("error" in enteredHandoff) {
+    console.error(enteredHandoff.error);
+    return { exitCode: 2 };
+  }
+  if (enteredHandoff.notice !== undefined) console.error(enteredHandoff.notice);
+  sella = enteredHandoff.id;
   const resolvedHandoffSella = resolveSeat(manifest, sella);
   if (!resolvedHandoffSella) {
     console.error(`unknown sella "${sella}" — not declared in bisellium.yml`);
@@ -397,12 +404,6 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
     console.error(retiredDispatchMessage(manifest, resolvedHandoffSella.seat));
     return { exitCode: 2 };
   }
-  const handoffLive = aliasLiveUse(manifest, resolvedHandoffSella, now ?? new Date(), preCutoverInFlight(root, manifest));
-  if (handoffLive !== undefined && "error" in handoffLive) {
-    console.error(handoffLive.error);
-    return { exitCode: 2 };
-  }
-  if (handoffLive !== undefined) console.error(handoffLive.notice);
   const minted = mintDispatchSella(resolvedHandoffSella, sella, opusId, "handoff");
   if ("error" in minted) {
     console.error(minted.error);
@@ -544,12 +545,19 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
     const tokensRaw = values.get("--usage");
     const tokens = tokensRaw !== undefined ? Number(tokensRaw) : NaN;
     const opusId = values.get("--opus");
-    const sella = values.get("--sella");
+    let sella = values.get("--sella");
     const model = values.get("--model");
     if (!Number.isFinite(tokens) || tokens < 0 || !opusId || !sella || !model) {
       console.error(EMIT_USAGE);
       return { exitCode: 2 };
     }
+    const enteredUsage = enterSeat(root, manifest, sella, now);
+    if ("error" in enteredUsage) {
+      console.error(enteredUsage.error);
+      return { exitCode: 2 };
+    }
+    if (enteredUsage.notice !== undefined) console.error(enteredUsage.notice);
+    sella = enteredUsage.id;
     const resolvedUsageSella = resolveSeat(manifest, sella);
     if (!resolvedUsageSella) {
       console.error(`unknown sella "${sella}" — not declared in bisellium.yml`);
@@ -559,12 +567,6 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
       console.error(retiredDispatchMessage(manifest, resolvedUsageSella.seat));
       return { exitCode: 2 };
     }
-    const usageLive = aliasLiveUse(manifest, resolvedUsageSella, now ?? new Date(), preCutoverInFlight(root, manifest));
-    if (usageLive !== undefined && "error" in usageLive) {
-      console.error(usageLive.error);
-      return { exitCode: 2 };
-    }
-    if (usageLive !== undefined) console.error(usageLive.notice);
     const mintedUsage = mintDispatchSella(resolvedUsageSella, sella, opusId, "emit --usage");
     if ("error" in mintedUsage) {
       console.error(mintedUsage.error);
@@ -677,7 +679,7 @@ export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult
     return { exitCode: 2 };
   }
   const { values, positionals } = parsed;
-  const from = values.get("--from");
+  let from = values.get("--from");
   const subject = values.get("--subject")?.trim();
   const body = positionals.join(" ").trim();
   if (!from || !subject || !body) {
@@ -705,6 +707,13 @@ export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult
     return { exitCode: 2 };
   }
   const patronId = manifest.patron ?? "patron";
+  const enteredFrom = enterSeat(root, manifest, from, now);
+  if ("error" in enteredFrom) {
+    console.error(shown(enteredFrom.error));
+    return { exitCode: 2 };
+  }
+  if (enteredFrom.notice !== undefined) console.error(shown(enteredFrom.notice));
+  from = enteredFrom.id;
   const resolved = resolveSeat(manifest, from);
   if (!resolved) {
     console.error(`unknown sella "${shown(from)}" — not declared in bisellium.yml`);
@@ -718,12 +727,6 @@ export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult
     console.error(shown(retiredDispatchMessage(manifest, resolved.seat)));
     return { exitCode: 2 };
   }
-  const petitioLive = aliasLiveUse(manifest, resolved, now ?? new Date(), preCutoverInFlight(root, manifest));
-  if (petitioLive !== undefined && "error" in petitioLive) {
-    console.error(shown(petitioLive.error));
-    return { exitCode: 2 };
-  }
-  if (petitioLive !== undefined) console.error(shown(petitioLive.notice));
   const opusId = values.get("--opus");
   if (opusId !== undefined) {
     const opusPath = safeItemPath(join(root, "opera"), opusId);

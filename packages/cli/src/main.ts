@@ -230,6 +230,7 @@ async function main(argv: string[]): Promise<number> {
 
     const root = resolve(opts.get("--studio") ?? args[0] ?? ".");
     const bundle = buildContext(root, sella, { now, maxTokens });
+    if (bundle.notice !== undefined) console.error(bundle.notice);
     if (bundle.text === "" && bundle.truncated[0] === "not a studio") { console.error(`not a studio: ${root}`); return 2; }
     if (bundle.text === "" && bundle.truncated[0] === "unknown sella") { console.error(`unknown sella: ${sella}`); return 1; }
     // W-531: an old id past sella_aliases.live_until: the refusal names its canonical seat

@@ -8,7 +8,7 @@
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { aliasLiveUse, listMd, readFront, readManifest, resolveSeat, snapshotDir, preCutoverInFlight, sameSella } from "@bisellium/adapter-native";
+import { enterSeat, listMd, readFront, readManifest, resolveSeat, snapshotDir, sameSella } from "@bisellium/adapter-native";
 import { openLessons } from "./lessons.js";
 import { readRecordedFile } from "./opus-model.js";
 import { instant } from "@bisellium/schema";
@@ -17,6 +17,8 @@ export interface ContextBundle {
   text: string;
   tokens: number;
   truncated: string[];
+  /** W-531: the old-id live-use notice, for the CLI to print. */
+  notice?: string;
 }
 
 const DEFAULT_MAX_TOKENS = 4000;
@@ -96,6 +98,10 @@ export function buildContext(root: string, sella: string, opts: { now: Date; max
     return notAStudio;
   }
   const patron = manifest.patron ?? "patron";
+  // W-531: an old id boots as its canonical seat while old ids are live, and is refused (with the reason) after.
+  const entered = enterSeat(root, manifest, sella, opts.now);
+  if ("error" in entered) return { text: "", tokens: 0, truncated: [entered.error] };
+  sella = entered.id;
   const isPatron = sella === patron;
   // W-089 behaviour 3: a template or one of its instance ids resolves the
   // same row (S1).
@@ -109,14 +115,11 @@ export function buildContext(root: string, sella: string, opts: { now: Date; max
   // truly needs a tombstone's collegium can still call `resolveSeat`
   // directly; this CLI-facing boot path cannot.
   if (!isPatron && resolved?.seat.retired) return unknownSella;
-  // W-531: an old id boots as its canonical seat while old ids are live, and is refused (with the reason) after.
-  const live = resolved === undefined ? undefined : aliasLiveUse(manifest, resolved, opts.now, preCutoverInFlight(root, manifest));
-  if (live !== undefined && "error" in live) return { text: "", tokens: 0, truncated: [live.error] };
-  if (live !== undefined && resolved !== undefined) sella = resolved.seat.id;
   const sellaRow = resolved?.seat;
 
   try {
-    return buildContextFor(root, manifest, sella, sellaRow, maxTokens, opts.now);
+    const bundle = buildContextFor(root, manifest, sella, sellaRow, maxTokens, opts.now);
+    return entered.notice === undefined ? bundle : { ...bundle, notice: entered.notice };
   } catch {
     return notAStudio;
   }

@@ -605,6 +605,21 @@ export function aliasLiveUse(
   return { notice: `${said}; this write records "${resolved.seat.id}"` };
 }
 
+/** W-531: where an old id enters (a verb's seat argument): the canonical id, instance kept, with the live-use notice,
+ *  or the refusal; judged at the command's own `now`. An id that is no old id (or resolves to nothing) passes unchanged. */
+export function enterSeat(
+  root: string,
+  manifest: { sellae?: readonly SeatLike[]; sella_aliases?: unknown },
+  id: string,
+  now: Date,
+): { id: string; notice?: string } | { error: string } {
+  const resolved = resolveSeat(manifest, id);
+  if (resolved?.alias === undefined) return { id };
+  const live = aliasLiveUse(manifest, resolved, now, preCutoverInFlight(root, manifest));
+  if (live !== undefined && "error" in live) return live;
+  return { id: canonicalSella(manifest, id), ...(live === undefined ? {} : { notice: live.notice }) };
+}
+
 export function describeLifecycle(manifest: Manifest): Lifecycle {
   const gates: Probatio[] = manifest.probationes.map((g) => ({ id: g.id, name: g.name, kind: g.kind, command: g.command }));
   const patron = manifest.patron ?? "patron";
