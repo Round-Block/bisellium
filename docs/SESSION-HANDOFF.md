@@ -50,27 +50,22 @@ Ranked lists, lanes, halted, cut, deferred: studio/queue.yml. Tracked number (D-
 
 Filing rule from now on (D-234): a lesson by default; fold a point into a kept opus's brief if it touches that opus's files; file its own opus only if it blocks a kept opus, its lesson class recurs 3+ times, or the Patron asks.
 
-Process slot order (D-234, one at a time): W-673 (a handoff-only PR no longer voids a verify) -> W-697 (a passed-review opus goes to PR on light gates, one full suite at certify) -> W-372 (an agent waits for its own background run) -> W-557 (merge, cleanup and done run as one chain).
+Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, brief delta rule, verdict --check) -> W-697 (a passed-review opus goes to PR on light gates) -> W-372 (an agent waits for its own background run) -> W-557 (merge, cleanup and done run as one chain).
 
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- Priority, E1 W-531 (role contract {collegium}-{role}, bisellium roster, sella_aliases migration; absorbs W-294, W-644, W-590): rank 0 by D-241 (the Patron, 11-19: lead and architect stay two roles, superseding D-191 item 2; co-leads by cause; then W-546, then W-284). Next: engineering-architect (Opus 5.5) spec, after the Claude week reset. Leads' meet: ~/.bisellium-evidence/role-cleanup-meet-1119/collated.md. D-241.md is untracked in main and rides W-531's branch (D-240).
-- E1 W-576 (one browser test walks the End state v1 walk): done 11-19 (#1308, #1310).
-- E2 W-697 (a passed-review opus goes to PR on light gates): waits behind W-531.
-- UI1 W-503 (Home on the Dracula palette): route named by design-lead (D-241; ~/.bisellium-evidence/w503-route-1119/design-lead.md); failed-ci evidence committed (b89a4a56); ui-architect signed brief r13 (Files owned 27, w675.spec.ts home selector) and its host pre-sign gate passed (W-503-spec/r13/host/gate-r13.log). Next: record spec round 20 (dry first), Opus ui-spec-reviewer review, ui-lead input, then route steps 4-8.
-- UI2 W-467 (Officina page on Home's palette): master verify passed, logs landed (#1309); the Patron approved the screens as served on master 11-19 ("Yes, approve"). Next: clerk writes the UI ruling decision (D-228 shape), amend --ui-ruling, done twice.
+- E1 W-531 (role contract {collegium}-{role}, roster, sella_aliases migration; rank 0, D-241): spec committed 8ddc1afd; light gates, then one full ci --opus, then Codex build review round 1; its later round is cut per D-245 item 1.
+- E2 W-699 (path check at sign, brief delta rule, verdict --check; D-245 item 6): filed 11-19; next, architect (Opus 5.5) spec from ~/.bisellium-evidence/process-fix-meet-1119/collated.md; D-245 rides its branch.
+- UI1 W-503 (Home on the Dracula palette): red b6 recorded (ecab380c); `next` names the build review before route 1119c step 12 (selector fix); design-lead asked why (~/.bisellium-evidence/w503-route-1119d/).
+- UI2 W-504 (Home completion row): the Patron ruled "Completion only" (W-504-spec/patron-ruling.md); next, host pre-sign gate, then Codex Sol ui-architect sign.
 - DR runs from its own clone (session cron 09:04 SGT).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
-
 Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624 W-625 W-626 W-627 W-628 W-629 W-630 W-631 W-632 W-633.
-
 Also: W-286 W-291 W-324 W-356 W-378 W-391 W-437 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-513 W-514 W-516 W-518 W-519 W-529 W-531 W-532 W-533 W-534 W-535 W-536 W-537 W-538 W-539 W-540 W-544 W-545 W-546 W-548 W-549 W-550 W-551 W-553 W-554 W-555 W-556 W-557 W-559 W-560 W-561 W-564 W-565 W-566 W-567 W-569 W-570 W-574 W-575 W-576 W-577 W-578 W-579 W-580 W-581 W-582 W-583 W-584 W-585 W-586 W-587 W-588 W-590 W-591 W-592 W-593 W-594 W-595 W-596 W-597 W-598 W-599 W-600 W-601 W-602 W-603 W-605 W-606 W-607 W-609 W-610 W-611 W-612 W-613 W-614 W-615 W-644.
 Also: W-636 (next reads branch records), W-662 (ui, held after W-503), W-665 (ui build review screenshots), W-681 and W-682 (both the DR lane's opera).
-
 Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672 W-673 W-675 W-676 W-677 W-678 W-679 W-680.
-
 Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686. W-687 (DR independence) filed session 40; D-226, D-227 (DR lane, workflow) land with it.
 Also, 11-17 (greenlit by the Patron, session 42): W-687 W-688 W-689 W-690 W-691 W-692 W-693 W-694 W-695.
 Also, 11-17 (greenlit by the Patron, sessions 43-44): W-696 W-697. W-698 is filed, held.
