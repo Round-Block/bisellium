@@ -1,0 +1,19 @@
+# opus: W-576
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1e9de-9d9f-77e0-b209-ba27b2a837e7
+# outcome: passed
+# at: 2026-11-17T14:21:52.067Z
+# tree: tree:295868001d669b32fb007eadac54bfad858b4445
+# brief: briefs/W-576.md blob:f68d7e9bef0d37849697c0cf0c8c4a827325e814
+# ticket: {"opus":"W-576","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-576/studio","head":"0a5cdb6236a65f59180ec1bf7a97ed30aaf7f1de","brief":"f68d7e9bef0d37849697c0cf0c8c4a827325e814","at":"2026-11-17T14:21:40.226Z"}
+
+## Findings
+1. advisory — packages/core/src/v1-walk.ts:72 [severity: S3] `isPending` treats an unknown step or missing row as green, while `walkScore` at line 117 accepts malformed bars such as `{ ok: true }` and counts S5. Every site is covered: table writers `WALK`, b1/b2 copies and b3’s `BISELLIUM_WALK_TABLE`; readers `marked`, `main`, `isPending`, `walkScore` and b1–b3; bar writers `runBar` and b2, read by `walkScore`, `main` and b3. [class: spec×input-domain-missing-or-unenforceable] — check: packages/core/src/v1-walk.test.ts W-576-b1/W-576-b2
+2. advisory — studio/briefs/W-576.md:93 [severity: S4] The served-studio row still names `startServed` as rejector for inputs it does not read. Every site requiring separate naming remains: `v1-walk.spec.ts` through `existsSync`/`readFileSync`, `cases`, `subSteps` and b1; `v1-walk.js` through static imports plus `load` and b1–b3; sample-studio records through b1’s direct reads and `startServed` for S1–S8, with S6 writing only the temporary timeline and S9 replacing its temporary copy. [class: spec×input-without-named-rejector] — check: packages/core/src/v1-walk.test.ts W-576-b1/W-576-b2
+
+## Verdict
+The three reds are genuine, the final source matches all four prototype patches, and ownership and light-gate evidence are sound. The two prior input-boundary advisories remain open but do not block; full CI is correctly sequenced as the next gate.
+VERDICT: PASS

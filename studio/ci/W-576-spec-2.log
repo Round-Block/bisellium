@@ -1,0 +1,19 @@
+# opus: W-576
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1e9cc-1be3-7df1-9014-661bdb609497
+# outcome: passed
+# at: 2026-11-17T14:04:10.884Z
+# tree: dirty:7068bd27e229c02ce19bd1e25b700d11e79d1101
+# brief: briefs/W-576.md blob:f68d7e9bef0d37849697c0cf0c8c4a827325e814
+# ticket: {"opus":"W-576","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"cca7458be3ac1c3c97c7b79f838a9d8013f505c4","brief":"f68d7e9bef0d37849697c0cf0c8c4a827325e814","at":"2026-11-17T14:04:02.218Z"}
+
+## Findings
+1. advisory — brief:88 [severity: S3] `walkScore` accepts malformed bar values such as `{ ok: true }`, while `isPending` returns false for an unknown step or missing row; neither `W-576-b1` nor `W-576-b2` catches these unlikely untyped calls. Sites are `WALK` and injected tables through `marked`, `main`, `walkScore`, `isPending`, b1 and b2, plus bar values written by `runBar` and b2 and read by `walkScore`; replace brief:88 with `| isPending's step and walk, and the bar passed to walkScore | step is one of STEPS; walk passes walkProblem; bar is omitted or an exact BarResult with nonblank fields, and a successful opus equals S5's barOpus | isPending rejects an unknown step or malformed walk through walkProblem; walkScore rejects every other bar shape before counting; W-576-b1/b2 pin these refusals |`. [class: spec×input-domain-missing-or-unenforceable] — check: packages/core/src/v1-walk.test.ts W-576-b1/W-576-b2
+2. advisory — brief:93 [severity: S4] `startServed` cannot reject b1's direct reads of the spec source and sample-studio records or b1/b2's dynamic module read. Replace brief:93 with separate rows naming: `v1-walk.spec.ts`, rejected by `existsSync`/`readFileSync` and b1's `cases`/`subSteps` assertions; `v1-walk.js`, rejected by `load` plus b1/b2 export assertions; and `examples/sample-studio/opera/*.md`, rejected by `readdirSync`/`readFileSync` plus the required-state assertion; the other fixture sites are `startServed` copying it for S1–S8, S6 writing only the temp timeline, and S9 replacing its temp copy. [class: spec×input-without-named-rejector] — check: packages/core/src/v1-walk.test.ts W-576-b1/W-576-b2
+
+## Verdict
+`cca7458b docs(studio): handoff lanes for session 48 (#1299)`; both findings are advisory input-boundary fixes, so the signed brief may proceed to build.
+VERDICT: PASS
