@@ -8,6 +8,7 @@ import { integritySummary } from "../lib/officinaTruth.js";
 import { useVisibleRefresh } from "../lib/useVisibleRefresh.js";
 import { BurnBar } from "../components/BurnBar.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
+import "./officina-palette.css";
 
 const DEV_AERARIUM: AerariumEntry[] = [
   { collegium: "engineering", period: "2026-W44", allowance: { tokens: 3_000_000 }, burn: { tokens: 1_880_000 }, posture: "conserve" },

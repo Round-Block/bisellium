@@ -1,0 +1,63 @@
+/* W-467: Officina consumes W-675's meaning-based roles. Shared severity,
+ * navigation, interaction and geometry rules remain in w025.css. */
+.officina__title,
+.panel--work .officina__panel-heading {
+  color: var(--color-heading);
+}
+
+.panel--work .officina__work-group h3 {
+  color: var(--color-category);
+}
+
+.panel--work .officina__value-mono,
+.panel--work .officina__work-group h3 span {
+  color: var(--color-fact);
+}
+
+.panel--work .officina__work-row > span:nth-child(2) {
+  color: var(--color-text-secondary);
+}
+
+.panel--budget .officina__panel-heading {
+  color: var(--color-heading);
+}
+
+.panel--budget .officina__collegium-name {
+  color: var(--color-category);
+}
+
+.panel--budget .budget-meter__numerals {
+  color: var(--color-fact);
+}
+
+.panel--budget .officina__posture-word {
+  color: var(--color-text-primary);
+}
+
+.panel--budget .officina__posture-reason {
+  color: var(--color-text-secondary);
+}
+
+.officina__row--link,
+.officina__row--link:visited {
+  color: var(--color-link);
+  text-decoration: underline;
+}
+
+.panel--health .officina__panel-heading {
+  color: var(--color-heading);
+}
+
+.panel--health .officina__health-row > summary > span:first-child {
+  color: var(--color-category);
+}
+
+.panel--health .officina__value-mono,
+.panel--health .officina__rule-family > span:last-child {
+  color: var(--color-fact);
+}
+
+.panel--health .officina__health-copy,
+.panel--health .officina__brake-explanation {
+  color: var(--color-text-secondary);
+}

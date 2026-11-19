@@ -1,0 +1,19 @@
+# opus: W-467
+# phase: spec
+# round: 3
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 2ca0bc4c-338b-480b-833d-f3f88ef9e5c2
+# outcome: passed
+# at: 2026-11-15T02:09:53.533Z
+# tree: tree:716648751c427c590035fab2d68b874508b929c1
+# brief: briefs/W-467.md blob:65f873e6e183920be688431c3446cc5011220861
+# ticket: {"opus":"W-467","step":"spec","action":"verdict-spec","round":3,"actor":"spec-reviewer","studio":"studio","head":"4ac730a4372acc595d12de5f738abb1cdb2c764f","brief":"65f873e6e183920be688431c3446cc5011220861","at":"2026-11-15T02:09:47.289Z"}
+
+## Findings
+1. advisory — brief:15 [severity: S4] DIRECTION.md:104-109 says pink is for text selection and purple is for section headings. That line cites no Patron, so an agent wrote it. W-467 makes Officina headings white and its category labels pink (after W-503), so the line stays false and no surface fixes it. Default 1 asks the Patron about the hierarchy but not about the doc. Replacement for brief:15, appended: "DIRECTION.md's agent-written accent-role line (pink = selection, purple = section headings) is superseded on Home and Officina by W-503's hierarchy; this opus does not own DIRECTION.md, and the handoff names its rewrite as a follow-up for the Patron's Default 1 ruling." [class: docs×direction-role-line-stale] — check: none: a tokens.test.ts row that matches each accent role named in DIRECTION.md's accent line against the W-366-b2 consumer census.
+2. advisory — brief:71 [severity: S4] Sense, judged on officina-after-1280-expanded.png against home-after-w503-1280.png. Home's pink categories ("GREENLIGHTS", "HUMAN GATES") are inert headers. Officina's Health "Lex status" and "Process health" are clickable ▸ disclosure summaries. Pink on them reads as a link or selected state beside the cyan links, which is the confusion "an accent never marks a state" exists to prevent. Pink still makes sense on Work's inert lifecycle group labels and Budget's collegium labels. The Defaults for the Patron do not raise the disclosure case. Replacement for brief:71: "3. **Health takes content roles while severity stays semantic.** b3 pins clean and blocking/high/low together; white heading; Health disclosure summaries ('Lex status', 'Process health') keep `--ink` as interactive controls, while pink stays on inert category labels only; cyan rule counts/due ids, neutral severity words, W-427's square/diamond/triangle/hollow-circle cues; slow/failure copy; and all four viewport/sidebar rows." Line 15's and line 41's "Health category labels" would follow. [class: design×accent-on-interactive-control] — check: none: a W-467-b3 served `toHaveCSS('color')` expectation on each Health `summary` label.
+
+## Verdict
+The input boundary covers every reader the opus touches, and it adds none of its own. Each promise states its limits, and the only findings are two advisory S4 points: the doc and the sense of pink on the Health disclosures.
+VERDICT: PASS
