@@ -1,0 +1,97 @@
+# behaviour: 6
+# command: node --test-reporter=tap --test-name-pattern=^W-675-b3\s --import tsx apps/web/test/w675.test.ts
+# exit: 1
+# at: 2026-11-19T08:35:33.793Z
+# sella: builder.W-503
+# tree: tree:cbae336f0fac0eafba5741afbd5eca3a744b9060
+# ticket: {"opus":"W-503","step":"reds","action":"red","round":6,"actor":"builder","studio":".worktrees/W-503/studio","head":"3ccc0b30073fe5253c362b3b0de244073ed5f33e","brief":"9d5c33fb96fb34a11610232a0a336c5e5c45d460","at":"2026-11-19T08:35:32.090Z"}
+
+TAP version 13
+# Subtest: W-675-b3 behaviour 3: every shipped screen resolves aliases through Dracula at the capture matrix
+not ok 1 - W-675-b3 behaviour 3: every shipped screen resolves aliases through Dracula at the capture matrix
+  ---
+  duration_ms: 7471.241725
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w675.test.ts:1:4692'
+  failureType: 'testCodeFailure'
+  error: |-
+    served pixel-identity matrix holds:
+    vite v8.3.4 building client environment for production...
+    transforming...
+    ✓ 46 modules transformed.
+    rendering chunks...
+    computing gzip size...
+    dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+    dist/assets/IBMPlexMono-Regular-DMJ8VG8y.woff2       14.70 kB
+    dist/assets/InstrumentSans-Medium-BbzFLZTg.woff2     30.09 kB
+    dist/assets/BricolageGrotesque-Bold-DLoelf7F.woff2   41.34 kB
+    dist/assets/index-aVRa5jyR.css                       53.84 kB │ gzip:  9.64 kB
+    dist/assets/index-DJphf4id.js                       310.21 kB │ gzip: 94.72 kB
+    
+    ✓ built in 131ms
+    
+    Running 1 test using 1 worker
+    
+    bisellium serve: attempt 955.1 starting
+    bisellium serve: attempt 955.1 listening on port 43127, write-auth token read
+      ✘  1 [chromium] › apps/web/tests-serve/w675.spec.ts:66:1 › W-675-b3 every shipped screen resolves legacy aliases through Dracula at every capture row (5.6s)
+    
+    
+      1) [chromium] › apps/web/tests-serve/w675.spec.ts:66:1 › W-675-b3 every shipped screen resolves legacy aliases through Dracula at every capture row 
+    
+        Error: home 1280 expanded is ready
+    
+        expect(locator).toBeVisible() failed
+    
+        Locator: locator('undefined').first()
+        Expected: visible
+        Timeout: 5000ms
+        Error: element(s) not found
+    
+        Call log:
+          - home 1280 expanded is ready locator('undefined').first() with timeout 5000ms
+          - waiting for locator('undefined').first()
+    
+    
+          74 |       await page.evaluate((sidebar) => localStorage.setItem("bisellium.sidebar", sidebar), row.sidebar);
+          75 |       await page.goto(`${served.baseURL}/?w675=${entry.route}-${row.width}-${row.sidebar}#/${entry.route}`);
+        > 76 |       await expect(page.locator(READY_SELECTORS[entry.route]).first(), `${entry.route} ${row.width} ${row.sidebar} is ready`).toBeVisible();
+             |                                                                                                                               ^
+          77 |       await page.evaluate(() => document.fonts.ready);
+          78 |
+          79 |       const names = [...Object.keys(EXPECTED), ...Object.keys(ALIASES), ...Object.values(ALIASES)];
+            at /home/edckt/agents/bisellium/.worktrees/W-503/apps/web/tests-serve/w675.spec.ts:76:127
+    
+        Error Context: apps/web/test-results/w675-W-675-b3-every-shippe-7d8df-racula-at-every-capture-row-chromium/error-context.md
+    
+      1 failed
+        [chromium] › apps/web/tests-serve/w675.spec.ts:66:1 › W-675-b3 every shipped screen resolves legacy aliases through Dracula at every capture row 
+    
+    TAP version 13
+    1..1
+    not ok 1 - chromium › w675.spec.ts › W-675-b3 every shipped screen resolves legacy aliases through Dracula at every capture row
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w675.test.ts:134:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7506.071406
