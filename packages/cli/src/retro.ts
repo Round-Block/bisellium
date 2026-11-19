@@ -15,7 +15,7 @@
 import { closeSync, constants, existsSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, writeFileSync, writeSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
-import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
+import { isoWeek, parseFrontMatter, readManifest, rosterAt, sameSella } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
 import { readGateStatus } from "@bisellium/pipeline";
@@ -537,7 +537,7 @@ function readVerdictLog(root: string, id: string, rel: string, signedBy?: string
   const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
   if ("error" in file) return { error: `${rel}: ${file.error}` };
   const text = file.bytes.toString("utf8");
-  if (signedBy !== undefined && headerBlock(text).get("sella") === signedBy) return { findings: [] };
+  if (signedBy !== undefined && sameSella(rosterAt(root), headerBlock(text).get("sella"), signedBy)) return { findings: [] };
   const parsed = parseVerdictLog(text, id, rel);
   return "error" in parsed ? parsed : { findings: parsed.findings };
 }
@@ -667,7 +667,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
       const record = readOpus(root, m[1]!);
       const signer = designMagister(root, isRefusal(record) ? undefined : record["kind"]);
       if (isRefusal(signer)) return signer;
-      if (signer.design !== undefined && h.get("sella") === signer.design) continue;
+      if (signer.design !== undefined && sameSella(rosterAt(root), h.get("sella"), signer.design)) continue;
     }
     logs.push({ opus: m[1]!, phase, n: Number(m[3]), outcome: h.get("outcome") ?? "", session: h.has("session"), reason: h.has("session_reason"), text });
   }

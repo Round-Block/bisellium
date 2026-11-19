@@ -313,6 +313,20 @@ export function resolveSeat<T extends SeatLike>(manifest: { sellae?: readonly T[
   return aliasedSeat ? { seat: aliasedSeat, instance, alias: prefix } : undefined;
 }
 
+/** W-531: what `resolveSeat` and `sameSella` read: the roster and its alias table. */
+export type SeatRoster = { sellae?: readonly SeatLike[]; sella_aliases?: unknown };
+
+/** W-531: the roster of the officina at `root`, or an empty one when its manifest cannot be read; a refused
+ *  `sella_aliases` table is thrown, never read as an empty roster. */
+export function rosterAt(root: string): SeatRoster {
+  try {
+    return readManifest(root);
+  } catch (e) {
+    if ((e as Error).message.startsWith(SELLA_ALIASES_REFUSED)) throw e;
+    return {};
+  }
+}
+
 /** W-531: the id a record written now names for `id`: its canonical seat (and instance); an unresolved id unchanged. */
 export function canonicalSella(manifest: { sellae?: readonly SeatLike[]; sella_aliases?: unknown }, id: string): string {
   const r = resolveSeat(manifest, id);

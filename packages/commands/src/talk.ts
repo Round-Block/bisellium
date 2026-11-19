@@ -19,7 +19,7 @@
  */
 import { appendFileSync, closeSync, constants, existsSync, lstatSync, openSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest, aliasLiveUse, preCutoverInFlight } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest, aliasLiveUse, preCutoverInFlight, canonicalSella } from "@bisellium/adapter-native";
 import { filterEnv, HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, writeReceiptStart, type HarnessProfile, type Turn } from "@bisellium/shim";
 import { answer } from "./query.js";
 import { buildContext } from "./context.js";
@@ -374,7 +374,7 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
         message: `talk: "${sella}" is a builder-class template — pass an already-minted instance (e.g. "${resolvedTalkSella.seat.id}.<opus-id>")`,
       };
     }
-    if (seatInstance(resolvedTalkSella.seat.id, resolvedTalkSella.instance) !== sella) {
+    if (seatInstance(resolvedTalkSella.seat.id, resolvedTalkSella.instance) !== canonicalSella(manifest, sella)) {
       return { ok: false, exitCode: 2, message: `talk: "${sella}" does not round-trip through the minter — refused` };
     }
   }

@@ -12,7 +12,7 @@ import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, rea
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isMap, isScalar, parseDocument } from "yaml";
 import { NATIVE_OPUS_KINDS, type NativeOpusKind } from "@bisellium/schema";
-import { readManifest, type Manifest } from "@bisellium/adapter-native";
+import { readManifest, resolveSeat, sameSella, type Manifest, rosterAt, type SeatRoster } from "@bisellium/adapter-native";
 import { uiRulingSeat } from "./spec-seats.js";
 import { splitFront } from "./frontmatter.js";
 
@@ -690,7 +690,7 @@ interface UiInput {
 }
 
 /** W-338: a spec log whose header block's (first) `# sella:` is ui-lead: the UI input's, never a signature's or a review's. */
-export const isUiLeadLog = (text: string): boolean => parseVerdictHeader(text).values.get("sella") === "ui-lead";
+export const isUiLeadLog = (text: string, roster: SeatRoster): boolean => sameSella(roster, parseVerdictHeader(text).values.get("sella"), "ui-lead");
 
 /** The design digest's title and brief; W-338: the record is `id`'s (the CLI opus id, or the record's file name), and before
  *  `ready` writes `spec:` the brief is `briefs/<id>.md`, the path `ready` defaults to. */
@@ -704,7 +704,7 @@ export function currentDesign(root: string, record: NativeRecord, id: string): {
   return { digest: designDigest(record.title, brief.bytes) };
 }
 
-function authoritativeUiInput(root: string, record: NativeRecord, expectedDigest: string): { input?: UiInput; problems: string[] } {
+function authoritativeUiInput(root: string, record: NativeRecord, expectedDigest: string, roster: SeatRoster = rosterAt(root)): { input?: UiInput; problems: string[] } {
   const id = typeof record.id === "string" ? record.id : "";
   const candidates: { relative: string; round: number }[] = [];
   let names: string[] = [];
@@ -719,7 +719,7 @@ function authoritativeUiInput(root: string, record: NativeRecord, expectedDigest
     if (!match) continue;
     // W-338: another seat's spec log (the architect's signature, the spec review) never masks the input; an unreadable one stays a candidate, so the strict read names it
     const log = readContainedRegularFile(root, `ci/${name}`, "ci");
-    if (!("error" in log) && !isUiLeadLog(log.bytes.toString("utf8"))) continue;
+    if (!("error" in log) && !isUiLeadLog(log.bytes.toString("utf8"), roster)) continue;
     candidates.push({ relative: `ci/${name}`, round: Number(match[1]) });
   }
   if (candidates.length === 0) return { problems: ["no ui-lead spec input exists"] };
@@ -730,7 +730,7 @@ function authoritativeUiInput(root: string, record: NativeRecord, expectedDigest
   const h = parseVerdictHeader(file.bytes.toString("utf8"));
   const problems: string[] = [];
   if (h.duplicates.length) problems.push(`duplicate verdict header key(s): ${h.duplicates.join(", ")}`);
-  if (h.values.get("opus") !== id || h.values.get("phase") !== "spec" || h.values.get("round") !== String(latest.round) || h.values.get("sella") !== "ui-lead")
+  if (h.values.get("opus") !== id || h.values.get("phase") !== "spec" || h.values.get("round") !== String(latest.round) || !sameSella(roster, h.values.get("sella"), "ui-lead"))
     problems.push("latest ui-lead verdict header does not match its opus, phase, round and sella");
   const outcome = h.values.get("outcome") ?? "";
   const at = h.values.get("at") ?? "";
@@ -858,16 +858,17 @@ function reviewIdentity(
   root: string,
   gate: Record<string, unknown>,
   censor: string | undefined,
+  roster: { sellae?: readonly { id: string }[]; sella_aliases?: unknown } = {},
 ): { header?: ReturnType<typeof parseVerdictHeader>; problems: string[] } {
   const problems: string[] = [];
   if (!censor) problems.push("review gate cannot identify the manifest QA magister censor");
-  else if (gate["sella"] !== censor) problems.push(`review gate sella must be the censor ${censor}`);
+  else if (!sameSella(roster, typeof gate["sella"] === "string" ? gate["sella"] : undefined, censor)) problems.push(`review gate sella must be the censor ${censor}`);
   const evidence = typeof gate["evidence"] === "string" ? gate["evidence"] : "";
   const file = readContainedRegularFile(root, evidence, "ci");
   if ("error" in file) return { problems: [...problems, `review evidence is unsafe or unreadable: ${file.error}`] };
   const header = parseVerdictHeader(file.bytes.toString("utf8"));
   if (header.duplicates.length) problems.push("review evidence contains duplicate header keys");
-  if (censor && header.values.get("sella") !== censor) problems.push(`review evidence header sella must be the censor ${censor}`);
+  if (censor && !sameSella(roster, header.values.get("sella"), censor)) problems.push(`review evidence header sella must be the censor ${censor}`);
   return { header, problems };
 }
 
@@ -1052,7 +1053,8 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
   const reviewStatus = reviewGate["status"];
   const validateDesign = needsInput || hasInputCandidate || record.ui_rulings !== undefined || reviewStatus === "passed" || reviewStatus === "failed";
   const needsRoute = needsInput || hasInputCandidate;
-  const uiSeat = manifest.sellae.find((seat) => seat.id === "ui-lead");
+  // W-531: the UI lead is whichever live seat "ui-lead" reads as (sella_aliases), not a row of that literal id
+  const uiSeat = resolveSeat(manifest, "ui-lead")?.seat;
   if (needsRoute && (!uiSeat || uiSeat.retired === true || uiSeat.collegium !== "design"))
     problems.push({ rule: "opus.ui.route", message: "ui-lead must be a live design-collegium seat" });
   problems.push(...effectiveProbationes("ui", manifest.probationes).problems);
@@ -1070,7 +1072,7 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
   const served = validateServed(root, record);
   const needsServed = phase === "review" || phase === "done" || state === "review" || state === "done";
   if (needsServed) for (const message of served.problems) addPolicyProblem("opus.ui.e2e", message);
-  const review = reviewStatus === "passed" || reviewStatus === "failed" ? reviewIdentity(root, reviewGate, censor) : undefined;
+  const review = reviewStatus === "passed" || reviewStatus === "failed" ? reviewIdentity(root, reviewGate, censor, manifest) : undefined;
   if (review) for (const message of review.problems) addPolicyProblem("opus.ui.design", message);
   const needsPassedReview = phase === "done" || state === "done" || reviewStatus === "passed";
   if (needsPassedReview) {

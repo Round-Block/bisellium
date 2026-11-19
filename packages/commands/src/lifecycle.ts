@@ -19,7 +19,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isSeq, parse as parseYaml } from "yaml";
-import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
+import { parseFrontMatter, readFront, resolveSeat, type Manifest, sameSella } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { MILESTONE_VALUES } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
@@ -717,12 +717,12 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
       console.error("UI review cannot identify the manifest QA magister censor");
       return { exitCode: 2 };
     }
-    if (sella !== censor) {
+    if (!sameSella(manifest, sella, censor)) {
       console.error(`UI review must be attributed to the censor ${censor}`);
       return { exitCode: 2 };
     }
     const evidenceHeader = parseVerdictHeader(containedEvidence.bytes.toString("utf8"));
-    if (evidenceHeader.duplicates.includes("sella") || evidenceHeader.values.get("sella") !== censor) {
+    if (evidenceHeader.duplicates.includes("sella") || !sameSella(manifest, evidenceHeader.values.get("sella"), censor)) {
       console.error(`UI review evidence header sella must be the censor ${censor}`);
       return { exitCode: 2 };
     }
@@ -1523,7 +1523,9 @@ export function runConclude(args: string[], opts: WriteOptions = {}): WriteResul
   if (state !== "backlog" && state !== "greenlit") return refuse(`it is ${state}, not backlog or greenlit${state === "halted" ? ": lift it first" : ""}`);
   if (tookLadder(front)) return refuse("it has taken the build ladder, so its gates apply");
   // acta.author asks for a declared sella or the Patron: no guest, and no minted instance
-  if (!manifest.sellae.some((s) => s.id === sella)) return refuse(`--sella ${sella} is not a declared sella`);
+  // W-531: an old id is the seat it names; the acta records the canonical seat
+  const concluded = resolveSeat(manifest, sella);
+  if (concluded === undefined || concluded.instance !== undefined) return refuse(`--sella ${sella} is not a declared sella`);
   const ruling = patronDecisionProblem(root, manifest, decisionId, { rulingNames: opusId });
   if (ruling !== undefined) return refuse(ruling);
   const unmapped = milestoneProblem(root, front);
@@ -1537,7 +1539,7 @@ export function runConclude(args: string[], opts: WriteOptions = {}): WriteResul
   }
   if (report.trim() === "") return refuse(`--from ${from} is empty`);
   const rel = `acta/${now.toISOString().slice(0, 10)}-report-${opusId}.md`;
-  const head = `---\nauthor: ${JSON.stringify(sella)}\nkind: consultation\ntitle: ${JSON.stringify(`Report ${opusId}`)}\nat: ${JSON.stringify(now.toISOString())}\nopus: ${JSON.stringify(opusId)}\n---\n`;
+  const head = `---\nauthor: ${JSON.stringify(concluded.seat.id)}\nkind: consultation\ntitle: ${JSON.stringify(`Report ${opusId}`)}\nat: ${JSON.stringify(now.toISOString())}\nopus: ${JSON.stringify(opusId)}\n---\n`;
   try {
     // "wx": never over an existing file or through a symlink at the final name
     writeFileSync(join(ensureRealDirectory(root, "acta"), basename(rel)), head + report, { flag: "wx" });

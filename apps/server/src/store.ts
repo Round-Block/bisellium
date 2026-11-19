@@ -35,7 +35,7 @@ import { join, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import { instant, type GantryEvent, type SnapshotAdapter } from "@bisellium/schema";
 import { computeMeter, EVENTS_LOG_REL, estimateFinish, readLog, Store as CoreStore } from "@bisellium/core";
-import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, readMilestones, resolveSeat, snapshotDir, type Manifest } from "@bisellium/adapter-native";
+import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, readMilestones, resolveSeat, snapshotDir, type Manifest, aliasTable, canonicalSella } from "@bisellium/adapter-native";
 import { BranchRecordReader, type BranchRecordsStatus, type Overlay } from "./branchRecords.js";
 
 /** This server's own ingestion source id, stamped as `workflow.source` on
@@ -545,9 +545,12 @@ export class Store extends CoreStore {
      *  `timeline/patron.jsonl` (Patron write log). */
     timeline: (sella: string, limit?: number): Record<string, unknown>[] => {
       if (!safeId(sella)) return [];
-      const path = join(this.studioDir, "timeline", `${sella}.jsonl`);
-      if (!existsSync(path)) return [];
+      // W-531: a seat's timeline is its own file and every old id's (sella_aliases), old ids first
+      const m = this.manifest();
+      const seat = canonicalSella(m, sella);
+      const ids = [...[...aliasTable(m)].filter(([, to]) => to === seat).map(([from]) => from), seat].filter((id, i, all) => safeId(id) && all.indexOf(id) === i);
       const entries: Record<string, unknown>[] = [];
+      for (const path of ids.map((id) => join(this.studioDir, "timeline", `${id}.jsonl`)).filter((p) => existsSync(p)))
       for (const line of readFileSync(path, "utf8").split("\n")) {
         const trimmed = line.trim();
         if (!trimmed) continue;
