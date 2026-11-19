@@ -55,10 +55,11 @@ Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, bri
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- E1 W-531 (role contract): ci/W-531-spec-8.log committed (87b82027); Codex Sol spec review round 9 running; then record it, one full ci --opus (main's CLI, producer --no-worktree), Codex build review round 1.
-- E2 W-699 (path check at sign, brief delta rule, verdict --check, stale-gate check, D-246 measure): revision 2 signed by the architect, not recorded (~/.bisellium-evidence/W-699-spec/signature-r2.md, brief.md, gate-r2.log 46 rows pass); design-lead checks the b5 stale-gate row, then a kit records the signature as `next` names it, then branch; D-245 and D-246 ride its branch; its lex and prompt edits are code-owned (the Patron merges). W-697 rebases after W-699 lands.
-- UI1 W-503 (Home on the Dracula palette): full ci passed at tree 5d9b14af, records committed (3b7a816b); fresh qa-lead build review round 1 running; then record it, dry first.
-- UI2 W-504 (Home completion row): pre-sign gate r2 passed (host-g2); Codex Sol ui-architect sign running; then record it as spec round 1 per `next`, dry first.
+- Open for a leads' meet (ops-lead): handoff goes stale when a running task ends after it's written (Patron, 11-19); see current-state.md s61.
+- E1 W-531: spec r9 passed, No findings, recorded 56d176fe; next: `next W-531 --perform --expect build` (.worktrees/W-531), full ci --opus (producer --no-worktree), Codex build review r1.
+- E2 W-699 (path check, delta rule, verdict --check, stale-gate, D-246): r2 signed, not recorded; design-lead BLOCKED b5 (w699-b5-check-1119/design-lead.md); next: Opus architect r3 (b5 fixes, delta-rule off switch: bisellium.yml key `next` reads +check row), design-lead re-checks; record kit (dry), branch; D-245-247 ride it; code-owned (Patron merges); W-697 rebases after.
+- UI1 W-503: build review r1 passed (3 advisories), recorded f07cc2e3; PR awaits Patron's ruling (11-19); on word, clerk writes ruling, .worktrees/W-503/studio, amend --ui-ruling, commit, next.
+- UI2 W-504: pre-sign gate r2 passed; Codex Sol ui-architect signed (W-504-spec/sign-r1/signature-r1.md, brief-r1.md diff: Status line only); next: record kit (dry) copies brief-r1.md to studio/briefs/W-504.md, records spec r1, branch.
 - DR runs from its own clone (session cron 09:04 SGT).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
