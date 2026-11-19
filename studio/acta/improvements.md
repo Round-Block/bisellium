@@ -1565,3 +1565,46 @@ Classes in more than one opus, 2026-11-03..2026-11-16:
 - Change: once D-225 (pending, not yet filed) rules, add a W-551 row. A blocking review finding that contradicts a signed brief's declared red assertion gets its own red ticket naming the architect's amended assertion, and next holds only that red, not every red behind it. Evidence: session 39 point (31); W-551, W-598. Owner: eng-lead.
 - Change: W-556 gains a row: greenlight also writes the handoff Queue line that process.handoff.queue reads (packages/cli/src/rules/process.ts:508), so a greenlight lands alone. W-537's ladder-brief template gains a line: a brief that records a Patron call quotes the Patron's words and direction verbatim. Evidence: session 39 points (27), (28); W-556, W-537. Owner: eng-lead.
 - Points (19), (20), (21), (22), (29): none, because each repeats a class already routed. (19) is point 15 (W-585). (21) and (29) are point 16 (W-686, W-639, W-611). (20) is a one-off hand sed with no kept script. (22) is the clerk's designed tool set, and its verify steps go to a ladder-runner, not to a new opus.
+
+### 2026-11-18
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| none done | | | |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| none | | | | | |
+
+- no loop
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| none | | | |
+
+Classes in more than one opus, 2026-11-05..2026-11-18:
+- class gate×tests seen in 5 opera: W-509, W-558, W-563, W-572, W-648
+- class interface×validation-order-masks-errors seen in 3 opera: W-543, W-547, W-648
+- class review×evidence-backfilled-or-absent seen in 5 opera: W-300, W-488, W-541, W-669, W-675
+- class review×fail-open-on-malformed-records-patched-per-site seen in 4 opera: W-525, W-547, W-558, W-563
+- class security×symlink-parent-write-escape seen in 2 opera: W-542, W-543
+- class spec×input-domain-missing-or-unenforceable seen in 9 opera: W-227, W-525, W-530, W-547, W-558, W-573, W-610, W-665, W-666
+- class spec×promise-unattainable-under-accepted-domain seen in 8 opera: W-227, W-488, W-509, W-512, W-525, W-543, W-547, W-604
+- class tests×one-sided-bound-assertion seen in 2 opera: W-604, W-645
+- class tests×ruled-case-uncovered seen in 4 opera: W-525, W-542, W-547, W-608
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-227, W-666
+
+#### Owed cause fixes
+
+- OWED class gate×tests (W-509, W-558, W-563, W-572, W-648): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class tests×one-sided-bound-assertion (W-604, W-645): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- gate×tests×owed: Change: a dispatched clerk files one lesson of class gate×tests with `addressed_by: "W-596"` (greenlit, deferred by D-234) in the next records PR, so the OWED line can clear; no new opus (D-234 filing rule). Evidence: this entry's OWED line (W-509, W-558, W-563, W-572, W-648); no `gate×` lesson in studio/lessons/ (L-001..L-197); the same proposal unrun in the 2026-11-14, 2026-11-15 and 2026-11-16 entries. Owner: eng-lead. Route: W-596 (deferred); W-648's undiagnosable "fail 0" log stays with W-581 (deferred), per 2026-11-16.
+- tests×one-sided-bound-assertion×owed: Change: the same clerk restamps L-115's `addressed_by` from `"W-201"` to `"W-659"` (greenlit, deferred by D-234). Evidence: this entry's OWED line (W-604, W-645); lessons/L-115.md:8 still `"W-201"`; proposed 2026-11-14 and 2026-11-15, unrun. Owner: eng-lead. Route: W-659 (deferred).
+- owed-proposals-unlanded: Change: none new, because both OWED lines repeat only while lessons wait to land (L-198..L-216 sit untracked in the agent clone, not on master); the producer puts the two edits above in the next records PR, the land route the 2026-11-16 entry gave W-534 (deferred). Evidence: four daily entries with the same two OWED lines (2026-11-14, 2026-11-15, 2026-11-16, 2026-11-18). Owner: producer. Route: W-534 (deferred).

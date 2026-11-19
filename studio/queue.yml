@@ -4,7 +4,7 @@ queues:
     next:
       - { opus: W-697, says: "light-gates PR after a passed review; certify is the one full suite (D-232); v1 S5; rank 2, lane E2 (Patron 11-18: \"finish up whatever is in the eng lanes first\")" }
       - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not M4 path (D-193)…; v1 S8, rank 0, lane E1 (D-239)" }
-      - { opus: W-555, says: "FIRST end-state opus, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; advisory lanes; one no-lane count line…; v1 S2, rank 2 (D-234)", folded: [W-478], next_ts: true }
+      - { opus: W-555, says: "FIRST end-state, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; advisory lanes; no-lane count line; absorbs W-636 (D-240); v1 S2, rank 2 (D-234)", folded: [W-478], next_ts: true }
       - { opus: W-673, says: "Certificate excludes come from ci-scope's one record-path list, so a handoff-only PR voids no verify; cause fix, design×indirection-duplicates-source-of-truth…; v1 S5, rank 4 (D-234)" }
       - { opus: W-666, says: "Patron answers carry a signed receipt (key outside agent reads); guard refuses unsigned, forged, replayed or agent-authored writes…; v1 S4, rank 5 (D-234)" }
       - { opus: W-301, says: "console writes via auto-merge PR; E2's first opus (e2-open-meet-1113); held by file overlap with W-503 (w025.css), resumes after; signed r5 kept (w301-hold-meet-1114); v1 S3, rank 6 (D-234)" }
@@ -193,7 +193,7 @@ deferred:
   - { opus: W-631, says: "ladder steps run exactly what next prints; prompt templates require the fields verdict and next refuse without (D-206, stepback-meet-1113) [absorbs W-614]; deferred by End state v1 (D-234)" }
   - { opus: W-632, says: "ci-run cap counts each run only with its own log; cut from W-610 (D-206); first reds W-610-spec/r6 rows 8-11; deferred by End state v1 (D-234)" }
   - { opus: W-634, says: "orchestrator context budget: measure first, cheap fixes, graph/retrieval index; Fable leads, Astra challenges (Patron 11-13); deferred by End state v1 (D-234)" }
-  - { opus: W-636, says: "process, high (e2-open-meet-1113, W-633 follow-up) [absorbs W-583]; deferred by End state v1 (D-234)" }
+  - { opus: W-636, says: "superseded by W-555 (D-240); next reads branch records (was: process, high, e2-open-meet-1113) [absorbs W-583]" }
   - { opus: W-637, says: "a rebase stops for the Patron only when master touches the prototype's own hunks or selectors (Patron 11-13, W-503); process (D-193); deferred by End state v1 (D-234)" }
   - { opus: W-638, says: "next prints clone paths and pushes for local-clone opera (W-631 gaps, s7-s8); process (D-193); deferred by End state v1 (D-234)" }
   - { opus: W-639, says: "cap subagent hand-backs, detail in a file; above W-625 (D-207, w634-meet-1114); process; deferred by End state v1 (D-234)" }
