@@ -232,6 +232,8 @@ async function main(argv: string[]): Promise<number> {
     const bundle = buildContext(root, sella, { now, maxTokens });
     if (bundle.text === "" && bundle.truncated[0] === "not a studio") { console.error(`not a studio: ${root}`); return 2; }
     if (bundle.text === "" && bundle.truncated[0] === "unknown sella") { console.error(`unknown sella: ${sella}`); return 1; }
+    // W-531: an old id past sella_aliases.live_until: the refusal names its canonical seat
+    if (bundle.text === "" && /^sella "[^"]+" is now "/.test(bundle.truncated[0] ?? "")) { console.error(bundle.truncated[0]); return 1; }
     if (bundle.text === "" && bundle.truncated[0] === "runbook ambiguous") { console.error(`runbook ambiguous: ${sella}`); return 1; }
     if (bundle.text === "" && bundle.truncated.length === 0) console.log(`nothing for sella ${sella} right now`);
     else console.log(bundle.text);

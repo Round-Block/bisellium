@@ -8,7 +8,7 @@
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { listMd, readFront, readManifest, resolveSeat, snapshotDir } from "@bisellium/adapter-native";
+import { aliasLiveUse, listMd, readFront, readManifest, resolveSeat, snapshotDir, preCutoverInFlight } from "@bisellium/adapter-native";
 import { openLessons } from "./lessons.js";
 import { readRecordedFile } from "./opus-model.js";
 import { instant } from "@bisellium/schema";
@@ -109,6 +109,10 @@ export function buildContext(root: string, sella: string, opts: { now: Date; max
   // truly needs a tombstone's collegium can still call `resolveSeat`
   // directly; this CLI-facing boot path cannot.
   if (!isPatron && resolved?.seat.retired) return unknownSella;
+  // W-531: an old id boots as its canonical seat while old ids are live, and is refused (with the reason) after.
+  const live = resolved === undefined ? undefined : aliasLiveUse(manifest, resolved, opts.now, preCutoverInFlight(root, manifest));
+  if (live !== undefined && "error" in live) return { text: "", tokens: 0, truncated: [live.error] };
+  if (live !== undefined && resolved !== undefined) sella = resolved.seat.id;
   const sellaRow = resolved?.seat;
 
   try {

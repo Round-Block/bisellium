@@ -21,7 +21,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, lstatSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
-import { isBuilderClassSeat, parseFrontMatter, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
+import { aliasLiveUse, isBuilderClassSeat, parseFrontMatter, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest, preCutoverInFlight } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL, readLog } from "@bisellium/core";
 import { WF, instant, type GantryEvent } from "@bisellium/schema";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
@@ -331,12 +331,13 @@ function gitFailureRefusal(opusId: string, branch: string): string {
 // run.ts's own boundary.
 // ---------------------------------------------------------------------------
 export function mintDispatchSella(
-  resolved: { seat: { id: string; retired?: boolean }; instance?: string },
+  resolved: { seat: { id: string; retired?: boolean }; instance?: string; alias?: string },
   sella: string,
   opusId: string,
   verb: string,
 ): { sella: string } | { error: string } {
-  if (!isBuilderClassSeat(resolved)) return { sella };
+  // W-531: a record written now names the canonical seat; a non-alias id is unchanged byte for byte.
+  if (!isBuilderClassSeat(resolved)) return { sella: resolved.alias === undefined ? sella : resolved.instance === undefined ? resolved.seat.id : `${resolved.seat.id}.${resolved.instance}` };
   if (resolved.instance !== undefined && resolved.instance !== opusId) {
     // "the opus", never "--opus": lifecycle.ts's seven verbs (behaviour 5's
     // resolveSella/namedSella callers) take the opus as a bare positional,
@@ -396,6 +397,12 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
     console.error(retiredDispatchMessage(manifest, resolvedHandoffSella.seat));
     return { exitCode: 2 };
   }
+  const handoffLive = aliasLiveUse(manifest, resolvedHandoffSella, now ?? new Date(), preCutoverInFlight(root, manifest));
+  if (handoffLive !== undefined && "error" in handoffLive) {
+    console.error(handoffLive.error);
+    return { exitCode: 2 };
+  }
+  if (handoffLive !== undefined) console.error(handoffLive.notice);
   const minted = mintDispatchSella(resolvedHandoffSella, sella, opusId, "handoff");
   if ("error" in minted) {
     console.error(minted.error);
@@ -552,6 +559,12 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
       console.error(retiredDispatchMessage(manifest, resolvedUsageSella.seat));
       return { exitCode: 2 };
     }
+    const usageLive = aliasLiveUse(manifest, resolvedUsageSella, now ?? new Date(), preCutoverInFlight(root, manifest));
+    if (usageLive !== undefined && "error" in usageLive) {
+      console.error(usageLive.error);
+      return { exitCode: 2 };
+    }
+    if (usageLive !== undefined) console.error(usageLive.notice);
     const mintedUsage = mintDispatchSella(resolvedUsageSella, sella, opusId, "emit --usage");
     if ("error" in mintedUsage) {
       console.error(mintedUsage.error);
@@ -705,6 +718,12 @@ export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult
     console.error(shown(retiredDispatchMessage(manifest, resolved.seat)));
     return { exitCode: 2 };
   }
+  const petitioLive = aliasLiveUse(manifest, resolved, now ?? new Date(), preCutoverInFlight(root, manifest));
+  if (petitioLive !== undefined && "error" in petitioLive) {
+    console.error(shown(petitioLive.error));
+    return { exitCode: 2 };
+  }
+  if (petitioLive !== undefined) console.error(shown(petitioLive.notice));
   const opusId = values.get("--opus");
   if (opusId !== undefined) {
     const opusPath = safeItemPath(join(root, "opera"), opusId);

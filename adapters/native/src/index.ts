@@ -547,6 +547,32 @@ export function preCutoverInFlight(root: string, manifest: { sellae?: readonly S
   return out.sort();
 }
 
+/** W-531: the live-use posture of a seat resolved through an alias. Undefined when it was not named by an old id; a
+ *  notice while old ids are live; an error once `sella_aliases.live_until` is past. Reads are never refused. */
+export function aliasLiveUse(
+  manifest: { sellae?: readonly SeatLike[]; sella_aliases?: unknown },
+  resolved: { seat: SeatLike & { model?: string; harness?: string }; alias?: string },
+  now: Date,
+  inFlight: readonly string[] = [],
+): { notice: string } | { error: string } | undefined {
+  if (resolved.alias === undefined) return undefined;
+  const said = `sella "${resolved.alias}" is now "${resolved.seat.id}"`;
+  // a dispatch never silently changes model or harness: an old id whose entry names another routing is refused live
+  const was = aliasRouting(manifest, resolved.alias);
+  const runs = { model: resolved.seat.model, harness: resolved.seat.harness ?? "claude-code" };
+  if (was !== undefined && ((was.model !== undefined && was.model !== runs.model) || (was.harness !== undefined && was.harness !== runs.harness)))
+    return { error: `${said}, which runs ${runs.model ?? "no declared model"} on ${runs.harness}, not ${was.model ?? runs.model ?? "?"} on ${was.harness ?? runs.harness}: name "${resolved.seat.id}" and dispatch its routing explicitly` };
+  const read = readSellaAliases(manifest);
+  if ("error" in read) return { error: `${SELLA_ALIASES_REFUSED}: ${read.error.join("; ")}` };
+  const untilAt = read.table?.live_until;
+  const until = untilAt === undefined ? undefined : strictInstant(untilAt);
+  if (until !== undefined && now.getTime() >= until) {
+    if (inFlight.length === 0) return { error: `${said}: old ids are read-only since ${untilAt!}` };
+    return { notice: `${said}; old ids stay live past ${untilAt!} while pre-cutover opera are open (${inFlight.join(", ")}); this write records "${resolved.seat.id}"` };
+  }
+  return { notice: `${said}; this write records "${resolved.seat.id}"` };
+}
+
 export function describeLifecycle(manifest: Manifest): Lifecycle {
   const gates: Probatio[] = manifest.probationes.map((g) => ({ id: g.id, name: g.name, kind: g.kind, command: g.command }));
   const patron = manifest.patron ?? "patron";

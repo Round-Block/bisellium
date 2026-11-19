@@ -19,7 +19,7 @@
  */
 import { appendFileSync, closeSync, constants, existsSync, lstatSync, openSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest, aliasLiveUse, preCutoverInFlight } from "@bisellium/adapter-native";
 import { filterEnv, HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, writeReceiptStart, type HarnessProfile, type Turn } from "@bisellium/shim";
 import { answer } from "./query.js";
 import { buildContext } from "./context.js";
@@ -355,6 +355,9 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
   if (resolvedTalkSella.seat.retired) {
     return { ok: false, exitCode: 2, message: retiredDispatchMessage(manifest, resolvedTalkSella.seat) };
   }
+  // W-531: an old id's live use (sella_aliases); a routing-bearing old id never starts another model's harness
+  const talkLive = aliasLiveUse(manifest, resolvedTalkSella, new Date(), preCutoverInFlight(root, manifest));
+  if (talkLive !== undefined && "error" in talkLive) return { ok: false, exitCode: 2, message: talkLive.error };
   // W-089 behaviour 5: talk has no --opus of its own, so (unlike handoff/
   // emit --usage) it can never mint an instance itself — it requires one
   // already minted, and re-mints it from its own seat+suffix (never

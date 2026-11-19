@@ -17,7 +17,7 @@ import { existsSync, realpathSync, statSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, aliasLiveUse, preCutoverInFlight } from "@bisellium/adapter-native";
 import type { WorktreeProvider } from "@bisellium/shim";
 import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, writeReceiptStart } from "@bisellium/shim";
 import { pauseWarning } from "./pause.js";
@@ -250,6 +250,13 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
     console.error(retiredDispatchMessage(manifest, resolvedSella.seat));
     return { exitCode: 2 };
   }
+  // W-531: an old id's live use (sella_aliases)
+  const runLive = aliasLiveUse(manifest, resolvedSella, new Date(), preCutoverInFlight(studioRoot, manifest));
+  if (runLive !== undefined && "error" in runLive) {
+    console.error(runLive.error);
+    return { exitCode: 2 };
+  }
+  if (runLive !== undefined) console.error(runLive.notice);
 
   // W-089 behaviour 5: the minter runs at THIS boundary — a builder-class
   // dispatch never proceeds under a bare template id. A supplied instance

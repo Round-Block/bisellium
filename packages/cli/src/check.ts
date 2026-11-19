@@ -19,7 +19,7 @@ import {
   PETITIO_STATES,
   instant,
 } from "@bisellium/schema";
-import { aliasTable, listMd, readFront, resolveSeat, sellaNameProblem, STATES, type Manifest, readSellaAliases, strictInstant } from "@bisellium/adapter-native";
+import { aliasTable, listMd, readFront, resolveSeat, sellaNameProblem, STATES, type Manifest, preCutoverInFlight, readSellaAliases, strictInstant } from "@bisellium/adapter-native";
 import { admissionLimit, readBriefLimit } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
@@ -302,6 +302,12 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const read = readSellaAliases(aliasRoster);
     if ("error" in read) for (const e of read.error) add("manifest.aliases", "block", at, e);
     else {
+    const untilMs = read.table?.live_until === undefined ? undefined : strictInstant(read.table.live_until);
+    if (untilMs !== undefined && now.getTime() >= untilMs - 14 * 86_400_000) {
+      const open = preCutoverInFlight(root, aliasRoster);
+      if (open.length > 0)
+        add("manifest.aliases.window", "advise", `${at}.live_until`, `old ids stay live past ${read.table!.live_until!} while these pre-cutover opera are open: ${open.join(", ")}`);
+    }
     }
     {
       for (const s of sellae) {
