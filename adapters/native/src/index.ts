@@ -487,8 +487,11 @@ export function strictInstant(v: unknown): number | undefined {
   const m = typeof v === "string" ? INSTANT_RE.exec(v) : null;
   if (m === null) return undefined;
   const [y, mo, d, h, mi, s] = [m[1], m[2], m[3], m[4], m[5], m[6]].map(Number) as [number, number, number, number, number, number];
-  const t = Date.UTC(y, mo - 1, d, h, mi, s, m[7] === undefined ? 0 : Number(m[7]));
-  const back = new Date(t);
+  // setUTCFullYear, not Date.UTC: Date.UTC remaps the years 0000-0099 to 1900-1999
+  const back = new Date(0);
+  back.setUTCFullYear(y, mo - 1, d);
+  back.setUTCHours(h, mi, s, m[7] === undefined ? 0 : Number(m[7]));
+  const t = back.getTime();
   if (back.getUTCFullYear() !== y || back.getUTCMonth() !== mo - 1 || back.getUTCDate() !== d || back.getUTCHours() !== h || back.getUTCMinutes() !== mi || back.getUTCSeconds() !== s) return undefined;
   return t;
 }
