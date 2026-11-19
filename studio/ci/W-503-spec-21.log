@@ -1,0 +1,28 @@
+# opus: W-503
+# phase: spec
+# round: 21
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1ab34-728f-77a3-b14c-41cea2a8a323
+# outcome: passed
+# at: 2026-11-19T07:13:31.027Z
+# tree: tree:cbae336f0fac0eafba5741afbd5eca3a744b9060
+# brief: briefs/W-503.md blob:9d5c33fb96fb34a11610232a0a336c5e5c45d460
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":21,"actor":"architect","studio":".worktrees/W-503/studio","head":"b89a4a56f39553621610b584604b71108d039720","brief":"9d5c33fb96fb34a11610232a0a336c5e5c45d460","at":"2026-11-19T07:13:30.023Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-503-spec/r13c/promise-ledger-r13c.md
+Gate log: /home/edckt/.bisellium-evidence/W-503-spec/r13c/host/gate-r13c.log
+Class census: mechanism×red-certifies-wrong-tree /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.sh -> /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.out sha256:3b4b07fe55e9fd684bdc8e644584f83e3d045c8b83d8440a953e273cdd7ac333
+
+## Findings
+
+1. advisory — The void, unrecorded round-21 S2 correctly identified that `.home__title` precedes Home's joined data, and the causal design-lead ruling requires `.home-card--needs` now so the W-675 matrix cannot certify the loading shell; this is amendment input, not review evidence, and needs no Patron ruling — check: W-503-specreview/r21/verdict.md, w503-route-1119c/design-lead.md, r13c/brief-r13c.md
+2. advisory — The unchanged-head b6 red exits 1 after its bare-argv header and served start/listening lines at Home's missing readiness selector; the one-line loaded-content selector makes the same complete W-675-b3 wrapper pass with exit 0 — check: r13c/host/b6-red.log, r13c/host/b6-red.exit, r13c/host/b6-green.log, r13c/host/b6-green.exit
+3. advisory — The one-hunk held-health-read kill exits 1 only after Chromium waits 5000ms for `.home-card--needs` at `home 1280 expanded is ready`, proving the matrix cannot proceed while Home remains on its loading shell; the patch is reversed before the gate — check: r13c/host/b6-held-read-kill.patch, r13c/host/b6-held-read-kill.log, r13c/host/b6-held-read-kill.exit, r13c/host/gate-r13c.status
+4. advisory — The one-commit prototype applies at `b89a4a56f39553621610b584604b71108d039720`, produces tree `cd74f8c7bb131829c67a1e372edba28fa927f88a`, has sha256 `9d5e564675667804bbaf447d465282883033aaf06065f0c8f2839e8447e75664`, and changes only W-675-b3's Home readiness-map entry — check: r13c/apply-check-r13c.log, r13c/prototype-r13c.mbox
+5. advisory — The fresh pre-sign gate identifies the same base, series and tree; repository check and typecheck both pass, with zero failed rows and gate exit 0 — check: r13c/host/gate-r13c.log, r13c/host/gate-r13c.exit
+6. advisory — Full-brief admission at limit 6, the verdict promise-ledger rule and the declared-reds check each report zero problems against the r13c artifacts — check: r13c/admission-r13c-sign.out, r13c/ledger-check-r13c-sign.out, r13c/declared-reds-r13c-sign.out
+
+## Verdict
+
+passed

@@ -1,0 +1,29 @@
+# opus: W-503
+# phase: spec
+# round: 22
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 27395bff-58ae-460f-90b4-3e33aea4a9f3
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed; session 95e2cd56 is not resumable, so a fresh session of the same reviewer reviewed round 22
+# outcome: passed
+# at: 2026-11-19T07:53:04.146Z
+# tree: tree:cbae336f0fac0eafba5741afbd5eca3a744b9060
+# brief: briefs/W-503.md blob:9d5c33fb96fb34a11610232a0a336c5e5c45d460
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":22,"actor":"spec-reviewer","studio":".worktrees/W-503/studio","head":"b89a4a56f39553621610b584604b71108d039720","brief":"9d5c33fb96fb34a11610232a0a336c5e5c45d460","at":"2026-11-19T07:53:01.706Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+Revision 13c closes round 21 finding 1, and the amendment is sound: the build can start.
+
+- **The fix:** Home's readiness selector is now `.home-card--needs`, the card in `apps/web/src/screens/Home.tsx:60-61`. It mounts only once all four reads have resolved, in the same render as the Stuck, Health and WIP sections. So W-675-b3 can no longer check or screenshot Home's loading shell.
+- **The kill row:** holding only the health read leaves the card unmounted, and the run times out at `home 1280 expanded is ready` after 5000ms (`r13c/host/b6-held-read-kill.log`).
+- **Red and green:** on the unchanged head the run fails at Home readiness right after the serve start and listening lines (`b6-red.log`). With the fix the whole wrapper passes (`b6-green.log`).
+- **The prototype:** it touches one line and produces tree `cd74f8c7`, and the pre-sign gate exits 0.
+- **Input boundary and feasibility:** no new reader is added and no promise is overstated.
+- **Sense:** nothing visible changes, so there is no layout or DIRECTION rule to judge on the captures.
+
+VERDICT: PASS
