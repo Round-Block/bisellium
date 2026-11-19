@@ -1,7 +1,10 @@
 queues:
   engineering:
-    lanes: { E1: W-666, E2: W-673 }
+    lanes: { E1: W-531, E2: W-697 }
     next:
+      - { opus: W-531, says: "role contract {collegium}-{role}, bisellium roster, sella_aliases migration; lead and architect two roles (D-241, supersedes D-191 item 2); absorbs W-294 W-644 W-590; rank 0, lane E1 (D-241)", folded: [W-294, W-644, W-590] }
+      - { opus: W-546, says: "the Patron owns the guard fence: CODEOWNERS lines and a guard-import check; exempt on the leads' unanimous call (D-189); v1 S4; absorbs the fix-dispatch guard (D-241); rank 1 (D-241)" }
+      - { opus: W-284, says: "init yields a studio that can run an opus; M9 acceptance test folded in (fresh repo by init passes check, runs one opus, shows in the console); needs greenlight; v1 S9; rank 2 (D-241)" }
       - { opus: W-697, says: "light-gates PR after a passed review; certify is the one full suite (D-232); v1 S5; rank 2, lane E2 (Patron 11-18: \"finish up whatever is in the eng lanes first\")" }
       - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not M4 path (D-193)…; v1 S8, rank 0, lane E1 (D-239)" }
       - { opus: W-555, says: "FIRST end-state, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; advisory lanes; no-lane count line; absorbs W-636 (D-240); v1 S2, rank 2 (D-234)", folded: [W-478], next_ts: true }
@@ -14,9 +17,7 @@ queues:
       - { opus: W-372, says: "an agent waits on its own background perform; ranked ahead of W-545 on the leads' simplify meet (D-189); v1 S5, rank 13 (D-234)" }
       - { opus: W-308, says: "opus timeline; E1 (next.ts) (D-192); v1 S6, rank 14 (D-234)", next_ts: true }
       - { opus: W-557, says: "Merge, cleanup and done as one chain; split out of W-545's fold; v1 S5, rank 15 (D-234)" }
-      - { opus: W-546, says: "the Patron owns the guard fence: CODEOWNERS lines and a guard-import check; exempt on the leads' unanimous call (D-189); v1 S4, rank 17 (D-234)" }
       - { opus: W-051, says: "branch and merge respect the repo's default branch, never a hardcoded master; v1 S9, rank 18 (D-234)" }
-      - { opus: W-284, says: "init yields a studio that can run an opus; M9 acceptance test folded in (fresh repo by init passes check, runs one opus, shows in the console); needs greenlight; v1 S9, rank 19 (D-234)" }
   research:
     lanes: { R1: ~ }
     next: []
@@ -72,7 +73,6 @@ deferred:
   - { opus: W-289, says: "greenlight is the Patron's alone: it refuses a run from the agent clone, so it runs only from the Patron's folder or the Board (w555-meet-1116); deferred by End state v1 (D-234)" }
   - { opus: W-290, says: "orchestrator write-deny hook; audit: does today's guard already cover it; done or cut follows (w555-meet-1116); deferred by End state v1 (D-234)" }
   - { opus: W-291, says: "commit trailers name a declared sella; after W-591 (D-192); process (D-193); deferred by End state v1 (D-234)" }
-  - { opus: W-294, says: "Leads as real agents, deferred from W-241 by D-069 and trimmed by D-087 A: eng-lead (Opus 5.5) drafts each opus's builder brief…; deferred by End state v1 (D-234)" }
   - { opus: W-295, says: "The architecture-page gate, deferred from W-214 by D-069: next refuses done when the opus changed a pipeline or architecture path (packages/, scripts/, .github/…; deferred by End state v1 (D-234)" }
   - { opus: W-304, says: "seats read live, console MVP; deferred by End state v1 (D-234)" }
   - { opus: W-321, says: "review-packet builds a later spec round when the previous round's packet was never built (rounds from before packets, or a failed packet run): today it refuses for…; deferred by End state v1 (D-234)" }
@@ -128,7 +128,6 @@ deferred:
   - { opus: W-521, says: "check flags git differing from the queue runner's; exempt from the freeze (D-185); deferred by End state v1 (D-234)" }
   - { opus: W-522, says: "refuse process.exit after bulk output in fixtures; exempt from the freeze (D-185); deferred by End state v1 (D-234)" }
   - { opus: W-529, says: "pool the local test gate at eight; hosted CI stays serial, exempt; the gate timeout counts heavy slots; a missing D-212 heavy_jobs key fails loud (D-221); deferred by End state v1 (D-234)" }
-  - { opus: W-531, says: "one spec lead per collegium (D-191: ui-architect, ui-lead fold into design-lead); qa-lead seat split out as W-644 (D-208 item 6)…; deferred by End state v1 (D-234)" }
   - { opus: W-534, says: "land honours notice.ok, reports a remote arm, polls pending checks; behind the freeze [absorbs W-582 W-601 W-603]; deferred by End state v1 (D-234)" }
   - { opus: W-535, says: "run exits with its command's status; red first, unreproduced; behind the freeze; deferred by End state v1 (D-234)" }
   - { opus: W-536, says: "check refuses a spec promise proved by hand-parsed shell; eng-lead's form (speed meet 1108); behind the freeze; deferred by End state v1 (D-234)" }
@@ -160,7 +159,6 @@ deferred:
   - { opus: W-585, says: "next's split hint passes new's validation; new gains --dry-run and --milestone/--value; retro 11-10 and 11-11 cause fix; process (D-193); deferred by End state v1 (D-234)" }
   - { opus: W-587, says: "the guard refuses a backgrounded subshell group; retro 11-10 cause fix (or fold into W-537); process (D-193) [absorbs W-539]; deferred by End state v1 (D-234)" }
   - { opus: W-588, says: "the guard refuses a dispatch naming a brief whose Write failed; retro 11-10 cause fix; process (D-193); deferred by End state v1 (D-234)" }
-  - { opus: W-590, says: "explicit legacy signer, each magister reader moved, then magister: design-lead; red row: same-model signer and reviewer refuse; after W-531…; deferred by End state v1 (D-234)" }
   - { opus: W-593, says: "amend gains --collegium, so the leads' agreed retags run by the verb; process (D-193); deferred by End state v1 (D-234)" }
   - { opus: W-594, says: "Codex reviews a brief-only spec before the prototype, which becomes the build; process (D-193); deferred by End state v1 (D-234)" }
   - { opus: W-595, says: "queue entries carry a class (product or process); one process lane after W-512; right after W-610 (D-201) [absorbs W-619 W-592 W-635]; deferred by End state v1 (D-234)" }
@@ -201,7 +199,6 @@ deferred:
   - { opus: W-641, says: "daily retro reads a timed-out gate log (gap 12), with W-621's first form folded in; E3's next process slot after W-644 (retro-meet-1115 c, 5/5) [absorbs W-533]; deferred by End state v1 (D-234)" }
   - { opus: W-642, says: "W-301's remainder: console writes refuse mistyped opera row ids (D-061 §4, w301-split-meet-1114); after W-301; deferred by End state v1 (D-234)" }
   - { opus: W-643, says: "usage line shows each week's reset and the burn rate that spends the rest (the Patron 11-14); process, E3 after W-633 (codex-surplus-meet-1114, 3/3); deferred by End state v1 (D-234)" }
-  - { opus: W-644, says: "qa-lead seat on Codex gpt-5.6-sol, one bisellium.yml row (split from W-531); process; yields E3 to W-648 while held, back first when W-610 merges (lanes-meet-1114); deferred by End state v1 (D-234)" }
   - { opus: W-646, says: "production lex research clause, split from W-640 (D-207 item 4)…; deferred by End state v1 (D-234)" }
   - { opus: W-649, says: "a branchless opus's handoff never leaves a tracked edit in main; next and check fail loud on one before a perform; process (main-edits-meet-1114 b, 5/5); deferred by End state v1 (D-234)" }
   - { opus: W-650, says: "red admission reads the classifier's whole environment-failure list, after a read enumeration; after W-645; process (w645-questions-meet-1114 b) [absorbs W-655]; deferred by End state v1 (D-234)" }
