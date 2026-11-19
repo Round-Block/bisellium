@@ -1,0 +1,20 @@
+# opus: W-531
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1f404-c995-7c70-b099-c2b874b87742
+# outcome: failed
+# at: 2026-11-19T14:01:43.415Z
+# tree: tree:7a862978b63a33d0757f2a9a71521342f3f2e826
+# brief: briefs/W-531.md blob:67394500783bb55151f4352426500707089b324f
+# ticket: {"opus":"W-531","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-531/studio","head":"0edaef518933cada57152c690194893ff699ae16","brief":"67394500783bb55151f4352426500707089b324f","at":"2026-11-19T14:01:38.022Z"}
+
+## Findings
+1. blocking — packages/commands/src/run.ts:254, packages/commands/src/talk.ts:359, packages/commands/src/context.ts:113 The live-alias boundary is incomplete: run/talk use the wall clock instead of their supplied/parsed time, talk/context discard the required pre-expiry notice, context drops an alias instance while canonicalizing, and run/talk retain the old id through their receipt, environment, session, timeline, petitio and acta writers, contrary to brief:15, brief:31, brief:33 and brief:43. Complete live-site census: handoff `writes.ts:400/406`, emit `writes.ts:562/568`, petitio `writes.ts:721/744`, run `run.ts:254/338/349-365`, talk `talk.ts:359/410/414-560`, context `context.ts:113-115` plus `main.ts:232-240`, and delegate’s stated no-window path `delegate.ts:160-173`. — check: packages/cli/src/w531.test.ts W-531-b3 cases for every live verb before/after expiry, notices, canonical writes and alias instances [severity: S1] [class: review×fix-round-census-misses-reachable-paths]
+2. blocking — packages/cli/src/next.ts:300, packages/cli/src/next.ts:1582 Two in-domain history readers remain raw: `signedAtReady` drops an old-id `probationes.spec.sella`, and `builderHandover` treats an old builder-instance traditio as no builder handover, violating brief:37 and brief:55. The same missed-form class also reaches `tick.ts:176-184`, where old-id daily authors and filenames do not deduplicate against the canonical magister; that sibling is outside the regex census by brief:44 but is named here as the stated-limit site. — check: packages/cli/src/w531.test.ts W-531-b4 old ready-signer and builder-handover cases; packages/cli/src/tick.test.ts old daily-author/filename case [severity: S1] [class: review×census-misses-ordinary-direct-binding-forms]
+3. blocking — adapters/native/src/index.ts:490 `strictInstant` uses `Date.UTC` directly, which remaps years 0000–0099 to 1900–1999 and therefore rejects real four-digit UTC instants admitted by brief:27 and brief:53. Every reached site shares the defect: `readSellaAliases` reads both `since` and `live_until`, `readManifest` refuses runtime access, `checkStudio` emits `manifest.aliases`/suppresses the window, and `aliasLiveUse` rereads `live_until`. — check: packages/cli/src/w531.test.ts W-531-b1 low-year `since` and `live_until` cases [severity: S1] [class: review×strict-date-parser-rejects-valid-low-years]
+
+## Verdict
+The implementation violates the declared alias live-use, historical identity, and instant domains despite passing its current rows and gates.
+VERDICT: FAIL
