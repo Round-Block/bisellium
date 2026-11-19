@@ -1,0 +1,24 @@
+# opus: W-503
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: claude-opus-5-5
+# session: f5050f18-1fe0-4be6-9276-81049fc3f6ae
+# session_reason: claude -p sessions never persist in this sandbox; round 1 session 85813bcf cannot be resumed
+# outcome: failed
+# at: 2026-11-19T23:40:02.823Z
+# tree: tree:ccd5f02d0dc690ee8a25014ac153d8b40c1bc281
+# ui_input: ci/W-503-spec-23.log
+# design_digest: sha256:b222b2c3560f279755fb3c3282303def6af05dfdc9675d7010e1ea96d72d414d
+# ticket: {"opus":"W-503","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-503/studio","head":"0b6bdde8680aa9b7206b3eececc3ff283c999a02","brief":"9d5c33fb96fb34a11610232a0a336c5e5c45d460","at":"2026-11-19T23:39:58.721Z"}
+
+## Findings
+1. blocking — apps/web/package.json:12 `[severity: S2]` The fix removes `test/w503.test.ts` from `test:policy`, and nothing replaces it. Only `w503-r12.test.ts` is left. 4cd70b84 then restored root package.json, so the `test:suite` addition from f45a8f50 is gone too (root package.json has no `w503` match). So the Node rows W-503-b1..b3 now run in no CI path, and the Acceptance flip at brief:115 ("`apps/web/package.json` (`w503.test.ts` and amendment `w503-r12.test.ts` in `test:policy`)") is false at this head. brief:44 ("include W-503 in the focused web policy command") is only partly met, by b5. The cause is inside Files owned (brief:33): apps/web/test/w503.test.ts:13,16 hardcodes `--config=apps/web/playwright.serve.config.ts` with `cwd: process.cwd()`. Resolving the config path from `import.meta.url` would make the wrapper work from any cwd and let it stay in `test:policy` as signed. The other way out is an architect amendment of brief:44/115 before merge. The served rows still run in CI web-e2e (`test:serve`, playwright.serve.config.ts:39 `testDir: "./tests-serve"`, which picks up tests-serve/w503.spec.ts), so behaviour coverage is not lost. What fails is the stated enumeration flip and the wrapper's cwd independence. [class: web×cwd-relative-test-path] — check: none: a policy row asserting every `apps/web/test/*.test.ts` named in a brief's Acceptance is listed in `apps/web/package.json` `test:policy`, plus running `npm run -s test:policy --workspace @bisellium/web` from apps/web in the light gates.
+
+## UI input disposition
+The round-2 change touches only `apps/web/package.json` scripts. It changes no rendered UI. Round 1's UI judgment at 3b7a816b stands. No image files reached this turn (none are visible to me), so I made no new screen judgment. The verdict rests only on the test-wiring change.
+
+## Verdict
+0b6bdde8680aa9b7206b3eececc3ff283c999a02 (the sandbox refused `git rev-parse`, so I read `.git/worktrees/W-5032/HEAD` → `refs/heads/opus/W-503` → `.git/refs/heads/opus/W-503` from disk; it matches the reviewed head.)
+The served W-503-b1..b3 rows still run in CI before merge, but the fix drops `w503.test.ts` from the focused web policy command, which the brief's Acceptance requires. The wrapper's cwd bug can be fixed inside Files owned, so the opus should fix it there or get an amended brief.
+VERDICT: FAIL
