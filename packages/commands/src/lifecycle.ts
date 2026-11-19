@@ -19,7 +19,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isSeq, parse as parseYaml } from "yaml";
-import { parseFrontMatter, readFront, resolveSeat, type Manifest, sameSella } from "@bisellium/adapter-native";
+import { defaultSella, parseFrontMatter, readFront, resolveSeat, type Manifest, sameSella } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { MILESTONE_VALUES } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
@@ -89,8 +89,12 @@ const GUEST_SELLA = "guest";
  *  emit --usage already call (S2) — so `ready`/`done`/`review`/`halt`/
  *  `waive` never write or attribute a bare `builder`/`builder-codex`. */
 function resolveSella(flagValue: string | undefined, manifest: Manifest, opusId: string, verb: string): string | { error: string } {
-  const sella = flagValue ?? process.env["BISELLIUM_SELLA"] ?? GUEST_SELLA;
-  if (sella === GUEST_SELLA) return sella;
+  const fallback = flagValue ?? process.env["BISELLIUM_SELLA"] ?? defaultSella(manifest);
+  // W-531: a hooks.default_sella that resolves to nothing is refused before any write
+  if (typeof fallback !== "string") return { error: `${verb}: ${fallback.error}` };
+  const sella = fallback;
+  // W-531: "guest" stays the built-in identity only where the officina declares no seat for it
+  if (sella === GUEST_SELLA && resolveSeat(manifest, sella) === undefined) return sella;
   const resolved = resolveSeat(manifest, sella);
   if (!resolved) return { error: `${verb}: unknown sella "${sella}" — not declared in bisellium.yml` };
   const minted = mintDispatchSella(resolved, sella, opusId, verb);
@@ -2115,7 +2119,12 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     console.error(amendNamedResult.error);
     return { exitCode: 2 };
   }
-  const sella = amendNamedResult ?? "guest";
+  const amendDefault = amendNamedResult ?? defaultSella(manifest);
+  if (typeof amendDefault !== "string") {
+    console.error(`amend: ${amendDefault.error}`);
+    return { exitCode: 2 };
+  }
+  const sella = amendDefault;
 
   // Both flags in one call append one entry per changed field, title first,
   // then spec, regardless of flag order — the record is deterministic

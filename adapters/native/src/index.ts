@@ -395,11 +395,26 @@ export function liveReplacementFor<T extends SeatLike & { collegium?: string; ha
  *  on which two ids this means. */
 export const BUILDER_CLASS_SEAT_IDS = new Set(["builder", "builder-codex"]);
 
+/** W-531: the sella a write falls back to with no --sella and no $BISELLIUM_SELLA. `hooks.default_sella` when present:
+ *  it must resolve (a row, an instance, an old id) and names its canonical seat, else the refusal; absent, "guest"
+ *  (read through the alias table when declared, else the built-in guest identity). */
+export function defaultSella(manifest: { sellae?: readonly SeatLike[]; sella_aliases?: unknown; hooks?: unknown }): string | { error: string } {
+  const h = manifest.hooks as { default_sella?: unknown } | undefined;
+  if (h?.default_sella === undefined) return canonicalSella(manifest, "guest");
+  const d = h.default_sella;
+  if (typeof d !== "string" || resolveSeat(manifest, d) === undefined) return { error: `hooks.default_sella ${JSON.stringify(d)} is not a declared sella in bisellium.yml` };
+  return canonicalSella(manifest, d);
+}
+
 /** True when `resolved` names one of the two live (non-retired)
  *  builder-class templates — never true for a retired tombstone, an
  *  instance's own seat included. */
 export function isBuilderClassSeat<T extends SeatLike>(resolved: ResolvedSeat<T> | undefined): boolean {
-  return resolved !== undefined && resolved.seat.retired !== true && BUILDER_CLASS_SEAT_IDS.has(resolved.seat.id);
+  // W-531: a row whose id, read relative to its own collegium, has role builder is builder-class in any officina
+  // (a qualifier never changes the role: qa-reviewer-builder is a reviewer); the two legacy ids stay
+  if (resolved === undefined || resolved.seat.retired === true) return false;
+  const collegium = (resolved.seat as { collegium?: unknown }).collegium;
+  return BUILDER_CLASS_SEAT_IDS.has(resolved.seat.id) || (typeof collegium === "string" && sellaRole(resolved.seat.id, collegium) === "builder");
 }
 
 /** The exact refusal text for a live-dispatch site (run.ts:160, writes.ts's
