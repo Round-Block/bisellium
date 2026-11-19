@@ -1,0 +1,38 @@
+# opus: W-503
+# phase: spec
+# round: 23
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1f2d2-4bc2-7af2-b0c7-ba2d4c7f4f6e
+# session_reason: a fresh ui-lead session gave round 23 input: the round-19 session 01a1e988 was not resumed, so a fresh Astra session read the re-signed brief
+# outcome: passed
+# at: 2026-11-19T08:30:38.811Z
+# tree: tree:cbae336f0fac0eafba5741afbd5eca3a744b9060
+# dispatch_prompt: ci/W-503-ui-prompt-23.md
+# design_digest: sha256:b222b2c3560f279755fb3c3282303def6af05dfdc9675d7010e1ea96d72d414d
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":23,"actor":"ui-lead","studio":".worktrees/W-503/studio","head":"2df9137988eeed4859cb04440bcf60d4d92aae51","brief":"9d5c33fb96fb34a11610232a0a336c5e5c45d460","at":"2026-11-19T08:30:37.834Z"}
+
+## Findings
+
+1. advisory — brief:66 — Round-19 #1 remains open: the promise describes token-less rejection only, while eviction also covers server 401, 503 and network failures; this understates recovery behavior without changing the loaded screen — replace with: “Any rejected Inbox read is removed from the shared slot if it still owns that slot. Successful reads retain the existing 50ms sharing window. W-503-b5 pins token-less rejection and saved-token recovery; other rejection forms lack dedicated assertions. Eviction does not initiate a retry.” — check: apps/web/src/api.ts:324; apps/web/test/w503-r12.test.ts; studio/ci/W-503-spec-19.log.
+
+## Recommendation
+
+Round-3 #1 remains closed: `homeSummary()` excludes done and halted failures, and served W-503-b3 asserts that several failed gates on one active opus count once.
+Round-3 #2 remains closed: all ten Home captures retain “Work items with failed gates,” also asserted by W-503-b3.
+Round-3 #3 remains closed, with its two-column remedy superseded by the Patron’s D-200 ruling: the signed desktop columns preserve readable titles, combined asks and Open links.
+Round-3 #4 remains closed: the captures show Health’s shared high-advisory diamond, retained in W-503-b3.
+Round-6 #1 remains closed: both `home-one-group-1280` captures show the populated group spanning the card.
+Round-11 #1 remains closed: brief:98 and W-503-b3 retain the 50%/25%/25% checks within 1px and blocking Health’s red number and square cue at every specified width.
+
+Revisions 13 and 13c leave round 19’s visible Home unchanged: their complete prototype patches each add only one entry to `apps/web/tests-serve/w675.spec.ts`, using `.home__title` and `.home-card--needs` respectively.
+The capture clone’s `Home.tsx` and `w025.css` also match the current files, and the inspected 1280 expanded/collapsed, 640 and 390 captures retain legible content without clipping.
+As `shots/MANIFEST.md` states, 640 is the CSS-viewport proxy for 200% zoom; these captures do not independently exercise browser zoom.
+
+The agent-written grouping precedence, combined-ask preservation, work-item counting, single-group span and narrow stacking make sense on these screens; none warrants a visual correction.
+D-175 and D-200 explicitly record the Patron’s choices for composition, bars, white headings, status colours, signed Needs you treatment and sparse empty card; older agent-written restrictions do not justify reversing them.
+
+The new readiness wait matches visible readiness: `Home.tsx` mounts `.home-card--needs` only after all four reads succeed, alongside Stuck, Health and any applicable work summary.
+It also mounts for “Nothing waiting on you,” correctly recognizing an empty attention collection as loaded.
+The supplied red log fails on the missing selector, the green log passes W-675-b3, and the held-health-read log times out after 5000ms waiting for the card, demonstrating that the loading shell cannot satisfy this wait.
+Verdict: passed
