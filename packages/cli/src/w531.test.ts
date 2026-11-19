@@ -248,3 +248,34 @@ test("W-531-b4 behaviour 4: a record written under an old id still counts for th
   // every identity-bearing raw compare in the census reads through the alias table (compare-classification.md)
   assert.deepEqual(CONVERTED.filter(([rel, raw]) => readFileSync(join(REPO, rel), "utf8").includes(raw)), [], "no census site compares a sella raw");
 });
+
+test("W-531-b5 behaviour 5: the officina's own seats decide, not bisellium's ids", () => {
+  const dir = officina("b5", ROWS + ALIASES);
+  const made = cli(["new", "--kind", "feature", "--collegium", "engineering", "--title", "t", dir]);
+  assert.equal(made.status, 0, `new exits 0: ${made.err}`);
+  const m = native.readManifest(dir);
+  assert.equal(native.isBuilderClassSeat(native.resolveSeat(m, "engineering-builder-codex")), true, "a {collegium}-builder-<qualifier> row is builder-class");
+  assert.equal(native.isBuilderClassSeat(native.resolveSeat(m, "engineering-lead")), false, "a lead is not builder-class");
+  assert.equal(native.isBuilderClassSeat(native.resolveSeat(m, "engineering-reviewer-builder")), false, "a role-name qualifier does not change the role: a reviewer stays reviewer-class");
+  const h = cli(["handoff", "--opus", "W-001", "--sella", "engineering-builder-codex", "--next", "build", "--studio", dir, "--now", NOW.toISOString()]);
+  assert.equal(h.status, 0, `the builder's handoff is accepted: ${h.err}`);
+  assert.match(readFileSync(join(dir, "opera", "W-001.md"), "utf8"), /traditio:\n {2}sella: engineering-builder-codex\.W-001\n/, "a contract builder seat is minted as an instance, like builder");
+  const a = cli(["amend", "W-001", "--title", "t2", "--reason", "r", "--studio", dir, "--now", NOW.toISOString()]);
+  assert.equal(a.status, 0, `an amendment with no sella is accepted: ${a.err}`);
+  assert.match(readFileSync(join(dir, "opera", "W-001.md"), "utf8"), /- at: [^\n]+\n {4}sella: production-guest\n/, "with no --sella the write names the officina's guest seat, not the bare id");
+  const manifestText = readFileSync(join(dir, "bisellium.yml"), "utf8");
+  writeFileSync(join(dir, "bisellium.yml"), manifestText + "hooks: { default_sella: engineering-laed }\n");
+  const typoBefore = readFileSync(join(dir, "opera", "W-001.md"), "utf8");
+  const typo = cli(["amend", "W-001", "--title", "t9", "--reason", "r", "--studio", dir, "--now", NOW.toISOString()]);
+  assert.equal(typo.status, 2, "a hooks.default_sella that names no seat is refused before any write");
+  assert.match(typo.err, /hooks\.default_sella "engineering-laed" is not a declared sella/, "the refusal names the default");
+  assert.equal(readFileSync(join(dir, "opera", "W-001.md"), "utf8"), typoBefore, "nothing is written under an undeclared default");
+  writeFileSync(join(dir, "bisellium.yml"), manifestText + "hooks: { default_sella: engineering-lead }\n");
+  const d = cli(["amend", "W-001", "--title", "t3", "--reason", "r", "--studio", dir, "--now", NOW.toISOString()]);
+  assert.equal(d.status, 0, `an amendment under hooks.default_sella is accepted: ${d.err}`);
+  assert.match(readFileSync(join(dir, "opera", "W-001.md"), "utf8"), /field: title\n {4}reason: r\n {4}superseded: t2\n/, "the second amendment is written");
+  assert.match(readFileSync(join(dir, "opera", "W-001.md"), "utf8"), /sella: engineering-lead\n {4}field: title\n {4}reason: r\n {4}superseded: t2/, "hooks.default_sella names the fallback seat");
+  // the owned literals read the manifest (compare-classification.md): next names "ui-lead" only as a role label
+  const nextSrc = readFileSync(join(REPO, "packages/cli/src/next.ts"), "utf8");
+  assert.deepEqual(nextSrc.split("\n").filter((l) => l.includes('"ui-lead"') && !/role = "ui-lead";|o\.uiLead === true \? "ui-lead"|canonicalSella\(f\.manifest, "ui-lead"\)/.test(l)), [], "next.ts names the UI lead's seat through the alias table");
+});
