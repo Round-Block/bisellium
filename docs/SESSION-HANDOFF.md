@@ -56,7 +56,7 @@ D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-25
 
 Lanes now:
 - Ops (owner ops-lead): stale handoff + kits at a switch decided by a leads' meet (handoff-stale-meet-1119/collated.md) -> D-247 (untracked, rides W-699's branch with D-245/D-246); the Patron asked why meets use 9 seats when D-189 says relevant leads (offer: meet script requires a Seats: line; not done).
-- E1 W-531: build review r1 FAILED (3 blocking) recorded 38a01921; title names the class (8e6b42f9), class hold cleared; next = builder fix round (handoff first). Patron choice pending: finish under the current brief (translate old ids at the two entry points, fix strictInstant) vs cut dates/notice to a plain map (brief re-sign). Lead in charge eng-lead. Not pushed.
+- E1 W-531 (one spec lead per collegium; production-lead rename): Patron said "Go ahead with the 2 fixes"; fix round 1 on opus/W-531 15a29f2f (not pushed): seat ids translated at entry and record read, year bug fixed; reds unrecorded (fix-check review, red refused); tick.ts old-id fix not done (outside Files owned); next: light gates, full ci, Codex r2, PR, merge.
 - E2 W-699: architect r3 signed, unrecorded (W-699-spec/signature-r3.md; b5 fixed; spec.delta_review on|off key, missing = off, check rule); next: design-lead re-checks b5, record kit (dry), branch.
 - UI1 W-503: waits the Patron's Home screens ruling.
 - UI2 W-504: sign r1 record refused (ledger); design-lead route; r1c: test strengthened, prototype-r1c.mbox, 12/12 kills; next: presign gate on prototype-r1c, Sol sign with a real-verdict preflight, record (dry), branch.
