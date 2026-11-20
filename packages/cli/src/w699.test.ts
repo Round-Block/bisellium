@@ -82,6 +82,25 @@ test("W-699-b2 behaviour 2: a re-signature whose contract digests equal the revi
   expectStep(stands, "branch", "named", "an Acceptance-only edit, re-signed, stands with the passed review");
   assert.equal(stands.kv.has("role"), false, ran("no reviewer is ordered", stands));
 
+  // fix round 1 (class: signer identity normalized at one place): a signer invoked through `sella_aliases` is the signer
+  // everywhere: its signature pins the contract header, and its Acceptance-only re-signature stands with the review
+  const aliased = srWorld("w699-b2-alias", {
+    edit: (t) =>
+      t
+        .replace("magister: architect }", "magister: design-architect }")
+        .replace("{ id: architect, collegium: design", "{ id: design-architect, collegium: design")
+        .concat("sella_aliases:\n  since: 2026-11-01T00:00:00Z\n  live_until: 2027-02-18T00:00:00Z\n  ids: { architect: design-architect }\n"),
+  });
+  put(aliased.repo, BRIEF_REL, briefText(aliased.behaviours));
+  sign(aliased, 1);
+  assert.match(readFileSync(join(aliased.repo, specLog(1)), "utf8"), /^# contract: intent:[0-9a-f]{16} /m, "a signature by the alias writes the contract header, as the canonical sella's does");
+  review(aliased, 2, "passed");
+  editBrief(aliased, "## Acceptance\n\nFixture.", "## Acceptance\n\nFixture, reworded.");
+  sign(aliased, 3);
+  const aliasStands = specNext(aliased);
+  expectStep(aliasStands, "branch", "named", "an alias signer's Acceptance-only re-signature stands with the passed review");
+  assert.equal(aliasStands.kv.has("role"), false, ran("no reviewer is ordered for the alias signer", aliasStands));
+
   const respelled = signedReviewed("w699-b2-respelled");
   editBrief(respelled, "- `source.txt`\n", "- `./source.txt`: respelled\n");
   sign(respelled, 3);
