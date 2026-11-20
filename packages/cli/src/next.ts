@@ -35,6 +35,7 @@ import { admitLightGates, currentLightCommands, fullGateRuns, literal, officinaR
 import { webBuild, webBuildReason } from "@bisellium/commands/web-build.js";
 import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, terminalHalt, tookLadder, uiReviewSuperseded, unliftableHalt, utcTimestampProblem, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
+import { contractHeader, isContractHeader, readDeltaReview } from "@bisellium/commands/brief-contract.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readDesignMagister, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { readSpecSeats } from "@bisellium/commands/spec-seats.js";
@@ -314,8 +315,8 @@ function signedAtReady(rec: Dict, seats: string[]): string | undefined {
 }
 
 /** The brief with the six design-lex sections AND a passing architect spec log; with a reviewer, that signature then awaits its review. */
-function specEvidence(src: Src | undefined, id: string, design: string, reviewer: SpecReviewer | undefined, admit: (brief: string) => string[], ui: boolean, roster: SeatRoster, bind = false): SpecEvidence {
-  return reviewer === undefined ? signedSpec(src, id, design, admit, bind, roster) : reviewedSpec(src, id, reviewer, admit, ui, roster);
+function specEvidence(src: Src | undefined, id: string, design: string, reviewer: SpecReviewer | undefined, admit: (brief: string) => string[], ui: boolean, roster: SeatRoster, delta: boolean, bind = false): SpecEvidence {
+  return reviewer === undefined ? signedSpec(src, id, design, admit, bind, roster) : reviewedSpec(src, id, reviewer, admit, ui, roster, delta);
 }
 
 const hasSections = (brief: string, names: string[]): boolean => names.every((s) => new RegExp(`^##\\s+${esc(s)}\\s*$`, "im").test(brief));
@@ -426,13 +427,14 @@ function ownBrief(text: string, id: string, rel: string): string {
  * the newest passed review and the newest signature that stood by the split: one with two failed reviews below it, followed by
  * another signature. The newest signature never ends the count. Each log is read by the strict readers against its own brief.
  */
-function failedSpecReviews(read: { n: number; rel: string; text: string | undefined }[], id: string, reviewer: SpecReviewer, roster: SeatRoster): string[] {
+function failedSpecReviews(read: { n: number; rel: string; text: string | undefined }[], id: string, reviewer: SpecReviewer, roster: SeatRoster, delta: boolean): string[] {
   const signed = read.map((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, ownBrief(l.text, id, l.rel), l.rel, roster)));
   let failed: string[] = [];
   read.forEach((l, i) => {
     if (l.text === undefined) return;
     if (signed[i]) {
-      if (failed.length >= 2 && signed[i + 1] === true) failed = [];
+      // W-699 (D-245 F3b): with the delta rule on, a re-signature of the same contract (equal `# contract:` headers) resets nothing
+      if (failed.length >= 2 && signed[i + 1] === true && !(delta && sameContract(l.text, read[i + 1]!.text!, id, l.rel, read[i + 1]!.rel))) failed = [];
       return;
     }
     const r = readSpecReview(l.text, id, l.n, reviewer, ownBrief(l.text, id, l.rel), l.rel, roster);
@@ -443,7 +445,48 @@ function failedSpecReviews(read: { n: number; rel: string; text: string | undefi
   return failed;
 }
 
-function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, admit: (brief: string) => string[], ui: boolean, roster: SeatRoster): SpecEvidence {
+/** W-699 (D-245 F3b): a spec log's one `# contract:` value in its grammar, or undefined (none, two, or out of grammar). */
+function contractOf(text: string, id: string, rel: string): string | undefined {
+  const p = parseVerdictLog(text, id, rel);
+  const v = "error" in p ? undefined : p.headers.get("contract");
+  return v?.length === 1 && isContractHeader(v[0]!) ? v[0] : undefined;
+}
+/** W-699: two signatures pin one contract: each carries a `# contract:` value and the two are equal. */
+function sameContract(a: string, b: string, id: string, relA: string, relB: string): boolean {
+  const x = contractOf(a, id, relA);
+  return x !== undefined && x === contractOf(b, id, relB);
+}
+
+/**
+ * W-699 (D-245 F3b): the review an anchor signature re-signs, or undefined. The anchor's `# contract:` must equal the digests
+ * `next` computes from the current brief (a claimed or stale value is no delta); the newest valid review R below the anchor
+ * (a kind: ui opus's ui-lead logs skipped) must have passed or failed only on blockers that keep the design; and the newest
+ * valid signature below R pinning R's brief must carry that same contract. Every log between R and the anchor is a valid
+ * signature (against its own brief): an unreadable log there, or one that is neither a valid signature nor a valid review, is
+ * never skipped (r4b, class census). Anything else, a log with no contract included, is unclassifiable: undefined, and the
+ * anchor awaits a review as before.
+ */
+function deltaReview(read: { n: number; rel: string; text: string | undefined }[], anchor: { n: number; rel: string; text: string | undefined }, id: string, reviewer: SpecReviewer, brief: string, ui: boolean, roster: SeatRoster): { round: number; log: string; outcome: "passed" | "failed"; keeps: string[] } | undefined {
+  const mine = contractOf(anchor.text ?? "", id, anchor.rel);
+  if (mine === undefined || mine !== contractHeader(brief)) return undefined;
+  const below = read.filter((l) => l.n < anchor.n && !(ui && l.text !== undefined && isUiLeadLog(l.text, roster)));
+  for (let i = below.length - 1; i >= 0; i--) {
+    const l = below[i]!;
+    if (l.text === undefined) return undefined;
+    const r = readSpecReview(l.text, id, l.n, reviewer, ownBrief(l.text, id, l.rel), l.rel, roster);
+    if ("error" in r) {
+      if ("error" in readSpecSignature(l.text, id, l.n, reviewer.design, ownBrief(l.text, id, l.rel), l.rel, roster)) return undefined;
+      continue;
+    }
+    if (r.outcome === "failed" && r.keeps.length === 0) return undefined;
+    const pin = ownBrief(l.text!, id, l.rel);
+    const signer = below.slice(0, i).reverse().find((s) => s.text !== undefined && !("error" in readSpecSignature(s.text, id, s.n, reviewer.design, pin, s.rel, roster)));
+    return signer !== undefined && contractOf(signer.text!, id, signer.rel) === mine ? r : undefined;
+  }
+  return undefined;
+}
+
+function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, admit: (brief: string) => string[], ui: boolean, roster: SeatRoster, delta: boolean): SpecEvidence {
   if (src === undefined) return { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false, gate: { kind: "signature" } };
   const names = src.list("ci").filter((name) => name.startsWith(`${id}-spec-`));
   const logs: { n: number; rel: string }[] = [];
@@ -473,8 +516,9 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, 
     reviews.push(r);
   }
   const signed = (gate: SpecGate, why: string): SpecEvidence => ({ ...result(why, gate), sella: reviewer.design, log: anchor.rel });
-  const review = reviews[0];
-  const failed = failedSpecReviews(read, id, reviewer, roster);
+  // W-699 (D-245 F3b): with spec.delta_review on, a re-signature of the contract a passed or keeps review read stands with it
+  const review = reviews[0] ?? (delta ? deltaReview(read, anchor, id, reviewer, brief, ui, roster) : undefined);
+  const failed = failedSpecReviews(read, id, reviewer, roster, delta);
   if (review === undefined && failed.length >= 2) return { ...signed({ kind: "split", failed }, `${briefRel(id)}, ${anchor.rel} stand without a third review (D-061 §4)`), ok: true };
   if (review === undefined) return signed({ kind: "review", signature: anchor.rel, brief }, `${anchor.rel} is signed and awaits the spec review`);
   if (reviews.length > 1) return result(`${reviews[1]!.log} is a second reviewer verdict after ${anchor.rel} with no signature between them; a newer signature must come first`, { kind: "invalid" });
@@ -1160,6 +1204,8 @@ export function deriveNext(f: Facts): Derived {
   const fast = gate.reviewer !== undefined && lane && (f.tip === undefined ? lightIn(f.work, id) : lightIn(f.branch, id) && lightIn(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id));
   const reviewer = fast ? undefined : gate.reviewer;
   const admit = lightAdmission(f);
+  // W-699 (D-246 item 2): the main checkout's switch, so an off merged to master holds every opus at once
+  const delta = readDeltaReview(f.manifest).on;
   // W-206: once opus/<id> exists the branch owns the spec (D-021): it is judged there, and every order names its worktree
   // ponytail: only with a reviewer; without one signedSpec pins no brief, so an amendment never un-passes the spec (today's rung)
   const onOpus = f.tip !== undefined && reviewer !== undefined;
@@ -1195,11 +1241,11 @@ export function deriveNext(f: Facts): Derived {
   // an unlistable worktree ci/ cannot carry the spec, so the committed branch is judged instead: once it has passed, the later rungs'
   // worktree handling is unchanged (the review rung holds on the same ci/); until then nothing can be ordered
   const ciProblem = onOpus && f.wt.usable ? f.wtCiProblem() : undefined;
-  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, signer, reviewer, admit, ownerUi, f.manifest);
+  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, signer, reviewer, admit, ownerUi, f.manifest, delta);
   if (ciProblem !== undefined && !committed!.ok) return hold("spec", ciProblem);
   // pending spec work (an edited brief or a new log) cannot be judged beside an unlistable ci/: only an unchanged worktree goes on
   if (ciProblem !== undefined && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return hold("spec", `${ciProblem}; the spec work pending in the worktree is not committed`);
-  const spec = committed ?? specEvidence(pending, id, signer, reviewer, admit, ownerUi, f.manifest, pre);
+  const spec = committed ?? specEvidence(pending, id, signer, reviewer, admit, ownerUi, f.manifest, delta, pre);
   // W-381 (D-070 C, D-076 D): the newest failed spec review (a revision's, a keeps-only branch's, or the two-review split's)
   // whose S1 blocker names a class seen before in another opus holds the spec until a title names the class
   const g = spec.gate;

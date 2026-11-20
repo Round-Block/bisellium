@@ -6,6 +6,7 @@ import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { countBehaviours, declaredReds, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, ownedSlotMarks, redCommand, redFailsAt, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
+import { contractHeader } from "./brief-contract.js";
 import { gateLogProblems } from "./presign-gate.js";
 import { CLASS_TAG, censusProblems, repeatedClasses } from "./class-census.js";
 import { codexHome, codexModels, sessionRan, validTurnRan, type TurnRan } from "./codex-run.js";
@@ -177,6 +178,7 @@ export const VERDICT_HEADERS = [
   "at",
   "tree",
   "brief",
+  "contract",
   "converted",
   "dispatch_prompt",
   "ui_input",
@@ -1224,6 +1226,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   }
 
   let briefHeader: string | undefined;
+  let contractValue: string | undefined;
   let convertedHeader: string | undefined;
   let conversions: Conversion[] = [];
   let recorded = outcome;
@@ -1285,6 +1288,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       }
     }
     briefHeader = `${briefRel} blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
+    // W-699 (D-245 F3b): a signature pins the contract digests of the brief it pins, computed here, never read from the body
+    if (sella === signer) contractValue = contractHeader(read.bytes.toString("utf8"));
     // W-246: as in build, a blocker that cites no line of the pinned brief is advisory, and a failure with none standing passes
     const where = officinaInRepo(root);
     const reconciled = reconcileFindings(transcript.toString("utf8"), outcome, {
@@ -1371,6 +1376,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       headerLine("at", now.toISOString()),
       headerLine("tree", treeAtCapture(root)),
       ...(briefHeader === undefined ? [] : [headerLine("brief", briefHeader)]),
+      ...(contractValue === undefined ? [] : [headerLine("contract", contractValue)]),
       ...(convertedHeader === undefined ? [] : [headerLine("converted", convertedHeader)]),
       ...(promptHeader === undefined ? [] : [headerLine("dispatch_prompt", promptHeader)]),
       ...(inputHeader === undefined ? [] : [headerLine("ui_input", inputHeader)]),

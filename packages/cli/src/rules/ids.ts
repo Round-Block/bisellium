@@ -164,6 +164,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "sella.collegium",
   "sella.name",
   "sella.stale",
+  "spec.delta_review",
   "state.building.spec",
   "state.done.probationes",
   "state.review.agent",

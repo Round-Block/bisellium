@@ -39,6 +39,7 @@ import { checkPromptTemplates } from "./rules/prompts.js";
 import { checkBriefStale } from "./rules/brief-stale.js";
 import { checkLadderTicket } from "./rules/ladder-ticket.js";
 import { checkHookGuard } from "./rules/hook-guard.js";
+import { checkDeltaReview } from "./rules/delta-review.js";
 import { diagnosticLabel } from "./reporting.js";
 import { conclusionProblem } from "@bisellium/commands/lifecycle.js";
 import { concludedResearch, effectiveProbationes, readContainedRegularFile, readRecordedFile, reviewFailedAtCertifiedTree, titleWordsProblem, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
@@ -986,6 +987,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   findings.push(...checkBriefStale(root, ruleOpts));
   findings.push(...checkLadderTicket(root, ruleOpts));
   findings.push(...checkHookGuard(root, ruleOpts));
+  findings.push(...checkDeltaReview(root, ruleOpts));
 
   return done();
 }

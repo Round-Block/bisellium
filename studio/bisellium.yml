@@ -57,6 +57,9 @@ probationes:
 wip_limit: 4
 # W-162 (D-046): `next` names no branch until this seat's review has passed after the architect's newest signature.
 spec_reviewer: spec-reviewer
+# W-699 (D-246 item 2): the delta rule's switch, read by next; off on an escape, at once, by a Patron-merged PR. Missing or
+# malformed: next reads it as off and check blocks (spec.delta_review).
+spec: { delta_review: on }
 # W-348 (D-091 D): atomic override for kind: ui; both keys or neither.
 ui_spec_signer: ui-architect
 ui_spec_reviewer: ui-spec-reviewer
