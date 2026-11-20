@@ -30,11 +30,11 @@ const source = (rel: string): string => readFileSync(new URL(rel, import.meta.ur
 if (only === undefined || only === 1) {
   test("W-110 behaviour 1: the rail's entries and the router's map are one table", () => {
     // (a) passes today: parseRoute and needsYouVisible are unchanged.
-    for (const r of ["inbox", "board", "seats", "officina"]) {
+    for (const r of ["home", "inbox", "board", "seats", "officina"]) {
       assert.equal(parseRoute(`#/${r}`), r, `(a) parseRoute("#/${r}") gives its own route`);
     }
     for (const h of ["", "#/", "#/nonsense", "#/inbox/extra"]) {
-      assert.equal(parseRoute(h), "inbox", `(a) parseRoute(${JSON.stringify(h)}) falls back to inbox`);
+      assert.equal(parseRoute(h), "home", `(a) parseRoute(${JSON.stringify(h)}) falls back to home`);
     }
     assert.equal(nav.needsYouVisible(0), false, "(a) needsYouVisible(0) is false");
     assert.equal(nav.needsYouVisible(3), true, "(a) needsYouVisible(3) is true");
@@ -42,15 +42,15 @@ if (only === undefined || only === 1) {
     // (b) Genuine red: nav.ts exports the table, in D-023 section 1's order.
     const entries = table();
     assert.ok(entries, "(b) nav.js exports NAV_ENTRIES");
-    assert.ok(Array.isArray(entries) && entries.length === 4, "(b) NAV_ENTRIES has exactly four entries");
+    assert.ok(Array.isArray(entries) && entries.length === 5, "(b) NAV_ENTRIES has exactly five entries");
     assert.deepEqual(
       entries.map((e) => e.href),
-      ["#/inbox", "#/board", "#/seats", "#/officina"],
+      ["#/home", "#/inbox", "#/board", "#/seats", "#/officina"],
       "(b) NAV_ENTRIES hrefs, in order",
     );
     assert.deepEqual(
       entries.map((e) => e.label),
-      ["Inbox", "Board", "Seats", "Officina"],
+      ["Home", "Inbox", "Board", "Seats", "Officina"],
       "(b) NAV_ENTRIES labels, in order",
     );
 
@@ -59,7 +59,7 @@ if (only === undefined || only === 1) {
       assert.equal(parseRoute(e.href), e.route, `(c) parseRoute(${e.href}) round-trips to ${e.route}`);
       assert.equal("disabled" in e, false, `(c) entry ${e.route} carries no disabled key`);
     }
-    assert.equal(new Set(entries.map((e) => e.route)).size, 4, "(c) the four routes are distinct");
+    assert.equal(new Set(entries.map((e) => e.route)).size, 5, "(c) the five routes are distinct");
 
     // (d) route.ts declares no second table and re-exports Route from nav.ts.
     const route = source("./route.ts");

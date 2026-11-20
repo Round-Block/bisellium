@@ -1,0 +1,25 @@
+# opus: W-503
+# phase: spec
+# round: 7
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1ab34-728f-77a3-b14c-41cea2a8a323
+# outcome: passed
+# at: 2026-11-05T13:31:58.596Z
+# tree: tree:21576d658e1666430d61970fac77e025b946043b
+# brief: briefs/W-503.md blob:1415030a9b290eb098d47a55421c4fc30d6c8c29
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-503/studio","head":"258816eff402eaea8f3aed32255d83e98ea39e58","brief":"1415030a9b290eb098d47a55421c4fc30d6c8c29","at":"2026-11-05T13:31:52.360Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-503-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — All three Genuine red declarations now name the actual failing assertion after their markers; fresh red logs retain their exact command headers, selected `not ok` rows and `ERR_ASSERTION`, and the real `runReady` harness reports `briefAdmissionProblems: []`, `readRedOrder: {"declared":true}` and `declaredRedProblems: []` before stopping at the absent ticket — check: b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, red-replay-check.mts, admission.out
+2. advisory — One populated Needs you group spans the card at 1280 expanded and collapsed; two and four populated groups retain at most two columns, narrow widths retain one column, and group precedence plus ask labels are unchanged — check: apps/web/src/components/w025.css, apps/web/tests-serve/w503.spec.ts, kill-b2-single.out, shots/home-one-group-1280-expanded.png, shots/home-one-group-1280-collapsed.png
+3. advisory — The rebuilt six-commit prototype applies directly at opus/W-503 head 3b5aa1a4 over master 9883a31b and matches final tree b252dacd12322c9f77d89f2ec982a22b944c73ad; every stage builds independently — check: mbox-check.out, series-builds.txt
+4. advisory — All assertion reds, cumulative greens, source kills including the one-group width kill, final focused rows, typecheck, build, lint and format checks pass — check: reds-host.out, ledger-kills.out, ledger-kills-served.out, gates-proto.out
+5. advisory — Ten recaptured review PNGs cover populated and resolved attention at 1280 expanded/collapsed, 640 and 390 plus one group at 1280 in both sidebar states; inspection confirms the single group spans the card, the two-group case shares it, narrow groups stack, shared severity cues remain, and no capture overflows — check: capture-shots.out, shots/
+
+## Verdict
+
+passed — signature round 7 prepared but not recorded by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-503.md`; the revised six-commit prototype sha256 is `bcf64ceda87150e25f2a9d88ba73fed1ea5f1f53ab5e23e9aabe0e2ba0f6846c`, the round-5/6 single-group advisory and declared-red admission refusal are closed without adding an owned file or flipping an outside-census row, and no commit to a branch, push, recorded signature, `next` or `verdict` was performed.

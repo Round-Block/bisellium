@@ -1,0 +1,23 @@
+# opus: W-503
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 57134922-b89f-4dc8-881b-b7e5e856fc5c
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed
+# outcome: passed
+# at: 2026-11-05T13:09:53.829Z
+# tree: tree:21576d658e1666430d61970fac77e025b946043b
+# brief: briefs/W-503.md blob:9b989204c1f50a66fad868504a9426000d732763
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"9883a31b2bf9792c301c6a754c1e1e02c667c81d","brief":"9b989204c1f50a66fad868504a9426000d732763","at":"2026-11-05T13:09:48.613Z"}
+
+## Findings
+1. advisory — brief:15 [severity: S4] At 960 and wider, Needs you always has two columns, so one group alone at 1280 fills only the left half. Round 3 objected to that same unused space. No b2 case tests a single group. Replacement: "One populated group spans the card; two or more use at most two columns at 1280 and one column below 960; group precedence and every ask label stay intact." An agent wrote this rule, not the Patron, and Defaults 1 doesn't put it to them. [class: ui×unstated-limit] — check: none: apps/web/tests-serve/w503.spec.ts b2 single-group width at 1280
+
+## Earlier findings
+
+## Verdict
+All four round-3 items are closed as written. Stuck counts each opus once and skips done and halted (`home.ts:60`), and its caption is "Work items with failed gates". Health uses the shared square, diamond and hollow-circle cues (`Home.tsx:25`). Needs you shows two columns at 1280, sidebar open or collapsed, and one at 640 and 390. No promise these touch is false, and the input boundary is still complete.
+
+Claude week 9%, 5h 18% | Codex week 51% | context 228k of 300k
+VERDICT: PASS

@@ -43,7 +43,7 @@ test("W-408-b1 detail frame and sole scrollbar hold at 1280, 640 and 390", async
   for (const width of WIDTHS) {
     await open(page, width);
     await expect(page.locator(".officina")).toBeVisible();
-    await expect(page.locator(".sidebar__link").first()).toHaveAttribute("href", "#/inbox");
+    await expect(page.locator(".sidebar__link").first()).toHaveAttribute("href", "#/home");
     await expect(page.locator(".sidebar__link").last()).toHaveAttribute("href", "#/officina");
     await expect(page.locator(".sidebar__link").last()).toHaveAttribute("aria-current", "page");
     await expect(page.locator(".officina__panel-heading")).toHaveText(["Work in flight", "Budget", "Health"]);

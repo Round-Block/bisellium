@@ -1,0 +1,21 @@
+# opus: W-503
+# phase: spec
+# round: 18
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 95e2cd56-2d07-43e5-b98c-5ca78393b196
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed; session 1dc7ee8b is not saved, so a fresh session of the same reviewer reviewed round 18
+# outcome: passed
+# at: 2026-11-17T12:34:14.412Z
+# tree: tree:01d2019e7ffbdeb737f540244f501086e6a2a00e
+# brief: briefs/W-503.md blob:dad49132505326e0cb8ea458714b5d445d39bbbc
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":18,"actor":"spec-reviewer","studio":".worktrees/W-503/studio","head":"8fdfd5136a36ab35ac5d95a65ed6375c63539cfd","brief":"dad49132505326e0cb8ea458714b5d445d39bbbc","at":"2026-11-17T12:34:07.056Z"}
+
+## Findings
+1. advisory — brief:65 The prototype's `reject` handler (prototype-r12b.mbox:181-184) evicts every rejected shared Inbox read: a local 401, a server 401, 503 or a network error. The promise names only the token-less case, so it understates what the code does, and the other statuses stay untested. Replacement: "Promise rejected-share-is-evicted: any shared Inbox read that rejects is removed from the sharing slot as it settles, so the next `fetchInbox({ shared: true })` issues a fresh GET, while a successful shared read remains reusable for the existing 50ms window, as pinned by … — limit: only the token-less 401 rejection is pinned; other rejecting statuses are evicted the same way but unpinned; retry policy, backoff, cancellation, token lifetime and sharing outside `fetchInbox({ shared: true })` are unchanged." [severity: S4] [class: promise×overstated-scope] — check: none: a b5 sibling row where a served 503 is followed by a shared re-read that issues one fresh GET
+
+## Earlier findings
+
+## Verdict
+The round-12 amendment's new reader and promises are covered and backed by evidence, and the change adds no blocker. It adds `api.ts` eviction (b5), W-361-b2's single D-200 large-text exception and W-366-b2's accent census (b4), with rows, evidence and Files owned to match. The b4 and b5 reds fail by assertion at their declared messages (b4-red.log:31, b5-red.log:11). The final b5 row pins both the eviction and successful 50ms sharing (mbox:194-197; b5-green.log ok 1), and the r12b-only change is a comment, so those reds still apply. The one finding is advisory wording; round 15 recorded no blockers to carry.
+VERDICT: PASS

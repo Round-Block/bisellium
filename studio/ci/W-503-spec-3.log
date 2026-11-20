@@ -1,0 +1,29 @@
+# opus: W-503
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1abba-3a26-7073-847c-317f3bdbae78
+# outcome: revise
+# at: 2026-11-05T12:44:38.740Z
+# tree: tree:21576d658e1666430d61970fac77e025b946043b
+# dispatch_prompt: ci/W-503-ui-prompt-3.md
+# design_digest: sha256:a6fa513833a89c807d248fd81fa36106a9238d694aa33e9a1b57b35b0527ccfb
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"9883a31b2bf9792c301c6a754c1e1e02c667c81d","brief":"389b9420294fafcf04170a8ed0c7fa27cf5f4e72","at":"2026-11-05T12:44:30.686Z"}
+
+## Findings
+
+1. blocking — brief:19 — The agent-written Stuck rule counts historical failures on done or halted opera as present trouble. Merely documenting this limit leaves a misleading landing signal — replace with: “Stuck counts each opus with at least one failed gate once, excluding lifecycle phases done and halted.” — check: apps/web/test/w503.test.ts, b3 cases covering active, done and halted opera with failed gates.
+2. blocking — brief:54 — The captured caption “One failed gate” names the wrong unit: the number counts opera, so multiple failed gates on one opus still produce 1 — replace with: “The Stuck number counts work items; its caption reads ‘Work items with failed gates’.” — check: apps/web/tests-serve/w503.spec.ts, b3 with multiple failed gates on one opus.
+3. blocking — brief:15 — At 1280 in both sidebar states, the prototype’s agent-written four-column treatment compresses two populated groups into half of Needs you. Titles and combined asks wrap unnecessarily beside substantial unused space — replace with: “Populated attention groups share the available card width, using at most two columns at 1280 and one below 960; preserve group precedence and every ask label.” — check: apps/web/src/components/w025.css and apps/web/tests-serve/w503.spec.ts, b2 with two and four populated groups.
+4. advisory — brief:19 — The captured triangle conflicts with the Patron’s 2026-10-28 high-advisory diamond; the already-agreed build correction should also appear in the brief’s severity promise at line 54 — replace with: “Health uses shared severity cues: blocking square, high advisory diamond and healthy hollow circle.” — check: apps/web/test/w503.test.ts and apps/web/tests-serve/w503.spec.ts, b3 asserting the shared high-severity cue.
+
+## Recommendation
+
+This is my first input on W-503; I have no earlier findings to reassess.
+Home answers the landing questions with Needs you first at all three widths; the outer desktop composition and narrow stacking read clearly, with no visible overflow.
+The group labels, combined “Inbox decision, Human gate” row and “Active Board work by phase” wording are understandable, and the palette maintains the continuity described by the brief.
+“Nothing waiting on you” honestly describes attention alone: the captures retain populated work summaries, while the prototype test separately checks omission when no work is active.
+D-175 supports this smaller composition; the Stuck semantics and cramped internal columns are agent choices the architect can correct without a new design.
+The requested prototype.diff was absent; I inspected the complete prototype.mbox and verified its hash against the signed brief.
+Verdict: revise

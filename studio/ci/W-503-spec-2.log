@@ -1,0 +1,21 @@
+# opus: W-503
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 01e1a757-5433-467f-91a2-9230fea684a4
+# outcome: passed
+# at: 2026-11-05T11:03:07.685Z
+# tree: tree:d0aed4ec199a28d475a55a66006fa3e3893b68e9
+# brief: briefs/W-503.md blob:389b9420294fafcf04170a8ed0c7fa27cf5f4e72
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"16b957367232a6e8add173dc22d7f3c41675771b","brief":"389b9420294fafcf04170a8ed0c7fa27cf5f4e72","at":"2026-11-05T11:03:01.724Z"}
+
+## Findings
+1. advisory — brief:54 [severity: S2] The prototype gives served advisories a `triangle` and adds its own `.home-cue` colours. The Patron's 2026-10-28 standard (DIRECTION.md:128-131, :267-271) and the shipped `.severity-cue--high` (`w025.css:781`) use a diamond for high and keep the triangle for due/low. Replacement (also brief:19): "Health displays the served blocks/advisories through the shared `severity-cue` classes (blocking square, advisory high diamond, healthy hollow circle; the Patron, 2026-10-28)"; b3 expects `cue: "diamond"` and `.severity-cue--high`. [class: ui×severity-cue-standard] — check: apps/web/test/w503.test.ts
+2. advisory — brief:19 [severity: S3] Stuck counts every opus with a failed gate, so a done or halted opus with a stale failed gate would count. Replacement: "…a failed gate, in any phase; a stale failed gate on a done or halted opus counts and is a stated limit." [class: ui×unstated-limit] — check: none: a b3 Node case with a done opus that has a failed gate
+
+## Verdict
+The input boundary is complete and every promise holds within its stated limits; the builder should adopt the cue fix in the build.
+VERDICT: PASS
+
+Claude week 7%, 5h 1% | Codex week 48% | context 293k of 300k

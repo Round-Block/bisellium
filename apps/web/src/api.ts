@@ -332,7 +332,10 @@ export function fetchInbox(opts?: { shared?: boolean }): Promise<InboxResponse> 
   const settle = (): void => {
     entry.settledAt = Date.now();
   };
-  void promise.then(settle, settle);
+  const reject = (): void => {
+    if (inboxInFlight === entry) inboxInFlight = undefined;
+  };
+  void promise.then(settle, reject);
   return promise;
 }
 

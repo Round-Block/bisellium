@@ -1,0 +1,47 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-503-b5\s --import tsx apps/web/test/w503-r12.test.ts
+# exit: 1
+# at: 2026-11-17T13:00:57.817Z
+# sella: builder.W-503
+# tree: tree:b4c280bad2731a3e7188599aecb407d86b62157b
+# ticket: {"opus":"W-503","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-503/studio","head":"52ce621fba916003b5f39f2e6a73a714837f1293","brief":"dad49132505326e0cb8ea458714b5d445d39bbbc","at":"2026-11-17T13:00:53.441Z"}
+
+TAP version 13
+# Subtest: W-503-b5 behaviour 5: a rejected shared Inbox read is evicted before a token retry
+not ok 1 - W-503-b5 behaviour 5: a rejected shared Inbox read is evicted before a token retry
+  ---
+  duration_ms: 5.82058
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w503-r12.test.ts:1:688'
+  failureType: 'testCodeFailure'
+  error: |-
+    a token save after a rejected shared Inbox read issues a fresh successful read
+    + actual - expected
+    
+    + 401
+    - {
+    -   opera: [],
+    -   petitiones: []
+    - }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    opera:
+    petitiones:
+  actual: 401
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/w503-r12.test.ts:32:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 163.57602

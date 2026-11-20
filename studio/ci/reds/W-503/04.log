@@ -1,0 +1,72 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-361-b2\s --import tsx apps/web/test/tokens.test.ts
+# exit: 1
+# at: 2026-11-17T12:53:23.946Z
+# sella: builder.W-503
+# tree: tree:402ca3ad574b0322ca85a167c7f90ff9e39686a3
+# ticket: {"opus":"W-503","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-503/studio","head":"23e245afc46f3f383b42bd5b67f20fdb5d12de52","brief":"dad49132505326e0cb8ea458714b5d445d39bbbc","at":"2026-11-17T12:53:15.165Z"}
+
+PASS  tokens.css --ink is #F8F8F2                                  
+PASS  tokens.css --ink-2 is #C6C9D8                                
+PASS  tokens.css --ink-3 is #9EA4C4                                
+PASS  tokens.css --rule is #44475A                                 
+PASS  tokens.css --wash is #343746                                 
+PASS  tokens.css --verdigris is #3FB9A3                            
+PASS  tokens.css --amber is #FFB86C                                
+PASS  tokens.css --ok is #50FA7B                                   
+PASS  tokens.css --bad is #FF5555                                  
+PASS  tokens.css --accent-cyan is #8BE9FD                          
+PASS  tokens.css --accent-pink is #FF79C6                          
+PASS  tokens.css --accent-purple is #BD93F9                        
+PASS  tokens.css --accent-yellow is #F1FA8C                        
+PASS  tokens.css --sp-1 is 4px                                     
+PASS  tokens.css --sp-2 is 8px                                     
+PASS  tokens.css --sp-3 is 12px                                    
+PASS  tokens.css --sp-4 is 16px                                    
+PASS  tokens.css --sp-6 is 24px                                    
+PASS  tokens.css --sp-8 is 32px                                    
+PASS  tokens.css --sp-12 is 48px                                   
+TAP version 13
+# Subtest: W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and budget states keep readable cues
+not ok 1 - W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and budget states keep readable cues
+  ---
+  duration_ms: 18.05641
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/tokens.test.ts:1:11256'
+  failureType: 'testCodeFailure'
+  error: |-
+    only shaped failed-gate and Inbox failure marks consume --bad
+    + actual - expected
+    
+      [
+        'components/w025.css: .gate-ladder__mark--bad-diagonal',
+        'components/w025.css: .inbox__notice--failure::before',
+    +   'components/w025.css: .home-tile:has(.severity-cue--blocking) .home-tile__value'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'components/w025.css: .gate-ladder__mark--bad-diagonal'
+    1: 'components/w025.css: .inbox__notice--failure::before'
+  actual:
+    0: 'components/w025.css: .gate-ladder__mark--bad-diagonal'
+    1: 'components/w025.css: .inbox__notice--failure::before'
+    2: 'components/w025.css: .home-tile:has(.severity-cue--blocking) .home-tile__value'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-503/apps/web/test/tokens.test.ts:244:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 157.982139

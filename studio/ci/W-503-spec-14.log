@@ -1,0 +1,29 @@
+# opus: W-503
+# phase: spec
+# round: 14
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1ab34-728f-77a3-b14c-41cea2a8a323
+# outcome: passed
+# at: 2026-11-14T09:43:43.796Z
+# tree: tree:9754f5e5da1fff55e1f5c68c633c3dcc285deb9b
+# brief: briefs/W-503.md blob:4a61cab426b4a8d99cc75394e1f325ede245b198
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":14,"actor":"architect","studio":".worktrees/W-503/studio","head":"af1fdf39a7b937a4290c0a1d7236ea40c39ddc6d","brief":"4a61cab426b4a8d99cc75394e1f325ede245b198","at":"2026-11-14T09:43:37.001Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-503-spec/revision-11/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-503-spec/gate-1113/gate-r11.log
+Class census: mechanism×red-certifies-wrong-tree /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.sh -> /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.out sha256:3b4b07fe55e9fd684bdc8e644584f83e3d045c8b83d8440a953e273cdd7ac333
+
+## Findings
+
+1. advisory — Revision 11 signs `/home/edckt/.bisellium-evidence/W-503-spec/revision-11/brief.md`; its prototype remains the six-commit `prototype-r10.mbox` at sha256 `e7037fc83f7b10dcccc59435aa930b7a4491d238f441b6ff572dcb482f45948b`, applying at c93e72d34209743ba460065d8c31e6932775d6dc and producing tree c5bb0a6f72deadbe679bcae5e3cfda22cabfb510 — check: revision-10/apply-check-r10.out, revision-10/final-tree.txt, revision-10/prototype-r10.sha256
+2. advisory — The b1 red stage was exported from that base with prototype commit 1, received an unchanged lockfile `npm ci` using the documented writable mirror of the requested read-only cache, and resolves the `@bisellium/commands` workspace link; its probe prints a port and write-auth token without either refused module/server failure — check: revision-11/environment-note.md, revision-11/npm-ci-local-cache.out, revision-11/serve-probe.out
+3. advisory — Fresh ordinary and `npm_config_loglevel=silent` b1 reds both keep `served Home behavior 1 holds:` as the pinned assertion line and then fail because `1280: bare entry opens Home` cannot find `getByRole('heading', { name: 'Home', exact: true })`, which is the intended pre-Home tree failure — check: revision-11/b1-red-ordinary.log, revision-11/b1-red-silent.log
+4. advisory — `reds-r11.sh` validates all six red variants, refuses `serve exited` and `ERR_MODULE_NOT_FOUND`, requires b1's inner Playwright missing-heading message and b2/b3's declared helper assertions, and records 6 passed with 0 failed — check: revision-11/reds-r11.sh, revision-11/reds-r11.out
+5. advisory — The repeated-class census names the only served red reached at its red stage, W-503-b1, with both logs and the same-tree serve probe; it names W-503-b2 and W-503-b3 as limits because their red variants stop at helper assertions before their served rows — check: revision-11/census-red-tree.sh, revision-11/census-red-tree.out
+6. advisory — The revised brief changes only b1's evidence paragraph, its Genuine red paths, and Acceptance's red validation evidence; Promise ledger, quoted-evidence and red-replay readers all return no problems, while behavior, layout and prototype stay unchanged — check: revision-11/brief.diff, revision-11/validate-brief-r11.out
+7. advisory — The revision-11 pre-sign gate records 2 passed, 0 deferred and 0 failed against base c93e72d34209743ba460065d8c31e6932775d6dc, the unchanged prototype digest and tree c5bb0a6f72deadbe679bcae5e3cfda22cabfb510 — check: gate-1113/gate-r11.log
+
+## Verdict
+
+passed

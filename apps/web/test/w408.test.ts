@@ -31,8 +31,8 @@ const screenshotServed = read("tests-serve/screenshots.spec.ts");
 const smoke = read("tests/smoke.spec.ts");
 
 test("W-408-b1 behaviour 1: Officina is a three-section detail ledger with one shell scrollbar", () => {
-  assert.match(nav, /NAV_ENTRIES\s*=\s*\[\s*\{ route: "inbox"[^]*\{ route: "officina"/, "master's Inbox-first navigation order is restored");
-  assert.match(route, /\?\? "inbox"/, "master's absent or unknown route returns to Inbox");
+  assert.match(nav, /NAV_ENTRIES\s*=\s*\[\s*\{ route: "home"[^]*\{ route: "officina"/, "Home is first while Officina remains the detail route");
+  assert.match(route, /\?\? "home"/, "absent or unknown routes now return Home");
   assert.doesNotMatch(screen, /fetchInbox|InboxResponse|datePresentation|petitiones|panel--needs-you|Needs you|FastiStrip|fetchActa|fasti-strip/, "Home and fasti summaries are absent from Officina");
   assert.match(screen, /Work in flight[^]*Health/, "Officina detail begins with work and ends with health");
   assert.match(css, /\.shell__main:has\(> \.officina\)\s*{[^}]*overflow-y:\s*scroll[^}]*scrollbar-gutter:\s*stable/s, "the detail page keeps the one always-allocated shell scrollbar");

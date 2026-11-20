@@ -9,7 +9,8 @@ type live in `src/tokens.css`, never here.
 
 The rail's table is `src/lib/nav.ts`; each screen is in `src/screens/`.
 
-- Inbox (`#/inbox`, the default): the petitiones waiting on a human, answered in place.
+- Home (`#/home`, the default): attention, stuck work, health and one active-work summary.
+- Inbox (`#/inbox`): the questions and work decisions waiting on a human, answered in place.
 - Board (`#/board`): the opera by lifecycle state, with a drawer per opus.
 - Seats (`#/seats`): the delegation tiers and the seat roster, each changed in place.
 - Officina (`#/officina`): completion, posture and burn, pending actions and contract integrity.

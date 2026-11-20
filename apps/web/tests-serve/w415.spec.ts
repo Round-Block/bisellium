@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { startServed, type ServedInstance } from "./harness.js";
 
-const ROUTES = ["inbox", "board", "seats", "officina"] as const;
+const ROUTES = ["home", "inbox", "board", "seats", "officina"] as const;
 test.setTimeout(120_000);
 let served: ServedInstance | undefined;
 test.afterEach(async () => { await served?.close(); served = undefined; });
@@ -41,7 +41,7 @@ test("W-415-b1 every screen collapses to D-119's icon rail at 1280 and 960", asy
       const expandedToggle = await toggle.boundingBox();
       await toggle.click();
       await expect(toggle).toHaveAccessibleName("Expand sidebar");
-      await expect(page.locator(".sidebar__link")).toHaveCount(4);
+      await expect(page.locator(".sidebar__link")).toHaveCount(5);
       await expect(page.locator(".sidebar__link-text").first(), "rail labels are visually clipped but remain available to assistive technology").toHaveCSS("clip-path", "inset(50%)");
       const rail = await page.locator(".sidebar").boundingBox();
       const collapsed = await page.locator(".shell__main").boundingBox();
@@ -68,8 +68,8 @@ test("W-415-b1 D-120 puts the shared attention count on Inbox and Board", async 
     await expect(page.locator('a[href="#/board"] .sidebar__badge'), `${route}: expanded Board keeps the same shared inline count`).toHaveText("2");
     await expect(page.locator('.sidebar__badge--dot')).toHaveCount(0);
     await page.locator(".sidebar__toggle").click();
-    const links = page.locator(".sidebar__link"); await expect(links).toHaveCount(4); await expect(links.locator(".sidebar__icon")).toHaveCount(4);
-    for (const label of ["Inbox 2", "Board 2", "Seats", "Officina"]) await expect(page.getByRole("link", { name: label })).toBeVisible();
+    const links = page.locator(".sidebar__link"); await expect(links).toHaveCount(5); await expect(links.locator(".sidebar__icon")).toHaveCount(5);
+    for (const label of ["Home", "Inbox 2", "Board 2", "Seats", "Officina"]) await expect(page.getByRole("link", { name: label })).toBeVisible();
     await expect(page.locator(`.sidebar__link[href="#/${route}"]`), `${route}: current icon is marked`).toHaveAttribute("aria-current", "page");
     await expect(page.locator('.sidebar__link[href="#/inbox"]'), "collapsed Inbox has a native tooltip").toHaveAttribute("title", "Inbox");
     const inbox = page.locator('.sidebar__link[href="#/inbox"]');

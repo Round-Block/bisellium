@@ -1,0 +1,29 @@
+# opus: W-503
+# phase: spec
+# round: 17
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1ab34-728f-77a3-b14c-41cea2a8a323
+# outcome: passed
+# at: 2026-11-17T12:30:16.074Z
+# tree: tree:01d2019e7ffbdeb737f540244f501086e6a2a00e
+# brief: briefs/W-503.md blob:dad49132505326e0cb8ea458714b5d445d39bbbc
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":17,"actor":"architect","studio":".worktrees/W-503/studio","head":"8fdfd5136a36ab35ac5d95a65ed6375c63539cfd","brief":"dad49132505326e0cb8ea458714b5d445d39bbbc","at":"2026-11-17T12:30:10.186Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-503-spec/r12/promise-ledger-r12.md
+Gate log: /home/edckt/.bisellium-evidence/W-503-spec/r12/host/gate-r12b.log
+Class census: mechanism×red-certifies-wrong-tree /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.sh -> /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.out sha256:3b4b07fe55e9fd684bdc8e644584f83e3d045c8b83d8440a953e273cdd7ac333
+
+## Findings
+
+1. advisory — D-200 supersedes W-361-b2's no-red-text rule only for the exact blocking Home value; the migrated guard preserves every other no-text use and pins 700 30px plus `--bad`/`--surface` contrast of at least 3:1, with the honest one-sided annotation that WCAG's requirement is a minimum — check: r12/b4-red-r12b.log, r12/tokens-green-r12b.log, r12/check-r12b.out
+2. advisory — The full-CI record also exposed W-366-b2's omitted exact census migration; the six already-signed Home accent consumers are now enumerated without broadening any accent role — check: r12/w366-red.log, r12/tokens-final.log, s8-records/w503-ci-479.log
+3. advisory — The internal `fetchInbox({ shared: true })` slot now evicts a rejection only when it is still the current entry; the token retry issues one fresh GET and successful reads retain the existing 50ms reuse, and its red remains at the original assertion after the b4-only amendment — check: r12/b5-red-r12b.log, r12/b5-green.log, r12/api-final.log, r12/w463-final.log
+4. advisory — The four-commit r12b amendment applies cleanly at `8fdfd5136a36ab35ac5d95a65ed6375c63539cfd`, produces tree `1e03bc7d511d45b950d103845a21b91b9cc5b1e9`, and has sha256 `81a18a4a0ca42575c99170f971e698ddcda0b6e9f9dbb6aba08770e4f9828e9e`; its only r12 source difference is the accepted one-sided explanation in the original b4-red commit — check: r12/apply-check-r12b.log, r12/prototype-r12b.sha256, r12/r12b-only-change.diff
+5. advisory — The host served replay reaches the live-baselines row's baseline-absent skip without `Could not load home`, and W-503 b1–b3 all pass; the earlier Chromium sandbox refusal is only a local execution limit — check: r12/host/served-screenshots.log, r12/host/served-w503.log, r12/host/served-screenshots.exit, r12/host/served-w503.exit
+6. advisory — r12d changes no Home behavior, layout, acceptance claim or cited source line; the brief corrects the signed-series identity to r12b and retains r12c's b1 red citations and truthful W-645 served-harness claim, while the promise ledger remains r12 and the repository check reports zero blocking findings and no `test.one_sided` finding — check: r12d/brief-r12d.md, r12/apply-check-r12b.log, r12/prototype-r12b.sha256, r12c/b1-red-ordinary.log, r12c/b1-red-silent.log, r12c/reds-r12c.out, r12c/rule-check.out, r12/promise-ledger-r12.md, r12/check-r12b.out
+7. advisory — The copied verdict promise-ledger rule and brief admission both report zero problems for the unchanged amended brief and this r12b signature — check: r12/ledger-check-r12b.out, r12/admission-r12b.out
+
+## Verdict
+
+passed

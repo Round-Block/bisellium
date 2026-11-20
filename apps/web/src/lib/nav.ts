@@ -7,6 +7,7 @@
  * never read it (W-065, ui-lead pass finding 8).
  */
 export const NAV_ENTRIES = [
+  { route: "home", href: "#/home", label: "Home" },
   { route: "inbox", href: "#/inbox", label: "Inbox" },
   { route: "board", href: "#/board", label: "Board" },
   { route: "seats", href: "#/seats", label: "Seats" },

@@ -1,0 +1,28 @@
+# opus: W-503
+# phase: spec
+# round: 20
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1ab34-728f-77a3-b14c-41cea2a8a323
+# outcome: passed
+# at: 2026-11-19T04:33:07.342Z
+# tree: tree:cbae336f0fac0eafba5741afbd5eca3a744b9060
+# brief: briefs/W-503.md blob:b3e7d7e81b2d2fb7d889daef71fc9510e1fa657f
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":20,"actor":"architect","studio":".worktrees/W-503/studio","head":"b89a4a56f39553621610b584604b71108d039720","brief":"b3e7d7e81b2d2fb7d889daef71fc9510e1fa657f","at":"2026-11-19T04:33:04.977Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-503-spec/r13/promise-ledger-r13.md
+Gate log: /home/edckt/.bisellium-evidence/W-503-spec/r13/host/gate-r13.log
+Class census: mechanism×red-certifies-wrong-tree /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.sh -> /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.out sha256:3b4b07fe55e9fd684bdc8e644584f83e3d045c8b83d8440a953e273cdd7ac333
+
+## Findings
+
+1. advisory — D-241 assigns the missing shipped-route readiness entry to W-503's design lead and requires no new Patron ruling; `home: ".home__title"` admits the already-ruled Home screen without changing visible UI — check: w503-route-1119/design-lead.md, w503-w675b3-1119/findings.md, r13/brief-r13.md
+2. advisory — `presign-r13b.diff` changes only the two recorded-log headers from shell-quoted spelling to the bare argv spelling that the declared-red reader compares, while leaving both executable invocations byte-identical; the independent printf proof is exact — check: r13/presign-r13b.diff, r13/presign-r13b-check.out, r13/presign-r13b.sha256
+3. advisory — The fresh unchanged-head b6 red exits 1 after the served harness prints its start and listening port/token lines, then fails on `home 1280 expanded is ready` at `locator('undefined')`; after the one-line selector fix, the same W-675-b3 wrapper exits 0 with one passing row — check: r13/host/b6-red.log, r13/host/b6-red.exit, r13/host/b6-green.log, r13/host/b6-green.exit
+4. advisory — The one-commit prototype remains unchanged: it applies at `b89a4a56f39553621610b584604b71108d039720`, produces tree `32c0896b3d5db2d7d0e8c75d2ccf4f8b1a3f5cbe`, has sha256 `155456fba9014d9d6de7061d758a5f6ed1bbdf9f9936ad5295629b6d82515f52`, and adds only Home's readiness-map entry — check: r13/apply-check-r13.log, r13/prototype-r13.sha256
+5. advisory — The fresh pre-sign gate identifies the same series and tree and passes both owed rows, repository check and typecheck, with zero failed rows — check: r13/host/gate-r13.log, r13/host/gate-r13.exit
+6. advisory — Full-brief admission at limit 6, the copied verdict promise-ledger rule against this reissued signature, and the declared-reds check all report zero problems — check: r13/admission-r13b.out, r13/ledger-check-r13b.out, r13/declared-reds-r13b.out
+
+## Verdict
+
+passed

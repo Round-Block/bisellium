@@ -1,0 +1,40 @@
+# opus: W-503
+# phase: spec
+# round: 26
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1f6c8-c1ec-7d13-9ea5-798d8fdeed3c
+# session_reason: a fresh ui-lead session gave round 26 input: the round-23 session 01a1f2d2 was not resumed, so a fresh Astra session read the re-signed revision-24 brief
+# outcome: passed
+# at: 2026-11-20T02:31:19.192Z
+# tree: tree:ccd5f02d0dc690ee8a25014ac153d8b40c1bc281
+# dispatch_prompt: ci/W-503-ui-prompt-26.md
+# design_digest: sha256:43b185e033984e98b2f4917f15c62a46bf2008ad4c494a58dbae2e1733ef10d4
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":26,"actor":"ui-lead","studio":".worktrees/W-503/studio","head":"758feec6aef54b1c1c633454d45a8a684d6d14bf","brief":"fcb72bb75de8a282f2b11d25e018c969fb2e09f0","at":"2026-11-20T02:31:16.594Z"}
+
+## Findings
+
+1. advisory — brief:66 — Round-19 #1, retained in round 23, remains open: the promise describes token-less rejection, while eviction also covers other rejected Inbox reads; this understates recovery without changing the loaded screen — replace with: “Any rejected Inbox read is removed from the shared slot if it still owns that slot. Successful reads retain the existing 50ms sharing window. W-503-b5 pins token-less rejection and saved-token recovery; other rejection forms lack dedicated assertions. Eviction does not initiate a retry.” — check: apps/web/src/api.ts:324; apps/web/test/w503-r12.test.ts.
+
+## Recommendation
+
+Round-3 #1 remains closed: `homeSummary()` excludes done and halted failures, and served W-503-b3 checks that several failed gates on one active opus count once.
+Round-3 #2 remains closed: all ten Home captures retain “Work items with failed gates,” also asserted by W-503-b3.
+Round-3 #3 remains closed, with its two-column remedy superseded by the Patron’s D-200 ruling: desktop titles, combined asks and Open links remain readable without clipping.
+Round-3 #4 remains closed: the captures retain Health’s shared high-advisory diamond, checked by W-503-b3.
+Round-6 #1 remains closed: both single-group desktop captures show the populated group spanning the card, checked by W-503-b2.
+Round-11 #1 remains closed: W-503-b3 retains the 50%/25%/25% bar assertions within 1px and blocking Health’s red number and square cue at each specified width.
+
+Revision 24 leaves round 23’s screen unchanged: `r24/brief-r24.diff` changes only test-route wording at brief:33, :44, :109, :115 and :120.
+The current `Home.tsx` and `w025.css` also match the capture clone; the inspected 1280 expanded/collapsed, 640 and 390 captures retain readable content and the same composition.
+As `shots/MANIFEST.md` states, 640 is the CSS-viewport proxy for 200% zoom, not an independently exercised browser-zoom setting.
+
+The agent-written grouping precedence, combined-ask preservation, work-item counting, single-group span and narrow stacking make sense on these screens; no agent-written visual rule warrants replacement.
+D-175 and D-200 explicitly attribute the compact composition, signed Needs you treatment, bars, white headings, status colours and accepted sparse empty card to the Patron.
+
+The served rows retain coverage of the reviewed UI promises: b1 checks default entry, navigation and unknown-route fallback; b2 checks grouping, unique identities, combined asks, destinations and reflow; b3 checks Stuck before Health, factual counts, severity cues, proportional bars, omission rules and loading/error states.
+Moving their CI gate leaves these assertions intact: `playwright.serve.config.ts` includes them, and `.github/workflows/ci.yml` runs `test:serve` after build and Chromium installation.
+`r24/host/served-b123.log` records all three passing; `w503-r12.test.ts` remains in `test:policy`.
+The retained wording advisory introduces no UI blocker.
+
+Verdict: passed

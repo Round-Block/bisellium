@@ -1,0 +1,24 @@
+# opus: W-503
+# phase: spec
+# round: 15
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 1dc7ee8b-06d5-445e-9c9e-09da93282412
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed; session 8dbe67bd is not saved, so a fresh session of the same reviewer reviewed round 15
+# outcome: passed
+# at: 2026-11-14T10:15:36.669Z
+# tree: tree:9754f5e5da1fff55e1f5c68c633c3dcc285deb9b
+# brief: briefs/W-503.md blob:4a61cab426b4a8d99cc75394e1f325ede245b198
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":15,"actor":"spec-reviewer","studio":".worktrees/W-503/studio","head":"ac1beec91287cc627acd3d27e5834e5c4b230495","brief":"4a61cab426b4a8d99cc75394e1f325ede245b198","at":"2026-11-14T10:15:30.588Z"}
+
+Blocker #1 from round 13 is closed: the new b1 red logs stop at the missing Home heading, and nothing new turned up. Here is the recorded verdict.
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-503-spec-13.log #1: closed — brief:83 and brief:97 now cite `revision-11/b1-red-ordinary.log` and `b1-red-silent.log`. Both logs stop at `Error: 1280: bare entry opens Home`, the `getByRole('heading', { name: 'Home', exact: true })` lookup and `element(s) not found` (ordinary:41–48, silent:38–45). Neither log contains `serve exited` or `ERR_MODULE_NOT_FOUND`. `serve-probe.out` shows serve printing its port and token. `reds-r11.sh:27,34–36` refuses both serve failures and requires the inner Playwright message, and `reds-r11.out` tallies 6/6. — check: /home/edckt/.bisellium-evidence/W-503-spec/revision-11/reds-r11.sh
+
+## Verdict
+Round-13 blocker #1 is closed. Revision 11's b1 reds were re-recorded in a tree where `bisellium serve` starts, and they fail at the missing Home heading. The reds checker now refuses `serve exited` and `ERR_MODULE_NOT_FOUND` and requires the declared Playwright message. The b2 and b3 reds and the b3 kill evidence are unchanged and still hold, and the revision adds no new reader or promise.
+VERDICT: PASS

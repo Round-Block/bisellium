@@ -5,6 +5,7 @@ import { Officina } from "./screens/Officina.js";
 import { Inbox } from "./screens/Inbox.js";
 import { Seats } from "./screens/Seats.js";
 import { Board } from "./screens/Board.js";
+import { Home } from "./screens/Home.js";
 import { TokenPrompt } from "./components/TokenPrompt.js";
 import { beginReadMount, fetchInbox, fetchOfficina, fetchOpera, hasToken, rereadAfterTokenSaved, setUnauthorizedListener } from "./api.js";
 import { READY, type ScreenStatus } from "./lib/screenState.js";
@@ -112,7 +113,7 @@ export function App() {
       setAttentionCount(3);
       return;
     }
-    if (route === "inbox" || route === "board") return;
+    if (route === "home" || route === "inbox" || route === "board") return;
     let active = true;
     Promise.all([fetchOfficina(), fetchOpera(), fetchInbox({ shared: true })])
       .then(([officina, opera, inbox]) => {
@@ -123,11 +124,11 @@ export function App() {
   }, [route, readEpoch]);
 
   useEffect(() => {
-    if (route === "inbox" || route === "board") hasMountedAttentionRef.current = false;
+    if (route === "home" || route === "inbox" || route === "board") hasMountedAttentionRef.current = false;
   }, [route]);
 
   useEffect(() => {
-    if ((route === "inbox" || route === "board") && status.state === "error" && !hasMountedAttentionRef.current) setAttentionCount(0);
+    if ((route === "home" || route === "inbox" || route === "board") && status.state === "error" && !hasMountedAttentionRef.current) setAttentionCount(0);
   }, [route, status.state]);
 
   return (
@@ -160,7 +161,7 @@ export function App() {
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
         <Fragment key={readEpoch}>
-        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
+        {route === "home" ? <Home onStatus={setStatus} onNeedsYouCount={setAttentionCount} onAttentionLoaded={onAttentionLoaded} /> : route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
           <Board
             onStatus={setStatus}
             onWaitingCount={setAttentionCount}

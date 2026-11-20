@@ -1,0 +1,27 @@
+# opus: W-503
+# phase: spec
+# round: 16
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1abba-3a26-7073-847c-317f3bdbae78
+# outcome: passed
+# at: 2026-11-14T10:20:48.970Z
+# tree: tree:9754f5e5da1fff55e1f5c68c633c3dcc285deb9b
+# dispatch_prompt: ci/W-503-ui-prompt-16.md
+# design_digest: sha256:6414412f47269d10a00fb9d6a2d3ec2bf4613adbed0e4e1610ce7dd3dd753b55
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":16,"actor":"ui-lead","studio":".worktrees/W-503/studio","head":"a09aae66c8e35382788bc17fc8cba4c03c5f9c6d","brief":"4a61cab426b4a8d99cc75394e1f325ede245b198","at":"2026-11-14T10:20:42.622Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Round-3 #1 remains closed: Stuck excludes done and halted failures and counts each qualifying opus once.
+Round-3 #2 remains closed through the “Work items with failed gates” caption.
+Round-3 #3’s two-column remedy remains superseded by D-200’s Patron-approved treatment at brief:15; the wrapped text remains readable.
+Round-3 #4 remains closed through the shared high-advisory diamond, and round-6 #1 remains closed through the full-card single-group span.
+Round-11 #1 is closed: retain brief:87’s replacement requirement for 2/1/1 fills at 50%/25%/25% within 1px and blocking Health’s red number and square cue at all three widths; b3 implements these assertions, and the recorded mutation checks reject each corresponding defect.
+All ten revision-10 captures are byte-identical to their round-11 counterparts and preserve legibility, combined asks, counts and Open without visible clipping or information loss at 1280, 640 and 390; single-group captures remain desktop-only.
+Revision 11 changes evidence rather than screen behavior, and neither revision introduces a new UI defect.
+Verdict: passed

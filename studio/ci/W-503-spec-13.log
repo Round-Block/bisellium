@@ -1,0 +1,19 @@
+# opus: W-503
+# phase: spec
+# round: 13
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 8dbe67bd-75fe-48bb-bcc4-ada050574bfb
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed; the round-10 session 886113c5 is not saved, so a fresh session of the same reviewer reviewed round 13
+# outcome: failed
+# at: 2026-11-14T06:57:10.139Z
+# tree: tree:9754f5e5da1fff55e1f5c68c633c3dcc285deb9b
+# brief: briefs/W-503.md blob:2cdc165718fe240d9402c95224472317198c04f2
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":13,"actor":"spec-reviewer","studio":".worktrees/W-503/studio","head":"bbd342c7e14fce77ce69eb12ef08ab844d9239c3","brief":"2cdc165718fe240d9402c95224472317198c04f2","at":"2026-11-14T06:57:05.484Z"}
+
+## Findings
+1. blocking — brief:83 The b1 red evidence this brief now cites is false. Both `revision-10/b1-red-ordinary.log:39` and `b1-red-silent.log:35` fail with `bisellium serve exited (1) before printing port/token`, and `revision-10/serve-probe.out:5` shows why: the `.scratch-r10` tree throws `ERR_MODULE_NOT_FOUND` for `@bisellium/commands/src/prototype-line.ts`. So the recorded red is a broken environment, not "finds no Home heading". Line 83 also says "no file or module is missing", and brief:97 says the logs contain "no ENOENT/module failure"; the logs contradict both. The ordinary/silent first-line check still passes because b1's pin `served Home behavior 1 holds:` is the wrapper's prefix for every served failure, and `reds-r10.sh` only checks the inner output for `ERR_ASSERTION`. b1 is the only affected site: the b2 and b3 reds fail at their Node helper assertions before any serve (b2-red-*.log:13, b3-red-silent.log:13), and the final greens and kills ran in `.ledger-kills.*` trees where serve starts (kill-b3-ratios.out:36, final-greens-r10.out:3). Replacement for brief:83's evidence sentence: "Evidence: `revision-10/b1-red-ordinary.log` and `revision-10/b1-red-silent.log`, re-recorded in a tree where `bisellium serve` prints port and token. Each shows `1280: bare entry opens Home` with `getByRole('heading', { name: 'Home', exact: true })` not found below the pinned line, and neither contains `serve exited` or `ERR_MODULE_NOT_FOUND`." Add the same two refusals to `reds-r10.sh`, and to brief:97's evidence sentence. [severity: S1] [design: keeps] [class: mechanism×red-certifies-wrong-tree] — check: none: reds-r10.sh should refuse a served red log containing `serve exited` or `ERR_MODULE_NOT_FOUND`, and should require the declared inner Playwright message
+
+## Verdict
+The round-11 advisory is carried: the 2/1/1 fixture at 50/25/25% within 1px and the blocking Health red number and square cue are in the brief (lines 70–71, 87, 92, 98), and `kill-b3-ratios.out:36`, `kill-b3-health-red.out:36` and `kill-b3-health-square.out:36` die at their new assertions. The b2 and b3 reds fail at their pins under both ordinary and silent npm output. But both new b1 red logs record a `bisellium serve` crash from a broken scratch module, not the missing Home heading, so the required b1 red evidence is false; the fix keeps the design.
+VERDICT: FAIL

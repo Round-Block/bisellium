@@ -1,0 +1,28 @@
+# opus: W-503
+# phase: build
+# round: 4
+# sella: qa-lead
+# model: claude-opus-5-5
+# session: 3b9f2d59-7357-4a95-8dcb-a3cb358dd49d
+# session_reason: fresh: claude -p sessions never persist in this sandbox; round 3 session f9c2225c cannot be resumed
+# outcome: passed
+# at: 2026-11-20T06:04:08.444Z
+# tree: tree:19462921110a57ad8f894b5919065475b4b7b679
+# ui_input: ci/W-503-spec-26.log
+# design_digest: sha256:43b185e033984e98b2f4917f15c62a46bf2008ad4c494a58dbae2e1733ef10d4
+# ticket: {"opus":"W-503","step":"review","action":"verdict-build","round":4,"actor":"censor","studio":".worktrees/W-503/studio","head":"40bbad4e4a70a38011dec846ad40172eaf7f5c12","brief":"fcb72bb75de8a282f2b11d25e018c969fb2e09f0","at":"2026-11-20T06:04:04.803Z"}
+
+## Findings
+1. advisory — studio/decisions/D-249.md:9 The Patron's screens approval (D-249) is bound to tree 740ac136, and its own `kill_when` ends it "when W-503's served tree … changes". The rebase moved the source tree to 19462921 (ci/W-503-light-19462921.log:1), but the move came only from master's own changes: no apps/web file changed and no rendered UI changed. So a fresh screens ruling, or a ruled rebase-equivalence, is needed before the PR, but it does not count against this build — check: none: a `next` rule that names the screens ruling's tree against the PR head's tree and says whether the change between them touches the brief's Files owned
+
+## UI input disposition
+No image files were attached to this turn, so I made no new screen judgment. The delta since round 3 is only the rebase onto master ccc6a1c4. I compared `rebase-delta.diff` (0c6958e7..40bbad4e) with `master-delta.diff` (f24e6084..ccc6a1c4). Both list the same 24 files at the same line offsets, and the hunks I sampled (adapters/native/src/index.ts, package.json) have the same blob hashes. None of those files is in apps/web. The ui-lead input (ci/W-503-spec-26.log, passed) and the earlier rounds' screen judgment therefore still stand, and the verdict does not depend on the missing images.
+
+## Verdict
+40bbad4e4a70a38011dec846ad40172eaf7f5c12 (`git rev-parse` could not run: the Bash sandbox failed to start, EPERM on its socket. I read the ref from disk instead: `.git/worktrees/W-5032/HEAD` points to `refs/heads/opus/W-503`, which holds 40bbad4e….)
+- **The rebase changed nothing of W-503's own source.** The only change between 0c6958e7 and 40bbad4e outside studio/ is master's own delta.
+- **The source diff is exactly Files owned.** `W-503.diff.full` changes exactly the 27 code-owned paths the brief lists (brief:23-46) and does not touch the root package.json. That is consistent with brief:33 and brief:115, which keep `w503.test.ts` out of the root suite.
+- **The light gates passed at the reviewed tree.** ci/W-503-light-19462921.log shows exit 0 for typecheck, check, W-503-b1–b3 and b5, tokens and nav-source.
+- **The reds were not re-read.** The delta does not change them, and round 3 already reviewed them.
+
+VERDICT: PASS

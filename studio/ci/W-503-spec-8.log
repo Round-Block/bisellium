@@ -1,0 +1,25 @@
+# opus: W-503
+# phase: spec
+# round: 8
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 1b464dd9-ac03-4504-bd1e-21f69a4d1869
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed
+# outcome: failed
+# at: 2026-11-05T13:34:58.899Z
+# tree: tree:21576d658e1666430d61970fac77e025b946043b
+# brief: briefs/W-503.md blob:1415030a9b290eb098d47a55421c4fc30d6c8c29
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-503/studio","head":"258816eff402eaea8f3aed32255d83e98ea39e58","brief":"1415030a9b290eb098d47a55421c4fc30d6c8c29","at":"2026-11-05T13:34:52.806Z"}
+
+## Findings
+1. blocking — brief:83 [severity: S1] The b1 red will be refused. Its wrapper message is bare `${stdout}${stderr}` (`prototype.mbox:33`), so the first line of the `error:` block is blank (`b1-red-recorded.log:13`). `redFailsAt` reads only that line (`brief-admission.ts:422-423`), so `bisellium red --behaviour 1` exits 1. `red-accept.mjs` never calls `redFailsAt`, so nothing caught this. b2 and b3 match. Replacement: pin brief:83 to `"served Home behavior 1 holds:"` and move commit 6's prefixed message (`prototype.mbox:1304`) into the b1 red commit. Then re-record the log. [design: keeps] [class: evidence×red-not-at-declared-assertion] — check: none: reds-host.sh should accept each red log with `redFailsAt`
+
+2. advisory — brief:84 [severity: S4] Round-5 advisory closed: `:only-child` spans the card (`prototype.mbox:577`). b2 pins it (`:434-444`), the kill fails at it (`kill-b2-single.out:35`), and both one-group captures show it. Keep brief:84 as written. [class: ui×unstated-limit] — check: apps/web/tests-serve/w503.spec.ts
+
+## Earlier findings
+
+## Verdict
+The single-group advisory is closed, but b1's declared red would be refused; the fix keeps the design and goes to the build as a required fix.
+
+Claude week 10%, 5h 23% | Codex week 52% | context 274k of 300k
+VERDICT: FAIL
