@@ -107,7 +107,7 @@ try {
     // W-700: this officina sets no defaults.lesson_fix_required_from, so each lesson with no fix blocks, and only those
     check(
       "10h. check on the officina afterwards: its only blocks are lesson.unfixed (no switch set, W-700)",
-      after.findings.filter((f) => f.level === "block").every((f) => f.rule === "lesson.unfixed"),
+      after.findings.filter((f) => f.level === "block").length > 0 && after.findings.filter((f) => f.level === "block").every((f) => f.rule === "lesson.unfixed"),
       JSON.stringify(after.findings.filter((f) => f.level === "block")),
     );
   }

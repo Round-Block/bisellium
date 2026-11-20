@@ -229,6 +229,8 @@ row("W-700-b5 a halted or declined target reopens the class; closed: closes it, 
   opus("W-1", "halted");
   opus("W-2", "backlog", 'declined: "not now"\n');
   opus("W-3", "building");
+  opus("W-6", "done", 'declined: "not now"\n');
+  lesson(w.root, "L-6", "2026-11-20T01:00:00Z", "tests×done-declined", "W-6");
   lesson(w.root, "L-1", "2026-11-20T01:00:00Z", "tests×halted", "W-1");
   lesson(w.root, "L-2", "2026-11-20T01:00:00Z", "tests×declined", "W-2");
   lesson(w.root, "L-3", "2026-11-20T01:00:00Z", "tests×building", "W-3");
@@ -237,6 +239,7 @@ row("W-700-b5 a halted or declined target reopens the class; closed: closes it, 
   const open = new Map(openLessons(w.root).map((c) => [c.class, c]));
   assert.ok(open.has("tests×halted") && open.get("tests×halted")!.fixInFlight === undefined, "a halted target is no fix in flight");
   assert.ok(open.has("tests×declined") && open.get("tests×declined")!.fixInFlight === undefined, "a declined target is no fix in flight");
+  assert.ok(open.has("tests×done-declined") && open.get("tests×done-declined")!.fixInFlight === undefined, "a done target carrying declined is no fix: the class stays open");
   assert.deepEqual(open.get("tests×building")?.fixInFlight, { id: "W-3", state: "building" }, "a building target is still in flight");
   assert.equal(open.has("tests×closed"), false, "a closed: commit closes the class");
   assert.ok(open.has("tests×prose") && open.get("tests×prose")!.fixInFlight === undefined, "a prose disposition leaves the class open");
