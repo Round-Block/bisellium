@@ -4,12 +4,12 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { takeNotices } from "./review-notice.js";
-import { BRANCH, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SETUP_ENV, SLUG, SlotValue, T, World, advanceOrigin, cand, cli, commit, expectHeld, expectStep, ghCalls, ghMerges, git, gitq, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, scratch, sourceTree, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
+import { BIN, BRANCH, GH_STUB, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SETUP_ENV, SLUG, SlotValue, T, World, advanceOrigin, cand, cli, commit, expectHeld, expectStep, ghCalls, ghMerges, git, gitq, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, scratch, sourceTree, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
 
 /** W-199: the queue binding is a file under the Git common directory (read through the fixture `git`, which throws on a failed read). */
 const bindingPath = (w: World): string => join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "queue", encodeURIComponent(BRANCH));
@@ -1490,4 +1490,52 @@ test("W-702-b2 behaviour 2: a PR that no longer waits on its code owners into ma
     [1, ["review-request: PR #901", "code-owned: none", `why: PR #901 touches no code-owned path, but its review snapshot could not be removed (record directory must be a real directory, not a symbolic link: ${dir})`, `run: bisellium review-request 901 --repo ${w.repo}`]],
     ran("no code-owned path, a symlinked directory: the hold", held),
   );
+});
+
+// W-702 fix f1: a reply that is not UTF-8 is refused at the one decode every reader goes through, and a git common
+// directory whose path ends in a space is joined literally (studio/briefs/W-702.md: limits at lines 50 and 54).
+/** Runs `body` with the stub gh's output rewritten so that the text `XYBAD` is the two bytes C3 28, which no UTF-8 text holds. */
+function w702Malformed<T>(body: () => T): T {
+  const real = join(BIN, "gh");
+  writeFileSync(join(BIN, "gh.real"), GH_STUB, { mode: 0o755 });
+  writeFileSync(
+    real,
+    `#!/usr/bin/env node\nconst { spawnSync } = require("node:child_process");\nconst r = spawnSync(${JSON.stringify(join(BIN, "gh.real"))}, process.argv.slice(2), { maxBuffer: 1 << 26 });\nconst at = r.stdout.indexOf("XYBAD");\nconst out = at < 0 ? r.stdout : Buffer.concat([r.stdout.subarray(0, at), Buffer.from([0xc3, 0x28]), r.stdout.subarray(at + 5)]);\nprocess.stderr.write(r.stderr);\nprocess.stdout.write(out, () => process.exit(r.status ?? 1));\n`,
+    { mode: 0o755 },
+  );
+  try {
+    return body();
+  } finally {
+    writeFileSync(real, GH_STUB, { mode: 0o755 });
+  }
+}
+
+test("W-702-b1 fix f1 (1): malformed UTF-8 in a gh reply holds, in the GraphQL read and in the PR view alike", { timeout: 3_600_000 }, () => {
+  const { w, head, request } = w702World("w702-f1-utf8");
+  assert.equal(request(w702Facts(901, head)).status, 0, "a good snapshot first");
+  const kept = w702Read(w, 901);
+  w702Malformed(() => {
+    const read = request(w702Facts(901, head, { pull: { title: "aXYBADb" } }));
+    assert.deepEqual(
+      [read.status, w702Lines(read).slice(-2), w702Read(w, 901) === kept],
+      [1, ["why: PR #901's review facts could not be read (gh api graphql returned output that is not valid UTF-8)", `run: bisellium review-request 901 --repo ${w.repo}`], true],
+      ran("a GraphQL reply that is not UTF-8: held, the last snapshot kept", read),
+    );
+    const view = request(w702Facts(901, head), { note: "aXYBADb" });
+    assert.deepEqual([view.status, w702Lines(view).at(-1)], [1, "why: gh pr view returned output that is not valid UTF-8"], ran("a PR view that is not UTF-8: refused", view));
+  });
+});
+
+test("W-702-b2 fix f1 (2): a git common directory ending in a space is joined literally by the write and the removal", { timeout: 3_600_000 }, () => {
+  const { w, head, request } = w702World("w702-f1-space");
+  const gd = join(w.root, "gd ");
+  renameSync(join(w.repo, ".git"), gd);
+  writeFileSync(join(w.repo, ".git"), `gitdir: ${gd}\n`);
+  const common = (spawnSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd: w.repo, encoding: "utf8" }).stdout ?? "").replace(/\n$/, "");
+  assert.ok(common.endsWith(" "), `git's common dir ends in a space: ${JSON.stringify(common)}`);
+  const file = join(common, "bisellium", "review-requests", "901.json");
+  const written = request(w702Facts(901, head));
+  assert.deepEqual([written.status, w702Lines(written).at(-1), existsSync(file)], [0, "review-snapshot: pending", true], ran("the snapshot is written under the literal path", written));
+  const retired = request(w702Facts(901, head), { state: "MERGED" });
+  assert.deepEqual([retired.status, w702Lines(retired)[1], existsSync(file)], [1, "review-snapshot: removed", false], ran("the snapshot is removed from the literal path", retired));
 });

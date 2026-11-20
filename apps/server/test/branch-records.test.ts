@@ -1139,6 +1139,17 @@ test("W-702-b3 behaviour 3: the console projects the review snapshots read-only,
       await absent("a review URL on another host", () => put("905.json", file(905, { url: "https://evil.example/example/bisellium/pull/905" })), malformed);
       await absent("a review URL over http", () => put("905.json", file(905, { url: "http://github.com/example/bisellium/pull/905" })), malformed);
       await absent("a control character in the title", () => put("905.json", file(905, { title: "a\u0007b" })), malformed);
+      await absent(
+        "a title with malformed UTF-8",
+        () => {
+          const text = Buffer.from(file(905, { title: "aXYb" }));
+          const at = text.indexOf("aXYb") + 1;
+          text[at] = 0xc3;
+          text[at + 1] = 0x28;
+          writeFileSync(join(dir, "905.json"), text);
+        },
+        '{"status":"unreadable","file":"905.json"}',
+      );
       await absent("a symlinked snapshot", () => symlinkSync(outside, join(dir, "905.json")), '{"status":"unreadable","file":"905.json"}');
       await absent("a directory named as a snapshot", () => mkdirSync(join(dir, "905.json")), '{"status":"unreadable","file":"905.json"}');
       await absent("a snapshot over 64 KiB", () => put("905.json", big), '{"status":"unreadable","file":"905.json"}');
