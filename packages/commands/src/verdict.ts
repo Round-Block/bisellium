@@ -1265,7 +1265,9 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       return { exitCode: 2 };
     }
     const signer = uiPair.pairing?.signer ?? design.magister;
-    if (sameSella(manifest, sella, signer)) {
+    // the one signer identity (a `sella_aliases` id reads as its canonical seat): admission and the contract header agree
+    const signs = sameSella(manifest, sella, signer);
+    if (signs) {
       const problems = [
         // W-699 (D-245 F3a): every Files owned path slot exists, ends / for a directory, or is marked (new)
         ...ownedPathProblems(read.bytes.toString("utf8"), root).map((p) => `brief admission: ${p}`),
@@ -1290,7 +1292,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
     briefHeader = `${briefRel} blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
     // W-699 (D-245 F3b): a signature pins the contract digests of the brief it pins, computed here, never read from the body
-    if (sella === signer) contractValue = contractHeader(read.bytes.toString("utf8"));
+    if (signs) contractValue = contractHeader(read.bytes.toString("utf8"));
     // W-246: as in build, a blocker that cites no line of the pinned brief is advisory, and a failure with none standing passes
     const where = officinaInRepo(root);
     const reconciled = reconcileFindings(transcript.toString("utf8"), outcome, {
