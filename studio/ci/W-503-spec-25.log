@@ -1,0 +1,26 @@
+# opus: W-503
+# phase: spec
+# round: 25
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 0134fa29-578f-4b9f-83fb-5cf8040cfefe
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed; session 27395bff is not resumable, so a fresh session of the same reviewer reviewed round 25
+# outcome: passed
+# at: 2026-11-20T01:36:32.203Z
+# tree: tree:ccd5f02d0dc690ee8a25014ac153d8b40c1bc281
+# brief: briefs/W-503.md blob:fcb72bb75de8a282f2b11d25e018c969fb2e09f0
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":25,"actor":"spec-reviewer","studio":".worktrees/W-503/studio","head":"48eda43a58d92b93e3022eea92be09f7d429e22f","brief":"fcb72bb75de8a282f2b11d25e018c969fb2e09f0","at":"2026-11-20T01:36:30.862Z"}
+
+I found no blocking problems with the r24 amendment, and the spec passes. Four advisory findings are below for the builder to adopt. The recorded verdict follows:
+
+## Findings
+1. advisory — brief:33 `[severity: S4]` The design lead's import.meta.url hardening (route item 3) appears nowhere in the brief. The builder could skip it and every gate would still pass: the Genuine red commands at brief:95/97/99 run from the repo root, where the cwd-relative `--config=apps/web/playwright.serve.config.ts` (w503.test.ts:13,16) already resolves. Replacement: "`apps/web/test/w503.test.ts`: three direct Node TAP wrappers retained for recorded-red and focused served-row replay, not part of the pre-build web policy command; each resolves its config as `fileURLToPath(new URL("../playwright.serve.config.ts", import.meta.url))` and spawns with cwd `fileURLToPath(new URL("../../../", import.meta.url))`, so focused replay passes from the repo root and from `apps/web`." [class: web×cwd-relative-test-path] — check: none: an Acceptance row whose evidence is the focused b1–b3 wrapper run green from both the repo root and `apps/web`.
+2. advisory — brief:90 `[severity: S4]` The same cwd-relative spawn also exists in files this opus runs but does not own. `apps/web/test/w675.test.ts:131-132` is b6's Genuine red at brief:105. `apps/web/test/w467.test.ts:27,31` and `apps/web/test/w300.test.ts:11,18` are reused. None of these is stated as a limit. Replacement, appended to the row: "the reused wrappers `w675.test.ts`, `w467.test.ts` and `w300.test.ts` resolve the served config relative to the caller's cwd and are replayed only from the repo root; that is a limit." [class: web×cwd-relative-test-path] — check: none: a policy row refusing a relative `--config=` with `cwd: process.cwd()` in any `apps/web/test/*.test.ts` spawn.
+3. advisory — brief:78 `[severity: S2]` Rows 78–81 name `homeNeeds()`, `homeSummary()` and `assert.deepEqual()` as rejecting functions. With `w503.test.ts` out of `test:policy` (package.json:12), those Node assertions now run in no CI path. Only the served `expect()` checks in `tests-serve/w503.spec.ts` reject in CI. The rows still fail closed through those served checks, but they claim more CI coverage than exists. Replacement for the Rejected-by cell of brief:78–81: "served `expect()` in `tests-serve/w503.spec.ts` (CI, `test:serve`); `homeNeeds()`/`homeSummary()` `assert.deepEqual()` in `w503.test.ts` only on focused replay." [class: web×test-not-in-ci-path] — check: apps/web/tests-serve/w503.spec.ts
+4. advisory — brief:115 `[severity: S4]` The claim that b1–b3 "remain mandatory in `test:serve`" holds today: the config has `testDir: "./tests-serve"` with no grep or testIgnore, the titles are at w503.spec.ts:14,29,132, and ci.yml:184-187 runs `test:serve` after the browser install with no `continue-on-error`. But no row pins the claim. A later testIgnore or rename would drop these rows without failing any check. Replacement: append "pinned by the r24 host `served-b123.log` listing all three W-503-b titles under `playwright.serve.config.ts`." [class: web×test-not-in-ci-path] — check: none: a policy row asserting each served W-503-b title is listed by `playwright test --list --config=playwright.serve.config.ts`.
+
+## Earlier findings
+
+## Verdict
+Passed. The amendment is right: b1–b3 stay mandatory in `test:serve` (host evidence: 3 passed, exit 0; focused wrappers exit 0). The wrappers correctly stay out of pre-install `test:policy`, and package.json:12 already matches brief:44/115. The cwd hardening and its sibling sites are advisory notes for the build, not blockers.
+VERDICT: PASS
