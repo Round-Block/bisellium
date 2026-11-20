@@ -1,8 +1,8 @@
 certifies: tree:770c5ba906343d0a0e5ccc27d6ed57a145c63bc0
 command: node scripts/served-e2e.mjs
-exit code: 1
+exit code: 0
 served-ui: sha256:e05df35605e86ed2fedb35f94cfcf1cd83176b6e80e5f6f201cd1b3262ef5bef
-served-at: 2026-11-20T10:35:09.824Z
+served-at: 2026-11-20T13:56:50.872Z
 
 ok 2 - chromium › auth.spec.ts › token delivery, mounted (W-067 behaviour 2) › prompts for a token when sessionStorage is empty
 ok 3 - chromium › auth.spec.ts › token delivery, mounted (W-067 behaviour 2) › the entered token is used on the next write and survives a reload without re-prompting
@@ -117,7 +117,7 @@ ok 111 - chromium › w407.spec.ts › W-407-b2 reading strips Markdown syntax, 
 ok 112 - chromium › w407.spec.ts › W-407-b3 roving selection reveals nearest, reconciles answers, and phone Back or Escape restores focus
 ok 113 - chromium › w407.spec.ts › W-407-b4 keys 1/2/3 keep approve, defer and decline answer bodies while delegate stays honest
 ok 114 - chromium › w407.spec.ts › W-407-b5 secondary groups are non-interactive labels and empty Inbox has no generated stamp
-not ok 115 - chromium › w407.spec.ts › W-407-b6 refresh failure and removed selection preserve the decision in progress
+ok 115 - chromium › w407.spec.ts › W-407-b6 refresh failure and removed selection preserve the decision in progress
 ok 116 - chromium › w408.spec.ts › W-408-b1 detail frame and sole scrollbar hold at 1280, 640 and 390
 ok 117 - chromium › w408.spec.ts › W-408-b2 empty and populated detailed work-in-flight groups render each active opus once
 ok 118 - chromium › w408.spec.ts › W-408-b3 Budget pies normal, approaching, spent and over allowance retain palette, shapes, numerals, overage and posture at every width
@@ -200,7 +200,7 @@ shot: home-390.png 390x900 43662
 shot: inbox-1280.png 1280x900 114578
 shot: inbox-390.png 390x900 23955
 shot: officina-1280.png 1280x900 72438
-shot: officina-390.png 390x900 44720
+shot: officina-390.png 390x900 44716
 shot: seats-1280.png 1280x900 72398
-shot: seats-390.png 390x900 42780
+shot: seats-390.png 390x900 42815
 
