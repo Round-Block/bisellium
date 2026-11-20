@@ -8,10 +8,11 @@
  * directory that isn't a Bisellium officina at all (no `bisellium.yml`) —
  * `root` is always the OFFICINA, never the repo root.
  */
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { listMd, parseFrontMatter, readFront, STATES } from "@bisellium/adapter-native";
+import { lessonDisposition } from "@bisellium/commands/lessons.js";
 import { haltRowsProblem, readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { instant } from "@bisellium/schema";
 import { parse as parseYaml } from "yaml";
@@ -29,6 +30,16 @@ const KILL_RECORD_DIRS = ["acta", "ci", "decisions", "lessons", "opera", "petiti
 const PROVENANCE = ["stated", "observed", "inferred", "suggested"] as const;
 
 type AddressedKind = "opus" | "rule" | "decision";
+
+/** W-700: the switch under `defaults` in bisellium.yml from whose UTC day on a lesson with no fix blocks. */
+export const LESSON_FIX_KEY = "lesson_fix_required_from";
+/** W-700: the switch's day, a real `YYYY-MM-DD` string, as its UTC midnight; `absent` or a `problem` otherwise. */
+export function readLessonFixFrom(v: unknown): { from: Date } | { absent: true } | { problem: string } {
+  if (v === undefined) return { absent: true };
+  const d = typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00Z`) : undefined;
+  if (d === undefined || Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) return { problem: `"${LESSON_FIX_KEY}" must be a date YYYY-MM-DD (got ${JSON.stringify(v)})` };
+  return { from: d };
+}
 
 function safeFront(path: string): Dict | undefined {
   try {
@@ -208,6 +219,9 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   // for an "opus" target, so both new behaviours are evaluated after it.
   const addressedClaims: { where: string; value: unknown }[] = [];
   const claimsByClass = new Map<string, string[]>();
+  // W-700: the switch; absent or malformed, every lesson with no fix blocks (malformed is also manifest.defaults's block)
+  const fixDefaults = isDict(_opts.manifest) && isDict(_opts.manifest["defaults"]) ? _opts.manifest["defaults"] : undefined;
+  const fixFrom = readLessonFixFrom(fixDefaults?.[LESSON_FIX_KEY]);
 
   for (const p of safeList(join(root, "lessons"))) {
     const where = rel(p);
@@ -244,8 +258,15 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     }
 
     if (data["addressed_by"] !== undefined) addressedClaims.push({ where, value: data["addressed_by"] });
-    // lesson.unfixed (advise, D-039 §3): every lesson names its fix.
-    else add("lesson.unfixed", "advise", where, `${basename(p, ".md")} names no fix (addressed_by)`);
+    // lesson.unfixed (D-039 §3): every lesson names its fix. W-700: it blocks from the switch's day on (an unreadable
+    // `at` fails closed), advises before it, and blocks every lesson while the switch is absent or malformed.
+    else {
+      const unfixed = `${basename(p, ".md")} names no fix (addressed_by)`;
+      const at = instant(data["at"]);
+      if ("from" in fixFrom && at !== undefined && at < fixFrom.from) add("lesson.unfixed", "advise", where, unfixed);
+      else if ("from" in fixFrom) add("lesson.unfixed", "block", where, `${unfixed}: a lesson from ${fixFrom.from.toISOString().slice(0, 10)} on (bisellium.yml#defaults.${LESSON_FIX_KEY}) names a fix, or prose:<reason>`);
+      else add("lesson.unfixed", "block", where, `${unfixed}: bisellium.yml#defaults.${LESSON_FIX_KEY} is ${"absent" in fixFrom ? "absent" : "malformed"}, so every lesson must name a fix, or prose:<reason>`);
+    }
 
     const cls = str(data["class"]);
     const ab = str(data["addressed_by"]);
@@ -350,6 +371,16 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
       add("lesson.addressed_by", "block", where, `"addressed_by" must be a non-empty string`);
       continue;
     }
+    // W-700: prose:<reason> and closed:<sha>; a closed sha must be a commit in HEAD's history when check has --repo
+    const disposition = lessonDisposition(value);
+    if (disposition !== undefined) {
+      if ("problem" in disposition) add("lesson.addressed_by", "block", where, disposition.problem);
+      else if (disposition.kind === "closed" && _opts.repo !== undefined) {
+        const r = spawnSync("git", ["merge-base", "--is-ancestor", disposition.sha, "HEAD"], { cwd: _opts.repo, encoding: "utf8", timeout: 30_000 });
+        if (r.status !== 0) add("lesson.addressed_by", "block", where, `addressed_by "${value}" names no commit in HEAD's history`);
+      }
+      continue;
+    }
     if (resolveAddressedBy(value) === undefined) {
       add("lesson.addressed_by", "block", where, `addressed_by "${value}" names no opus, rule id, or decision`);
     }
@@ -372,6 +403,8 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     let silent = false;
     let inflightOpus: string | undefined;
     for (const v of claimsByClass.get(cls) ?? []) {
+      const disposition = lessonDisposition(v);
+      if (disposition !== undefined && "kind" in disposition && disposition.kind === "closed") { silent = true; break; }
       const kind = resolveAddressedBy(v);
       if (kind === "rule" || kind === "decision") { silent = true; break; }
       if (kind === "opus") {

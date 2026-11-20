@@ -30,6 +30,15 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v.leng
 /** A rule id is dotted `noun.attribute`; a path ("../opera/W-001") is not one. */
 const RULE_SHAPE = /^[A-Za-z][\w-]*(\.[\w-]+)+$/;
 
+/** W-700: what `addressed_by` names besides an opus, a rule or a decision: `prose:<reason>` (the lesson stays prose,
+ *  and why) or `closed:<sha>` (the commit that fixed it, 7 to 40 lower-case hex digits). Undefined for any other value;
+ *  a `problem` for either prefix outside its form. */
+export function lessonDisposition(v: string): { kind: "prose"; reason: string } | { kind: "closed"; sha: string } | { problem: string } | undefined {
+  if (v.startsWith("prose:")) return v.slice(6).trim() === "" ? { problem: `addressed_by "${v}" gives no reason after prose:` } : { kind: "prose", reason: v.slice(6).trim() };
+  if (v.startsWith("closed:")) return /^[0-9a-f]{7,40}$/.test(v.slice(7)) ? { kind: "closed", sha: v.slice(7) } : { problem: `addressed_by "${v}": closed: takes a commit sha, 7 to 40 lower-case hex digits` };
+  return undefined;
+}
+
 /** `at` reads as a Date when unquoted in YAML, a string when quoted. */
 function iso(v: unknown): string {
   return instant(v)?.toISOString() ?? "";
