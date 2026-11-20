@@ -7,6 +7,7 @@ queues:
       - { opus: W-284, says: "init yields a studio that can run an opus; M9 acceptance test folded in (fresh repo by init passes check, runs one opus, shows in the console); needs greenlight; v1 S9; rank 2 (D-241)" }
       - { opus: W-699, says: "path check at sign, brief delta rule, verdict --check, lex/prompt text, 200k hook (D-245 item 6); v1 S5; rank 2, lane E2 (Patron 11-19: \"File it, ahead of W-697 (Recommended)\")" }
       - { opus: W-697, says: "light-gates PR after a passed review; certify is the one full suite (D-232); v1 S5; rank 2, after W-699 in E2 (Patron 11-18: \"finish up whatever is in the eng lanes first\")" }
+      - { opus: W-701, says: "verbs refuse a --studio/--repo from the wrong checkout and print the path they want (L-245 with L-208, L-210, L-212: 3+, D-234); process slot after W-697 (D-245); ops-lead owns; filed s67" }
       - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not M4 path (D-193)…; v1 S8, rank 0, lane E1 (D-239)" }
       - { opus: W-555, says: "FIRST end-state, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; advisory lanes; no-lane count line; absorbs W-636 (D-240); v1 S2, rank 2 (D-234)", folded: [W-478], next_ts: true }
       - { opus: W-673, says: "Certificate excludes come from ci-scope's one record-path list, so a handoff-only PR voids no verify; cause fix, design×indirection-duplicates-source-of-truth…; v1 S5, rank 4 (D-234)" }

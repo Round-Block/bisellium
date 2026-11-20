@@ -50,12 +50,12 @@ Ranked lists, lanes, halted, cut, deferred: studio/queue.yml. Tracked number (D-
 
 Filing rule from now on (D-234): a lesson by default; fold a point into a kept opus's brief if it touches that opus's files; file its own opus only if it blocks a kept opus, its lesson class recurs 3+ times, or the Patron asks.
 
-Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, brief delta rule, verdict --check) -> W-697 (a passed-review opus goes to PR on light gates) -> W-372 (an agent waits for its own background run) -> W-557 (merge, cleanup and done run as one chain).
+Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, brief delta rule, verdict --check) -> W-697 (a passed-review opus goes to PR on light gates) -> W-701 (verbs refuse studio paths from the wrong checkout) -> W-372 (an agent waits for its own background run) -> W-557 (merge, cleanup and done run as one chain).
 
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- Ops: D-245/D-246/D-247 to ride W-699's branch (still untracked in main); the wrong-checkout-paths ops opus is decided (L-245, D-234), to be filed next.
+- Ops: W-701 filed s67 (wrong-checkout paths, L-245), process slot after W-697; D-245..D-247 ride opus/W-699 (23f3e729).
 - E1 W-700 (lessons name their fix and reach master): spec round 1 recorded; Sol spec review round 2 failed (draftRetro must refuse a blank finding location); next: Opus architect r2, re-sign round 3, Sol spec review round 4 (last).
 - E2 W-699 (sign path check, delta rule; class cause fix): spec review round 4 (last) failed, design kept; title amended; branched (opus/W-699 5122aced); next: ready, D-245..D-247 onto the branch, builder with required fix spec-4 #1 and advisory 2.
 - UI1 W-503: ui-lead input 26 passed; Terra wrapper fix 3becf2ef; fix check no open path; light gates 3a57ed19; Opus build review round 3 passed (not yet recorded); next: record it, full ci --opus, push, Patron re-approves #1319.
