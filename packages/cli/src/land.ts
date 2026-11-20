@@ -25,8 +25,8 @@ import { reviewNotice, screenDiff } from "./review-notice.js";
 export const LAND_USAGE = "usage: bisellium land <path>... --title <text> --sella <id> [--body-file <path>] [--past-check <reason>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]";
 
 const TRUNK = "refs/heads/master";
-/** The records land carries inside the officina (`recordOnly` also takes the handoff and the dossier pages). Everything else in the officina stays out: the rules (`leges/`, `prompts/`, `bisellium.yml`) keep a real PR by D-181 line 6, a brief lands on its opus's branch. */
-const STUDIO_DIRS = ["opera/", "ci/", "decisions/", "acta/"];
+/** The records land carries inside the officina (`recordOnly` also takes the handoff and the dossier pages); W-700 adds lessons. Everything else in the officina stays out: the rules (`leges/`, `prompts/`, `bisellium.yml`) keep a real PR by D-181 line 6, a brief lands on its opus's branch. */
+const STUDIO_DIRS = ["opera/", "ci/", "decisions/", "acta/", "lessons/"];
 const STUDIO_FILES = ["queue.yml"];
 
 /** W-509: may `land` carry this repository-relative path? Exact forms only: no empty, `.` or `..` segment, no control character. */
