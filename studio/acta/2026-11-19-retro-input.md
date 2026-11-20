@@ -44,3 +44,8 @@ Retro (z): kit 663 handoff studio path; (aa): builder brief's next shape.
 Retro points s60: (z) kit 663 handoff --studio was the clone's main studio (D-021 needs the worktree's); (aa) my builder brief gave next a worktree --repo (correct: main's --studio/--repo); (bb) W-531 brief did not own the RULE_IDS registry its new check rules require (spec error, eng-lead).
 
 Owner: qa-lead files each as a lesson or folds it per D-234 at the next daily retro; then this file's points are closed.
+
+## Closed
+
+All points (a)-(bb) closed 2026-11-20T01:40Z by the qa-lead at the 2026-11-19 daily retro, each filed as a lesson (fold target in its addressed_by, or a prose reason in its body):
+(a) L-225; (b) and (d) L-226 (W-495); (c) L-227 (fold W-157); (e) L-228 (fold W-700); (f) L-229; (g) L-230; (h) L-231 (fold W-699 F3b); (i) and (o) L-232; (j), (n) and (u) L-233; (k) L-234 (D-241); (l) and (m) L-235; (p) and (t) L-236; (q) and (x) L-237 (fold W-699 F4a); (r) L-238; (s) L-239 (fold W-699 F3a); (bb) L-240; (v) L-241; (w) L-242 (opus.milestone) and L-243; (y) L-244 (process.handoff.queue); (z) and (aa) L-245. No open point remains.

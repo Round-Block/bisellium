@@ -1608,3 +1608,64 @@ Classes in more than one opus, 2026-11-05..2026-11-18:
 - gate×tests×owed: Change: a dispatched clerk files one lesson of class gate×tests with `addressed_by: "W-596"` (greenlit, deferred by D-234) in the next records PR, so the OWED line can clear; no new opus (D-234 filing rule). Evidence: this entry's OWED line (W-509, W-558, W-563, W-572, W-648); no `gate×` lesson in studio/lessons/ (L-001..L-197); the same proposal unrun in the 2026-11-14, 2026-11-15 and 2026-11-16 entries. Owner: eng-lead. Route: W-596 (deferred); W-648's undiagnosable "fail 0" log stays with W-581 (deferred), per 2026-11-16.
 - tests×one-sided-bound-assertion×owed: Change: the same clerk restamps L-115's `addressed_by` from `"W-201"` to `"W-659"` (greenlit, deferred by D-234). Evidence: this entry's OWED line (W-604, W-645); lessons/L-115.md:8 still `"W-201"`; proposed 2026-11-14 and 2026-11-15, unrun. Owner: eng-lead. Route: W-659 (deferred).
 - owed-proposals-unlanded: Change: none new, because both OWED lines repeat only while lessons wait to land (L-198..L-216 sit untracked in the agent clone, not on master); the producer puts the two edits above in the next records PR, the land route the 2026-11-16 entry gave W-534 (deferred). Evidence: four daily entries with the same two OWED lines (2026-11-14, 2026-11-15, 2026-11-16, 2026-11-18). Owner: producer. Route: W-534 (deferred).
+
+### 2026-11-19
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-467 | 5932 | 0 |  |
+| W-531 | 1051 | 3 | S1 8 |
+| W-576 | 2242 | 0 |  |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-531 | review | 1 | failed | - | review×fix-round-census-misses-reachable-paths S1, review×census-misses-ordinary-direct-binding-forms S1, review×strict-date-parser-rejects-valid-low-years S1 |
+| W-531 | review | 2 | passed | 74 |  |
+| W-531 | spec | 1 | passed | - |  |
+| W-531 | spec | 2 | failed | 13 | spec×input-domain-missing-or-unenforceable S1, spec×input-domain-missing-or-unenforceable S1, spec×promise-unattainable-under-accepted-domain S1, spec×input-without-named-rejector S1 |
+| W-531 | spec | 3 | passed | 50 |  |
+| W-531 | spec | 4 | failed | 6 | spec×input-without-named-rejector S1 |
+| W-531 | spec | 5 | passed | 47 |  |
+| W-531 | spec | 6 | passed | 43 |  |
+| W-531 | spec | 7 | passed | 4 |  |
+| W-531 | spec | 8 | passed | 135 |  |
+| W-531 | spec | 9 | passed | 102 |  |
+| W-576 | review | 2 | passed | 2159 |  |
+
+- no loop
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| W-531 | ci/W-531-tests-2b5388be.log | gate×tests |  |
+
+Classes in more than one opus, 2026-11-06..2026-11-19:
+- class gate×tests seen in 6 opera: W-509, W-531, W-558, W-563, W-572, W-648
+- class interface×validation-order-masks-errors seen in 3 opera: W-543, W-547, W-648
+- class review×census-misses-ordinary-direct-binding-forms seen in 2 opera: W-531, W-563
+- class review×evidence-backfilled-or-absent seen in 4 opera: W-488, W-541, W-669, W-675
+- class review×fail-open-on-malformed-records-patched-per-site seen in 4 opera: W-525, W-547, W-558, W-563
+- class review×fix-round-census-misses-reachable-paths seen in 2 opera: W-531, W-675
+- class security×symlink-parent-write-escape seen in 2 opera: W-542, W-543
+- class spec×input-domain-missing-or-unenforceable seen in 10 opera: W-227, W-525, W-530, W-531, W-547, W-558, W-573, W-610, W-665, W-666
+- class spec×promise-unattainable-under-accepted-domain seen in 9 opera: W-227, W-488, W-509, W-512, W-525, W-531, W-543, W-547, W-604
+- class tests×one-sided-bound-assertion seen in 2 opera: W-604, W-645
+- class tests×ruled-case-uncovered seen in 4 opera: W-525, W-542, W-547, W-608
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-227, W-666
+
+#### Owed cause fixes
+
+- OWED class gate×tests (W-509, W-531, W-558, W-563, W-572, W-648): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class review×fix-round-census-misses-reachable-paths (W-531, W-675): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class tests×one-sided-bound-assertion (W-604, W-645): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- census×owed: Change: a clerk files one lesson of class review×fix-round-census-misses-reachable-paths from W-531 review r1 with `addressed_by: "W-680"` (greenlit cause fix, deferred by D-234). The class's six older lessons name W-184 and W-260, which are both halted. Evidence: this entry's OWED line (W-531, W-675); ci/W-531-review-1.log; opera/W-680.md:3. Owner: eng-lead. Route: W-680 (deferred).
+- owed-restamps-unrun: Change: none new, because 2026-11-18's gate×tests×owed and tests×one-sided-bound-assertion×owed still stand unrun. The landing gap that owed-proposals-unlanded waited on closed with #1323, so they go in the next records PR. Evidence: both OWED lines repeat here; lessons/L-115.md still has `"W-201"`. Owner: producer. Route: next records PR.
+- prose-restamp-at-w700: Change: W-700's switch (`lesson_fix_required_from: 2026-11-20`) will block the 12 prose lessons L-225, L-229, L-230, L-232, L-233, L-235, L-236, L-238, L-240, L-241, L-243 and L-245. W-700's builder restamps each one by script from its body's `Fix: prose:` line, on the same branch. Evidence: those lessons (no addressed_by today, because check accepts only an opus, a rule or a decision: rules/process.ts:338-343). Owner: eng-lead. Route: W-700 (E1).
+- wrong-checkout-paths×own-opus: Change: file one ops opus for a rule that refuses CLI path arguments aimed at the wrong checkout. D-234's 3+ recurrence admits it, and the lessons-actionable meet Q4 already called for it. Evidence: L-245 (z, aa) is the 4th case after L-208, L-210 and L-212; no such opus is in queue.yml. Owner: ops-lead. Route: producer files and ranks it.
+- kit-preflight: Change: one kept kit preflight script run before every kit dispatch. It runs `bash -n`, uses a `bash <path>` call, stops the kit on any step's non-zero exit, and checks that each guard tests the kind it names. It takes in L-215's `node --check` call. Evidence: L-225, L-229, L-232 (five kit-script points in s54-s57). Owner: ops-lead. Route: scripts/ (ops, no opus).
