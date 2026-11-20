@@ -21,8 +21,10 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  chmodSync,
   constants,
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -1056,3 +1058,108 @@ if (runs(9)) {
     }
   });
 }
+
+// ---------------------------------------------------------------------------
+// W-702 (studio/briefs/W-702.md) behaviour 3: the console reads the review snapshots review-request writes under the
+// Git common directory and projects GET /api/inbox's optional reviewRequests, all whole or absent, never calling gh.
+// ---------------------------------------------------------------------------
+test("W-702-b3 behaviour 3: the console projects the review snapshots read-only, all whole or absent", async () => {
+  const r = makeRepo("w702-b3");
+  const dir = join(r.root, ".git", "bisellium", "review-requests");
+  const ghLog = join(scratch("w702-gh"), "gh.log");
+  writeFileSync(join(BIN, "gh"), `#!/bin/sh\necho "$@" >> '${ghLog}'\nexit 97\n`, { mode: 0o755 });
+  const HEAD = "a".repeat(40);
+  const OLD = "b".repeat(40);
+  const item = (n: number, o: Record<string, unknown> = {}): Record<string, unknown> => ({
+    number: n,
+    title: `PR ${n}`,
+    url: `https://github.com/example/bisellium/pull/${n}`,
+    reason: "Changes 1 code-owned path owned by @patron",
+    protectedPaths: [`docs/a b'"é ${n}.md`],
+    checks: [{ name: "build", status: "passed" }],
+    openedAt: "2026-11-20T02:00:00Z",
+    observedAt: "2026-11-20T03:00:00.000Z",
+    head: HEAD,
+    forge: "github",
+    state: "pending",
+    ...o,
+  });
+  const file = (n: number, o: Record<string, unknown> = {}, schema = "bisellium.review-request/1"): string => `${JSON.stringify({ schema, ...item(n, o) })}\n`;
+  const put = (name: string, text: string): void => writeFileSync(join(dir, name), text);
+  const STALE = { state: "stale", approvalHead: OLD };
+  const APPROVED = { state: "approved", approvalHead: HEAD, checks: [{ name: "build", status: "failed" }] };
+  const three = [item(901), item(902, STALE), item(903, APPROVED)];
+  const seen: string[] = [];
+  const original = process.stderr.write.bind(process.stderr) as (...a: unknown[]) => boolean;
+  process.stderr.write = ((chunk: string | Uint8Array, ...rest: unknown[]): boolean => {
+    const s = typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8");
+    if (s.startsWith("bisellium serve: review requests ")) return (seen.push(s.trimEnd()), true);
+    return original(chunk, ...rest);
+  }) as typeof process.stderr.write;
+  try {
+    // a studio in no repository: absent
+    await serving(plainStudio("w702-b3-plain"), async (run) => {
+      await poll(run);
+      assert.deepEqual(Object.keys((await get(run, "/api/inbox")).body as object), ["opera", "petitiones"], "a studio in no repository: no reviewRequests member");
+    });
+    await serving(r.studio, async (run) => {
+      const inbox = async (): Promise<Record<string, unknown>> => {
+        await poll(run);
+        return (await get(run, "/api/inbox")).body as Record<string, unknown>;
+      };
+      assert.deepEqual(Object.keys(await inbox()), ["opera", "petitiones"], "no snapshot was ever written: no reviewRequests member");
+      mkdirSync(dir, { recursive: true });
+      assert.deepEqual((await inbox())["reviewRequests"], [], "an empty snapshot directory: []");
+      put("902.json", file(902, STALE));
+      put("901.json", file(901));
+      put("903.json", file(903, APPROVED));
+      put(".904.4242", "half a write");
+      put("notes.txt", "not a snapshot");
+      assert.deepEqual((await inbox())["reviewRequests"], three, "every snapshot by number, the schema tag dropped, dot and other names skipped");
+
+      // one snapshot out of its domain: the whole member is absent, one diagnostic names it, and a fix brings it back
+      const outside = join(scratch("w702-b3-outside"), "905.json");
+      writeFileSync(outside, file(905));
+      const big = file(905, { protectedPaths: Array.from({ length: 2000 }, (_, i) => `docs/${"p".repeat(30)}-${i}.md`) });
+      const absent = async (label: string, plant: () => void, diagnostic: string): Promise<void> => {
+        plant();
+        const body = await inbox();
+        assert.deepEqual(["reviewRequests" in body, seen.at(-1)], [false, `bisellium serve: review requests ${diagnostic}`], `${label}: no reviewRequests member, one diagnostic`);
+        rmSync(join(dir, "905.json"), { recursive: true, force: true });
+        assert.deepEqual((await inbox())["reviewRequests"], three, `${label}: removed, the projection is back`);
+      };
+      const malformed = '{"status":"malformed","file":"905.json"}';
+      await absent("a file that is not JSON", () => put("905.json", '{"schema":'), malformed);
+      await absent("a partial snapshot", () => put("905.json", JSON.stringify({ schema: "bisellium.review-request/1", ...item(905), checks: undefined })), malformed);
+      await absent("an unknown key", () => put("905.json", JSON.stringify({ schema: "bisellium.review-request/1", ...item(905), token: "x" })), malformed);
+      await absent("a value of the wrong type", () => put("905.json", file(905, { number: "905" })), malformed);
+      await absent("a snapshot of another schema", () => put("905.json", file(905, {}, "bisellium.review-request/0")), '{"status":"stale","file":"905.json"}');
+      await absent("a state its own facts do not give", () => put("905.json", file(905, { state: "approved" })), malformed);
+      await absent("a number that is not its name", () => put("905.json", file(906)), malformed);
+      await absent("a review URL on another host", () => put("905.json", file(905, { url: "https://evil.example/example/bisellium/pull/905" })), malformed);
+      await absent("a review URL over http", () => put("905.json", file(905, { url: "http://github.com/example/bisellium/pull/905" })), malformed);
+      await absent("a control character in the title", () => put("905.json", file(905, { title: "a\u0007b" })), malformed);
+      await absent("a symlinked snapshot", () => symlinkSync(outside, join(dir, "905.json")), '{"status":"unreadable","file":"905.json"}');
+      await absent("a directory named as a snapshot", () => mkdirSync(join(dir, "905.json")), '{"status":"unreadable","file":"905.json"}');
+      await absent("a snapshot over 64 KiB", () => put("905.json", big), '{"status":"unreadable","file":"905.json"}');
+      if (process.getuid?.() !== 0) await absent("an unreadable snapshot", () => (put("905.json", file(905)), chmodSync(join(dir, "905.json"), 0o000)), '{"status":"unreadable","file":"905.json"}');
+      for (let n = 1000; n < 1253; n++) put(`${n}.json`, file(n));
+      assert.equal(((await inbox())["reviewRequests"] as unknown[]).length, 256, "256 snapshots: still read");
+      put("1253.json", file(1253));
+      assert.deepEqual(["reviewRequests" in (await inbox()), seen.at(-1)], [false, 'bisellium serve: review requests {"status":"too-many"}'], "more than 256 snapshots: absent");
+      for (let n = 1000; n < 1254; n++) rmSync(join(dir, `${n}.json`));
+      assert.deepEqual([(await inbox())["reviewRequests"], seen.at(-1)], [three, 'bisellium serve: review requests {"status":"ok","count":3}'], "back to three, and the recovery is reported");
+      const away = join(scratch("w702-b3-away"), "review-requests");
+      renameSync(dir, away);
+      symlinkSync(away, dir);
+      assert.deepEqual(["reviewRequests" in (await inbox()), seen.at(-1)], [false, 'bisellium serve: review requests {"status":"unreadable"}'], "a symlinked snapshot directory: absent");
+      rmSync(dir);
+      renameSync(away, dir);
+      assert.deepEqual((await inbox())["reviewRequests"], three, "the real directory again: the projection is back");
+      assert.deepEqual([readFileSync(join(dir, ".904.4242"), "utf8"), readFileSync(join(dir, "901.json"), "utf8")], ["half a write", file(901)], "the server writes and removes nothing");
+    });
+    assert.equal(existsSync(ghLog), false, "the server never runs gh");
+  } finally {
+    process.stderr.write = original as unknown as typeof process.stderr.write;
+  }
+});
