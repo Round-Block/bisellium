@@ -51,7 +51,7 @@ const ALIASES = {
 } as const;
 
 const READY_SELECTORS = {
-  home: '.home[data-completion-settled="true"]',
+  home: '.home[data-completion-settled="true"] .home-card--needs',
   inbox: ".inbox__row",
   board: "[data-card-id]",
   seats: ".seats__table",

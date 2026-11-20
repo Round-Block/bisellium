@@ -58,7 +58,7 @@ export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps
   const wipTotal = summary?.wip.reduce((total, row) => total + row.count, 0) ?? 0;
   const completionModel = typeof completion === "object" && completion.meter ? homeCompletion(completion.meter) : undefined;
   return (
-    <div className="home" data-completion-settled={completion !== undefined}>
+    <div className="home" data-completion-settled={completion !== undefined && data !== undefined}>
       <header className="home__header">
         <h1 className="home__title">Home</h1>
         <p className="home__lede">What needs you and what is moving.</p>
@@ -114,9 +114,12 @@ export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps
           <header className="home-card__head"><div><h2>Completion</h2><p>Planned work completed by milestone</p></div><strong className="home-completion__overall">{completionModel.overall}%</strong></header>
           <div className="home-completion">
             {completionModel.rows.map((row) => <section className="home-completion__group" key={row.id}>
-              <div className="home-completion__label"><h3>{row.title}</h3><span className="home-completion__count">{row.done} of {row.planned} done</span></div>
-              <div className="home-completion__units" aria-label={`${row.title}: ${row.done} of ${row.planned} done`}>
-                {Array.from({ length: row.planned }, (_, index) => <span className={`home-completion__unit${index < row.done ? " home-completion__unit--done" : ""}`} aria-hidden="true" key={index} />)}
+              <h3>{row.title}</h3>
+              <div className="home-completion__measure">
+                <div className="home-completion__units" aria-label={`${row.title}: ${row.done} of ${row.planned} done`}>
+                  {Array.from({ length: row.planned }, (_, index) => <span className={`home-completion__unit${index < row.done ? " home-completion__unit--done" : ""}`} aria-hidden="true" key={index} />)}
+                </div>
+                <span className="home-completion__count">{row.done} of {row.planned} done</span>
               </div>
             </section>)}
           </div>
