@@ -5,11 +5,12 @@
  * are next-world's (./next-world.test.ts) and, for b6, a temp officina, under the OS tmp dir.
  */
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { checkStudio } from "./check.js";
-import { BRIEF_REL, NO_FINDINGS, OPUS, T, briefText, direct, expectStep, put, ran, review, reviewerOrder, sign, specLog, specNext, srWorld, world, type World } from "./next-world.test.js";
+import { ladderWrite } from "./guard.js";
+import { BRIEF_REL, NO_FINDINGS, OPUS, T, briefText, direct, expectStep, put, ran, review, reviewerOrder, sign, specLog, specNext, srWorld, ticketed, world, type World } from "./next-world.test.js";
 
 /** A fixture brief whose Files owned bullets are `owned`, every other section as briefText's. */
 const withOwned = (owned: string[]): string => briefText(1).replace(/## Files owned\n\n(?:- .*\n)+/, `## Files owned\n\n${owned.map((o) => `- ${o}`).join("\n")}\n`);
@@ -154,4 +155,42 @@ test("W-699-b2 behaviour 2: a re-signature whose contract digests equal the revi
   const off = srWorld("w699-b2-check-off", switchTo("off"));
   put(off.studio, "lessons/L-901.md", readFileSync(join(on.studio, "lessons/L-901.md"), "utf8"));
   assert.deepEqual(ruled(off), [], "switched off, the escape no longer blocks");
+});
+
+test("W-699-b3 behaviour 3: verdict --check runs the write's validators, writes nothing and claims no ticket; the real write still runs", { timeout: 900_000 }, () => {
+  const w = srWorld("w699-b3");
+  ticketed(w);
+  put(w.repo, BRIEF_REL, briefText(w.behaviours));
+  const order = specNext(w);
+  assert.equal(order.kv.get("role"), "architect", ran("next orders the signature and writes its ticket", order));
+  const tickets = (): string[] => {
+    const dir = join(w.repo, ".git", "bisellium", "tickets");
+    return existsSync(dir) ? readdirSync(dir).map((f) => readFileSync(join(dir, f), "utf8")) : [];
+  };
+  const before = tickets();
+  const checked = signDirect(w, 1, ["--check"]);
+  assert.equal(checked.status, 0, ran("a valid signature passes the check", checked));
+  assert.match(checked.out, /^W-900: verdict check passed: spec round 1 -> ci\/W-900-spec-1\.log; nothing written, no ticket claimed$/m, ran("the check names what it would write", checked));
+  assert.equal(logExists(w, 1), false, "the check writes no log");
+  assert.deepEqual(tickets(), before, "the check claims no ticket");
+  const wrongRound = signDirect(w, 2, ["--check"]);
+  assert.equal(wrongRound.status, 2, ran("a round the ticket does not name fails the check", wrongRound));
+  assert.match(wrongRound.err, /round is 1, want 2/, ran("the check reads the ticket as the write does", wrongRound));
+  const written = signDirect(w, 1);
+  assert.equal(written.status, 0, ran("the real write runs on the same ticket", written));
+  assert.equal(logExists(w, 1), true, "the real write writes the log");
+
+  const bad = world("w699-b3-bad", "greenlight");
+  put(bad.repo, BRIEF_REL, withOwned(["`missing.txt`"]));
+  const checkedBad = signDirect(bad, 1, ["--check"]);
+  const writtenBad = signDirect(bad, 1);
+  assert.equal(checkedBad.status, 2, ran("a refused signature fails the check", checkedBad));
+  assert.equal(checkedBad.err, writtenBad.err, "the check refuses with the write's own words");
+  assert.equal(logExists(bad, 1), false, "neither writes a log");
+
+  const ctx = { cwd: "/home/u/agents/bisellium", home: "/home/u" };
+  const cmd = "npm run -s bisellium -- verdict W-900 --round 1 --sella architect --outcome passed --phase spec --from /tmp/s.md --studio studio";
+  assert.equal(ladderWrite(`${cmd} --check`, ctx), undefined, "the guard lets the main thread run verdict --check");
+  assert.equal(ladderWrite(cmd, ctx), "verdict --phase spec", "the write itself stays a ladder write");
+  assert.equal(ladderWrite(cmd.replace("--outcome passed", "--outcome --check"), ctx), "verdict --phase spec", "a --check that is a flag's value is no check");
 });
