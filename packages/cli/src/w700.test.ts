@@ -146,3 +146,54 @@ row("W-700-b2 a lesson names its fix from the switch's day on", () => {
   assert.doesNotMatch(findings(on.root, "lesson.recurrent", on.repo).map((f) => f.message).join("\n"), /class "tests×r" recurs/, "a closed: commit quiets a recurring class");
 });
 
+row("W-700-b3 an untracked record is unlanded: check advises, ci refuses", async () => {
+  const w = world(undefined);
+  put(w.repo, "ci-marker.mjs", 'import { appendFileSync } from "node:fs";\nappendFileSync("order.log", `${process.argv[2]}\\n`);\n');
+  const scripts = Object.fromEntries(["audit", "typecheck", "lint", "format:check", "test", "check"].map((s) => [s, `node ci-marker.mjs ${s}`]));
+  put(w.repo, "package.json", JSON.stringify({ name: "w700-ci", private: true, scripts }, null, 2));
+  put(w.repo, ".gitignore", "order.log\n");
+  git(w.repo, ["add", "-A"]);
+  git(w.repo, ["commit", "-q", "-m", "ci fixture"]);
+  lesson(w.root, "L-9", "2026-11-20T01:00:00Z", "tests×u", "prose:fixture");
+  put(w.root, "decisions/D-9.md", "---\nid: D-9\n---\n");
+  put(w.root, "acta/note.md", "note\n");
+  put(w.root, "ci/W-9-spec-1.log", "a spec log rides its branch\n");
+  put(w.root, "ci/W-9-ui-prompt-1.md", "a ui prompt rides its branch\n");
+  put(w.root, "ci/W-9-tests-abc.log", "a gate log\n");
+  put(w.root, "briefs/W-9.md", "a brief rides its branch\n");
+
+  const unlanded = findings(w.root, "records.unlanded", w.repo);
+  assert.equal(at(unlanded, "lessons/L-9.md")?.level, "advise", "an untracked lesson is a records.unlanded advisory");
+  assert.deepEqual(unlanded.map((f) => f.where).sort(), ["acta/note.md", "ci/W-9-tests-abc.log", "decisions/D-9.md", "lessons/L-9.md"], "lessons, decisions, acta and ci are listed; a spec log, a ui prompt and a brief are not");
+  assert.match(at(unlanded, "lessons/L-9.md")!.message, /studio\/lessons\/L-9\.md is not tracked by git: land it/, "the advisory names the land");
+  assert.deepEqual(findings(w.root, "records.unlanded"), [], "without --repo nothing is listed");
+
+  let err = "";
+  const write = console.error;
+  console.error = (m?: unknown) => {
+    err += `${String(m)}\n`;
+  };
+  let refused: number;
+  try {
+    refused = (await runCi(["--repo", w.repo])).exitCode;
+  } finally {
+    console.error = write;
+  }
+  assert.equal(existsSync(join(w.repo, "order.log")), false, "ci runs no step while a record is unlanded");
+  assert.equal(refused, 1, "ci exits 1");
+  assert.match(err, /records\.unlanded: 4 record\(s\) git does not track/, "ci names the count");
+  assert.match(err, /studio\/lessons\/L-9\.md/, "ci names the lesson");
+
+  git(w.repo, ["add", "-A"]);
+  git(w.repo, ["commit", "-q", "-m", "land"]);
+  console.error = () => {};
+  let ran: number;
+  try {
+    ran = (await runCi(["--repo", w.repo])).exitCode;
+  } finally {
+    console.error = write;
+  }
+  assert.equal(ran, 0, "with every record tracked ci runs its steps");
+  assert.ok(existsSync(join(w.repo, "order.log")), "the steps ran");
+});
+
