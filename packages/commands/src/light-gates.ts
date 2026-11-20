@@ -124,6 +124,9 @@ export function runLightGates(studioRoot: string, opus: string, commands: string
     if ("error" in r) return r;
     if (isDirtyOutside(r.repo, r.exclusions)) return { error: "the current source tree is dirty; commit it before the light gates" };
     const tree = `tree:${sourceTreeHash(r.repo, r.exclusions, "HEAD")}`;
+    // W-699: the commit the run is at, line 4, so a rerun at this tree after a studio-only commit is a change git commits
+    const head = gitIn(r.repo, ["rev-parse", "--verify", "HEAD"]);
+    if (head.status !== 0 || !/^[0-9a-f]{40}$/.test(head.stdout.trim())) return { error: "the light gates cannot read the commit they run at (git rev-parse HEAD)" };
     const body: string[] = [];
     let exitCode = 0;
     // the officina path reaches each command as one variable's bytes, never as shell text (D-196 item 1)
@@ -139,7 +142,7 @@ export function runLightGates(studioRoot: string, opus: string, commands: string
     }
     const rel = lightLogRel(opus, tree);
     // ci/ in a real directory chain (ensureRealDirectory throws on a symlinked or non-directory level); the name is built from the validated opus id and the tree's hex
-    writeFileSync(join(ensureRealDirectory(studioRoot, "ci"), basename(rel)), [`certifies: ${tree}`, commandLine(commands), `exit code: ${exitCode}`, "", ...body, ""].join("\n"));
+    writeFileSync(join(ensureRealDirectory(studioRoot, "ci"), basename(rel)), [`certifies: ${tree}`, commandLine(commands), `exit code: ${exitCode}`, `head: ${head.stdout.trim()}`, "", ...body, ""].join("\n"));
     return { rel, exitCode };
   } catch (error) {
     return { error: `the light gates cannot be run or logged: ${(error as Error).message}` };
