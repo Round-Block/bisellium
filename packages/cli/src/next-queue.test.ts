@@ -1532,7 +1532,7 @@ test("W-702-b2 fix f1 (2): a git common directory ending in a space is joined li
   renameSync(join(w.repo, ".git"), gd);
   writeFileSync(join(w.repo, ".git"), `gitdir: ${gd}\n`);
   const common = (spawnSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd: w.repo, encoding: "utf8" }).stdout ?? "").replace(/\n$/, "");
-  assert.ok(common.endsWith(" "), `git's common dir ends in a space: ${JSON.stringify(common)}`);
+  assert.equal(common, `${gd}`, "git's common dir is the directory whose name ends in a space");
   const file = join(common, "bisellium", "review-requests", "901.json");
   const written = request(w702Facts(901, head));
   assert.deepEqual([written.status, w702Lines(written).at(-1), existsSync(file)], [0, "review-snapshot: pending", true], ran("the snapshot is written under the literal path", written));
