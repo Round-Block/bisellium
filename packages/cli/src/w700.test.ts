@@ -99,3 +99,50 @@ row("W-700-b1 land carries a lesson", () => {
   assert.equal(landable("studio/leges/production.md", "studio"), false, "a lex keeps its real PR");
 });
 
+row("W-700-b2 a lesson names its fix from the switch's day on", () => {
+  const on = world('defaults: { lesson_fix_required_from: "2026-11-20" }');
+  lesson(on.root, "L-1", "2026-11-20T00:00:00Z", "tests×a");
+  lesson(on.root, "L-2", "2026-11-19T23:59:59Z", "tests×b");
+  const unfixed = findings(on.root, "lesson.unfixed", on.repo);
+  assert.equal(at(unfixed, "lessons/L-1.md")?.level, "block", "a lesson at the switch day with no fix blocks");
+  assert.match(at(unfixed, "lessons/L-1.md")!.message, /^L-1 names no fix \(addressed_by\): a lesson from 2026-11-20 on \(bisellium\.yml#defaults\.lesson_fix_required_from\) names a fix, or prose:<reason>$/, "the block names the switch");
+  assert.equal(at(unfixed, "lessons/L-2.md")?.level, "advise", "a lesson before the switch day only advises");
+  assert.deepEqual(findings(on.root, "manifest.defaults", on.repo), [], "a well-formed switch is a known default");
+
+  const off = world(undefined);
+  lesson(off.root, "L-2", "2026-01-01T00:00:00Z", "tests×b");
+  const absent = at(findings(off.root, "lesson.unfixed"), "lessons/L-2.md");
+  assert.equal(absent?.level, "block", "with the switch absent every lesson with no fix blocks");
+  assert.match(absent!.message, /bisellium\.yml#defaults\.lesson_fix_required_from is absent/, "the absent block names the key");
+
+  for (const [bad, what] of [['"2026-02-30"', "an impossible day"], ["soon", "a word"], ["20261120", "a number"], ['"2026-11-20T00:00:00Z"', "a timestamp"]] as const) {
+    const w = world(`defaults: { lesson_fix_required_from: ${bad} }`);
+    lesson(w.root, "L-2", "2026-01-01T00:00:00Z", "tests×b");
+    assert.match(findings(w.root, "manifest.defaults").map((f) => `${f.level} ${f.message}`).join("\n"), /^block "lesson_fix_required_from" must be a date YYYY-MM-DD \(got .+\)$/, `a malformed switch, ${what}, blocks as manifest.defaults`);
+    assert.match(at(findings(w.root, "lesson.unfixed"), "lessons/L-2.md")?.message ?? "", /is malformed/, `a malformed switch, ${what}, blocks every lesson with no fix`);
+  }
+
+  const head = git(on.repo, ["rev-parse", "HEAD"]);
+  lesson(on.root, "L-3", "2026-11-20T01:00:00Z", "tests×c", "prose:the lex line is the fix");
+  lesson(on.root, "L-4", "2026-11-20T01:00:00Z", "tests×d", "prose:   ");
+  lesson(on.root, "L-5", "2026-11-20T01:00:00Z", "tests×e", `closed:${head}`);
+  lesson(on.root, "L-6", "2026-11-20T01:00:00Z", "tests×f", `closed:${"0".repeat(40)}`);
+  lesson(on.root, "L-7", "2026-11-20T01:00:00Z", "tests×g", "closed:XYZ");
+  const claims = findings(on.root, "lesson.addressed_by", on.repo);
+  const named = findings(on.root, "lesson.unfixed", on.repo).map((f) => f.where);
+  for (const id of ["L-3", "L-5"]) {
+    assert.equal(at(claims, `lessons/${id}.md`), undefined, `${id}'s disposition is accepted`);
+    assert.ok(!named.includes(`lessons/${id}.md`), `${id} names its fix`);
+  }
+  assert.match(at(claims, "lessons/L-4.md")?.message ?? "", /gives no reason after prose:/, "prose: with no reason blocks");
+  assert.match(at(claims, "lessons/L-6.md")?.message ?? "", /names no commit in HEAD's history/, "closed: on a commit outside HEAD's history blocks");
+  assert.match(at(claims, "lessons/L-7.md")?.message ?? "", /closed: takes a commit sha, 7 to 40 lower-case hex digits/, "closed: on no sha blocks");
+  assert.equal(at(findings(on.root, "lesson.addressed_by"), "lessons/L-6.md"), undefined, "without --repo a closed: sha is checked for shape only");
+
+  lesson(on.root, "L-8", "2026-11-20T01:00:00Z", "tests×r", "prose:kept as prose", 1);
+  lesson(on.root, "L-9", "2026-11-20T01:00:00Z", "tests×r", undefined, 2);
+  assert.match(findings(on.root, "lesson.recurrent", on.repo).map((f) => f.message).join("\n"), /class "tests×r" recurs/, "a prose disposition does not quiet a recurring class");
+  lesson(on.root, "L-9", "2026-11-20T01:00:00Z", "tests×r", `closed:${head}`, 2);
+  assert.doesNotMatch(findings(on.root, "lesson.recurrent", on.repo).map((f) => f.message).join("\n"), /class "tests×r" recurs/, "a closed: commit quiets a recurring class");
+});
+
