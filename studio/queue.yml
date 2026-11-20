@@ -1,8 +1,8 @@
 queues:
   engineering:
-    lanes: { E1: W-531, E2: W-699 }
+    lanes: { E1: W-700, E2: W-699 }
     next:
-      - { opus: W-531, says: "role contract {collegium}-{role}, bisellium roster, sella_aliases migration; lead and architect two roles (D-241, supersedes D-191 item 2); absorbs W-294 W-644 W-590; rank 0, lane E1 (D-241)", folded: [W-294, W-644, W-590] }
+      - { opus: W-700, says: "lessons name their fix and reach master: land takes lessons/, unfixed-lesson block, records.unlanded (lessons-actionable-meet-1120); rank 0, lane E1 (Patron 11-20)" }
       - { opus: W-546, says: "the Patron owns the guard fence: CODEOWNERS lines and a guard-import check; exempt on the leads' unanimous call (D-189); v1 S4; absorbs the fix-dispatch guard (D-241); rank 1 (D-241)" }
       - { opus: W-284, says: "init yields a studio that can run an opus; M9 acceptance test folded in (fresh repo by init passes check, runs one opus, shows in the console); needs greenlight; v1 S9; rank 2 (D-241)" }
       - { opus: W-699, says: "path check at sign, brief delta rule, verdict --check, lex/prompt text, 200k hook (D-245 item 6); v1 S5; rank 2, lane E2 (Patron 11-19: \"File it, ahead of W-697 (Recommended)\")" }
