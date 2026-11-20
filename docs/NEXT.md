@@ -333,7 +333,8 @@ checkout at the main thread's next Bash, Write, Edit or NotebookEdit call and
 refuses that call once with their text, so the session sends each to the Patron
 with PushNotification. Limits: the push is the session's tool call, not the
 CLI's; a notice waits for the main thread's next guarded call; a PR opened by
-hand is screened only when `review-request` is run for it.
+hand is screened only when `review-request` is run for it. W-702: `review-request`
+writes the PR's review snapshot the Inbox reads (`review-snapshot: <state>`) and removes it once the PR closes, merges, leaves master or touches no code-owned path.
 
 ## bisellium lift (W-525)
 

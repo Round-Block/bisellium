@@ -203,6 +203,11 @@ export class BranchRecordReader {
     private readonly gitTimeoutMs: number = DEFAULT_GIT_TIMEOUT_MS,
   ) {}
 
+  /** W-702: the real Git common directory the first probe resolved, or undefined (no repository, or not probed yet). */
+  get commonDir(): string | undefined {
+    return this.repo?.commonDir;
+  }
+
   /** One refresh. Never throws: a failure keeps the last good overlay (stale) and is reported in the status. */
   async refresh(): Promise<{ overlay: Overlay; status: BranchRecordsStatus }> {
     let result: { overlay: Overlay; status: BranchRecordsStatus };

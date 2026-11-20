@@ -46,7 +46,7 @@ GET  /api/officina                 the manifest: patron, collegia, sellae, proba
 GET  /api/models                   D-023's model rows: the models.json record, merged with a live vendor listing (W-065)
 GET  /api/opera?state=&collegium=  every opus, filterable
 GET  /api/opus/:id                 one opus's front matter + body + probationes + traditio
-GET  /api/inbox                    needs-you: pending human gates + petitiones needing a reply
+GET  /api/inbox                    needs-you: pending human gates + petitiones needing a reply; reviewRequests (W-702) when review snapshots read whole
 GET  /api/acta?days=               digest entries within the last `days` (default 7)
 GET  /api/aerarium?period=         allowance + derived burn + posture per collegium
 GET  /api/providers?live=          provider status (usage.yml, or live quota-axi with live=1)
