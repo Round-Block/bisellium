@@ -1,0 +1,100 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-504-b2\s --import tsx apps/web/test/w504.test.ts
+# exit: 1
+# at: 2026-11-20T13:05:45.438Z
+# sella: builder.W-504
+# tree: tree:c198cf8a935fd8d2a150ab2c0659945dc45ca49b
+# ticket: {"opus":"W-504","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-504/studio","head":"a9bec3c972ba1eb88379bb9e288a17501f375a84","brief":"e12f7dc2edf3c54b0376fb6174bbdad628a8a89c","at":"2026-11-20T13:05:44.048Z"}
+
+TAP version 13
+# Subtest: W-504-b2 behaviour 2: Completion is responsive and every read outcome stays honest
+not ok 1 - W-504-b2 behaviour 2: Completion is responsive and every read outcome stays honest
+  ---
+  duration_ms: 7322.387251
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-504/apps/web/test/w504.test.ts:2:744'
+  failureType: 'testCodeFailure'
+  error: |-
+    served Completion behavior 2 holds:
+    vite v8.3.4 building client environment for production...
+    transforming...
+    ✓ 46 modules transformed.
+    rendering chunks...
+    computing gzip size...
+    dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+    dist/assets/IBMPlexMono-Regular-DMJ8VG8y.woff2       14.70 kB
+    dist/assets/InstrumentSans-Medium-BbzFLZTg.woff2     30.09 kB
+    dist/assets/BricolageGrotesque-Bold-DLoelf7F.woff2   41.34 kB
+    dist/assets/index-CbNDHzpP.css                       54.65 kB │ gzip:  9.76 kB
+    dist/assets/index-CkQUwRcF.js                       311.60 kB │ gzip: 95.02 kB
+    
+    ✓ built in 145ms
+    
+    Running 1 test using 1 worker
+    
+    bisellium serve: attempt 473.1 starting
+    bisellium serve: attempt 473.1 listening on port 42661, write-auth token read
+      ✘  1 [chromium] › apps/web/tests-serve/w504.spec.ts:51:1 › W-504-b2 Completion handles ruled widths, absence, failure and the completion-only cut (5.5s)
+    
+    
+      1) [chromium] › apps/web/tests-serve/w504.spec.ts:51:1 › W-504-b2 Completion handles ruled widths, absence, failure and the completion-only cut 
+    
+        Error: 1280: capture readiness includes the settled Completion read
+    
+        expect(locator).toHaveAttribute(expected) failed
+    
+        Locator:  locator('.home')
+        Expected: "true"
+        Received: ""
+        Timeout:  5000ms
+    
+        Call log:
+          - 1280: capture readiness includes the settled Completion read locator('.home') with timeout 5000ms
+          - waiting for locator('.home')
+            14 × locator resolved to <div class="home">…</div>
+               - unexpected value "null"
+    
+    
+          68 |     await page.goto(`${served.baseURL}/#/home`);
+          69 |     await expectHomeRoute(page, served.baseURL, `${width}`);
+        > 70 |     await expect(page.locator(".home"), `${width}: capture readiness includes the settled Completion read`).toHaveAttribute("data-completion-settled", "true");
+             |                                                                                                             ^
+          71 |     await expect(page.locator(".home-card--completion"), `${width}: the populated Completion card is visible`).toBeVisible();
+          72 |     await expect(page.getByRole("heading", { name: /Spend|Provider readings|Time/ }), `${width}: D-234's dropped and unsupported parts stay absent`).toHaveCount(0);
+          73 |     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${width}: Completion stays inside the viewport`).toBeLessThanOrEqual(0);
+            at /home/edckt/agents/bisellium/.worktrees/W-504/apps/web/tests-serve/w504.spec.ts:70:109
+    
+        Error Context: apps/web/test-results/w504-W-504-b2-Completion-h-ba3fa-and-the-completion-only-cut-chromium/error-context.md
+    
+      1 failed
+        [chromium] › apps/web/tests-serve/w504.spec.ts:51:1 › W-504-b2 Completion handles ruled widths, absence, failure and the completion-only cut 
+    
+    TAP version 13
+    1..1
+    not ok 1 - chromium › w504.spec.ts › W-504-b2 Completion handles ruled widths, absence, failure and the completion-only cut
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    servedRow (/home/edckt/agents/bisellium/.worktrees/W-504/apps/web/test/w504.test.ts:17:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-504/apps/web/test/w504.test.ts:37:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7328.756683
