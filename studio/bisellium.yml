@@ -55,6 +55,8 @@ probationes:
   - { id: spec, name: Spec, kind: agent, since: 2026-09-18T19:00:00Z }
   - { id: review, name: Lead review, kind: agent }
 wip_limit: 4
+# W-700: from this UTC day on a lesson with no addressed_by blocks check (lesson.unfixed); absent, every one blocks.
+defaults: { lesson_fix_required_from: "2026-11-20" }
 # W-162 (D-046): `next` names no branch until this seat's review has passed after the architect's newest signature.
 spec_reviewer: spec-reviewer
 # W-699 (D-246 item 2): the delta rule's switch, read by next; off on an escape, at once, by a Patron-merged PR. Missing or

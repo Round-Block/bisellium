@@ -254,9 +254,9 @@ names each step and writes the step ticket the next record write consumes
    no signed spec, at the start of its spec, with no time limit, and a failed land holds
    nothing (D-188). Until W-486 (the scheduler) lands, the run comes at the first
    session after 00:00Z. The producer ranks the proposals and the cause fixes in the
-   Queue. Each recurring class has an owning lead: the design lead for spec, UI
-   spec and design-quality classes, eng-lead for build, check-rule and test
-   classes, ops-lead for script, prompt, hook and scheduling classes. W-297 makes
+   Queue. Each recurring class has an owning lead: the design lead for spec, UI spec and design-quality classes,
+   eng-lead for build, check-rule, test, mechanism, records and review classes, ops-lead for script, prompt,
+   hook, scheduling, workflow, process and ci classes (W-700). W-297 makes
    `verdict` and `next` enforce it; until then the qa-lead checks a failing
    verdict's classes with `~/.bisellium-evidence/lesson-census/census.py`.
    After done, `npm run -s bisellium -- tick --studio studio`.
