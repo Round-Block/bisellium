@@ -3,8 +3,8 @@ queues:
     lanes: { E1: W-700, E2: W-699 }
     next:
       - { opus: W-700, says: "lessons name their fix and reach master: land takes lessons/, unfixed-lesson block, records.unlanded (lessons-actionable-meet-1120); rank 0, lane E1 (Patron 11-20)" }
-      - { opus: W-697, says: "light-gates PR after a passed review; certify is the one full suite (D-232); v1 S5; rank 2, after W-699 in E2; E2 now (Patron s71 order; W-702 follows W-700 in E1) (Patron 11-18)" }
-      - { opus: W-702, says: "W-667 foundation: review-request writes a fail-closed PR snapshot in the git common dir; the server reads it as optional /api/inbox reviewRequests (D-250); v1 S4; rank 0.5, E1 after W-700" }
+      - { opus: W-702, says: "W-667 foundation: review-request writes a fail-closed PR snapshot in the git common dir; the server reads it as optional /api/inbox reviewRequests (D-250); v1 S4; E2 now (s73: W-697 overlaps W-700)" }
+      - { opus: W-697, says: "light-gates PR after a passed review; certify is the one full suite (D-232); v1 S5; rank 2, after W-699 in E2; after W-700 (file overlap, D-192; producer s73) (Patron 11-18)" }
       - { opus: W-554, says: "meet verb asks relevant leads with why; seats boot as real sellae; context refuses unknown; check refuses a cited meet missing one; undeferred (Patron s70-s71): E1 after W-700, W-702" }
       - { opus: W-546, says: "the Patron owns the guard fence: CODEOWNERS lines and a guard-import check; exempt on the leads' unanimous call (D-189); v1 S4; absorbs the fix-dispatch guard (D-241); rank 1 (D-241)" }
       - { opus: W-703, says: "W-546 follow-up (collated Q4): the fix-dispatch guard also reads the automated gate logs and bisellium ci runs, so a fix after a failed ci or runner gate needs a route; after W-546; ops; filed s72" }
