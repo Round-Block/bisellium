@@ -1,0 +1,20 @@
+# opus: W-702
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1f956-c72e-78a2-873b-4f9b87cfeb3d
+# outcome: failed
+# at: 2026-11-20T14:38:09.633Z
+# tree: tree:b2cc5018771320a5d06712ec5e74560728836e46
+# brief: briefs/W-702.md blob:dc6b0de58b4eb4846d134c57493b48f15813820a
+# ticket: {"opus":"W-702","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-702/studio","head":"2bc7aafb77a96579582dc6139deebf31e17276cb","brief":"dc6b0de58b4eb4846d134c57493b48f15813820a","at":"2026-11-20T14:38:03.714Z"}
+
+## Findings
+1. blocking — apps/server/src/branchRecords.ts:98 `readBoundedRegular` decodes arbitrary snapshot bytes with replacement characters, so malformed UTF-8 inside a JSON string can pass `JSON.parse` and `reviewRequestShape` instead of being refused as required by brief:50. The same decoding class reaches the GraphQL reply through `integrate.ts:47` → `review-snapshot.ts:62,161`, the retention view through `integrate.ts:47` → `review-request.ts:51`, and snapshot projection through `branchRecords.ts:98` → `reviewRequests.ts:46,53` → `store.ts:343,462`. — check: packages/cli/src/next-queue.test.ts (W-702-b1) and apps/server/test/branch-records.test.ts (W-702-b3) [severity: S1] [class: review×fail-open-on-malformed-records-patched-per-site]
+2. blocking — packages/cli/src/review-notice.ts:140 `commonDir` calls `.trim()`, changing a valid Git common-directory pathname ending in a space and making snapshot writes or removals target the wrong path, contrary to brief:54’s requirement that spaces be joined literally. This reader feeds `writeReviewSnapshot` at `review-snapshot.ts:159`, `dropReviewSnapshot` at `:184`, `writeNotice` at `review-notice.ts:151`, and `takeNotices` at `:169`, while the server probe at `branchRecords.ts:235-249` preserves the pathname. — check: packages/cli/src/next-queue.test.ts (W-702-b1 and W-702-b2) [severity: S1] [class: review×path-trim-rejects-valid-common-dir]
+
+## Verdict
+The declared reds, owned-file scope, and light-gate evidence are sound, but two inputs expressly admitted by the brief behave incorrectly.
+
+VERDICT: FAIL
