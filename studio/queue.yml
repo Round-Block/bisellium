@@ -39,6 +39,7 @@ queues:
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2); lifted (D-230); v1 S2, rank 3 (D-234)" }
       - { opus: W-467, says: "Officina on Home's palette; UI2 Officina files (D-192); v1 no step, rank 9 (D-234)" }
       - { opus: W-504, says: "Home: Completion row only, Spend removed, W-439 dependency dropped (D-175 piece 4); v1 S7 (D-234); above W-667 (producer s72: spec signed and recorded; W-667 signs after it)" }
+      - { opus: W-709, says: "Home Needs you card wraps titles 1-3 letters wide at 960 (seen in W-504 screens); above W-667 by value: visible v1 S1 defect; after W-504 (shared Home files) (s75)" }
       - { opus: W-667, says: "Console Inbox lists every wait (rulings, screens, PR approvals) with forge deep links; PR approval stays code-owner review; D-211, after the receipt opus W-666; v1 S4, rank 11 (D-234)" }
 halted:
   - { opus: W-073, says: "reply from the Board drawer; until the freeze ends and it is re-ranked (D-174)" }
