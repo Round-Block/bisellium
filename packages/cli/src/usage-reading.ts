@@ -34,8 +34,9 @@ const CODEX_FILES = 3;
 const CODEX_MAX = 256 * 1024 * 1024;
 const CLAUDE_MAX = 64 * 1024;
 const READINGS_MAX = 16 * 1024 * 1024;
-/** Past this many context tokens a dispatch order is held: running work finishes, the handoff is refreshed (Patron 2026-10-27). */
-export const CONTEXT_WIND_DOWN = 300_000;
+/** At this many context tokens a dispatch order is held: running work finishes, the handoff is refreshed (Patron 2026-10-27);
+ *  200k since D-245 item 5 (W-699), and the UserPromptSubmit hook names it at every prompt. */
+export const CONTEXT_WIND_DOWN = 200_000;
 
 /** One reading. The field names are `usage-reading.sh`'s, so its lines and next's read alike; `opus` and `step` name
  *  the rung a `next --perform` reading was taken at. */

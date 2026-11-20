@@ -398,7 +398,7 @@ test("W-502-b2 behaviour 2: on a host past the wind-down W-085 behaviour 8 still
   mkdirSync(join(host, ".bisellium-evidence", "usage"), { recursive: true });
   const current_usage = { input_tokens: 310000, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
   writeFileSync(join(host, ".bisellium-evidence", "usage", "claude-latest.json"), JSON.stringify({ at: new Date().toISOString(), ctx: { current_usage } }));
-  assert.equal(windDown(takeReading(host, new Date(), "W-502-b2")), "context 310000 tokens is past 300000: let running tasks finish, refresh the session handoff, and start no new work (W-430)", "the host's reading is past the wind-down");
+  assert.equal(windDown(takeReading(host, new Date(), "W-502-b2")), "context 310000 tokens is past 200000: let running tasks finish, refresh the session handoff, and start no new work (W-430)", "the host's reading is past the wind-down");
 
   const env: NodeJS.ProcessEnv = { ...process.env, HOME: host };
   delete env["NODE_TEST_CONTEXT"]; // inherited from a `node --test` parent it would turn this child's TAP into the runner's own stream

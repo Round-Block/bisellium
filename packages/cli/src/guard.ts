@@ -25,7 +25,7 @@ import { accessSync, constants, existsSync, lstatSync, readFileSync, readlinkSyn
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { takeNotices } from "./review-notice.js";
-import { claudeFresh, CONTEXT_WIND_DOWN, takeReading, type Reading } from "./usage-reading.js";
+import { claudeFresh, CONTEXT_WIND_DOWN, takeReading, windDown, type Reading } from "./usage-reading.js";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -1086,10 +1086,14 @@ const PROMPT_SESSION = /^[A-Za-z0-9_-]{1,128}$/;
 export function promptOutput(input: Dict, home: string = homedir(), now: Date = new Date()): string | undefined {
   const session = input["session_id"];
   if (input["agent_id"] !== undefined || typeof session !== "string" || !PROMPT_SESSION.test(session)) return undefined;
-  const reading = shownReading(takeReading(home, now, "prompt"));
+  const taken = takeReading(home, now, "prompt");
+  const reading = shownReading(taken);
+  // W-699 (D-245 item 5): at CONTEXT_WIND_DOWN on a fresh status line the handoff is named first, at every prompt
+  const wind = windDown(taken);
+  const handoff = wind === undefined ? "" : `CONTEXT HANDOFF NOW (D-245): ${wind}. Dispatch nothing new; \`next\` holds every dispatch order. `;
   return reading === undefined
     ? undefined
-    : JSON.stringify({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: `Usage now: ${reading}. The Stop hook shows the Patron the latest reading under each reply, so a reply need not carry it.` } });
+    : JSON.stringify({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: `${handoff}Usage now: ${reading}. The Stop hook shows the Patron the latest reading under each reply, so a reply need not carry it.` } });
 }
 
 /** W-508: what the guard prints on stdout for a hook input, exit 0: the Stop and UserPromptSubmit outputs; undefined for any
