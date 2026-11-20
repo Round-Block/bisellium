@@ -1,5 +1,5 @@
 import type { AttentionRow } from "./board.js";
-import type { HealthResponse, OfficinaResponse, OpusEntry } from "../api.js";
+import type { CompletionResponse, HealthResponse, OfficinaResponse, OpusEntry } from "../api.js";
 
 export interface HomeNeedGroup {
   id: "greenlights" | "human_gates" | "inbox_decisions" | "questions";
@@ -42,6 +42,19 @@ export interface HomeSummary {
   stuck: { count: number; cue: "blocking" | "normal" };
   health: { count: number; cue: "blocking" | "high" | "normal"; detail: string };
   wip: { id: string; label: string; count: number }[];
+}
+
+export interface HomeCompletion {
+  overall: number;
+  rows: { id: string; title: string; done: number; planned: number }[];
+}
+
+/** The served completion meter already owns the formula; Home retains only the facts the signed unit chart displays. */
+export function homeCompletion(meter: NonNullable<CompletionResponse["meter"]>): HomeCompletion {
+  return {
+    overall: Math.round(meter.overall),
+    rows: meter.rows.map(({ id, title, done, planned }) => ({ id, title, done, planned })),
+  };
 }
 
 export function homeSummary(
