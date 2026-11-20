@@ -37,7 +37,7 @@ export const LESSON_FIX_KEY = "lesson_fix_required_from";
 /** W-700: the switch's day, a real `YYYY-MM-DD` string, as its UTC midnight; `absent` or a `problem` otherwise. */
 export function readLessonFixFrom(v: unknown): { from: Date } | { absent: true } | { problem: string } {
   if (v === undefined) return { absent: true };
-  const d = typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00Z`) : undefined;
+  const d = typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? instant(`${v}T00:00:00Z`) : undefined;
   if (d === undefined || Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) return { problem: `"${LESSON_FIX_KEY}" must be a date YYYY-MM-DD (got ${JSON.stringify(v)})` };
   return { from: d };
 }
