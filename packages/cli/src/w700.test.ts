@@ -223,3 +223,22 @@ row("W-700-b4 retro writes the finding's text into the lesson and refuses a find
   }
 });
 
+row("W-700-b5 a halted or declined target reopens the class; closed: closes it, prose: does not", () => {
+  const w = world(undefined);
+  const opus = (id: string, state: string, extra = ""): void => put(w.root, `opera/${id}.md`, `---\nid: "${id}"\ntitle: "fixture ${id}"\nkind: "feature"\ncollegium: "engineering"\nstate: ${state}\nprobationes: {}\n${extra}---\n`);
+  opus("W-1", "halted");
+  opus("W-2", "backlog", 'declined: "not now"\n');
+  opus("W-3", "building");
+  lesson(w.root, "L-1", "2026-11-20T01:00:00Z", "tests×halted", "W-1");
+  lesson(w.root, "L-2", "2026-11-20T01:00:00Z", "tests×declined", "W-2");
+  lesson(w.root, "L-3", "2026-11-20T01:00:00Z", "tests×building", "W-3");
+  lesson(w.root, "L-4", "2026-11-20T01:00:00Z", "tests×closed", "closed:abc1234");
+  lesson(w.root, "L-5", "2026-11-20T01:00:00Z", "tests×prose", "prose:kept as prose");
+  const open = new Map(openLessons(w.root).map((c) => [c.class, c]));
+  assert.ok(open.has("tests×halted") && open.get("tests×halted")!.fixInFlight === undefined, "a halted target is no fix in flight");
+  assert.ok(open.has("tests×declined") && open.get("tests×declined")!.fixInFlight === undefined, "a declined target is no fix in flight");
+  assert.deepEqual(open.get("tests×building")?.fixInFlight, { id: "W-3", state: "building" }, "a building target is still in flight");
+  assert.equal(open.has("tests×closed"), false, "a closed: commit closes the class");
+  assert.ok(open.has("tests×prose") && open.get("tests×prose")!.fixInFlight === undefined, "a prose disposition leaves the class open");
+});
+
