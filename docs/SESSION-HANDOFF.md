@@ -56,10 +56,11 @@ D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-25
 
 Lanes now:
 - Ops: W-701 filed s67 (wrong-checkout paths, L-245), process slot after W-697; D-245..D-247 ride opus/W-699 (23f3e729).
-- E1 W-700 (lessons name their fix and reach master): spec round 1 recorded; Sol spec review round 2 failed (draftRetro must refuse a blank finding location); next: Opus architect r2, re-sign round 3, Sol spec review round 4 (last).
-- E2 W-699 (sign path check, delta rule; class cause fix): spec review round 4 (last) failed, design kept; title amended; branched (opus/W-699 5122aced); next: ready, D-245..D-247 onto the branch, builder with required fix spec-4 #1 and advisory 2.
-- UI1 W-503: ui-lead input 26 passed; Terra wrapper fix 3becf2ef; fix check no open path; light gates 3a57ed19; Opus build review round 3 passed (not yet recorded); next: record it, full ci --opus, push, Patron re-approves #1319.
-- UI2 W-504: spec rounds 3-5 recorded (review 4 failed: readiness must wait for W-503's card; ui-lead 5 revise: count after squares); next: design lead revises and signs round 6, Opus UI spec review.
+- E1 W-700 (lessons name their fix and reach master): spec rounds 3-4 recorded, passed; next: branch when W-699 lands (overlaps its files), land.
+- E2 W-699 (sign path check, delta rule): ready, D-245..D-247 and handoff on opus/W-699; builder reds b1-b6 cover required fixes; next: fix check, full ci --opus, Sol build review.
+- UI1 W-503: build review round 3 passed; full ci --opus rerunning; next: record verdict+review, push, Patron re-approves #1319, queue.
+- UI2 W-504: design lead Sol revised round 6 (readiness, attention row, count, advisories 2-5); two host-run fixes refused by Sol; next: r6c, host rows, sign, record, Opus UI spec review.
+- Spec ahead W-667 (Inbox lists every wait): Sol draft done; proposes a D-061 split (PR snapshot, an opus); leads' meet first.
 - Research: none open. DR from its own clone (cron 09:04 SGT); DR 11-19 landed (#1326).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
