@@ -5,7 +5,7 @@
  * are next-world's (./next-world.test.ts) and, for b6, a temp officina, under the OS tmp dir.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
@@ -13,7 +13,8 @@ import { after, test } from "node:test";
 import { checkStudio } from "./check.js";
 import { ladderWrite } from "./guard.js";
 import { runHookEvent } from "./hooks.js";
-import { BRIEF_REL, NO_FINDINGS, OPUS, T, briefText, direct, expectStep, put, ran, review, reviewerOrder, sign, specLog, specNext, srWorld, ticketed, world, type World } from "./next-world.test.js";
+import { currentLightCommands, runLightGates } from "@bisellium/commands/light-gates.js";
+import { BRIEF_REL, BUDGET, NO_FINDINGS, OPUS, T, briefText, commit, direct, editRecord, expectStep, git, next, put, ran, review, reviewerOrder, sign, sourceTree, specLog, specNext, srWorld, ticketed, verb, world, writeGates, type World } from "./next-world.test.js";
 
 const dirs: string[] = [];
 after(() => {
@@ -243,4 +244,194 @@ test("W-699-b4 behaviour 4: at 200000 context tokens on a fresh status line the 
   assert.doesNotMatch(below, /HANDOFF/, "below 200k no handoff is named");
   const stale = await promptContext(home(250_000, 31 * 60_000));
   assert.doesNotMatch(stale, /HANDOFF/, "a status line 31 minutes old names no handoff");
+});
+
+// ---------------------------------------------------------------------------
+// behaviour 5 (next-gate-meet-1119, W-503's case; W-531's case): gate evidence admits review only when committed after the
+// newest red, by git ancestry; before a passed review a failed full-gate log committed after the light log refuses it
+// ---------------------------------------------------------------------------
+const OWN_TESTS = ["w326.test.mjs", "w462.test.mjs"];
+/** An automated world past its reds whose main manifest keeps a light-gate list and whose builder has handed over (W-610's). */
+function handedLight(tag: string): World {
+  const w = world(tag, "reds", { automated: true });
+  const manifest = join(w.studio, "bisellium.yml");
+  writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes:", 'light_gates:\n  - "node -e 0"\nsource_excludes:'));
+  commit(w.repo, "studio: the light-gate list");
+  for (const f of OWN_TESTS) writeFileSync(join(w.wt, f), 'import { test } from "node:test";\ntest("own", () => {});\n');
+  commit(w.wt, `test(${OPUS}): its own test files`);
+  verb(w.wt, ["handoff", "--opus", OPUS, "--sella", `builder.${OPUS}`, "--next", "ready for review", "--studio", w.wtStudio, "--now", T.handoffFresh]);
+  commit(w.wt, `studio(${OPUS}): builder handoff`);
+  return w;
+}
+const performLight = (w: World): ReturnType<typeof next> => next(w, [OPUS, "--perform", "--expect", "build", ...BUDGET]);
+/** Records red 01 again (its `# at:` moved on), a commit that touches only studio/: the source tree is unchanged. */
+function reRed(w: World, at: string): void {
+  const rel = `studio/ci/reds/${OPUS}/01.log`;
+  const text = readFileSync(join(w.wt, rel), "utf8");
+  assert.ok(text.includes(`# at: ${T.reds}`), "the fixture red 01 carries the reds' time");
+  writeFileSync(join(w.wt, rel), text.replace(`# at: ${T.reds}`, `# at: ${at}`));
+  commit(w.wt, `studio(${OPUS}): red 01 again`);
+}
+const RE_RED = "2026-10-02T09:30:00.000Z";
+
+const FAILED_LOG = (t: string): string => `certifies: ${t}\ncommand: node -e 1\nexit code: 1\n\nnot ok 1\n`;
+/** The full ci fails at the tip's tree: its log and the record's failed status, committed together. */
+function failFull(w: World): void {
+  writeGates(w, { log: FAILED_LOG, commit: false });
+  editRecord(w, "wt", (doc) => doc.setIn(["probationes", "tests", "status"], "failed"));
+  commit(w.wt, `studio(${OPUS}): full ci failed`);
+}
+/** One more light run at the tip's tree, by the light-gate runner itself (next orders none), committed alone. */
+function lightAgain(w: World): void {
+  const cmds = currentLightCommands(w.wtStudio, OPUS);
+  assert.ok(Array.isArray(cmds), `the light-gate commands read: ${JSON.stringify(cmds)}`);
+  const run = runLightGates(w.wtStudio, OPUS, cmds);
+  assert.ok(!("error" in run) && run.exitCode === 0, `the light run passes: ${JSON.stringify(run)}`);
+  commit(w.wt, `chore(studio): ${OPUS} light gates`);
+}
+const failedLogOf = (w: World): RegExp => new RegExp(`ci/${OPUS}-tests-${sourceTree(w.wt).slice(5, 13)}\\.log`);
+/** The builder, dispatched with the failed full-gate log at the tip's tree. */
+function builderWithFailed(o: ReturnType<typeof next>, w: World, what: string): void {
+  expectStep(o, "build", "named", what);
+  assert.equal(o.kv.get("sella"), `builder.${OPUS}`, ran(`${what}: the builder is dispatched`, o));
+  assert.match(o.kv.get("inputs") ?? "", failedLogOf(w), ran(`${what}: the builder is handed the failed log`, o));
+}
+/** After a red newer than the builder's handover: the builder's order, held on that handover, the failed log underneath. */
+function builderHeld(o: ReturnType<typeof next>, w: World, what: string): void {
+  expectStep(o, "build", "held", what);
+  assert.equal(o.kv.get("actor"), "builder", ran(`${what}: the builder's`, o));
+  assert.match(o.kv.get("why") ?? "", /^stale handover: run bisellium handoff first/, ran(`${what}: the handover predates the red`, o)); // one-sided: the rest names the handover's and the red's times, reused text the underlying line follows
+  assert.match(o.kv.get("underlying") ?? "", new RegExp(`${failedLogOf(w).source} failed at this source tree; a light pass at the same tree does not cure it`), ran(`${what}: the failed log underneath`, o));
+}
+/** The producer's full-gate order with a stale line naming a red at this source tree. */
+function fullOrder(o: ReturnType<typeof next>, what: string): void {
+  expectStep(o, "build", "named", what);
+  assert.equal(o.kv.get("actor"), "producer", ran(`${what}: the producer's`, o));
+  assert.equal(o.kv.has("light-gates"), false, ran(`${what}: no light run is ordered`, o));
+  assert.match(o.kv.get("command") ?? "", /ci --opus W-900/, ran(`${what}: the order names the full ci`, o));
+  assert.match(o.kv.get("stale") ?? "", /was committed at this source tree, so no light run admits review/, ran(`${what}: the stale line says why`, o));
+}
+
+/** The producer's full-gate order, refused on the committed tree's gate logs (spec review r2 #1), its stale line saying why. */
+function refusedFull(o: ReturnType<typeof next>, what: string, why: RegExp): void {
+  expectStep(o, "build", "named", what);
+  assert.equal(o.kv.get("actor"), "producer", ran(`${what}: the producer's`, o));
+  assert.match(o.kv.get("command") ?? "", /ci --opus W-900/, ran(`${what}: the order names the full ci`, o));
+  assert.match(o.kv.get("stale") ?? "", why, ran(`${what}: the stale line says why`, o));
+}
+const PASSED_LOG = (t: string): string => `certifies: ${t}\ncommand: node -e 0\nexit code: 0\n\nok 1\n`;
+
+test("W-699-b5 behaviour 5: gate evidence admits review only when committed after the newest red; a red at the review tree or a failed full-gate log there needs a full pass or a source change", { timeout: 1_800_000 }, () => {
+  // W-503 historical: light pass, full ci failed, then a studio-only red at the same tree
+  const w503 = handedLight("w699-b5-w503");
+  assert.equal(performLight(w503).status, 0, "the light gates pass at the tree");
+  failFull(w503);
+  const tree = sourceTree(w503.wt);
+  reRed(w503, RE_RED);
+  assert.equal(sourceTree(w503.wt), tree, "the red commit leaves the source tree as it was");
+  builderHeld(next(w503, [OPUS, ...BUDGET]), w503, "a light log committed before the newest red does not admit review");
+  lightAgain(w503);
+  builderHeld(next(w503, [OPUS, ...BUDGET]), w503, "one more light run at the same tree does not supersede the failed full-gate log");
+  writeFileSync(join(w503.wt, "source.txt"), "fixed by the builder\n");
+  commit(w503.wt, `fix(${OPUS}): the source changes`);
+  verb(w503.wt, ["handoff", "--opus", OPUS, "--sella", `builder.${OPUS}`, "--next", "ready for review", "--studio", w503.wtStudio, "--now", "2026-10-02T10:00:00.000Z"]);
+  commit(w503.wt, `studio(${OPUS}): builder handoff after the fix`);
+  const relit = next(w503, [OPUS, ...BUDGET]);
+  expectStep(relit, "build", "named", "at a changed source tree the light gates are ordered");
+  assert.equal(relit.kv.has("light-gates"), true, ran("the producer's light run", relit));
+  assert.equal(performLight(w503).status, 0, "the light gates pass at the changed tree");
+  const lightLog = readFileSync(join(w503.wtStudio, `ci/${OPUS}-light-${sourceTree(w503.wt).slice(5, 13)}.log`), "utf8").split("\n");
+  assert.equal(lightLog[3], `head: ${git(w503.wt, ["rev-parse", "HEAD~1"])}`, "the fresh light log names the commit it ran at");
+  expectStep(next(w503, [OPUS, ...BUDGET]), "review", "named", "a light log at a source tree changed after the newest red admits review");
+
+  // the evidence-only red: light pass, review named, then a studio-only red at the same tree and no failed full log
+  const ev = handedLight("w699-b5-evidence");
+  assert.equal(performLight(ev).status, 0, "the light gates pass at the tree");
+  expectStep(next(ev, [OPUS, ...BUDGET]), "review", "named", "a light log committed after the reds admits review");
+  reRed(ev, RE_RED);
+  fullOrder(next(ev, [OPUS, ...BUDGET]), "an evidence-only red at the review tree orders the full gates");
+  lightAgain(ev);
+  fullOrder(next(ev, [OPUS, ...BUDGET]), "a light log committed after an evidence-only red at the same tree does not admit review");
+  writeGates(ev);
+  expectStep(next(ev, [OPUS, ...BUDGET]), "review", "named", "a full-gate pass committed after the red at the same tree admits review");
+
+  // the full gates, no light_gates: `gates.ok` does not bypass the order either
+  const full = world("w699-b5-full", "reds", { automated: true });
+  writeGates(full);
+  expectStep(next(full, [OPUS, ...BUDGET]), "review", "named", "full-gate logs committed after the reds admit review");
+  reRed(full, RE_RED);
+  const fullStale = next(full, [OPUS, ...BUDGET]);
+  expectStep(fullStale, "build", "named", "a full-gate log committed before the newest red does not admit review");
+  assert.match(fullStale.kv.get("command") ?? "", /ci --opus W-900/, ran("the order names a fresh full ci", fullStale));
+  writeGates(full, { log: (t) => `certifies: ${t}\ncommand: node -e 0\nexit code: 0\n\nrerun after the red\n` });
+  expectStep(next(full, [OPUS, ...BUDGET]), "review", "named", "a full-gate log committed after the newest red admits review");
+
+  // W-531 actual: the light gates pass, then the full ci fails at the same tree
+  const actual = handedLight("w699-b5-w531");
+  assert.equal(performLight(actual).status, 0, "the light gates pass before the full ci");
+  failFull(actual);
+  builderWithFailed(next(actual, [OPUS, ...BUDGET]), actual, "a failed full-gate log committed after the light log does not admit review");
+  // W-531 reverse: the full ci fails first, then the light gates pass at the same tree
+  const reverse = handedLight("w699-b5-w531-reverse");
+  failFull(reverse);
+  assert.equal(performLight(reverse).status, 0, "the light gates pass after the failed full ci");
+  builderWithFailed(next(reverse, [OPUS, ...BUDGET]), reverse, "a light log committed after the failed full-gate log does not admit review");
+  writeGates(reverse);
+  expectStep(next(reverse, [OPUS, ...BUDGET]), "review", "named", "a full-gate pass at the same tree admits review");
+
+  // spec review r2 #1: the failed full-gate log is read from the committed opus/<id> tree; the worktree's copy never hides it
+  const kept = handedLight("w699-b5-committed");
+  failFull(kept);
+  assert.equal(performLight(kept).status, 0, "the light gates pass after the failed full ci");
+  const failedPath = join(kept.wtStudio, `ci/${OPUS}-tests-${sourceTree(kept.wt).slice(5, 13)}.log`);
+  const failedBytes = readFileSync(failedPath, "utf8");
+  rmSync(failedPath);
+  builderWithFailed(next(kept, [OPUS, ...BUDGET]), kept, "a tracked failed log deleted in the worktree does not admit review");
+  writeFileSync(failedPath, failedBytes.replace(/^certifies: .*\n/, ""));
+  builderWithFailed(next(kept, [OPUS, ...BUDGET]), kept, "a tracked failed log edited in the worktree to lose its certifies line does not admit review");
+  // spec review r4 #2: a committed failed log stays the builder's whatever its worktree copy (only a committed passed log, below, orders the full gates again)
+  writeFileSync(failedPath, failedBytes);
+  git(kept.wt, ["mv", failedPath, `${failedPath}.moved`]);
+  builderWithFailed(next(kept, [OPUS, ...BUDGET]), kept, "a tracked failed log renamed in the worktree still dispatches the builder");
+
+  // each committed form the scan cannot read refuses (the full gates again); an untracked worktree file never counts
+  const shape = handedLight("w699-b5-shape");
+  assert.equal(performLight(shape).status, 0, "the light gates pass at the tree");
+  const cur = sourceTree(shape.wt);
+  const extra = join(shape.wtStudio, `ci/${OPUS}-extra-${cur.slice(5, 13)}.log`);
+  writeFileSync(extra, FAILED_LOG(cur));
+  expectStep(next(shape, [OPUS, ...BUDGET]), "review", "named", "an untracked failed-gate log in the worktree does not count");
+  writeFileSync(extra, PASSED_LOG(cur));
+  commit(shape.wt, `studio(${OPUS}): a passed extra gate log`);
+  expectStep(next(shape, [OPUS, ...BUDGET]), "review", "named", "a committed passed full-gate log at the tree keeps review");
+  git(shape.wt, ["mv", extra, `${extra}.moved`]);
+  refusedFull(next(shape, [OPUS, ...BUDGET]), "a tracked full-gate log renamed in the worktree does not admit review", /differs in the worktree from opus\/W-900 \(a tracked modification or deletion\)/);
+  git(shape.wt, ["mv", `${extra}.moved`, extra]);
+  writeFileSync(extra, FAILED_LOG(cur));
+  refusedFull(next(shape, [OPUS, ...BUDGET]), "a tracked full-gate log modified in the worktree does not admit review", /differs in the worktree from opus\/W-900 \(a tracked modification or deletion\)/);
+  rmSync(extra);
+  refusedFull(next(shape, [OPUS, ...BUDGET]), "a tracked full-gate log deleted in the worktree does not admit review", /differs in the worktree from opus\/W-900 \(a tracked modification or deletion\)/);
+  writeFileSync(extra, PASSED_LOG(cur).replace("certifies: tree:", "certifies: dirty:"));
+  commit(shape.wt, `studio(${OPUS}): the extra log certifies a dirty run`);
+  refusedFull(next(shape, [OPUS, ...BUDGET]), "a committed full-gate log with another opening does not admit review", /does not open with certifies: tree:/);
+  writeFileSync(extra, PASSED_LOG(cur).replace("exit code: 0", "exit code: zero"));
+  commit(shape.wt, `studio(${OPUS}): the extra log's status in no writer form`);
+  refusedFull(next(shape, [OPUS, ...BUDGET]), "a committed full-gate log with no writer-form status does not admit review", /carries no readable status \(line 3 is in no writer form\)/);
+  rmSync(extra);
+  symlinkSync(`${OPUS}-light-${cur.slice(5, 13)}.log`, extra);
+  commit(shape.wt, `studio(${OPUS}): the extra log is a symlink`);
+  refusedFull(next(shape, [OPUS, ...BUDGET]), "a committed full-gate log that is a symlink does not admit review", /is not a regular file on opus\/W-900 \(mode 120000\)/);
+  rmSync(extra);
+  commit(shape.wt, `studio(${OPUS}): the extra log deleted`);
+  refusedFull(next(shape, [OPUS, ...BUDGET]), "a full-gate log deleted in a commit does not admit review", /was deleted in a commit/);
+
+  // legacy: an unmarked record (no builder_runtime marker) never reaches the gates; a gate marked waived is the one exemption
+  const unmarked = world("w699-b5-unmarked", "reds", { automated: true, legacy: true });
+  const bare = next(unmarked, [OPUS, ...BUDGET]);
+  expectStep(bare, "ready", "held", "an unmarked legacy record does not admit review");
+  assert.match(bare.kv.get("why") ?? "", /carries no builder_runtime marker \(a legacy record is outside the ladder\)/, ran("the hold names the missing marker", bare));
+  const marked = world("w699-b5-marked", "reds", { automated: true });
+  editRecord(marked, "wt", (doc) => doc.setIn(["probationes", "tests"], { status: "waived", reason: "fixture", waived_by: "D-900", sella: "guest", at: T.reds }));
+  commit(marked.wt, `studio(${OPUS}): tests waived`);
+  expectStep(next(marked, [OPUS, ...BUDGET]), "review", "named", "a record whose every automated gate is marked waived admits review with no gate log");
 });
