@@ -55,11 +55,12 @@ Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, bri
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- Ops (owner ops-lead): stale handoff + kits at a switch decided by a leads' meet (handoff-stale-meet-1119/collated.md) -> D-247 (untracked, rides W-699's branch with D-245/D-246); the Patron asked why meets use 9 seats when D-189 says relevant leads (offer: meet script requires a Seats: line; not done).
-- E1 W-531 (one spec lead per collegium; production-lead rename): Patron said "Go ahead with the 2 fixes"; fix round 1 on opus/W-531 15a29f2f (not pushed): seat ids translated at entry and record read, year bug fixed; reds unrecorded (fix-check review, red refused); tick.ts old-id fix not done (outside Files owned); next: light gates, full ci, Codex r2, PR, merge.
-- E2 W-699: architect r3 signed, unrecorded (W-699-spec/signature-r3.md; b5 fixed; spec.delta_review on|off key, missing = off, check rule); next: design-lead re-checks b5, record kit (dry), branch.
-- UI1 W-503: waits the Patron's Home screens ruling.
-- UI2 W-504: sign r1 record refused (ledger); design-lead route; r1c: test strengthened, prototype-r1c.mbox, 12/12 kills; next: presign gate on prototype-r1c, Sol sign with a real-verdict preflight, record (dry), branch.
+- Ops: D-247 rides W-699's branch with D-245/D-246; meet script refuses without a `Seats:` line.
+- E1: W-531 done; E1 free.
+- E2 W-699: architect r4 signed, unrecorded; next: brief into main studio/briefs/W-699.md, producer handoff, record spec round 3, fresh Sol spec review round 4 (last), record, branch.
+- UI1 W-503: PR #1319 ejected from the merge queue; build review r2 FAIL; next: route: ~/.bisellium-evidence/w503-route-1120/design-lead.md.
+- UI2 W-504: ui-architect r1d signature recorded; brief edit unlanded, rides W-504's branch with ci/W-504-spec-1.log; next: producer handoff, Opus UI spec review round 2, record, branch.
+- Research: nomorehappypath meet collated; 4 adopted items filed as lessons (part B). Lessons L-198..L-224 unlanded: land refuses studio/lessons/; lessons-actionable meet (~/.bisellium-evidence/lessons-actionable-meet-1120/) decides the path.
 - DR from its own clone (cron 09:04 SGT).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
