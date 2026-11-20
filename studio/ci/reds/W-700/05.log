@@ -1,0 +1,39 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-700-b5\s --import tsx packages/cli/src/w700.test.ts
+# exit: 1
+# at: 2026-11-20T10:41:27.088Z
+# sella: builder.W-700
+# tree: tree:b316c499c5b839d7dd1c4627c7d7f7290193b1b3
+# ticket: {"opus":"W-700","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-700/studio","head":"66117967524b1c992876cb9c454cbcaad48271f0","brief":"df50fdff63fc91064bcfdf892c57756a6163d3eb","at":"2026-11-20T10:41:23.938Z"}
+
+TAP version 13
+# Subtest: W-700-b5 a halted or declined target reopens the class; closed: closes it, prose: does not
+not ok 1 - W-700-b5 a halted or declined target reopens the class; closed: closes it, prose: does not
+  ---
+  duration_ms: 132.765609
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:1:925'
+  failureType: 'testCodeFailure'
+  error: 'a halted or declined target reopens the class; closed: closes it, prose: does not: a halted target is no fix in flight'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:37:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 153.336169
