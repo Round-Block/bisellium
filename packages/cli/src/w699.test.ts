@@ -93,7 +93,7 @@ test("W-699-b2 behaviour 2: a re-signature whose contract digests equal the revi
   });
   put(aliased.repo, BRIEF_REL, briefText(aliased.behaviours));
   sign(aliased, 1);
-  assert.match(readFileSync(join(aliased.repo, specLog(1)), "utf8"), /^# contract: intent:[0-9a-f]{16} /m, "a signature by the alias writes the contract header, as the canonical sella's does");
+  assert.match(readFileSync(join(aliased.repo, specLog(1)), "utf8"), /^# contract: intent:[0-9a-f]{16} behaviours:[0-9a-f]{16} domain:[0-9a-f]{16} interfaces:[0-9a-f]{16} limits:[0-9a-f]{16} files:[0-9a-f]{16} other:[0-9a-f]{16}$/m, "a signature by the alias writes the contract header, as the canonical sella's does");
   review(aliased, 2, "passed");
   editBrief(aliased, "## Acceptance\n\nFixture.", "## Acceptance\n\nFixture, reworded.");
   sign(aliased, 3);
