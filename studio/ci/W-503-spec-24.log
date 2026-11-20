@@ -1,0 +1,27 @@
+# opus: W-503
+# phase: spec
+# round: 24
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1f684-9d94-7f10-a111-11af5aa8fee0
+# session_reason: fresh Codex Sol session for the r24 amendment (w503-route-1120); earlier W-503 sign sessions not resumed
+# outcome: passed
+# at: 2026-11-20T01:32:28.995Z
+# tree: tree:ccd5f02d0dc690ee8a25014ac153d8b40c1bc281
+# brief: briefs/W-503.md blob:fcb72bb75de8a282f2b11d25e018c969fb2e09f0
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":24,"actor":"architect","studio":".worktrees/W-503/studio","head":"7ebe18da4380c52cc3a2e0062ababf0cddc5ca8e","brief":"fcb72bb75de8a282f2b11d25e018c969fb2e09f0","at":"2026-11-20T01:32:27.773Z"}
+
+Brief sha256: 00ab0b017637e7fee745d78911a0c882eefcfb0e264211afe5297216f8df04b8
+Promise ledger: /home/edckt/.bisellium-evidence/W-503-spec/r24/promise-ledger-r24.md
+Gate log: /home/edckt/.bisellium-evidence/W-503-spec/r13c/host/gate-r13c.log
+Class census: mechanism×red-certifies-wrong-tree /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.sh -> /home/edckt/.bisellium-evidence/W-503-spec/revision-11/census-red-tree.out sha256:3b4b07fe55e9fd684bdc8e644584f83e3d045c8b83d8440a953e273cdd7ac333
+
+## Findings
+
+1. advisory — Round 24 changes exactly brief:33, brief:44, brief:109's opening sentence, brief:115 and brief:120 to separate Node-only pre-build policy from the mandatory post-build served rows; the fresh promise ledger, full admission predicate and declared-red check report zero problems — check: r24/brief-r24.diff, r24/promise-ledger-r24.md, r24/preflight-r24.md.
+2. advisory — The clean named scratch is `06578300` on parent `7ebe18da` with only the amended brief; the exact shared-cache install exits 0 on the host, focused W-503-b1–b3 and served W-503-b1–b3 each pass 3/3, and all b4, b5, nav, route, W-408, W-415, typecheck, build, owned-file lint and format rows pass — check: r24/host-r24.sh, r24/host/npm-ci.log, r24/host/focused-b123.log, r24/host/served-b123.log, r24/preflight-r24.md.
+3. advisory — The separate anchored Playwright list probe is not the wrapper's selector: the wrapper passes unanchored `W-503-bN\s` to Playwright while only its outer Node selection is anchored, and the green focused host replay confirms all three wrappers execute their served rows — check: apps/web/test/w503.test.ts:9, apps/web/test/w503.test.ts:14, r24/host/list-anchored.log, r24/host/focused-b123.log.
+
+## Verdict
+
+passed — W-503 UI spec re-signed by `ui-architect` at spec round 24 against `brief-r24.md` sha256 `00ab0b017637e7fee745d78911a0c882eefcfb0e264211afe5297216f8df04b8`; the amendment is nonvisual and all owed preflight rows pass.
