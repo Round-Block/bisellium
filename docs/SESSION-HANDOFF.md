@@ -55,13 +55,13 @@ Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, bri
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- Ops: W-701 filed s67 (wrong-checkout paths, L-245), process slot after W-697; D-245..D-247 ride opus/W-699 (23f3e729).
-- E1 W-700 (lessons name their fix and reach master): spec rounds 3-4 recorded, passed; next: branch when W-699 lands (overlaps its files), land.
-- E2 W-699 (sign path check, delta rule): ready, D-245..D-247 and handoff on opus/W-699; builder reds b1-b6 cover required fixes; next: fix check, full ci --opus, Sol build review.
-- UI1 W-503: build review round 3 passed; full ci --opus rerunning; next: record verdict+review, push, Patron re-approves #1319, queue.
-- UI2 W-504: design lead Sol revised round 6 (readiness, attention row, count, advisories 2-5); two host-run fixes refused by Sol; next: r6c, host rows, sign, record, Opus UI spec review.
-- Spec ahead W-667 (Inbox lists every wait): Sol draft done; proposes a D-061 split (PR snapshot, an opus); leads' meet first.
-- Research: none open. DR from its own clone (cron 09:04 SGT); DR 11-19 landed (#1326).
+- Ops: W-701 filed s67, slot after W-697. W-546 brief-r3 (8fa3c492, unsigned): Patron answered Defaults 1-3 (agree; "code-owned" is renamed "patron-owned"; PR approval covers merge and local ff), D4 (Patron commits the `.claude/settings.json` matcher `|Agent|Task` on the branch at cut) explained; next: prototype, reds, timing, ops-lead signs.
+- E1 W-700: spec passed; next: branch (W-699 has landed), then W-702 (D-250, greenlit by kit 759).
+- E2: W-699 done (merged 6a35ffcb, landed 8ac9585b). Next in the slot: W-697.
+- UI1 W-503: merged 8d955423, cleaned up; done waits on a UI master verify (`next W-503` names `verify`; kept kit ui-verify-1104/run.sh, a full suite, runs alone).
+- UI2 W-504: W-699's sign path check refused brief-r6f (two new test files unmarked); Sol re-signed on brief-r6k (b197360a, signature 9c4d9751); fresh Opus spec review r7b and ui-lead input r8b run off main (kit 765 stage clone); next: kit 765 dry, real, branch.
+- Spec ahead W-667: brief-r2 per D-250, signs after W-504.
+- Research: none open.
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
 Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624 W-625 W-626 W-627 W-628 W-629 W-630 W-631 W-632 W-633.
