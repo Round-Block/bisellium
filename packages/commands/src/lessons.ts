@@ -112,8 +112,9 @@ export function openLessons(root: string): OpenLessonClass[] {
       if (v === undefined) continue;
       if (opera.has(v)) {
         const state = opera.get(v) ?? "";
+        if (declined.has(v)) continue;
         if (state === "done") acc.closed = true;
-        else if (state !== "halted" && !declined.has(v) && (acc.inFlight === undefined || v < acc.inFlight.id)) acc.inFlight = { id: v, state };
+        else if (state !== "halted" && (acc.inFlight === undefined || v < acc.inFlight.id)) acc.inFlight = { id: v, state };
       } else if (RULE_SHAPE.test(v) || decisions.has(v)) acc.closed = true;
       else {
         const disposition = lessonDisposition(v);
