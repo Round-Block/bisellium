@@ -1,0 +1,18 @@
+# opus: W-699
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1f739-f88f-7eb0-8588-d67569c7ac5a
+# outcome: failed
+# at: 2026-11-20T04:37:47.746Z
+# tree: tree:417b63dc18573238d0efc39f1b3859e34a575065
+# brief: briefs/W-699.md blob:31b703ac0f73b20a95abb842ac4bf74cbe55ffe7
+# ticket: {"opus":"W-699","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-699/studio","head":"9af340599fadb8836c8bb5e34602607f5e9302d4","brief":"31b703ac0f73b20a95abb842ac4bf74cbe55ffe7","at":"2026-11-20T04:37:45.605Z"}
+
+## Findings
+1. blocking — packages/commands/src/verdict.ts:1293 [severity: S1] The contract writer uses raw `sella === signer` even though signer admission uses `sameSella`; a valid signer invoked through `sella_aliases` therefore writes no `# contract:` header, preventing the delta rule promised at brief:18. The affected path is signer admission at verdict.ts:1268, contract emission/header writing at verdict.ts:1293/1380, and `readSpecSignature` plus `contractOf`/`deltaReview` in next.ts:450-485; all must share normalized identity. [class: mechanism×identity-normalization-not-centralized] — check: packages/cli/src/w699.test.ts
+
+## Verdict
+The required `readSpecSeats` fix is present, but the valid alias path breaks contract signatures and blocks the round.
+VERDICT: FAIL
