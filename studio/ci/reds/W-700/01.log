@@ -1,0 +1,46 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-700-b1\s --import tsx packages/cli/src/w700.test.ts
+# exit: 1
+# at: 2026-11-20T10:38:30.891Z
+# sella: builder.W-700
+# tree: tree:e10c4482cb9177c11e74042f6404702c4c743d2c
+# ticket: {"opus":"W-700","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-700/studio","head":"c976750aa3f5a12524a71481e924cc7422211a75","brief":"df50fdff63fc91064bcfdf892c57756a6163d3eb","at":"2026-11-20T10:38:26.607Z"}
+
+TAP version 13
+# Subtest: W-700-b1 land carries a lesson
+not ok 1 - W-700-b1 land carries a lesson
+  ---
+  duration_ms: 13.527151
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:1:771'
+  failureType: 'testCodeFailure'
+  error: |-
+    land carries a lesson: a lesson under studio/lessons/ is a landable record
+    
+    false !== true
+    
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:37:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 322.281979
