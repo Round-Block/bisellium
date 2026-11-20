@@ -435,3 +435,113 @@ test("W-699-b5 behaviour 5: gate evidence admits review only when committed afte
   commit(marked.wt, `studio(${OPUS}): tests waived`);
   expectStep(next(marked, [OPUS, ...BUDGET]), "review", "named", "a record whose every automated gate is marked waived admits review with no gate log");
 });
+
+// ---------------------------------------------------------------------------
+// behaviour 6 (D-246): retro --daily prints the spec measure of the first 5 opera to start their spec after W-699 is done
+// ---------------------------------------------------------------------------
+function measureOfficina(tag: string): string {
+  const root = join(mkdtempSync(join(tmpdir(), `w699-b6-${tag}-`)), "studio");
+  dirs.push(join(root, ".."));
+  for (const d of ["ci", "opera", "lessons", ".bisellium"]) mkdirSync(join(root, d), { recursive: true });
+  // spec_seats (as the live officina declares them): each collegium's signer, read by readSpecSeats as next and verdict read it
+  const seat = (id: string, collegium: string, model: string): string => `  - { id: ${id}, collegium: ${collegium}, kind: agent, model: ${model} }`;
+  const seats = ["engineering: { signer: architect, reviewer: spec-reviewer }", "ops: { signer: ops-lead, reviewer: spec-reviewer }", "qa: { signer: qa-lead, reviewer: spec-reviewer }", "production: { signer: ladder-lead, reviewer: spec-reviewer }", "design: { signer: design-lead, reviewer: spec-reviewer }"];
+  writeFileSync(
+    join(root, "bisellium.yml"),
+    [
+      "bisellium: 1",
+      "studio: w699",
+      "patron: patron",
+      "collegia:",
+      "  - { id: production, name: Production, magister: producer }",
+      "  - { id: design, name: Design, magister: architect }",
+      "  - { id: engineering, name: Engineering, magister: architect }",
+      "  - { id: qa, name: QA, magister: qa-lead }",
+      "  - { id: ops, name: Ops, magister: ops-lead }",
+      "sellae:",
+      seat("producer", "production", "m-a"),
+      seat("ladder-lead", "production", "m-a"),
+      seat("architect", "engineering", "m-a"),
+      seat("design-lead", "design", "m-a"),
+      seat("qa-lead", "qa", "m-a"),
+      seat("ops-lead", "ops", "m-a"),
+      seat("spec-reviewer", "qa", "m-b"),
+      "wip_limit: 9",
+      "spec_seats:",
+      "  since: 2026-01-01T00:00:00.000Z",
+      "  collegia:",
+      ...seats.map((r) => `    ${r}`),
+      "",
+    ].join("\n"),
+  );
+  return root;
+}
+function measured(root: string, id: string, kind: string, o: { state?: string; end?: string; specAt?: string; collegium?: string }): void {
+  const spec = o.specAt === undefined ? "{}" : `{ spec: { sella: architect, status: passed, evidence: briefs/${id}.md, at: ${o.specAt} } }`;
+  writeFileSync(join(root, "opera", `${id}.md`), `---\nid: "${id}"\ntitle: "fixture ${id}"\nkind: "${kind}"\ncollegium: "${o.collegium ?? "engineering"}"\nstate: ${o.state ?? "building"}\nprobationes: ${spec}\n${o.end === undefined ? "" : `end: ${o.end}\n`}---\n`);
+}
+/** Spec logs of `id` from `start` (an hour apart): `s` a signature (by `signer`), `p` a passed review, `f` a failed one. */
+function specLogs(root: string, id: string, start: string, seq: string, signer = "architect"): void {
+  [...seq].forEach((c, i) => {
+    const at = new Date(new Date(start).getTime() + i * 3_600_000).toISOString();
+    const outcome = c === "f" ? "failed" : "passed";
+    const sella = c === "s" ? signer : "spec-reviewer";
+    writeFileSync(join(root, "ci", `${id}-spec-${i + 1}.log`), `# opus: ${id}\n# outcome: ${outcome}\n# at: ${at}\n# sella: ${sella}\n# brief: briefs/${id}.md blob:aaa\n\n## Findings\n${c === "f" ? "1. blocking — fixture [class: spec×fixture] [severity: S2]" : "No findings"}\n`);
+  });
+}
+const measureLine = (section: string): string => section.split("\n").find((l) => l.startsWith("D-246 measure: ")) ?? `(no measure line in)\n${section}`;
+
+test("W-699-b6 behaviour 6: retro --daily prints spec review rounds, skipped reviews, escapes and spec hours of the first 5 opera after W-699, ui and engineering apart, median and max, and the pass mark", async () => {
+  const { draftDailyRetro, reviewRounds } = await import("./retro.js");
+  const root = measureOfficina("pass");
+  measured(root, "W-699", "feature", { state: "done", end: "2026-10-20T00:00:00.000Z", specAt: "2026-10-10T00:00:00.000Z" });
+  specLogs(root, "W-699", "2026-10-09T00:00:00.000Z", "sfsfsp");
+  measured(root, "W-700", "feature", { specAt: "2026-10-19T12:00:00.000Z" });
+  specLogs(root, "W-700", "2026-10-19T00:00:00.000Z", "sfsfsfsp");
+  // each opus is signed by the signer its collegium declares in spec_seats (a kind: ui opus keeps the design magister, the legacy route)
+  const cohort: [string, string, string, string, string, string][] = [
+    ["W-701", "feature", "2026-10-21T00:00:00.000Z", "sp", "production", "ladder-lead"],
+    ["W-702", "ui", "2026-10-21T01:00:00.000Z", "sfsfsp", "design", "architect"],
+    ["W-703", "feature", "2026-10-21T02:00:00.000Z", "sps", "qa", "qa-lead"],
+    ["W-704", "ui", "2026-10-21T03:00:00.000Z", "sp", "design", "architect"],
+    ["W-705", "feature", "2026-10-21T04:00:00.000Z", "sfsp", "design", "design-lead"],
+  ];
+  for (const [id, kind, start, seq, collegium, signer] of cohort) {
+    measured(root, id, kind, { collegium, specAt: new Date(new Date(start).getTime() + seq.length * 3_600_000).toISOString() });
+    specLogs(root, id, start, seq, signer);
+  }
+  measured(root, "W-706", "feature", { collegium: "ops", specAt: "2026-10-23T00:00:00.000Z" });
+  specLogs(root, "W-706", "2026-10-22T00:00:00.000Z", "sfsfsfsfsfsp", "ops-lead");
+  writeFileSync(join(root, ".bisellium", "events.jsonl"), `${JSON.stringify({ id: "cli:1", name: "workflow.greenlight", ts: "2026-10-20T22:00:00.000Z", attrs: { "workflow.item.id": "W-701", "workflow.greenlight": "granted" } })}\nnot json\n`);
+  const day = "2026-10-25";
+  const draft = draftDailyRetro(root, day);
+  assert.ok(!("error" in draft), `the daily retro drafts: ${JSON.stringify(draft)}`);
+  const section = "section" in draft ? draft.section : "";
+  const lines = section.split("\n");
+  assert.equal(measureLine(section), "D-246 measure: 5 of 5 opera; median 1 (pass at most 2), max 3 (pass at most 4), escapes 0 (pass 0): PASS", "the measure names the five opera's rounds and the pass mark");
+  for (const row of ["| W-701 | engineering | 1 | 0 | 0 | 4.0 |", "| W-702 | ui | 3 | 0 | 0 | n/a |", "| W-703 | engineering | 1 | 1 | 0 | n/a |", "| W-704 | ui | 1 | 0 | 0 | n/a |", "| W-705 | engineering | 2 | 0 | 0 | n/a |"])
+    assert.ok(lines.includes(row), `each opus of the window has its row, signatures excluded and a stood re-signature counted skipped: ${row} in\n${section}`);
+  assert.ok(!section.includes("| W-700 |") && !section.includes("| W-706 |") && !section.includes("| W-699 |"), `an opus before the landing, the sixth and W-699 itself are outside the window:\n${section}`);
+  assert.ok(lines.includes("- ui: 2 opera; median 2, max 3") && lines.includes("- engineering: 3 opera; median 1, max 2"), `ui and engineering apart, median and max:\n${section}`);
+  assert.ok(!section.slice(section.indexOf("#### Spec measure")).split(/[^A-Za-z]+/).includes("mean"), "never the mean");
+  // spec review r4 #1: a signer of another collegium (ops, qa, production, a non-ui design) is a signature, never a reviewer round
+  const rounds = reviewRounds(root);
+  assert.ok(!("error" in rounds), `the review rounds read: ${JSON.stringify(rounds)}`);
+  assert.equal("opus" in rounds ? rounds.opus.get("W-706")?.spec : undefined, 6, "an ops signer's six signatures are not counted among the reviews");
+  writeFileSync(join(root, "lessons", "L-9.md"), `---\nid: "L-9"\nat: 2026-10-24T00:00:00Z\nclass: "escape×delta-rule"\nevidence: ["opera/W-703.md"]\nopus: "W-703"\n---\nThe stood re-signature hid a wrong Acceptance row.\n`);
+  const escaped = draftDailyRetro(root, day);
+  assert.equal(measureLine("section" in escaped ? escaped.section : ""), "D-246 measure: 5 of 5 opera; median 1 (pass at most 2), max 3 (pass at most 4), escapes 1 (pass 0): MISS", "an escape misses the mark");
+  writeFileSync(join(root, "lessons", "L-9.md"), readFileSync(join(root, "lessons", "L-9.md"), "utf8").replace('opus: "W-703"\n', ""));
+  assert.deepEqual(draftDailyRetro(root, day), { error: "lessons/L-9.md: an escape×delta-rule lesson names no opus (opus: W-<n>), so the D-246 measure cannot count it" }, "an escape naming no opus refuses the measure");
+  rmSync(join(root, "lessons", "L-9.md"));
+  specLogs(root, "W-705", "2026-10-21T04:00:00.000Z", "sfsfsfsfsp", "design-lead");
+  const over = draftDailyRetro(root, day);
+  assert.equal(measureLine("section" in over ? over.section : ""), "D-246 measure: 5 of 5 opera; median 1 (pass at most 2), max 5 (pass at most 4), escapes 0 (pass 0): MISS", "an opus over 4 rounds misses the mark");
+  for (let n = 5; n <= 10; n++) rmSync(join(root, "ci", `W-705-spec-${n}.log`));
+  measured(root, "W-704", "ui", {});
+  const open = draftDailyRetro(root, day);
+  assert.equal(measureLine("section" in open ? open.section : ""), "D-246 measure: 5 of 5 opera; median 1 (pass at most 2), max 3 (pass at most 4), escapes 0 (pass 0): PENDING", "an opus whose spec is still open keeps the mark pending");
+  measured(root, "W-699", "feature", { state: "building", specAt: "2026-10-10T00:00:00.000Z" });
+  const before = draftDailyRetro(root, day);
+  assert.ok(("section" in before ? before.section : "").includes("- W-699 is not done: no opus is in the comparison window yet; D-246 measure: PENDING"), "before W-699 is done no opus is measured");
+});
