@@ -104,7 +104,12 @@ try {
     const afterBlocks = new Set(after.findings.filter((f) => f.level === "block").map((f) => `${f.rule}@${f.where}`));
     const newBlocks = [...afterBlocks].filter((x) => !beforeBlocks.has(x));
     check("10g. check on the officina afterwards: zero NEW blocking findings", newBlocks.length === 0, newBlocks.join(", "));
-    check("10h. check on the officina afterwards: zero blocking findings at all", after.ok, JSON.stringify(after.findings.filter((f) => f.level === "block")));
+    // W-700: this officina sets no defaults.lesson_fix_required_from, so each lesson with no fix blocks, and only those
+    check(
+      "10h. check on the officina afterwards: its only blocks are lesson.unfixed (no switch set, W-700)",
+      after.findings.filter((f) => f.level === "block").every((f) => f.rule === "lesson.unfixed"),
+      JSON.stringify(after.findings.filter((f) => f.level === "block")),
+    );
   }
 
   // =========================================================================
