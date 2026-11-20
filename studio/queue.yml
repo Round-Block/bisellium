@@ -4,11 +4,14 @@ queues:
     next:
       - { opus: W-700, says: "lessons name their fix and reach master: land takes lessons/, unfixed-lesson block, records.unlanded (lessons-actionable-meet-1120); rank 0, lane E1 (Patron 11-20)" }
       - { opus: W-702, says: "W-667 foundation: review-request writes a fail-closed PR snapshot in the git common dir; the server reads it as optional /api/inbox reviewRequests (D-250); v1 S4; rank 0.5, E1 after W-700" }
+      - { opus: W-554, says: "meet verb asks relevant leads with why; seats boot as real sellae; context refuses unknown; check refuses a cited meet missing one; undeferred (Patron s70-s71): E1 after W-700, W-702" }
       - { opus: W-546, says: "the Patron owns the guard fence: CODEOWNERS lines and a guard-import check; exempt on the leads' unanimous call (D-189); v1 S4; absorbs the fix-dispatch guard (D-241); rank 1 (D-241)" }
+      - { opus: W-703, says: "W-546 follow-up (collated Q4): the fix-dispatch guard also reads the automated gate logs and bisellium ci runs, so a fix after a failed ci or runner gate needs a route; after W-546; ops; filed s72" }
       - { opus: W-284, says: "init yields a studio that can run an opus; M9 acceptance test folded in (fresh repo by init passes check, runs one opus, shows in the console); needs greenlight; v1 S9; rank 2 (D-241)" }
       - { opus: W-699, says: "path check at sign, brief delta rule, verdict --check, lex/prompt text, 200k hook (D-245 item 6); v1 S5; rank 2, lane E2 (Patron 11-19: \"File it, ahead of W-697 (Recommended)\")" }
       - { opus: W-697, says: "light-gates PR after a passed review; certify is the one full suite (D-232); v1 S5; rank 2, after W-699 in E2 (Patron 11-18: \"finish up whatever is in the eng lanes first\")" }
       - { opus: W-701, says: "verbs refuse a --studio/--repo from the wrong checkout and print the path they want (L-245 with L-208, L-210, L-212: 3+, D-234); process slot after W-697 (D-245); ops-lead owns; filed s67" }
+      - { opus: W-704, says: "roster cleanup: architect as eng-architect alias, design-lead the design magister, ui-architect overlap, code-owned renamed patron-owned (Patron s70-s71); after W-701; filed s72" }
       - { opus: W-576, says: "M4's exit browser test: the whole Patron's desk walk from the console; qa-lead owns (leads' meet m4-path-meet-1111, item 3); product, not M4 path (D-193)…; v1 S8, rank 0, lane E1 (D-239)" }
       - { opus: W-555, says: "FIRST end-state, no schema (D-212, D-213 item 2): one occupancy fn in queue.ts; next skips, check flags done/halted; advisory lanes; no-lane count line; absorbs W-636 (D-240); v1 S2, rank 2 (D-234)", folded: [W-478], next_ts: true }
       - { opus: W-673, says: "Certificate excludes come from ci-scope's one record-path list, so a handoff-only PR voids no verify; cause fix, design×indirection-duplicates-source-of-truth…; v1 S5, rank 4 (D-234)" }
@@ -33,8 +36,8 @@ queues:
     next:
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2); lifted (D-230); v1 S2, rank 3 (D-234)" }
       - { opus: W-467, says: "Officina on Home's palette; UI2 Officina files (D-192); v1 no step, rank 9 (D-234)" }
+      - { opus: W-504, says: "Home: Completion row only, Spend removed, W-439 dependency dropped (D-175 piece 4); v1 S7 (D-234); above W-667 (producer s72: spec signed and recorded; W-667 signs after it)" }
       - { opus: W-667, says: "Console Inbox lists every wait (rulings, screens, PR approvals) with forge deep links; PR approval stays code-owner review; D-211, after the receipt opus W-666; v1 S4, rank 11 (D-234)" }
-      - { opus: W-504, says: "Home: Completion row only, Spend removed and the W-439 dependency dropped (D-175 piece 4); v1 S7, rank 16 (D-234)" }
 halted:
   - { opus: W-073, says: "reply from the Board drawer; until the freeze ends and it is re-ranked (D-174)" }
   - { opus: W-136, says: "live activity on the Board; until the freeze ends and it is re-ranked (D-174)" }
@@ -142,7 +145,6 @@ deferred:
   - { opus: W-549, says: "the review perform writes Earlier findings itself; daily retro 11-08; behind the freeze; deferred by End state v1 (D-234)" }
   - { opus: W-551, says: "required fixes, build-review fix rounds and fix-check rounds get a red ticket tied to the pre-fix commit; reviewer and certify read it…; deferred by End state v1 (D-234)", folded: [W-365, W-421] }
   - { opus: W-553, says: "a spec draft declares a risk class and a 30/45-minute budget; check refuses unconnected behaviour groups without a keep-together reason (w563-scope-meet-1112); D-189; deferred by End state v1 (D-234)" }
-  - { opus: W-554, says: "meet verb asks relevant leads with why; seats boot as real sellae, context refuses unknown; design seat = ui-lead Astra; check refuses a cited meet missing one…; deferred by End state v1 (D-234)" }
   - { opus: W-556, says: "greenlight --after writes the queue entry; no clerk step at filing; exempt at the Patron's ask 2026-11-09, on the leads' simplify meet (D-189); deferred by End state v1 (D-234)" }
   - { opus: W-559, says: "W-547 remainder: markers and queue states fail closed; same fail-open class as W-185 (w555-meet-1116); deferred by End state v1 (D-234)" }
   - { opus: W-561, says: "next's gather reads --now for the daily hold and red findings; W-547's stated limit; producer's rank, vetoable; deferred by End state v1 (D-234)" }
