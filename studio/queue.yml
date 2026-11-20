@@ -24,6 +24,8 @@ queues:
       - { opus: W-308, says: "opus timeline; E1 (next.ts) (D-192); v1 S6, rank 14 (D-234)", next_ts: true }
       - { opus: W-557, says: "Merge, cleanup and done as one chain; split out of W-545's fold; v1 S5, rank 15 (D-234)" }
       - { opus: W-051, says: "branch and merge respect the repo's default branch, never a hardcoded master; v1 S9, rank 18 (D-234)" }
+      - { opus: W-705, says: "ops: context-stop guard ships first, file-set with W-706 (D-252 ruling item 2); after W-546 (file overlap, both edit guard.ts)" }
+      - { opus: W-706, says: "ops: memory-write guard ships file-set with W-705 (D-252 ruling item 2); after W-705 and W-546 (file overlap, both edit guard.ts)" }
   research:
     lanes: { R1: ~ }
     next: []
@@ -243,3 +245,5 @@ deferred:
   - { opus: W-695, says: "Ladder verbs run master's CLI, never a worktree's; retro-s41-meet-1117 P7; deferred by End state v1 (D-234)" }
   - { opus: W-696, says: "halt records its release opera; next names the lift once all are done; check fails loud on a missed lift (D-230, halt-release-meet-1117); deferred by End state v1 (D-234)" }
   - { opus: W-698, says: "master push skips its suite for a passed merge-group head; records-only/bypass pushes keep it; held, billed minutes only (D-232); deferred by End state v1 (D-234)" }
+  - { opus: W-707, says: "Patron-only console-settings auth: a second secret gates settings routes, separate from the serve token (D-252 ruling item 4); after W-546; deferred (Patron s75, D-252): not needed now, can come later" }
+  - { opus: W-708, says: "Settings screen, on top of the context-stop and memory guards and the auth flow (D-252 ruling items 1-2, 4); depends on W-707, W-705, W-706; after W-504; deferred with W-707 (Patron s75, D-252)" }
