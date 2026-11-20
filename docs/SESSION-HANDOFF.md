@@ -56,11 +56,11 @@ D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-25
 
 Lanes now:
 - Ops: D-247 rides W-699's branch with D-245/D-246; meet script refuses without a `Seats:` line.
-- E1 W-700 (lessons name their fix and reach master, Patron 11-20): filed, greenlit; next: architect spec. Lessons L-198..L-224 in PR #1323.
-- E2 W-699: architect r4 signed, unrecorded; next: brief into main studio/briefs/W-699.md, producer handoff, record spec round 3, fresh Sol spec review round 4 (last), record, branch.
-- UI1 W-503: PR #1319 ejected from the merge queue; build review r2 FAIL; next: route: ~/.bisellium-evidence/w503-route-1120/design-lead.md.
-- UI2 W-504: ui-architect r1d signature recorded; brief edit unlanded, rides W-504's branch with ci/W-504-spec-1.log; next: producer handoff, Opus UI spec review round 2, record, branch.
-- Research: nomorehappypath meet collated; 4 adopted items filed as lessons (part B). Lessons L-198..L-224 unlanded: land refuses studio/lessons/; lessons-actionable meet (~/.bisellium-evidence/lessons-actionable-meet-1120/) decides the path.
+- E1 W-700 (lessons name their fix and reach master; Patron 11-20): filed, greenlit, M7 (#1324); lessons L-198..L-224 landed (#1323). Opus architect r1 drafting (~/.bisellium-evidence/W-700-spec/); next: record spec round 1 (dry first), Sol spec review, branch.
+- E2 W-699: architect r4 refused at verdict (no Class census line); Opus architect r4b adding it (W-699-spec/r4b/); next: repin kit 725 (s8-records/kit-725), record spec round 3, Sol spec review round 4 (last), branch.
+- UI1 W-503: spec round 24 on opus/W-503 (48eda43a, unpushed); Opus spec review r25 PASS (4 advisories), recording; next: ui-lead input 26, Terra wrapper fix, light gates, census, build review r3, full ci, push, Patron re-approves #1319.
+- UI2 W-504: spec round 2 recorded (ci/W-504-spec-2.log, untracked in main; brief + opera tracked edits ride W-504's branch); Sol r1f fixing the remaining brief-admission rows (W-504-spec/sign-r1f/); next: record round 3, Opus UI spec review round 4, branch.
+- Research: none open.
 - DR from its own clone (cron 09:04 SGT).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
