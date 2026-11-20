@@ -197,3 +197,29 @@ row("W-700-b3 an untracked record is unlanded: check advises, ci refuses", async
   assert.ok(existsSync(join(w.repo, "order.log")), "the steps ran");
 });
 
+row("W-700-b4 retro writes the finding's text into the lesson and refuses a finding with none", () => {
+  const w = world(undefined);
+  const where = "the row asserted one side\nof the bound only";
+  const draft = draftRetro(w.root, 3, { verifierIssues: 0, reviewFindings: [{ class: "tests×one-sided", where, evidence: ["bisellium.yml"] }, { class: "tests×one-sided", where: "a second finding", evidence: ["bisellium.yml"] }], agents: [], tests: 0, fixRounds: 0, mutationsCaught: 0 }, NOW);
+  const path = draft.lessons[0]?.path ?? "";
+  const text = readFileSync(join(w.root, path), "utf8");
+  assert.match(text, /^- the row asserted one side of the bound only$/m, "the filed lesson carries the finding's text");
+  assert.match(text, /^- a second finding$/m, "each finding of the class is a line");
+  assert.match(text, /^Filed by `bisellium retro --cascade 3`\. 2 finding\(s\) in this cascade\.$/m, "the filing line stays");
+  // a finding with no text: draftRetro refuses the whole draft before its first write
+  const files = (): string[] => readdirSync(w.root, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => join(e.parentPath, e.name)).sort();
+  const before = files();
+  const cases: [string, unknown][] = [
+    ["an absent where", undefined],
+    ["a non-string where", 42],
+    ["a non-string where (an object)", { text: "x" }],
+    ["a blank where", " \n\t\u0007 "],
+  ];
+  for (const [label, where] of cases) {
+    const finding = { class: "tests×no-text", evidence: ["bisellium.yml"], ...(where === undefined ? {} : { where }) } as unknown as { class: string; where: string; evidence: string[] };
+    const input = { verifierIssues: 0, reviewFindings: [{ class: "tests×good", where: "a real finding", evidence: ["bisellium.yml"] }, finding], agents: [], tests: 0, fixRounds: 0, mutationsCaught: 0 };
+    assert.throws(() => draftRetro(w.root, 4, input, NOW), /tests×no-text.*where/, `${label} is refused`);
+    assert.deepEqual(files(), before, `${label} writes nothing: no lesson file, no acta entry`);
+  }
+});
+
