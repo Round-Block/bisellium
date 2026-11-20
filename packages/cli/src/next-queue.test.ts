@@ -1432,3 +1432,61 @@ test("W-702-b1 behaviour 1: review-request writes the waiting PR's review snapsh
   );
   assert.deepEqual(readdirSync(away), [], "nothing is written through the link");
 });
+
+test("W-702-b2 behaviour 2: a PR that no longer waits on its code owners into master loses its review snapshot", { timeout: 3_600_000 }, () => {
+  const { w, head, request, owners } = w702World("w702-b2");
+  const plant = (): void => {
+    const o = request(w702Facts(901, head));
+    assert.deepEqual([o.status, w702Read(w, 901) !== undefined], [0, true], ran("a snapshot to retire", o));
+  };
+  // another PR's snapshot is never touched by this one's retention
+  plant();
+  writeFileSync(join(w702Dir(w), "902.json"), "another PR's snapshot\n");
+  const retired = (label: string, view: Json, why: string): void => {
+    plant();
+    const r = request(w702Facts(901, head), view);
+    assert.deepEqual([r.status, w702Lines(r)], [1, ["review-request: PR #901", "review-snapshot: removed", `why: ${why}`]], ran(label, r));
+    assert.deepEqual(readdirSync(w702Dir(w)), ["902.json"], `${label}: its snapshot is removed, another PR's is kept`);
+  };
+  retired("a merged PR", { state: "MERGED" }, 'PR #901 is "MERGED", not OPEN; only an open PR is screened');
+  retired("a closed PR", { state: "CLOSED" }, 'PR #901 is "CLOSED", not OPEN; only an open PR is screened');
+  retired("a PR retargeted from master", { baseRefName: "develop" }, `PR #901's base is "develop", not master; the screen reads master's owners file`);
+  const again = request(w702Facts(901, head), { state: "MERGED" });
+  assert.deepEqual([again.status, w702Lines(again)], [1, ["review-request: PR #901", 'why: PR #901 is "MERGED", not OPEN; only an open PR is screened']], ran("no snapshot left: the refusal alone", again));
+
+  // a head that touches no code-owned path any more: the snapshot goes, exit 0
+  plant();
+  owners("/nothing/ @patron\n");
+  const unowned = request(w702Facts(901, head));
+  assert.deepEqual([unowned.status, w702Lines(unowned)], [0, ["review-request: PR #901", "code-owned: none", "review-snapshot: removed"]], ran("no code-owned path: removed", unowned));
+  assert.deepEqual(readdirSync(w702Dir(w)), ["902.json"], "no code-owned path: removed, another PR's is kept");
+
+  // a snapshot entry that is a symlink is unlinked, never followed
+  const outside = join(scratch("w702-b2-outside"), "kept.json");
+  writeFileSync(outside, "outside\n");
+  symlinkSync(outside, join(w702Dir(w), "901.json"));
+  const link = request(w702Facts(901, head), { state: "MERGED" });
+  assert.deepEqual([link.status, w702Lines(link)[1], readFileSync(outside, "utf8"), readdirSync(w702Dir(w))], [1, "review-snapshot: removed", "outside\n", ["902.json"]], ran("a symlinked entry is unlinked, its target kept", link));
+
+  // a symlinked level: nothing is removed through it, and the refusal says so
+  owners("/docs/ @patron\n");
+  const dir = w702Dir(w);
+  const away = scratch("w702-b2-away");
+  writeFileSync(join(away, "901.json"), "beyond the link\n");
+  rmSync(dir, { recursive: true, force: true });
+  symlinkSync(away, dir);
+  const linked = request(w702Facts(901, head), { state: "MERGED" });
+  assert.deepEqual(
+    [linked.status, w702Lines(linked)],
+    [1, ["review-request: PR #901", `review-snapshot: not removed (record directory must be a real directory, not a symbolic link: ${dir})`, 'why: PR #901 is "MERGED", not OPEN; only an open PR is screened']],
+    ran("a symlinked snapshot directory: not removed", linked),
+  );
+  assert.deepEqual(readdirSync(away), ["901.json"], "nothing is removed through the link");
+  owners("/nothing/ @patron\n");
+  const held = request(w702Facts(901, head));
+  assert.deepEqual(
+    [held.status, w702Lines(held)],
+    [1, ["review-request: PR #901", "code-owned: none", `why: PR #901 touches no code-owned path, but its review snapshot could not be removed (record directory must be a real directory, not a symbolic link: ${dir})`, `run: bisellium review-request 901 --repo ${w.repo}`]],
+    ran("no code-owned path, a symlinked directory: the hold", held),
+  );
+});
