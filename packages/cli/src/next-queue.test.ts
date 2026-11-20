@@ -1252,3 +1252,181 @@ test("W-462-b3 behaviour 3: after the Patron's leased push the rung rebinds the 
     ran("a rebind in direct mode writes and requests nothing", dr),
   );
 });
+
+// ---------------------------------------------------------------------------
+// W-702 (studio/briefs/W-702.md): review-request leaves each waiting PR's review snapshot, the facts the console's Inbox
+// reads, at <git common dir>/bisellium/review-requests/<number>.json. Rows b1 (the write) and b2 (retention), on the
+// W-418 world: its opus branch touches code-owned paths (a space, a quote, a non-ASCII byte, a newline, a symlink).
+// ---------------------------------------------------------------------------
+function w702Dir(w: World): string {
+  return join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "review-requests");
+}
+function w702Read(w: World, pr: number): string | undefined {
+  const path = join(w702Dir(w), `${pr}.json`);
+  return existsSync(path) ? readFileSync(path, "utf8") : undefined;
+}
+function w702Run(name: string, status: string, conclusion: string | null, isRequired: unknown = true): Json {
+  return { __typename: "CheckRun", name, status, conclusion, isRequired };
+}
+function w702Status(context: string, state: string, isRequired: unknown = true): Json {
+  return { __typename: "StatusContext", context, state, isRequired };
+}
+function w702Review(login: string, state: string, oid: string | null, at: string): Json {
+  return { state, submittedAt: at, author: { login }, commit: oid === null ? null : { oid } };
+}
+/** The one GraphQL reply review-request reads a PR's facts from: required build passed, optional lint failed, required certify pending. */
+function w702Facts(pr: number, head: string, o: { reviews?: Json[]; contexts?: Json[]; rollup?: null; pull?: Json } = {}): Reply {
+  const contexts = o.contexts ?? [w702Run("build", "COMPLETED", "SUCCESS"), w702Run("lint", "COMPLETED", "FAILURE", false), w702Status("certify", "PENDING")];
+  const rollup = o.rollup === null ? null : { contexts: { pageInfo: { hasNextPage: false }, nodes: contexts } };
+  return {
+    stdout: {
+      data: {
+        repository: {
+          pullRequest: {
+            number: pr,
+            state: "OPEN",
+            baseRefName: "master",
+            headRefOid: head,
+            title: W418_TITLE,
+            url: `https://github.com/${SLUG}/pull/${pr}`,
+            createdAt: "2026-11-20T02:00:00Z",
+            reviews: { pageInfo: { hasPreviousPage: false }, nodes: o.reviews ?? [] },
+            commits: { nodes: [{ commit: { oid: head, statusCheckRollup: rollup } }] },
+            ...o.pull,
+          },
+        },
+      },
+    },
+  };
+}
+/** The W-418 world with PR #901 open on its head and master's owners file naming docs/ for @patron. */
+function w702World(tag: string): { w: World; head: string; request: (facts: Reply, view?: Json) => Out; owners: (text: string) => void } {
+  const w = reviewed(tag, { mainOnMaster: false, github: true }, w418Touch, true);
+  const master = w418Master(w);
+  master({ ".github/CODEOWNERS": "/docs/ @patron\n" });
+  const head = tipOf(w);
+  git(w.origin, ["update-ref", "refs/pull/901/head", head]);
+  const request = (facts: Reply, view: Json = {}): Out => {
+    scenario(w, { view: { replies: [{ stdout: { number: 901, state: "OPEN", baseRefName: "master", headRefOid: head, ...view } }, { stdout: { title: W418_TITLE } }] }, edit: { stdout: "" }, queue: facts });
+    return cli(w, ["review-request", "901"], w.repo);
+  };
+  return { w, head, request, owners: (text) => master({ ".github/CODEOWNERS": text }) };
+}
+const w702Lines = (o: Out): string[] => o.out.split("\n").filter((l) => l !== "");
+
+test("W-702-b1 behaviour 1: review-request writes the waiting PR's review snapshot whole, or holds and writes none", { timeout: 3_600_000 }, () => {
+  const { w, head, request, owners } = w702World("w702-b1");
+  const OLD = "1".repeat(40);
+  const AT = (m: number): string => `2026-11-20T0${m}:00:00Z`;
+  const resume = `run: bisellium review-request 901 --repo ${w.repo}`;
+  const snap = (): Json | undefined => (w702Read(w, 901) === undefined ? undefined : (JSON.parse(w702Read(w, 901)!) as Json));
+
+  // a PR waiting on its code owner: every fact, the required checks only, one GraphQL read
+  const before = Date.now();
+  const o = request(w702Facts(901, head));
+  const after = Date.now();
+  const paths = w702Lines(o).flatMap((l) => (l.startsWith("code-owned: ") ? [l.slice("code-owned: ".length)] : []));
+  assert.deepEqual([o.status, w702Lines(o).at(-1)], [0, "review-snapshot: pending"], ran("the snapshot is written: pending", o));
+  const s = snap();
+  const observed = Date.parse(String(s?.["observedAt"]));
+  assert.ok(observed >= before && observed <= after, `observedAt ${String(s?.["observedAt"])} lies in the run, ${new Date(before).toISOString()} to ${new Date(after).toISOString()}`);
+  assert.deepEqual(
+    s,
+    {
+      schema: "bisellium.review-request/1",
+      number: 901,
+      title: W418_TITLE,
+      url: `https://github.com/${SLUG}/pull/901`,
+      reason: `Changes ${paths.length} code-owned paths owned by @patron`,
+      protectedPaths: paths,
+      checks: [
+        { name: "build", status: "passed" },
+        { name: "certify", status: "pending" },
+      ],
+      openedAt: "2026-11-20T02:00:00Z",
+      observedAt: s?.["observedAt"],
+      head,
+      forge: "github",
+      state: "pending",
+    },
+    "the snapshot holds every fact of the PR and its required checks only",
+  );
+  assert.deepEqual([paths.includes("docs/new line.md"), paths.includes(`docs/a b'"é.md`), paths.includes("docs/link")], [true, true, true], "a newline is a space; a quote, a space, a non-ASCII byte and a symlink are kept");
+  const reads = ghCalls(w).filter((a) => a[0] === "api" && a[1] === "graphql");
+  const slash = SLUG.indexOf("/");
+  assert.deepEqual(
+    reads.map((a) => a.filter((x, i) => a[i - 1] === "-F")),
+    [[`owner=${SLUG.slice(0, slash)}`, `name=${SLUG.slice(slash + 1)}`, "number=901"]],
+    "one GraphQL read of this PR",
+  );
+  assert.deepEqual(readdirSync(w702Dir(w)), ["901.json"], "one file, nothing at a temporary name");
+  const none = request(w702Facts(901, head, { rollup: null }));
+  assert.deepEqual([none.status, w702Lines(none).at(-1), snap()?.["checks"]], [0, "review-snapshot: pending", []], ran("no check reported yet: pending, no checks", none));
+
+  // the state: approval on the head, then approval on an earlier head, then a failed required check, else pending
+  const failing = [w702Run("build", "COMPLETED", "FAILURE"), w702Status("certify", "SUCCESS")];
+  const state = (facts: Reply): unknown[] => {
+    const r = request(facts);
+    return [r.status, w702Lines(r).at(-1), snap()?.["state"], snap()?.["approvalHead"]];
+  };
+  assert.deepEqual(state(w702Facts(901, head, { contexts: failing })), [0, "review-snapshot: failed", "failed", undefined], "a failed required check: failed");
+  assert.deepEqual(state(w702Facts(901, head, { contexts: failing, reviews: [w702Review("patron", "APPROVED", head, AT(3))] })), [0, "review-snapshot: approved", "approved", head], "the owner's approval on the head: approved, whatever the checks");
+  assert.deepEqual(state(w702Facts(901, head, { contexts: failing, reviews: [w702Review("Patron", "APPROVED", OLD, AT(3))] })), [0, "review-snapshot: stale", "stale", OLD], "the owner's approval on an earlier head: stale");
+  assert.deepEqual(
+    state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3)), w702Review("patron", "CHANGES_REQUESTED", head, AT(4))] })),
+    [0, "review-snapshot: pending", "pending", undefined],
+    "changes requested after the approval: pending",
+  );
+  assert.deepEqual(
+    state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3)), w702Review("patron", "COMMENTED", head, AT(4)), w702Review("patron", "PENDING", null, AT(5))] })),
+    [0, "review-snapshot: approved", "approved", head],
+    "a comment and a pending review are no opinion",
+  );
+  assert.deepEqual(state(w702Facts(901, head, { reviews: [w702Review("someone", "APPROVED", head, AT(3))] })), [0, "review-snapshot: pending", "pending", undefined], "a reviewer who owns nothing approves nothing");
+  owners("/docs/ @patron @writer\n");
+  assert.deepEqual(state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3))] })), [0, "review-snapshot: pending", "pending", undefined], "one of two owners approving: pending");
+  assert.deepEqual(state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3)), w702Review("writer", "APPROVED", head, AT(4))] })), [0, "review-snapshot: approved", "approved", head], "both owners: approved");
+  owners("/docs/ @patron @org/leads\n");
+  assert.deepEqual(state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3))] })), [0, "review-snapshot: pending", "pending", undefined], "a team owner's approval is not read: pending");
+  owners("/docs/ @patron\n");
+
+  // fail closed: a fact out of its domain holds, names the resume, and leaves the last snapshot byte for byte
+  assert.equal(request(w702Facts(901, head)).status, 0, "a good snapshot first");
+  const kept = w702Read(w, 901);
+  const held = (label: string, facts: Reply, why: string): void => {
+    const r = request(facts);
+    assert.deepEqual([r.status, w702Lines(r).slice(-2)], [1, [`why: PR #901's review facts could not be read (${why})`, resume]], ran(label, r));
+    assert.deepEqual([w702Read(w, 901) === kept, readdirSync(w702Dir(w))], [true, ["901.json"]], `${label}: the last snapshot is kept, nothing else is left`);
+  };
+  const page = (oid: string, contexts: Json): Json => ({ commits: { nodes: [{ commit: { oid, statusCheckRollup: { contexts } } }] } });
+  held("a failing read", { exit: 1, stderr: "HTTP 502: Bad Gateway\n" }, "gh api graphql exited 1: HTTP 502: Bad Gateway");
+  held("a non-JSON read", { stdout: "not json" }, "gh api graphql returned non-JSON output");
+  held("no pull request", { stdout: { data: { repository: { pullRequest: null } } } }, "gh api graphql returned no data.repository.pullRequest");
+  held("another PR", w702Facts(901, head, { pull: { number: 902 } }), "gh api graphql returned PR 902, not #901");
+  held("a closed PR", w702Facts(901, head, { pull: { state: "CLOSED" } }), 'PR #901 is "CLOSED", not OPEN');
+  held("another base", w702Facts(901, head, { pull: { baseRefName: "develop" } }), "PR #901's base is not master");
+  held("a moved head", w702Facts(901, head, { pull: { headRefOid: OLD } }), `PR #901's head moved from ${head.slice(0, 12)} while its facts were read; rerun`);
+  held("another host's URL", w702Facts(901, head, { pull: { url: `https://evil.example/${SLUG}/pull/901` } }), `PR #901's URL is not https://github.com/${SLUG}/pull/901`);
+  held("a title of the wrong type", w702Facts(901, head, { pull: { title: 7 } }), "PR #901 has no string title");
+  held("older reviews unread", w702Facts(901, head, { pull: { reviews: { pageInfo: { hasPreviousPage: true }, nodes: [] } } }), "PR #901's reviews are not one complete page of at most 100");
+  held("an owner's review with no commit", w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", null, AT(3))] }), "PR #901 has a review by patron with no state, commit or time");
+  held("a last commit that is not the head", w702Facts(901, head, { pull: page(OLD, { pageInfo: { hasNextPage: false }, nodes: [] }) }), `PR #901's last commit is not its head ${head.slice(0, 12)}`);
+  held("more checks unread", w702Facts(901, head, { pull: page(head, { pageInfo: { hasNextPage: true }, nodes: [] }) }), "PR #901's checks are not one complete page of at most 100");
+  held("a check of another kind", w702Facts(901, head, { contexts: [{ __typename: "Annotation", isRequired: true }] }), "PR #901 has a check that is neither a check run nor a status with a required flag");
+  held("a required flag of the wrong type", w702Facts(901, head, { contexts: [w702Run("build", "COMPLETED", "SUCCESS", "yes")] }), "PR #901 has a check that is neither a check run nor a status with a required flag");
+  held("an unknown conclusion", w702Facts(901, head, { contexts: [w702Run("build", "COMPLETED", "WEIRD")] }), "PR #901 has a check with no name or an unknown status");
+  held("an opening time out of grammar", w702Facts(901, head, { pull: { createdAt: "yesterday" } }), "PR #901's facts make no snapshot (openedAt is not an ISO instant in UTC)");
+
+  // the write: a symlinked snapshot directory holds, and nothing lands through it
+  const dir = w702Dir(w);
+  const away = scratch("w702-b1-away");
+  rmSync(dir, { recursive: true, force: true });
+  symlinkSync(away, dir);
+  const linked = request(w702Facts(901, head));
+  assert.deepEqual(
+    [linked.status, w702Lines(linked).slice(-2)],
+    [1, [`why: PR #901's review snapshot could not be written (record directory must be a real directory, not a symbolic link: ${dir})`, resume]],
+    ran("a symlinked snapshot directory holds", linked),
+  );
+  assert.deepEqual(readdirSync(away), [], "nothing is written through the link");
+});
