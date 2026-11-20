@@ -9,9 +9,9 @@
  */
 import { resolve } from "node:path";
 import { parseFlags } from "@bisellium/commands/writes.js";
-import { clean, git, quoted, repoSlug, sh } from "./integrate.js";
+import { clean, git, quoted, repoSlug } from "./integrate.js";
 import { PR_NUMBER, reviewNotice } from "./review-notice.js";
-import { dropReviewSnapshot, readReviewFacts, writeReviewSnapshot } from "./review-snapshot.js";
+import { dropReviewSnapshot, ghUtf8, readReviewFacts, writeReviewSnapshot } from "./review-snapshot.js";
 
 export const REVIEW_REQUEST_USAGE = "usage: bisellium review-request <pr> [--repo <dir>]";
 const BASE = "refs/remotes/origin/master";
@@ -44,8 +44,9 @@ export function runReviewRequest(argv: string[]): { exitCode: number } {
   };
   const slug = repoSlug(repo);
   if (!slug.ok) return refuse(slug.reason);
-  const v = sh("gh", ["pr", "view", String(pr), "-R", slug.slug, "--json", "number,state,baseRefName,headRefOid"], repo, 1_048_576);
+  const v = ghUtf8(["pr", "view", String(pr), "-R", slug.slug, "--json", "number,state,baseRefName,headRefOid"], repo);
   if (v.error !== undefined || v.status !== 0) return refuse(`gh pr view failed (${clean(v.error?.message ?? v.stderr.trim().split("\n")[0] ?? "") || `exit ${v.status}`})`);
+  if (v.malformed === true) return refuse("gh pr view returned output that is not valid UTF-8");
   let view: Record<string, unknown>;
   try {
     const parsedView = JSON.parse(v.stdout) as unknown;

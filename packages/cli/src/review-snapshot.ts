@@ -11,11 +11,12 @@
  * temporary name beside it and renamed over the old one, in a directory the shared containment helper makes or proves.
  * Node built-ins, the schema and the containment helper only, besides the spawn helper review-request already uses.
  */
+import { spawnSync } from "node:child_process";
 import { lstatSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ensureRealDirectory, existingRealDirectory } from "@bisellium/commands/ids.js";
 import { instant, REVIEW_REQUEST_LEVELS, REVIEW_REQUEST_MAX_BYTES, type ReviewRequest, reviewRequestFile, reviewRequestShape, reviewRequestState } from "@bisellium/schema";
-import { clean, sh } from "./integrate.js";
+import { clean, type Run } from "./integrate.js";
 import { commonDir, type Screen } from "./review-notice.js";
 
 /** The one read of a PR's review facts: GitHub's GraphQL API, through the `gh` login review-request already uses. */
@@ -26,6 +27,21 @@ export const REVIEW_FACTS_QUERY =
   "... on CheckRun{name status conclusion isRequired(pullRequestNumber:$number)} ... on StatusContext{context state isRequired(pullRequestNumber:$number)}}}}}}}}}}";
 
 const GH_MAX_BYTES = 1_048_576;
+const UTF8 = new TextDecoder("utf-8", { fatal: true });
+
+/** W-702 fix f1: a `gh` read whose stdout is decoded once, strictly, so bytes that are not UTF-8 are `malformed` (stdout
+ *  empty) and never become a replacement character that passes `JSON.parse` (the class: every reply this write and its
+ *  retention parse goes through here, not each site on its own). */
+export function ghUtf8(args: string[], cwd: string, maxBuffer = GH_MAX_BYTES): Run & { malformed?: true } {
+  const r = spawnSync("gh", args, { cwd, encoding: "buffer", timeout: 120_000, maxBuffer });
+  const stderr = (r.stderr ?? Buffer.alloc(0)).toString("utf8");
+  const error = r.error === undefined ? {} : { error: r.error };
+  try {
+    return { status: r.status, stdout: UTF8.decode(r.stdout ?? Buffer.alloc(0)), stderr, ...error };
+  } catch {
+    return { status: r.status, stdout: "", stderr, malformed: true, ...error };
+  }
+}
 /** An owner's opinions, as land's owner review reads them (integrate.ts readOwnerReview): a comment is none. */
 const OPINIONS = new Set(["APPROVED", "CHANGES_REQUESTED", "DISMISSED"]);
 const RUN_PENDING = new Set(["QUEUED", "IN_PROGRESS", "WAITING", "PENDING", "REQUESTED"]);
@@ -54,9 +70,10 @@ export interface FactsInput {
 /** W-702: PR `pr`'s review facts as a snapshot, from one GraphQL read, or why not. Fails closed on any fact out of its domain. */
 export function readReviewFacts(o: FactsInput): { request: ReviewRequest } | { error: string } {
   const slash = o.slug.indexOf("/");
-  const r = sh("gh", ["api", "graphql", "-f", `query=${REVIEW_FACTS_QUERY}`, "-F", `owner=${o.slug.slice(0, slash)}`, "-F", `name=${o.slug.slice(slash + 1)}`, "-F", `number=${o.pr}`], o.cwd, GH_MAX_BYTES);
+  const r = ghUtf8(["api", "graphql", "-f", `query=${REVIEW_FACTS_QUERY}`, "-F", `owner=${o.slug.slice(0, slash)}`, "-F", `name=${o.slug.slice(slash + 1)}`, "-F", `number=${o.pr}`], o.cwd);
   if (r.error !== undefined) return { error: `gh api graphql failed: ${clean(r.error.message)}` };
   if (r.status !== 0) return { error: `gh api graphql exited ${r.status}: ${clean(r.stderr.trim().split("\n")[0] ?? "")}` };
+  if (r.malformed === true) return { error: "gh api graphql returned output that is not valid UTF-8" };
   let reply: unknown;
   try {
     reply = JSON.parse(r.stdout);

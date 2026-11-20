@@ -134,10 +134,11 @@ export function noticeText(pr: number, title: string, paths: readonly string[]):
   return strip(`PR #${pr} needs your review: ${strip(title).trim().slice(0, 120)} (code-owned: ${paths.slice(0, SHOWN).join(", ")}${more})`).slice(0, NOTICE_LINE);
 }
 
-/** The absolute Git common directory of the checkout at `cwd`. */
+/** The absolute Git common directory of the checkout at `cwd`: git's own line less its one newline, so a path that ends
+ *  in a space is kept (W-702 fix f1). */
 export function commonDir(cwd: string, timeout?: number): { path: string } | { error: string } {
   const r = run("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd, timeout);
-  const dir = r.stdout.trim();
+  const dir = r.stdout.replace(/\n$/, "");
   if (r.error !== undefined || r.status !== 0 || dir === "" || !isAbsolute(dir)) return { error: failed(r) };
   return { path: dir };
 }
