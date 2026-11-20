@@ -29,7 +29,7 @@ import {
 } from "./opus-model.js";
 
 export const VERDICT_USAGE =
-  "usage: bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build|handoff] [--model <id>] [--session <id> [--session-reason <text>]] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]";
+  "usage: bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build|handoff] [--model <id>] [--session <id> [--session-reason <text>]] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--check] [--studio <dir>] [--now <iso>]";
 
 export interface VerdictOptions extends WriteOptions {
   stdin?: Buffer;
@@ -973,6 +973,7 @@ export function ownedPathProblems(brief: string, root: string): string[] {
 /** Records a review transcript under the officina without changing any gate. */
 export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResult {
   const parsed = parseFlags(args, {
+    boolean: ["--check"],
     valued: ["--round", "--sella", "--outcome", "--phase", "--model", "--session", "--session-reason", "--from", "--dispatch-prompt", "--ui-input", "--studio", "--now"],
   });
   if ("error" in parsed) {
@@ -1412,6 +1413,20 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       console.error(`${opusId}: not a spec log next can read: ${read.error}`);
       return { exitCode: 2 };
     }
+  }
+
+  // W-699 (D-245 F4a): --check stops here, after every validator the write runs: the ticket is read, never claimed, nothing is written
+  const rel = relative(root, target).split(sep).join("/");
+  if (parsed.flags.has("--check")) {
+    if (phase !== "handoff") {
+      const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "verdict", action: phase === "spec" ? "verdict-spec" : "verdict-build", round });
+      if ("refusal" in ticket) {
+        console.error(ticket.refusal);
+        return { exitCode: 2 };
+      }
+    }
+    console.log(`${opusId}: verdict check passed: ${phase} round ${round} -> ${rel}; nothing written, no ticket claimed`);
+    return { exitCode: 0 };
   }
 
   // W-233: spec and build verdicts need the step ticket of their round (handoff verdicts stay unticketed); its line is the header block's last

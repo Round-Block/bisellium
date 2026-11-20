@@ -268,6 +268,8 @@ const LADDER = new Set(["branch", "ready", "done", "merge", "review"]);
  *  review rung records a build `verdict` and a `review`). */
 const PERFORM_LADDER = new Set(["branch", "ready", "done", "merge", "spec", "review"]);
 
+/** W-699: the verdict flags that take a value (`VERDICT_USAGE`), so a `--check` after one is its value, not the flag. */
+const VERDICT_VALUED = new Set(["--round", "--sella", "--outcome", "--phase", "--model", "--session", "--session-reason", "--from", "--dispatch-prompt", "--ui-input", "--studio", "--now"]);
 /** The hand ladder record write a CLI argv makes, or undefined: the verbs in `LADDER`; `verdict`
  *  with `--phase spec` or `build`, or with no `--phase` (the verb's default is build), so only a
  *  handoff verdict runs; `next --perform --chain` (its review rung records a verdict and a review);
@@ -287,6 +289,8 @@ function ladderStep(argv: string[]): string | undefined {
   const [verb] = argv;
   if (verb !== undefined && LADDER.has(verb)) return verb;
   if (verb === "verdict") {
+    // W-699 (D-245 F4a): `verdict --check` writes nothing: a bare `--check` argument, not the value of a valued flag before it
+    if (argv.some((a, i) => a === "--check" && !VERDICT_VALUED.has(argv[i - 1] ?? ""))) return undefined;
     const phase = value("--phase") ?? "build";
     return phase === "spec" || phase === "build" ? `verdict --phase ${phase}` : undefined;
   }
