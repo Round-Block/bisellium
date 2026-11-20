@@ -651,6 +651,7 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
     const first = views[0]?.stdout as Json | undefined;
     scenario(w, { view: { replies: views }, edit, queue: w702Facts(Number(first?.["number"] ?? 0), String(first?.["headRefOid"] ?? "")) });
     try {
+      rmSync(w702Dir(w), { recursive: true, force: true });
       rmSync(notice, { force: true });
     } catch {
       /* the notice directory is a file in the row that blocks it */
