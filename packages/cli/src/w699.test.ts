@@ -5,12 +5,20 @@
  * are next-world's (./next-world.test.ts) and, for b6, a temp officina, under the OS tmp dir.
  */
 import assert from "node:assert/strict";
-import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
+import { Readable } from "node:stream";
+import { after, test } from "node:test";
 import { checkStudio } from "./check.js";
 import { ladderWrite } from "./guard.js";
+import { runHookEvent } from "./hooks.js";
 import { BRIEF_REL, NO_FINDINGS, OPUS, T, briefText, direct, expectStep, put, ran, review, reviewerOrder, sign, specLog, specNext, srWorld, ticketed, world, type World } from "./next-world.test.js";
+
+const dirs: string[] = [];
+after(() => {
+  for (const d of dirs) rmSync(d, { recursive: true, force: true });
+});
 
 /** A fixture brief whose Files owned bullets are `owned`, every other section as briefText's. */
 const withOwned = (owned: string[]): string => briefText(1).replace(/## Files owned\n\n(?:- .*\n)+/, `## Files owned\n\n${owned.map((o) => `- ${o}`).join("\n")}\n`);
@@ -193,4 +201,46 @@ test("W-699-b3 behaviour 3: verdict --check runs the write's validators, writes 
   assert.equal(ladderWrite(`${cmd} --check`, ctx), undefined, "the guard lets the main thread run verdict --check");
   assert.equal(ladderWrite(cmd, ctx), "verdict --phase spec", "the write itself stays a ladder write");
   assert.equal(ladderWrite(cmd.replace("--outcome passed", "--outcome --check"), ctx), "verdict --phase spec", "a --check that is a flag's value is no check");
+});
+
+/** A home whose fresh status-line file reads `tokens` context tokens, `agoMs` old. */
+function home(tokens: number, agoMs = 0): string {
+  const h = mkdtempSync(join(tmpdir(), "w699-"));
+  dirs.push(h);
+  const usage = join(h, ".bisellium-evidence", "usage");
+  mkdirSync(usage, { recursive: true });
+  writeFileSync(join(usage, "claude-latest.json"), JSON.stringify({ at: new Date(Date.now() - agoMs).toISOString(), rl: { seven_day: { used_percentage: 19 } }, ctx: { current_usage: { input_tokens: tokens, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }));
+  return h;
+}
+/** What the guard hands the model at a main-thread prompt, HOME set to `h`. */
+async function promptContext(h: string): Promise<string> {
+  const out: string[] = [];
+  const { log, error } = console;
+  const saved = process.env["HOME"];
+  console.log = (...a: unknown[]) => void out.push(a.join(" "));
+  console.error = () => undefined;
+  process.env["HOME"] = h;
+  try {
+    const input = { hook_event_name: "UserPromptSubmit", session_id: "s1", prompt: "next" };
+    const r = await runHookEvent(["guard", "--studio", "studio"], { stdin: Readable.from([JSON.stringify(input)]), stdinTimeoutMs: 1000 });
+    assert.equal(r.exitCode, 0, "a prompt is never blocked");
+  } finally {
+    console.log = log;
+    console.error = error;
+    if (saved === undefined) delete process.env["HOME"];
+    else process.env["HOME"] = saved;
+  }
+  const o = out.join("\n");
+  return o === "" ? "" : ((JSON.parse(o) as { hookSpecificOutput?: { additionalContext?: string } }).hookSpecificOutput?.additionalContext ?? "");
+}
+
+test("W-699-b4 behaviour 4: at 200000 context tokens on a fresh status line the prompt hook names the handoff first, at every prompt", async () => {
+  const at = await promptContext(home(200_000));
+  assert.match(at, /^CONTEXT HANDOFF NOW \(D-245\): context 200000 tokens is past 200000: let running tasks finish, refresh the session handoff, and start no new work \(W-430\)\. Dispatch nothing new; `next` holds every dispatch order\. Usage now: /, "at 200k the handoff opens the context"); // one-sided: the text after the prefix is the reading, which the next assertion pins by its limit
+  assert.match(at, /context 200k of 200k/, "the reading names the 200k limit");
+  const below = await promptContext(home(199_999));
+  assert.equal(below.startsWith("Usage now: "), true, `below 200k only the reading: ${below}`);
+  assert.doesNotMatch(below, /HANDOFF/, "below 200k no handoff is named");
+  const stale = await promptContext(home(250_000, 31 * 60_000));
+  assert.doesNotMatch(stale, /HANDOFF/, "a status line 31 minutes old names no handoff");
 });
