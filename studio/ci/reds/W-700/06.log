@@ -1,0 +1,49 @@
+# behaviour: 6
+# command: node --test-reporter=tap --test-name-pattern=^W-700-b6\s --import tsx packages/cli/src/w700.test.ts
+# exit: 1
+# at: 2026-11-20T10:41:50.444Z
+# sella: builder.W-700
+# tree: tree:ef7f0594f399e316bc25747080b6561fb0ff7435
+# ticket: {"opus":"W-700","step":"reds","action":"red","round":6,"actor":"builder","studio":".worktrees/W-700/studio","head":"cfc3f87847bdc01039bc383ae5398dd4d50033b9","brief":"df50fdff63fc91064bcfdf892c57756a6163d3eb","at":"2026-11-20T10:41:47.260Z"}
+
+TAP version 13
+# Subtest: W-700-b6 the real officina has the switch on and the lex owns every lesson prefix
+not ok 1 - W-700-b6 the real officina has the switch on and the lex owns every lesson prefix
+  ---
+  duration_ms: 43.863164
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:1:949'
+  failureType: 'testCodeFailure'
+  error: |-
+    the real officina has the switch on and the lex owns every lesson prefix: studio/bisellium.yml sets defaults.lesson_fix_required_from to 2026-11-20
+    + actual - expected
+    
+    + undefined
+    - '2026-11-20'
+    
+    + actual - expected
+    
+    + undefined
+    - '2026-11-20'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '2026-11-20'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:37:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 62.57363
