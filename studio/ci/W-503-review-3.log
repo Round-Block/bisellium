@@ -1,0 +1,27 @@
+# opus: W-503
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: claude-opus-5-5
+# session: f9c2225c-a08a-4f91-8122-1be3b1f91343
+# session_reason: fresh: claude -p sessions never persist in this sandbox; round 2 session f5050f18 cannot be resumed, and r3 session d09a61f7 was reissued fresh for the Earlier findings shape
+# outcome: passed
+# at: 2026-11-20T04:16:16.929Z
+# tree: tree:740ac136328cb46f3a4026c90b25bf91a16f380a
+# ui_input: ci/W-503-spec-26.log
+# design_digest: sha256:43b185e033984e98b2f4917f15c62a46bf2008ad4c494a58dbae2e1733ef10d4
+# ticket: {"opus":"W-503","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-503/studio","head":"9ec91769797d569596279754d230f9809b6bd5e8","brief":"fcb72bb75de8a282f2b11d25e018c969fb2e09f0","at":"2026-11-20T04:16:11.977Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-503-review-2.log #1: closed — revision 24 of the brief takes `w503.test.ts` out of `test:policy` on purpose and keeps W-503-b1–b3 in `test:serve` (brief:33, brief:44, brief:115). `apps/web/package.json:12` matches: `test:policy` runs `test/w503-r12.test.ts` and not `w503.test.ts`, and `.github/workflows/ci.yml:179,185,187` runs policy, then the Chromium install, then `test:serve`. The served titles that the wrapper's `W-503-b<n>\s` grep selects are at `apps/web/tests-serve/w503.spec.ts:14,29,132`. The cwd defect is fixed: `apps/web/test/w503.test.ts:11-12,19` builds the config path and the repository root from `import.meta.url` and spawns at that root. The red is `W-503-build/r12/red-webcwd-b1.log:3,11,26`: exit 1, it fails with `ERR_ASSERTION` on the `apps/web/apps/web/playwright.serve.config.ts does not exist` path. The greens are `green-root-b123.log:23-24`, `green-webcwd-b123.log:23-24` and `green-webcwd-b1.log:11-12`: pass 3/3/1, fail 0, exit 0. The light gates are `ci/W-503-light-740ac136.log:3,1540-1561,1572-1581`: exit 0, b1–b3 and b5 ok.
+
+## UI input disposition
+This round changes only the Node wrapper `apps/web/test/w503.test.ts` and the brief's test wiring. It changes no rendered UI, so I made no new screen judgment. The ui-lead input (ci/W-503-spec-26.log, passed) and the round-1 screen judgment still stand. No image files were attached to this turn. Since this round changes no rendered UI, the verdict does not depend on them.
+
+## Verdict
+3a57ed19fe1cea4a45a838baff57e8ea281f010e (`git rev-parse` could not run: the Bash sandbox failed to start, EPERM on its socket. I read the head from disk instead: `.git/worktrees/W-5032/HEAD` points to `refs/heads/opus/W-503`, and `.git/refs/heads/opus/W-503` holds `3a57ed19…`, the reviewed head.)
+Round 2's blocking finding is closed. The brief amendment covers the wiring, and the fix inside Files owned (brief:33) makes the wrapper independent of the cwd. Each step has a recorded red and green, and this delta brings no new defect. One gap in what I checked: the packet path `packets/r3/W-503.diff` does not exist on disk. So I checked the files owned through the changed file and the brief, not the packet diff. I checked the earlier verdict's claims myself, and they hold.
+VERDICT: PASS
