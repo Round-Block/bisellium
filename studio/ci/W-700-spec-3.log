@@ -1,0 +1,32 @@
+# opus: W-700
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-20T03:46:25.038Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# brief: briefs/W-700.md blob:df50fdff63fc91064bcfdf892c57756a6163d3eb
+# ticket: {"opus":"W-700","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"b83f9e613d424be5a4b2822d0ba1d81c77f70a95","brief":"df50fdff63fc91064bcfdf892c57756a6163d3eb","at":"2026-11-20T03:46:24.031Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-700-spec/promise-ledger-r2.md
+Gate log: /home/edckt/.bisellium-evidence/W-700-spec/r4-run/gate.log
+
+## Findings
+
+1. advisory — revision 2 answers spec review round 2's one finding (S1, spec×input-without-named-rejector): draftRetro checks every reviewFindings[].where in its validate-first loop, before createNextRecord, and refuses the whole draft, writing nothing, when it is absent, not a string, or blank after control-normalization and trim; the Input domain row is the review's replacement text, its Rejected by cell opening with `draftRetro`; every other part of the design is unchanged — check: brief-r2.md Promise where and Input domain; specreview/r2/verdict.md
+2. advisory — the where check is behaviour 4's second half (row W-700-b4, retitled), not a seventh behaviour: admission caps a brief at six behaviours (brief_behaviour_limit) and an exception needs a decision; behaviour 4's genuine red stays the text line on master and g3, and the where assertions (absent, a number, an object, blank, each refused with the officina's files unchanged) fail by assertion under kills k18 (the check removed) and k19 (its blank test removed) — check: brief-r2.md Behaviours 4; r4-run/kills/k18.out; r4-run/kills/k19.out
+3. advisory — each red fails by assertion (ERR_ASSERTION) on master and on the stage before its own at its declared assertion, passes at its own stage, and all six pass at g6 — check: r4-run/reds.out; r4-run/red-b1-master.out .. r4-run/red-b6-g5.out
+4. advisory — all 19 kills, one hunk of one non-test file each, fail their pinned row; the clone is restored clean — check: r4-run/kills/kills.log; scripts/kills-r2.py
+5. advisory — flips unchanged: W-137-b5 (retro-check.test.ts:84) and retro 10h (retro.test.ts:107) are edited in t0; check.test.ts W-089 b1 and b7 fail at g6 and pass with the records commit; the Codex fixture census on brief-r2 names those two edited flips and no unnamed row — check: r4-run/fixture-census.md; r4-run/neighbours/status.out; r4-run/neighbours/standin.out
+6. advisory — 19 neighbouring test files pass whole at g6 (check.test.ts aside, above), safe-helpers.test.ts added for draftRetro's other caller; typecheck, lint and format:check pass there — check: r4-run/neighbours/status.out; r4-run/lintfmt.out
+7. advisory — stated limits, not promises (D-076 E): as revision 1, plus runRetro's JSON reader (unchanged; its refusal is draftRetro's throw) — check: brief-r2.md Limits, stated; promise-ledger-r2.md scoped lines
+8. advisory — master moved to fa12aea6 (studio/ and docs/SESSION-HANDOFF.md only; no owned source file): the prototype stays on acbb1965, and twelve lessons the 11-19 daily retro filed at 2026-11-20T01:40Z with no fix need the records commit's dispositions on the opus branch, stated as a limit — check: brief-r2.md Limits, stated; Files owned records
+9. advisory — code-owned paths the Patron merges, unchanged: studio/bisellium.yml, studio/leges/production.md, docs/ADOPTION.md — check: .github/CODEOWNERS; brief-r2.md Files owned
+10. advisory — the pre-sign gate ran in a fresh clone (base acbb1965, a real npm ci, prototype-r2.mbox applied by git am): 54 rows, all exit 0, 3.7 minutes; check on studio/ there is 0 blocking and typecheck passes — check: r4-run/gate.log; r4-run/presign-direct.out
+11. advisory — admission 0 problems and declared-reds-check 0 problems on brief-r2 — check: scripts/admission-r2.mts; r4-run/declared-reds-check.out
+12. advisory — the repeated class spec×input-without-named-rejector has its census: 40 input read sites the source diff adds are each claimed by an Input domain row whose Rejected by cell opens with its function, with three stated limits (land's STUDIO_DIRS, instant, the git failure) and no gap — check: scripts/class-census.py; r4-run/classloop/class-census.out; brief-r2.md Class census
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 2 (copy: /home/edckt/.bisellium-evidence/W-700-spec/brief-r2.md), prototype series sha256 d6619941 at master acbb1965.
