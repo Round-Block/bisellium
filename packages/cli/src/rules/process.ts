@@ -10,8 +10,9 @@
  */
 import { execSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import { listMd, parseFrontMatter, readFront, STATES } from "@bisellium/adapter-native";
+import { unlandedRecords } from "@bisellium/commands/ci.js";
 import { lessonDisposition } from "@bisellium/commands/lessons.js";
 import { haltRowsProblem, readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { instant } from "@bisellium/schema";
@@ -420,6 +421,14 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     } else {
       add("lesson.recurrent", "advise", "lessons/", `${prefix} — no lesson names what addresses it`);
     }
+  }
+
+  // records.unlanded (advise; `bisellium ci` refuses the same list): a record git does not track never reaches master.
+  if (_opts.repo) {
+    const studioRel = relative(resolve(_opts.repo), resolve(root)).split("\\").join("/");
+    const unlanded = unlandedRecords(_opts.repo, studioRel);
+    if ("error" in unlanded) add("records.unlanded", "advise", "bisellium.yml", `cannot list the officina's untracked records: ${unlanded.error}`);
+    else for (const path of unlanded.paths) add("records.unlanded", "advise", studioRel === "" ? path : path.slice(studioRel.length + 1), `${path} is not tracked by git: land it (bisellium land ${path} ...)`);
   }
 
   if (_opts.repo) {

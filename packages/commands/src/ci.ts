@@ -46,7 +46,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { GATE_TIMEOUT_MS, runWatched, type MergePipeline } from "@bisellium/pipeline";
 import { selectProvider, type AcquiredWorktree, type WorktreeProvider } from "@bisellium/shim";
 import { parseFlags } from "./writes.js";
@@ -113,6 +113,33 @@ export interface RunCiResult {
 
 const USAGE = "usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty] [--offline]";
 const GIT_TIMEOUT_MS = 30_000;
+
+/** W-700: the officina directories whose files are records that reach master by `land`. */
+export const RECORD_DIRS = ["lessons", "decisions", "acta", "ci"] as const;
+/** A spec-phase log rides its opus branch, as the brief does (`branch` carries it), so it is not unlanded. */
+const RIDES_BRANCH = /^ci\/[^/]+-(?:spec-[1-9][0-9]*\.log|ui-prompt-[1-9][0-9]*\.md)$/;
+
+/**
+ * W-700: the files git does not track (and does not ignore) under `<studioRel>/{lessons,decisions,acta,ci}` of the
+ * checkout `repo`, repository-relative and sorted; a spec-phase log is left out. `studioRel` is the officina's path
+ * relative to `repo` ("" when they are one). An officina outside `repo`, or a `repo` outside a git work tree, has nothing
+ * listed. An error when git cannot start or fails inside a work tree, so a caller can fail closed.
+ */
+export function unlandedRecords(repo: string, studioRel: string): { paths: string[] } | { error: string } {
+  const prefix = studioRel === "" ? "" : `${studioRel}/`;
+  if (studioRel === ".." || studioRel.startsWith("../") || isAbsolute(studioRel)) return { paths: [] };
+  const tree = spawnSync("git", ["rev-parse", "--is-inside-work-tree"], { cwd: repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
+  if (tree.error !== undefined) return { error: `git cannot start: ${tree.error.message}` };
+  if (tree.status !== 0 || tree.stdout.trim() !== "true") return { paths: [] };
+  const r = spawnSync("git", ["ls-files", "--others", "--exclude-standard", "-z", "--", ...RECORD_DIRS.map((d) => `${prefix}${d}`)], {
+    cwd: repo,
+    encoding: "utf8",
+    timeout: GIT_TIMEOUT_MS,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  if (r.error !== undefined || r.status !== 0) return { error: `git ls-files failed: ${r.error?.message ?? (r.stderr ?? "").trim().split("\n")[0] ?? `exit ${r.status}`}` };
+  return { paths: r.stdout.split("\0").filter((p) => p !== "" && p.startsWith(prefix) && !RIDES_BRANCH.test(p.slice(prefix.length))).sort() };
+}
 
 /** `git rev-parse --show-toplevel` from `cwd`, or undefined outside a repo. */
 function gitRoot(cwd: string): string | undefined {
@@ -210,6 +237,20 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
         (opts.installDeps ?? defaultInstallDeps)(execRepo);
       } catch (e) {
         console.error(`bisellium ci: dependency install failed for ref "${ref}": ${(e as Error).message}`);
+        return { exitCode: 1 };
+      }
+    }
+    // W-700: records git does not track never reach master; ci refuses them before any step (the current tree only:
+    // a `--ref` checkout is clean by construction). `--allow-dirty` does not waive it.
+    if (worktree === undefined) {
+      const studioRel = toPosixRelative(execRepo, resolve(studioArg ?? join(execRepo, "studio")));
+      const unlanded = unlandedRecords(execRepo, studioRel);
+      if ("error" in unlanded) {
+        console.error(`bisellium ci: records.unlanded: cannot list the officina's untracked records (${unlanded.error})`);
+        return { exitCode: 1 };
+      }
+      if (unlanded.paths.length > 0) {
+        console.error(`bisellium ci: records.unlanded: ${unlanded.paths.length} record(s) git does not track; land them (bisellium land <path>...) before ci runs:\n${unlanded.paths.map((p) => `  ${p}`).join("\n")}`);
         return { exitCode: 1 };
       }
     }
