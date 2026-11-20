@@ -406,3 +406,118 @@ export function instant(v: unknown): Date | undefined {
   }
   return t;
 }
+
+// ---------------------------------------------------------------------------
+// W-702 (D-250): a waiting pull request's review snapshot. The credentialed `review-request` writes one file per PR,
+// `<git common dir>/bisellium/review-requests/<number>.json`, by atomic replacement; the uncredentialed console server
+// only reads them and projects GET /api/inbox's optional `reviewRequests` member. One shape, judged on both sides: a
+// file is written only when `reviewRequestShape` holds it, and read only when it still does.
+// ---------------------------------------------------------------------------
+
+/** One item of `/api/inbox`'s optional `reviewRequests` member, word for word as W-667's brief pins it. */
+export interface ReviewRequest {
+  number: number;
+  title: string;
+  url: string;
+  reason: string;
+  protectedPaths: string[];
+  checks: Array<{ name: string; status: "pending" | "passed" | "failed" }>;
+  openedAt: string;
+  observedAt: string;
+  head: string;
+  approvalHead?: string;
+  forge: "github";
+  state: "pending" | "stale" | "failed" | "approved";
+}
+
+/** The schema tag every snapshot file carries; a file of any other tag is stale at its source and is not read. */
+export const REVIEW_REQUEST_SCHEMA = "bisellium.review-request/1";
+/** The snapshot directory's levels below the Git common directory. */
+export const REVIEW_REQUEST_LEVELS = ["bisellium", "review-requests"] as const;
+/** A snapshot file's name: the PR number (as `review-request` takes it) and `.json`. */
+export const REVIEW_REQUEST_FILE = /^([1-9][0-9]{0,8})\.json$/;
+/** The largest snapshot file written or read, in bytes. */
+export const REVIEW_REQUEST_MAX_BYTES = 65_536;
+/** The most snapshot files one read takes; more is no projection. */
+export const REVIEW_REQUEST_MAX_FILES = 256;
+
+const RR_KEYS = ["number", "title", "url", "reason", "protectedPaths", "checks", "openedAt", "observedAt", "head", "approvalHead", "forge", "state"] as const;
+const RR_OID = /^[0-9a-f]{40}$/;
+const RR_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+const RR_URL = /^https:\/\/github\.com\/[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}\/pull\/([1-9][0-9]{0,8})$/;
+const RR_CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
+const RR_CHECK_STATUS = new Set(["pending", "passed", "failed"]);
+
+/** W-702: the headline state of a review snapshot: `approved` when the code owners' approval is on the head, else `stale`
+ *  when one is on an earlier head, else `failed` when a required check failed, else `pending`. */
+export function reviewRequestState(head: string, approvalHead: string | undefined, checks: readonly { status: string }[]): ReviewRequest["state"] {
+  if (approvalHead === head) return "approved";
+  if (approvalHead !== undefined) return "stale";
+  return checks.some((c) => c.status === "failed") ? "failed" : "pending";
+}
+
+/** W-702: a snapshot file's parsed JSON as a `ReviewRequest`, its keys in the member's order and the schema tag dropped;
+ *  throws naming the first fault: another schema tag, an absent, extra or wrong-typed key, a text with a control
+ *  character, an empty or over-long text, a URL that is not this PR's github.com review page, an instant out of grammar,
+ *  an object id that is not 40 lowercase hex, or a state its own facts do not give. Pure. */
+export function reviewRequestShape(value: unknown): ReviewRequest {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("not an object");
+  const v = value as Record<string, unknown>;
+  if (v["schema"] !== REVIEW_REQUEST_SCHEMA) throw new Error(`schema is not ${REVIEW_REQUEST_SCHEMA}`);
+  const extra = Object.keys(v).filter((k) => k !== "schema" && !(RR_KEYS as readonly string[]).includes(k));
+  if (extra.length > 0) throw new Error(`unknown key ${extra[0]}`);
+  const text = (key: string, max: number, s: unknown = v[key]): string => {
+    if (typeof s !== "string" || s.trim() === "" || s.length > max || RR_CONTROL.test(s)) throw new Error(`${key} is not a text of 1 to ${max} characters without control characters`);
+    return s;
+  };
+  const num = v["number"];
+  if (typeof num !== "number" || !Number.isInteger(num) || num < 1 || num > 999_999_999) throw new Error("number is not a PR number");
+  const url = text("url", 300);
+  if (RR_URL.exec(url)?.[1] !== String(num)) throw new Error("url is not this PR's github.com review page");
+  const paths = v["protectedPaths"];
+  if (!Array.isArray(paths) || paths.length === 0) throw new Error("protectedPaths is not a non-empty array");
+  const protectedPaths = paths.map((p) => text("protectedPaths", 4096, p));
+  if (new Set(protectedPaths).size !== protectedPaths.length) throw new Error("protectedPaths repeats a path");
+  const rawChecks = v["checks"];
+  if (!Array.isArray(rawChecks) || rawChecks.length > 100) throw new Error("checks is not an array of at most 100");
+  const checks = rawChecks.map((c: unknown) => {
+    if (typeof c !== "object" || c === null || Array.isArray(c) || Object.keys(c).length !== 2) throw new Error("a check is not { name, status }");
+    const status = (c as Record<string, unknown>)["status"];
+    if (typeof status !== "string" || !RR_CHECK_STATUS.has(status)) throw new Error("a check's status is not pending, passed or failed");
+    return { name: text("checks", 1024, (c as Record<string, unknown>)["name"]), status: status as "pending" | "passed" | "failed" };
+  });
+  const when = (key: string): string => {
+    const s = v[key];
+    if (typeof s !== "string" || !RR_INSTANT.test(s) || instant(s) === undefined) throw new Error(`${key} is not an ISO instant in UTC`);
+    return s;
+  };
+  const oid = (key: string): string => {
+    const s = v[key];
+    if (typeof s !== "string" || !RR_OID.test(s)) throw new Error(`${key} is not a 40-hex object id`);
+    return s;
+  };
+  const head = oid("head");
+  const approvalHead = v["approvalHead"] === undefined ? undefined : oid("approvalHead");
+  if (v["forge"] !== "github") throw new Error("forge is not github");
+  const state = reviewRequestState(head, approvalHead, checks);
+  if (v["state"] !== state) throw new Error(`state is not ${state}, the state its own facts give`);
+  return {
+    number: num,
+    title: text("title", 1024),
+    url,
+    reason: text("reason", 1024),
+    protectedPaths,
+    checks,
+    openedAt: when("openedAt"),
+    observedAt: when("observedAt"),
+    head,
+    ...(approvalHead === undefined ? {} : { approvalHead }),
+    forge: "github",
+    state,
+  };
+}
+
+/** W-702: the text of a snapshot file: the schema tag, then the request's keys, one JSON line. */
+export function reviewRequestFile(r: ReviewRequest): string {
+  return `${JSON.stringify({ schema: REVIEW_REQUEST_SCHEMA, ...r })}\n`;
+}

@@ -135,7 +135,7 @@ export function noticeText(pr: number, title: string, paths: readonly string[]):
 }
 
 /** The absolute Git common directory of the checkout at `cwd`. */
-function commonDir(cwd: string, timeout?: number): { path: string } | { error: string } {
+export function commonDir(cwd: string, timeout?: number): { path: string } | { error: string } {
   const r = run("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd, timeout);
   const dir = r.stdout.trim();
   if (r.error !== undefined || r.status !== 0 || dir === "" || !isAbsolute(dir)) return { error: failed(r) };
@@ -223,13 +223,14 @@ export interface NoticeInput {
 }
 
 /** W-418: the code-owned paths of PR `pr`'s diff, its notice and its review request, as printed lines. In order: the
- *  screen, the title (read from GitHub), the notice, then the request; the first that fails holds, naming `resume`. */
-export function reviewNotice(o: NoticeInput): { ok: boolean; lines: string[] } {
+ *  screen, the title (read from GitHub), the notice, then the request; the first that fails holds, naming `resume`.
+ *  W-702: a run that passed the screen also returns it, so review-request's snapshot names the same paths and owners. */
+export function reviewNotice(o: NoticeInput): { ok: boolean; lines: string[]; screen?: Screen } {
   const lines: string[] = [];
   const hold = (why: string): { ok: boolean; lines: string[] } => ({ ok: false, lines: [...lines, `why: ${why}`, `run: ${o.resume}`] });
   const screen = screenDiff(o.cwd, o.base, o.head);
   if ("error" in screen) return hold(`PR #${o.pr}'s code-owned paths could not be screened (${screen.error})`);
-  if (screen.paths.length === 0) return { ok: true, lines: [`code-owned: none${screen.file === undefined ? ` (no .github/CODEOWNERS, CODEOWNERS or docs/CODEOWNERS at ${o.base})` : ""}`] };
+  if (screen.paths.length === 0) return { ok: true, lines: [`code-owned: none${screen.file === undefined ? ` (no .github/CODEOWNERS, CODEOWNERS or docs/CODEOWNERS at ${o.base})` : ""}`], screen };
   lines.push(...screen.paths.map((p) => `code-owned: ${strip(p)}`));
   const title = readTitle(o.cwd, o.slug, o.pr);
   if (typeof title !== "string") return hold(`PR #${o.pr} touches code-owned paths, but its title could not be read (${title.error})`);
@@ -243,5 +244,5 @@ export function reviewNotice(o: NoticeInput): { ok: boolean; lines: string[] } {
     const r = run("gh", ["pr", "edit", String(o.pr), "-R", o.slug, "--add-reviewer", requested.join(",")], o.cwd);
     if (r.error !== undefined || r.status !== 0) return hold(`PR #${o.pr} touches code-owned paths, but the review request failed (${failed(r)})`);
   }
-  return { ok: true, lines: [...lines, `review-requested: ${requested.length > 0 ? requested.join(", ") : "none"}`, ...skipped] };
+  return { ok: true, lines: [...lines, `review-requested: ${requested.length > 0 ? requested.join(", ") : "none"}`, ...skipped], screen };
 }

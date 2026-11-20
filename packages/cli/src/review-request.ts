@@ -3,12 +3,14 @@
  * code-owned screen, notice and review request (review-notice.ts) for any open PR into master, one opened by hand (a
  * records PR, `gh pr create`) included. It reads the PR from GitHub, fetches master and the PR's head
  * (`refs/pull/<pr>/head`) from origin, and screens `origin/master...<head>`. Exit 0 when every step ran, 1 at the
- * first refusal or hold, 2 on a usage error.
+ * first refusal or hold, 2 on a usage error. W-702: a PR whose head touches a code-owned path then gets its review
+ * snapshot (review-snapshot.ts), the facts the console's Inbox shows; a snapshot that cannot be read or written holds.
  */
 import { resolve } from "node:path";
 import { parseFlags } from "@bisellium/commands/writes.js";
 import { clean, git, quoted, repoSlug, sh } from "./integrate.js";
 import { PR_NUMBER, reviewNotice } from "./review-notice.js";
+import { readReviewFacts, writeReviewSnapshot } from "./review-snapshot.js";
 
 export const REVIEW_REQUEST_USAGE = "usage: bisellium review-request <pr> [--repo <dir>]";
 const BASE = "refs/remotes/origin/master";
@@ -57,6 +59,14 @@ export function runReviewRequest(argv: string[]): { exitCode: number } {
   if (fetched.error !== undefined || fetched.status !== 0) return refuse(`git fetch origin refs/pull/${pr}/head failed (${clean(fetched.stderr.trim().split("\n")[0] ?? "") || `exit ${fetched.status}`})`);
   const at = git(repo, ["rev-parse", "-q", "--verify", "FETCH_HEAD^{commit}"]).stdout.trim();
   if (at !== head) return refuse(`PR #${pr}'s head on origin is ${at.slice(0, 12) || "unreadable"}, not ${head.slice(0, 12)} as GitHub reported; rerun`);
-  const r = reviewNotice({ cwd: repo, slug: slug.slug, pr, base: BASE, head, resume: `bisellium review-request ${pr} --repo ${quoted(repo)}` });
-  return say(r.ok ? 0 : 1, r.lines);
+  const resume = `bisellium review-request ${pr} --repo ${quoted(repo)}`;
+  const r = reviewNotice({ cwd: repo, slug: slug.slug, pr, base: BASE, head, resume });
+  if (!r.ok || r.screen === undefined || r.screen.paths.length === 0) return say(r.ok ? 0 : 1, r.lines);
+  // W-702: the snapshot of the PR's review facts, read once and written whole, or a hold that leaves the old one as it was
+  const hold = (why: string): { exitCode: number } => say(1, [...r.lines, `why: ${why}`, `run: ${resume}`]);
+  const facts = readReviewFacts({ cwd: repo, slug: slug.slug, pr, head, screen: r.screen, now: new Date() });
+  if ("error" in facts) return hold(`PR #${pr}'s review facts could not be read (${facts.error})`);
+  const written = writeReviewSnapshot(repo, facts.request);
+  if (written !== undefined) return hold(`PR #${pr}'s review snapshot could not be written (${written})`);
+  return say(0, [...r.lines, `review-snapshot: ${facts.request.state}`]);
 }

@@ -647,7 +647,9 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   const title: Reply = { stdout: { title: W418_TITLE } };
   const notice = w418Notice(w, 901);
   const request = (args: string[], views: Reply[], edit: Reply = { stdout: "" }, env: Record<string, string> = {}): Out => {
-    scenario(w, { view: { replies: views }, edit });
+    // W-702: the PR's review facts, for the PR and head the first view names
+    const first = views[0]?.stdout as Json | undefined;
+    scenario(w, { view: { replies: views }, edit, queue: w702Facts(Number(first?.["number"] ?? 0), String(first?.["headRefOid"] ?? "")) });
     try {
       rmSync(notice, { force: true });
     } catch {
@@ -658,7 +660,7 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   const lines = (o: Out): string[] => o.out.split("\n").filter((l) => l !== "");
   const resume = `run: bisellium review-request 901 --repo ${w.repo}`;
   const one = (p: string): string => `PR #901 needs your review: ${W418_TITLE} (code-owned: ${p})`;
-  const whole = ["review-request: PR #901", ...W418_PATHS.map((p) => `code-owned: ${p}`), `notice: ${W418_TEXT}`, "review-requested: org/leads, patron, writer", "review-request: skipped someone@example.com (not an @login or @org/team)"];
+  const whole = ["review-request: PR #901", ...W418_PATHS.map((p) => `code-owned: ${p}`), `notice: ${W418_TEXT}`, "review-requested: org/leads, patron, writer", "review-request: skipped someone@example.com (not an @login or @org/team)", "review-snapshot: pending"];
 
   // the screen: every pattern form, a rename's old side, a newline in a name; the notice and the request
   const o = request(["901"], [view(), title]);
@@ -696,7 +698,7 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   const cut = request(["904"], [{ stdout: { number: 904, state: "OPEN", baseRefName: "master", headRefOid: git(side, ["rev-parse", "HEAD"]) } }, title]);
   assert.deepEqual(
     [cut.status, lines(cut), w418Read(w418Notice(w, 904)), longText.length],
-    [0, ["review-request: PR #904", ...long.map((p) => `code-owned: ${p}`), `notice: ${longText}`, "review-requested: writer"], `${longText}\n`, 500],
+    [0, ["review-request: PR #904", ...long.map((p) => `code-owned: ${p}`), `notice: ${longText}`, "review-requested: writer", "review-snapshot: pending"], `${longText}\n`, 500],
     ran("a long notice is cut to 500 characters", cut),
   );
 
@@ -770,10 +772,10 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   // the owners file GitHub reads: with no .github/CODEOWNERS, the root's before docs/'s, then docs/'s alone
   master({ ".github/CODEOWNERS": null, CODEOWNERS: "/src/ @patron\n", "docs/CODEOWNERS": "/vendor/ @writer\n" });
   const root = request(["901"], [view(), title]);
-  assert.deepEqual([root.status, lines(root)], [0, ["review-request: PR #901", "code-owned: src/plain.ts", `notice: ${one("src/plain.ts")}`, "review-requested: patron"]], ran("an owners file at the root is read before docs/'s", root));
+  assert.deepEqual([root.status, lines(root)], [0, ["review-request: PR #901", "code-owned: src/plain.ts", `notice: ${one("src/plain.ts")}`, "review-requested: patron", "review-snapshot: pending"]], ran("an owners file at the root is read before docs/'s", root));
   master({ CODEOWNERS: null });
   const docs = request(["901"], [view(), title]);
-  assert.deepEqual([docs.status, lines(docs)], [0, ["review-request: PR #901", "code-owned: vendor/lib.js", `notice: ${one("vendor/lib.js")}`, "review-requested: writer"]], ran("docs/CODEOWNERS is read when it is the only one", docs));
+  assert.deepEqual([docs.status, lines(docs)], [0, ["review-request: PR #901", "code-owned: vendor/lib.js", `notice: ${one("vendor/lib.js")}`, "review-requested: writer", "review-snapshot: pending"]], ran("docs/CODEOWNERS is read when it is the only one", docs));
 
   // an owners line the screen does not read holds before the title, the notice or the request: never a silent pass
   const unreadHold = (o: Out, why: string): void => {
