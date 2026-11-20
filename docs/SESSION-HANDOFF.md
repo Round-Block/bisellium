@@ -56,7 +56,7 @@ D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-25
 
 Lanes now:
 - Ops: D-247 rides W-699's branch with D-245/D-246; meet script refuses without a `Seats:` line.
-- E1: W-531 done; E1 free.
+- E1 W-700 (lessons name their fix and reach master, Patron 11-20): filed, greenlit; next: architect spec. Lessons L-198..L-224 in PR #1323.
 - E2 W-699: architect r4 signed, unrecorded; next: brief into main studio/briefs/W-699.md, producer handoff, record spec round 3, fresh Sol spec review round 4 (last), record, branch.
 - UI1 W-503: PR #1319 ejected from the merge queue; build review r2 FAIL; next: route: ~/.bisellium-evidence/w503-route-1120/design-lead.md.
 - UI2 W-504: ui-architect r1d signature recorded; brief edit unlanded, rides W-504's branch with ci/W-504-spec-1.log; next: producer handoff, Opus UI spec review round 2, record, branch.
@@ -70,6 +70,6 @@ Also: W-636 (next reads branch records), W-662 (ui, held after W-503), W-665 (ui
 Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653 W-654 W-656 W-657 W-658 W-659 W-663 W-667 W-668 W-670 W-671 W-672 W-673 W-675 W-676 W-677 W-678 W-679 W-680.
 Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686. W-687 (DR independence) filed session 40; D-226, D-227 (DR lane, workflow) land with it.
 Also, 11-17 (greenlit by the Patron, session 42): W-687 W-688 W-689 W-690 W-691 W-692 W-693 W-694 W-695.
-Also, 11-17 (greenlit by the Patron, sessions 43-44): W-696 W-697. W-698 is filed, held.
+Also, 11-17 (greenlit by the Patron, sessions 43-44): W-696 W-697. W-698 is filed, held. W-700 (lessons name their fix, Patron s65).
 
 Research is its own lane. Codex stays the one gate (D-066 C). Unruled notes: top NOW of ~/.bisellium-evidence/current-state.md; older gaps: current-state-until-1106.md there.
