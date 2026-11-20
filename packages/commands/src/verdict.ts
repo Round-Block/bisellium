@@ -1,11 +1,11 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
-import { countBehaviours, declaredReds, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, redFailsAt, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
+import { countBehaviours, declaredReds, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, ownedSlotMarks, redCommand, redFailsAt, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
 import { gateLogProblems } from "./presign-gate.js";
 import { CLASS_TAG, censusProblems, repeatedClasses } from "./class-census.js";
 import { codexHome, codexModels, sessionRan, validTurnRan, type TurnRan } from "./codex-run.js";
@@ -932,6 +932,42 @@ function sessionedProblem(text: string, id: string, rel: string, outcome: string
   return undefined;
 }
 
+/**
+ * W-699 (D-245 F3a): why a signer's brief fails the path check at sign. Each Files owned bullet's path slot (`ownedSlotMarks`)
+ * is repo-relative (no leading `/`, no `\\`, no empty, `.` or `..` segment) and, unless marked `(new)`, names an existing regular
+ * file of the officina's repository working tree (`lstat`: a symlink is neither), or, ending `/`, an existing directory. A
+ * bullet with no span names no path. An officina in no git repository cannot be checked: one problem. Read only.
+ */
+export function ownedPathProblems(brief: string, root: string): string[] {
+  const marks = ownedSlotMarks(brief);
+  if (marks.length === 0) return [];
+  const where = officinaInRepo(root);
+  if (where === undefined) return ["the officina is in no git repository, so Files owned paths cannot be checked"];
+  const problems: string[] = [];
+  for (const m of marks) {
+    if (m.slot === undefined) {
+      problems.push(`brief:${m.line} is a Files owned bullet with no path: open it with the backticked path it owns`);
+      continue;
+    }
+    const dir = m.slot.endsWith("/");
+    const segs = (dir ? m.slot.slice(0, -1) : m.slot).split("/");
+    if (m.slot.startsWith("/") || m.slot.includes("\\") || segs.some((x) => x === "" || x === "." || x === ".."))
+      problems.push(`brief:${m.line} owns \`${m.slot}\`, which is not a repo-relative path`);
+    else if (!m.marked) {
+      let kind: "file" | "dir" | "other" | "absent";
+      try {
+        const st = lstatSync(join(where.repo, m.slot));
+        kind = st.isFile() ? "file" : st.isDirectory() ? "dir" : "other";
+      } catch {
+        kind = "absent";
+      }
+      if (kind !== (dir ? "dir" : "file"))
+        problems.push(`brief:${m.line} owns \`${m.slot}\`, which is not an existing ${dir ? "directory" : "file"} of the repository: correct it, end a directory with /, or mark it (new)`);
+    }
+  }
+  return problems;
+}
+
 /** Records a review transcript under the officina without changing any gate. */
 export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResult {
   const parsed = parseFlags(args, {
@@ -1227,6 +1263,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     const signer = uiPair.pairing?.signer ?? design.magister;
     if (sameSella(manifest, sella, signer)) {
       const problems = [
+        // W-699 (D-245 F3a): every Files owned path slot exists, ends / for a directory, or is marked (new)
+        ...ownedPathProblems(read.bytes.toString("utf8"), root).map((p) => `brief admission: ${p}`),
         ...promiseLedgerProblems(read.bytes.toString("utf8"), transcript.toString("utf8"), briefRel).map((p) => `promise ledger: ${p}`),
         // W-445: a quoted claim's cited evidence holds it
         ...evidenceClaimProblems(read.bytes.toString("utf8")).map((p) => `evidence citation: ${p}`),

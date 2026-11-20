@@ -151,7 +151,7 @@ row("W-610-b2 review is ordered on the light gates at the tip tree with no full 
   // a changed Files owned (a new own test file) in the committed brief voids the log too
   const briefRel = `briefs/${OPUS}.md`;
   const brief = readFileSync(join(w.wtStudio, briefRel), "utf8");
-  editWt(w, briefRel, (t) => t.replace("- `w462.test.mjs`\n", "- `w462.test.mjs`\n- `w999.test.mjs`\n"));
+  editWt(w, briefRel, (t) => t.replace("- `w462.test.mjs` (new)\n", "- `w462.test.mjs` (new)\n- `w999.test.mjs` (new)\n"));
   const owned = admitLightGates(w.wtStudio, OPUS);
   assert.ok(!owned.ok && /not run for the current light-gate commands/.test(owned.error), `a changed Files owned voids the log: ${JSON.stringify(owned)}`);
   assert.equal(direct(w, w.wt, reviewArgs).status, 2, "the review verb refuses it");
