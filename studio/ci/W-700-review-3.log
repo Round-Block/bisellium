@@ -1,0 +1,20 @@
+# opus: W-700
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1f90e-db36-7642-b76a-809cb334da63
+# outcome: passed
+# at: 2026-11-20T14:39:33.852Z
+# tree: tree:9803891dc656dc3794ab0986871ceba028d5b5a0
+# brief: briefs/W-700.md blob:df50fdff63fc91064bcfdf892c57756a6163d3eb
+# ticket: {"opus":"W-700","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-700/studio","head":"99861f5a5ecf1e1d7502bb449859e3aeb9859718","brief":"df50fdff63fc91064bcfdf892c57756a6163d3eb","at":"2026-11-20T14:39:20.301Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+The shared strict instant parser preserves the declared date domain and the refreshed light evidence passes.
+VERDICT: PASS
