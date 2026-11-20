@@ -89,7 +89,7 @@ test("W-699-b2 behaviour 2: a re-signature whose contract digests equal the revi
       t
         .replace("magister: architect }", "magister: design-architect }")
         .replace("{ id: architect, collegium: design", "{ id: design-architect, collegium: design")
-        .concat("sella_aliases:\n  since: 2026-11-01T00:00:00Z\n  live_until: 2027-02-18T00:00:00Z\n  ids: { architect: design-architect }\n"),
+        .concat("sella_aliases:\n  since: 2026-11-01T00:00:00Z\n  live_until: 2027-02-18T00:00:00Z\n  ids: { architect: design-architect }\nspec: { delta_review: on }\n"),
   });
   put(aliased.repo, BRIEF_REL, briefText(aliased.behaviours));
   sign(aliased, 1);
