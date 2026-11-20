@@ -242,3 +242,13 @@ row("W-700-b5 a halted or declined target reopens the class; closed: closes it, 
   assert.ok(open.has("tests×prose") && open.get("tests×prose")!.fixInFlight === undefined, "a prose disposition leaves the class open");
 });
 
+row("W-700-b6 the real officina has the switch on and the lex owns every lesson prefix", () => {
+  const manifest = parse(readFileSync(join(REPO_ROOT, "studio", "bisellium.yml"), "utf8")) as { defaults?: Record<string, unknown> };
+  assert.equal(manifest.defaults?.["lesson_fix_required_from"], "2026-11-20", "studio/bisellium.yml sets defaults.lesson_fix_required_from to 2026-11-20");
+  const lex = readFileSync(join(REPO_ROOT, "studio", "leges", "production.md"), "utf8").replace(/\s+/g, " ");
+  const owners = /Each recurring class has an owning lead: (.*?)\. W-297/.exec(lex)?.[1] ?? "";
+  const clause = (lead: string): string => new RegExp(`${lead} for ([^]*?) classes`).exec(owners)?.[1] ?? "";
+  for (const p of ["mechanism", "records", "review"]) assert.match(clause("eng-lead"), new RegExp(`(?<![\\p{L}\\p{M}\\p{N}])${p}(?![\\p{L}\\p{M}\\p{N}])`, "u"), `eng-lead owns the ${p} classes`);
+  for (const p of ["workflow", "process", "ci"]) assert.match(clause("ops-lead"), new RegExp(`(?<![\\p{L}\\p{M}\\p{N}])${p}(?![\\p{L}\\p{M}\\p{N}])`, "u"), `ops-lead owns the ${p} classes`);
+});
+
