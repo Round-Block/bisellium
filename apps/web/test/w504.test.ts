@@ -32,3 +32,7 @@ test("W-504-b1 behaviour 1: Completion renders one truthful unit for every plann
     ],
   }, "the model retains exact milestone labels and done/planned units");
 });
+
+test("W-504-b2 behaviour 2: Completion is responsive and every read outcome stays honest", { timeout: 300_000 }, () => {
+  servedRow(2);
+});
