@@ -1,8 +1,8 @@
 /**
  * packages/commands/src/lessons.ts — W-085: the one reader of "open" lesson
  * classes. A class is closed when some lesson of it names, in `addressed_by`,
- * a rule id, a decision on disk or a done opus (W-035); every other class is
- * open. Ids read from files are only looked up in the listings already read,
+ * a rule id, a decision on disk, a done opus (W-035) or a `closed:<sha>` commit
+ * (W-700); every other class is open, and a halted or declined opus is no fix in flight. Ids read from files are only looked up in the listings already read,
  * never joined into a path. Never throws: an unreadable studio returns `[]`
  * and an unreadable lesson is skipped.
  */
@@ -58,6 +58,8 @@ export function openLessons(root: string): OpenLessonClass[] {
     const manifest = readManifest(root);
     const declared = (manifest.collegia ?? []).map((c) => c.id);
     const opera = new Map<string, string | undefined>();
+    // W-700: an opus whose greenlight was declined never runs, so it is no fix in flight
+    const declined = new Set<string>();
     // opus id -> its own collegium plus the collegium of every gate sella
     const paid = new Map<string, Set<string>>();
     for (const p of listMd(join(root, "opera"))) {
@@ -65,6 +67,7 @@ export function openLessons(root: string): OpenLessonClass[] {
       if (!d) continue;
       const id = basename(p, ".md");
       opera.set(id, str(d["state"]));
+      if (Object.hasOwn(d, "declined")) declined.add(id);
       const set = new Set<string>();
       const own = str(d["collegium"]);
       if (own) set.add(own);
@@ -110,8 +113,12 @@ export function openLessons(root: string): OpenLessonClass[] {
       if (opera.has(v)) {
         const state = opera.get(v) ?? "";
         if (state === "done") acc.closed = true;
-        else if (acc.inFlight === undefined || v < acc.inFlight.id) acc.inFlight = { id: v, state };
+        else if (state !== "halted" && !declined.has(v) && (acc.inFlight === undefined || v < acc.inFlight.id)) acc.inFlight = { id: v, state };
       } else if (RULE_SHAPE.test(v) || decisions.has(v)) acc.closed = true;
+      else {
+        const disposition = lessonDisposition(v);
+        if (disposition !== undefined && "kind" in disposition && disposition.kind === "closed") acc.closed = true;
+      }
     }
     return [...classes]
       .filter(([, a]) => !a.closed)
