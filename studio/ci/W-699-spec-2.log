@@ -1,0 +1,20 @@
+# opus: W-699
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1f448-90d8-7b21-8d55-14746c8289bd
+# outcome: failed
+# at: 2026-11-19T14:58:13.614Z
+# tree: tree:697599329b6847c4172a3b8840c0c62d86f5416a
+# brief: briefs/W-699.md blob:a4e2e097a58788a47860151e63558098e71eebbe
+# ticket: {"opus":"W-699","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"056127253d37c8bcc5f81e58533ab14f4e265b16","brief":"a4e2e097a58788a47860151e63558098e71eebbe","at":"2026-11-19T14:58:12.147Z"}
+
+## Findings
+1. blocking — brief:51 `freshGates` reads ancestry from `refs/heads/opus/<id>` but lists failed logs through the mutable worktree; a tracked failed log deleted, unreadable, or edited to lose its `certifies:` opening is skipped, so a later light pass can make `next` order review. The complete surface is `gateStatusLine`/`localPipeline` writing `ci/<id>-<gate>-<tree8>.log`, `admitCurrentGates`, `freshGates`, `fullGateRuns`, and retro’s `gateFailure` reading it; replace brief:51 with `| Gate-evidence commits and every ci/<id>-<gate>-<tree8>.log reached by them | commits are 40-hex and strictly ordered by git ancestry; matching full-gate logs are read from the committed opus/<id> tree, are contained readable regular files, open with the exact current certifies: tree:<40 hex>, and carry readGateStatus’s single writer-form status on line 3; ignored or untracked worktree entries do not count, while tracked modifications or deletions refuse admission | freshGates refuses an unreadable commit, tree, path, log or status grammar, and refuses every failed status; admitCurrentGates and admitLightGates refuse tracked disagreement with the worktree |`. [severity: S1] [design: changes] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w699.test.ts
+2. advisory — brief:31 The promise says Files-owned prose can change unreviewed, but `contractDigests` calls `ownedFiles`, which includes every backticked span on each bullet; `contractHeader` writes that digest and `deltaReview` recomputes it, so changing a prose symbol orders review. Replace that limit text with `free text (the title and Status lines, Acceptance and Out of scope) and Files owned prose outside backticked bullet spans can change unreviewed; every backticked span on a Files owned bullet, including spans after its path slot, is part of the files digest`. [severity: S2] [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/w699.test.ts
+3. advisory — brief:53 The Input domain omits four changed-reader inputs: the brief consumed by `contractDigests`/`contractHeader`, `lessons/*.md` consumed by `checkDeltaReview`, the pending `<git-common-dir>/bisellium/tickets/<opus>.json` consumed by `requireTicket` on `--check`, and `git rev-parse --verify HEAD` consumed by `runLightGates`; their writers/readers are respectively signer/`deltaReview`, lesson records/`checkProcess`, `next`/`runVerdict`, and Git/line 4 of the light-gate log. Replace brief:53 with its existing row followed by four rows naming those domains and rejectors: `specSectionsProblem`, `checkProcess` plus `checkDeltaReview`, `requireTicket`, and `runLightGates`. [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: read-enumeration-to-Input-domain coverage is not automated
+
+## Verdict
+The brief has one design-changing S1 fail-open path, so build must not start from this specification.
+VERDICT: FAIL

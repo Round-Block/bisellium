@@ -1,0 +1,23 @@
+# opus: W-699
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1f6c8-f988-7730-9b18-5db76de2e67e
+# session_reason: a fresh spec-reviewer session reviewed round 4: the round-2 Codex session 01a1f448 was not resumed, so a fresh Sol session read the r4b brief (the last capped round)
+# outcome: failed
+# at: 2026-11-20T02:37:42.745Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# brief: briefs/W-699.md blob:31b703ac0f73b20a95abb842ac4bf74cbe55ffe7
+# ticket: {"opus":"W-699","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"7790913e0f956eca7e4d0333e3b6b413db06e6d7","brief":"31b703ac0f73b20a95abb842ac4bf74cbe55ffe7","at":"2026-11-20T02:37:41.710Z"}
+
+## Findings
+1. blocking — brief:39 [severity: S1] [design: keeps] `reviewRounds` excludes signatures through legacy `designMagister`/UI-pair routing, while `next`/`readSpecReviewer` and `runVerdict`/`readSpecSeats` trust `bisellium.yml#spec_seats`, the opus collegium and first-spec-log time; under the live configuration, an ops, qa, production or non-UI design signer is counted as a reviewer, so `retro --daily` can inflate rounds and falsely report MISS, while the b6 fixture has no `spec_seats` and the promise ledger falsely says this holds. Replace `reviewer spec rounds (signatures excluded)` with `reviewer spec rounds (signatures excluded using the same per-opus readSpecSeats route trusted by next and verdict, including its since and kind: ui routing)`. [class: design×indirection-duplicates-source-of-truth] — check: packages/cli/src/w699.test.ts
+2. advisory — brief:37 [severity: S2] The promise says every tracked modification, deletion or staged rename orders the full gates again, but `committedFullLogs` returns a committed failed status before checking worktree disagreement, so a changed or deleted failed log dispatches the builder as brief:126 specifies. Replace `or a tracked modification, deletion or staged rename in the worktree refuses (the full gates again)` with `or, for a committed passed log, a tracked modification, deletion or staged rename in the worktree orders the full gates again; a committed failed log still dispatches the builder when its worktree copy is changed or deleted`. [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/w699.test.ts
+
+## Earlier findings
+- ci/W-699-spec-2.log #1: closed — brief:37, brief:51 and brief:126 plus `committedFullLogs` now read and validate the committed `opus/<id>` logs, preserve committed failures, and refuse malformed passed-log/worktree disagreement.
+
+## Verdict
+The final capped round has one design-keeping blocker that must be carried into the build as a required fix.
+VERDICT: FAIL
