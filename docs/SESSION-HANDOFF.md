@@ -55,13 +55,12 @@ Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, bri
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- Ops: D-247 rides W-699's branch with D-245/D-246; meet script refuses without a `Seats:` line.
-- E1 W-700 (lessons name their fix and reach master; Patron 11-20): filed, greenlit, M7 (#1324); lessons L-198..L-224 landed (#1323). Opus architect r1 drafting (~/.bisellium-evidence/W-700-spec/); next: record spec round 1 (dry first), Sol spec review, branch.
-- E2 W-699: architect r4 refused at verdict (no Class census line); Opus architect r4b adding it (W-699-spec/r4b/); next: repin kit 725 (s8-records/kit-725), record spec round 3, Sol spec review round 4 (last), branch.
-- UI1 W-503: spec round 24 on opus/W-503 (48eda43a, unpushed); Opus spec review r25 PASS (4 advisories), recording; next: ui-lead input 26, Terra wrapper fix, light gates, census, build review r3, full ci, push, Patron re-approves #1319.
-- UI2 W-504: spec round 2 recorded (ci/W-504-spec-2.log, untracked in main; brief + opera tracked edits ride W-504's branch); Sol r1f fixing the remaining brief-admission rows (W-504-spec/sign-r1f/); next: record round 3, Opus UI spec review round 4, branch.
-- Research: none open.
-- DR from its own clone (cron 09:04 SGT).
+- Ops: D-245/D-246/D-247 to ride W-699's branch (still untracked in main); the wrong-checkout-paths ops opus is decided (L-245, D-234), to be filed next.
+- E1 W-700 (lessons name their fix and reach master): spec round 1 recorded; Sol spec review round 2 failed (draftRetro must refuse a blank finding location); next: Opus architect r2, re-sign round 3, Sol spec review round 4 (last).
+- E2 W-699 (sign path check, delta rule; class cause fix): spec review round 4 (last) failed, design kept; title amended; branched (opus/W-699 5122aced); next: ready, D-245..D-247 onto the branch, builder with required fix spec-4 #1 and advisory 2.
+- UI1 W-503: ui-lead input 26 passed; Terra wrapper fix 3becf2ef; fix check no open path; light gates 3a57ed19; Opus build review round 3 passed (not yet recorded); next: record it, full ci --opus, push, Patron re-approves #1319.
+- UI2 W-504: spec rounds 3-5 recorded (review 4 failed: readiness must wait for W-503's card; ui-lead 5 revise: count after squares); next: design lead revises and signs round 6, Opus UI spec review.
+- Research: none open. DR from its own clone (cron 09:04 SGT); DR 11-19 landed (#1326).
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
 Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624 W-625 W-626 W-627 W-628 W-629 W-630 W-631 W-632 W-633.
