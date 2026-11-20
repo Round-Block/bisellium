@@ -27,7 +27,7 @@ function Cue({ severity }: { severity: "blocking" | "high" | "normal" }) {
 
 export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps = {}) {
   const [data, setData] = useState<HomeAttentionData>();
-  const [completion, setCompletion] = useState<CompletionResponse>();
+  const [completion, setCompletion] = useState<CompletionResponse | "failed">();
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let active = true;
@@ -49,16 +49,16 @@ export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps
   }, [onStatus, onNeedsYouCount, onAttentionLoaded]);
   useEffect(() => {
     let active = true;
-    fetchCompletion().then((value) => { if (active) setCompletion(value); }).catch(() => undefined);
+    fetchCompletion().then((value) => { if (active) setCompletion(value); }).catch(() => { if (active) setCompletion("failed"); });
     return () => { active = false; };
   }, []);
   const attention = data ? attentionCollection(data.officina, data.opera, data.inbox) : [];
   const groups = homeNeeds(attention);
   const summary = data ? homeSummary(data.officina, data.opera, data.health) : undefined;
   const wipTotal = summary?.wip.reduce((total, row) => total + row.count, 0) ?? 0;
-  const completionModel = completion?.meter ? homeCompletion(completion.meter) : undefined;
+  const completionModel = typeof completion === "object" && completion.meter ? homeCompletion(completion.meter) : undefined;
   return (
-    <div className="home">
+    <div className="home" data-completion-settled={completion !== undefined}>
       <header className="home__header">
         <h1 className="home__title">Home</h1>
         <p className="home__lede">What needs you and what is moving.</p>
@@ -106,6 +106,9 @@ export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps
           </div>
         </article>
       </section>}
+      {completion === undefined && <p className="home-completion-status">Loading completion…</p>}
+      {completion === "failed" && <p className="home-completion-status">Could not load completion.</p>}
+      {typeof completion === "object" && completion.meter === null && <p className="home-completion-status">No completion record is available.</p>}
       {completionModel && <section className="home__row home__row--outcome">
         <article className="home-card home-card--completion">
           <header className="home-card__head"><div><h2>Completion</h2><p>Planned work completed by milestone</p></div><strong className="home-completion__overall">{completionModel.overall}%</strong></header>

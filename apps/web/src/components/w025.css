@@ -3330,6 +3330,12 @@ details.officina__row > summary {
   font: 700 30px/32px var(--font-display);
 }
 
+.home-completion-status {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink-3);
+  font: 400 13px/18px var(--font-body);
+}
+
 .home-completion {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
