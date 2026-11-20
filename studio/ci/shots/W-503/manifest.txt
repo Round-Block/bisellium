@@ -6,6 +6,6 @@ shot: home-390.png 390x900 43662
 shot: inbox-1280.png 1280x900 114578
 shot: inbox-390.png 390x900 23955
 shot: officina-1280.png 1280x900 72438
-shot: officina-390.png 390x900 44720
+shot: officina-390.png 390x900 44716
 shot: seats-1280.png 1280x900 72398
-shot: seats-390.png 390x900 42780
+shot: seats-390.png 390x900 42815
