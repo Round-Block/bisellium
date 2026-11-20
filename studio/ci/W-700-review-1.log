@@ -1,0 +1,19 @@
+# opus: W-700
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1f90e-db36-7642-b76a-809cb334da63
+# outcome: failed
+# at: 2026-11-20T13:09:26.576Z
+# tree: tree:d99c4be720d170f8cf41f9892c0daad1c2944822
+# brief: briefs/W-700.md blob:df50fdff63fc91064bcfdf892c57756a6163d3eb
+# ticket: {"opus":"W-700","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-700/studio","head":"ee91655dc0f2a1a0872fb7f71360a40cff25fc73","brief":"df50fdff63fc91064bcfdf892c57756a6163d3eb","at":"2026-11-20T13:09:24.294Z"}
+
+## Findings
+1. blocking — packages/commands/src/lessons.ts:115 `state === "done"` closes the class before `declined` is considered, so a done target carrying any `declined` key disappears instead of remaining open with no fix, contrary to brief:22 and the `state` plus optional `declined` domain at brief:62. Sites are the `greenlight` writer to `opera/<id>.md`, readers `openLessons`, `autoGrant`, and `deriveNext`, and the `lessons/<id>.md#addressed_by` path that reaches the target. [severity: S1] [class: tests×one-sided-bound-assertion] — check: packages/cli/src/w700.test.ts
+2. advisory — packages/cli/src/retro.test.ts:111 `.every(...)` passes vacuously with zero blocks, so flipped check 10h does not prove that the newly written unfixed lessons block when the switch is absent. Sites are `draftRetro` writing `lessons/*.md`, `checkStudio`/`checkProcess` reading those lessons and `bisellium.yml`, and this assertion consuming their findings. [severity: S4] [class: tests×assertion-satisfied-by-the-wrong-cause] — check: packages/cli/src/retro.test.ts
+
+## Verdict
+The declined-target precedence is wrong for an input within the brief’s declared domain; the flipped-row coverage gap is advisory only.
+VERDICT: FAIL
