@@ -1,0 +1,26 @@
+# opus: W-504
+# phase: spec
+# round: 2
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1f685-ef36-7ad1-abf7-a473d97c4200
+# session_reason: fresh Codex Sol session for r1e (brief admission D-050 cell fix); the r1d session 01a1f2c8 was not resumed
+# outcome: passed
+# at: 2026-11-20T01:29:54.764Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# brief: briefs/W-504.md blob:c6a590ea8e0a8b83f7a0dc469de6f31310b849d7
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":2,"actor":"architect","studio":"studio","head":"acbb19657a66c26c9214f3b2738d10f91cc5e062","brief":"c6a590ea8e0a8b83f7a0dc469de6f31310b849d7","at":"2026-11-20T01:29:53.514Z"}
+
+Brief: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1e/brief-r1e.md sha256:b080b160bb6abf2f9c79b11e530846838c920738865f9fdfa0eb3d4a720f14cc
+Promise ledger: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/promise-ledger-r1d.md
+Gate log: /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/gate-w504.log
+Class census: none
+
+## Findings
+
+1. advisory — `brief-r1e.md` changes only the Rejected-by cells of Input-domain rows 1, 2, 3, 5, 6 and 7; each now opens with the real `web-e2e` runner job while retaining the same rejecting expectations and neither adding nor dropping a promise — check: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1e/brief-r1e.diff, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1e/preflight.md
+2. advisory — The isolated-clone `next` result names spec round 2 to `ui-architect` without a `brief.admission` finding, and the independent declared-red check reports zero problems — check: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1e/preflight.md
+
+## Verdict
+
+passed

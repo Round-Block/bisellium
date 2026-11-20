@@ -1,0 +1,26 @@
+# opus: W-504
+# phase: spec
+# round: 3
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1f685-ef36-7ad1-abf7-a473d97c4200
+# outcome: passed
+# at: 2026-11-20T02:27:20.737Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# brief: briefs/W-504.md blob:f6ea6766f49d7b69d68dbbcd180a97a524ccab9d
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"7790913e0f956eca7e4d0333e3b6b413db06e6d7","brief":"f6ea6766f49d7b69d68dbbcd180a97a524ccab9d","at":"2026-11-20T02:27:19.836Z"}
+
+Brief: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1f/brief-r1f.md sha256:c774eb1f0adc29c6e987ced201f37b96bf2737f4fb6f56446f4283ea75782e4c
+Promise ledger: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/promise-ledger-r1d.md
+Gate log: /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/gate-w504.log
+Class census: none
+
+## Findings
+
+1. advisory — `brief-r1f.md` changes only the remaining admission defects named by the full round-3 `next` reason: the Read-enumeration line now uses the admitted `none: <reason>` form, and Input-domain rows 8, 9 and 10 open with their runner, function and exit forms while retaining their original rejection meanings — check: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1f/brief-r1f.diff, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1f/next-full.txt
+2. advisory — The r1e preflight missed these defects because its pre-verdict `next` stopped at the earlier state condition that no current signature named the revised brief; after round 2 bound that brief, main's `next` proceeded to admission and exposed the remaining defects, so this was neither a truncated-file read nor an older executable — check: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1e/preflight.md, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1f/next-full.txt
+3. advisory — The fresh clone carrying both prior spec logs reads the whole 16-line `next-pre.txt` with zero `brief.admission` matches, names spec round 3, and the independent declared-red check reports zero problems — check: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1f/next-pre.txt, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1f/preflight.md
+
+## Verdict
+
+passed

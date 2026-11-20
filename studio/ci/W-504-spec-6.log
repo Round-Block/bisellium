@@ -1,0 +1,25 @@
+# opus: W-504
+# phase: spec
+# round: 6
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1f685-ef36-7ad1-abf7-a473d97c4200
+# outcome: passed
+# at: 2026-11-20T08:53:25.785Z
+# tree: tree:770c5ba906343d0a0e5ccc27d6ed57a145c63bc0
+# brief: briefs/W-504.md blob:e12f7dc2edf3c54b0376fb6174bbdad628a8a89c
+# contract: intent:06ec299fb6f55998 behaviours:a758bead32cf966b domain:9d2b2bf4239fdedd interfaces:03c25e909b55b921 limits:044569434eac7e5a files:36d117f0c29912ff other:407378e34885a188
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"9ad540a2bf53a84414445b678fa06ef2df75e8f9","brief":"e12f7dc2edf3c54b0376fb6174bbdad628a8a89c","at":"2026-11-20T08:53:24.858Z"}
+
+Brief: /home/edckt/.bisellium-evidence/W-504-spec/sign-r6/brief-r6k.md sha256:b197360a2828c071373abcc94c3fe26dcf1e7e8830da9c5ed6a87b3381ee0746
+Promise ledger: /home/edckt/.bisellium-evidence/W-504-spec/sign-r6/promise-ledger-r6f.md
+Gate log: /home/edckt/.bisellium-evidence/W-504-spec/sign-r6/gate-r6h.log
+Class census: none
+
+## Findings
+
+No findings
+
+## Verdict
+
+passed

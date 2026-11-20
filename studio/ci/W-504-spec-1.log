@@ -1,0 +1,26 @@
+# opus: W-504
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1f2c8-8e42-7f33-b3b7-e894f52568a5
+# outcome: passed
+# at: 2026-11-19T15:14:11.547Z
+# tree: tree:697599329b6847c4172a3b8840c0c62d86f5416a
+# brief: briefs/W-504.md blob:02b4a1c6f1af1fbe83441e4c4a6d8754146ad4d3
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"056127253d37c8bcc5f81e58533ab14f4e265b16","brief":"02b4a1c6f1af1fbe83441e4c4a6d8754146ad4d3","at":"2026-11-19T15:14:10.674Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/promise-ledger-r1d.md
+Gate log: /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/gate-w504.log
+Class census: none
+
+## Findings
+
+1. advisory — The corrected Sidebar-state mutation has a well-formed one-file, one-hunk diff with its original body unchanged; its host TAP output fails W-504-b2 at the declared served assertion, and the authoritative ledger parser now reports zero problems across every Promise and Input-domain line — check: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/kills/07-sidebar-r1d.patch, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/kills/07-sidebar-r1d.out, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/ledger-sign-r1d.out
+2. advisory — Both host reds exit 1 only after the served browser reaches `served Completion behavior 1 holds:` or `served Completion behavior 2 holds:`, with no module-load or setup failure; b1 green, b1 green at tip, b1 at the b2-red stage and b2 green each exit 0, and every command header is the brief's bare Node argv — check: /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/b1-red.log, /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/b1-green.log, /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/b1-green-tip.log, /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/b2-red-b1.log, /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/b2-red.log, /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/b2-green.log, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/red-replay-sign-r1d.out
+3. advisory — The host gate records prototype sha256 `9a0283be6afda23f01077248ff4e19fe3df32b6cb5447abdca1f32bb89dff278`, base `d4521e247f5857884e1579bca95befc5ff9b9f60`, final tree `0af566bcc9ddc6e1f2881146b2463c44113e287e`, repository check 0 and typecheck 0, matching the brief's Prototype and Acceptance evidence — check: /home/edckt/.bisellium-evidence/W-504-spec/presign/host-r1c/gate-w504.log, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/prototype-r1c.mbox
+4. advisory — Admission reports two behaviours within limit 6 with one declared assertion pin per red; declared-red and red-replay checks report zero problems, and the r1c brief needs no sign-time edit because its Status and Prototype evidence already match the gated revision — check: /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/admission-sign-r1d.out, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/declared-reds-sign-r1d.out, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/red-replay-sign-r1d.out, /home/edckt/.bisellium-evidence/W-504-spec/sign-r1b/brief-r1c.md
+
+## Verdict
+
+passed
