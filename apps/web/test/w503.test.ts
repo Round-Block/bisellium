@@ -1,19 +1,22 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import type { HealthResponse, InboxResponse, OfficinaResponse, OpusEntry } from "../src/api.js";
 import { attentionCollection } from "../src/lib/board.js";
 import { homeNeeds, homeSummary } from "../src/lib/home.js";
 
 function servedRow(behaviour: number): void {
   const title = `W-503-b${behaviour}\\s`;
+  const config = fileURLToPath(new URL("../playwright.serve.config.ts", import.meta.url));
+  const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
   const result = spawnSync("npx", [
     "playwright",
     "test",
-    "--config=apps/web/playwright.serve.config.ts",
+    `--config=${config}`,
     "--grep",
     title,
-  ], { cwd: process.cwd(), encoding: "utf8", timeout: 280_000 });
+  ], { cwd: repositoryRoot, encoding: "utf8", timeout: 280_000 });
   assert.equal(result.status, 0, `served Home behavior ${behaviour} holds:\n${result.stdout}${result.stderr}`);
 }
 
