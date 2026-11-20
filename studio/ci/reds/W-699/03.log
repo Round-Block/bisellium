@@ -1,0 +1,49 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-699-b3\s --import tsx packages/cli/src/w699.test.ts
+# exit: 1
+# at: 2026-11-20T03:22:07.336Z
+# sella: builder.W-699
+# tree: tree:fcd5542423127553500e416db1a4bff513f8f340
+# ticket: {"opus":"W-699","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-699/studio","head":"9986f9d7ead9af861a0ef165782e341b416dc4ec","brief":"31b703ac0f73b20a95abb842ac4bf74cbe55ffe7","at":"2026-11-20T03:22:02.293Z"}
+
+TAP version 13
+# Subtest: W-699-b3 behaviour 3: verdict --check runs the write's validators, writes nothing and claims no ticket; the real write still runs
+not ok 1 - W-699-b3 behaviour 3: verdict --check runs the write's validators, writes nothing and claims no ticket; the real write still runs
+  ---
+  duration_ms: 2459.927301
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/w699.test.ts:14:709'
+  failureType: 'testCodeFailure'
+  error: |-
+    a valid signature passes the check
+    --- exit 2
+    --- stdout
+    
+    --- stderr
+    unknown flag "--check"
+    usage: bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build|handoff] [--model <id>] [--session <id> [--session-reason <text>]] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/w699.test.ts:172:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2489.536819
