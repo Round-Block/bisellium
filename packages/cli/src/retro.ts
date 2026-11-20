@@ -23,6 +23,7 @@ import { createNextRecord, ensureRealDirectory, existingRealDirectory, requireRe
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { conclusionProblem, patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
 import { concludedResearch, readContainedRegularFile, titleProblem, titleWordsProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
+import { readSpecSeats, type SpecLogSource } from "@bisellium/commands/spec-seats.js";
 import { LOG_MAX_BYTES, parseVerdictLog, readUiSpecPairing, type RecordedFinding } from "@bisellium/commands/verdict.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
@@ -637,12 +638,48 @@ function designMagister(root: string, kind?: unknown): { design: string | undefi
   }
 }
 
+/** W-699 (spec review r4 #1): the officina's spec logs for `readSpecSeats`, through the contained reader; an unlistable ci/ lists nothing. */
+function specLogSource(root: string): SpecLogSource {
+  return {
+    read: (rel) => {
+      const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
+      return "error" in file ? undefined : file.bytes.toString("utf8");
+    },
+    list: (dir) => {
+      try {
+        return readdirSync(join(root, dir));
+      } catch {
+        return [];
+      }
+    },
+  };
+}
+
+/**
+ * W-699 (spec review r4 #1): the seat whose spec logs of `id` are signatures, by the one route `next` and `verdict` trust:
+ * with `bisellium.yml#spec_seats`, the signer of the opus's collegium (an opus whose first spec log is before `since`, and a
+ * `kind: ui` opus, keep the legacy route); every other opus, and an opus with no readable record, the design magister. A
+ * `spec_seats` setting `readSpecSeats` refuses refuses the measure too, as it holds `next` at spec.
+ */
+function specSigner(root: string, id: string, record: Dict | Refusal): { design: string | undefined } | Refusal {
+  if (isRefusal(record)) return designMagister(root);
+  let manifest: unknown;
+  try {
+    manifest = readManifest(root);
+  } catch (e) {
+    return { error: `bisellium.yml: ${(e as Error).message.split("\n")[0]}` };
+  }
+  const seats = readSpecSeats(manifest, id, record, specLogSource(root));
+  if ("error" in seats) return { error: seats.error };
+  return seats.route === "collegium" ? { design: seats.signer } : designMagister(root, record["kind"]);
+}
+
 /**
  * Every `ci/W-<n>-(spec|review|handoff)-<m>.log` of an officina, re-measured (W-215): the table `rounds.txt` held at the
  * baseline (master 36ca84cb), then totals, the before and after lines and the targets. A sequence (opus, phase) with any
  * `# session:` is after; each log carrying `# session:` also parses with `parseVerdictLog`, every other is read by its header block only.
  */
-export function reviewRounds(root: string): { lines: string[]; opus: Map<string, OpusReviewRounds> } | Refusal {
+export function reviewRounds(root: string): { lines: string[]; opus: Map<string, OpusReviewRounds>; skipped: Map<string, number> } | Refusal {
   let names: string[] = [];
   try {
     names = readdirSync(join(root, "ci")).sort();
@@ -651,6 +688,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
   }
   const logs: RoundLog[] = [];
   const tabled = new Set<string>();
+  const signed: { opus: string; n: number }[] = [];
   for (const name of names) {
     const m = /^(W-\d+)-(spec|review|handoff)-(\d{1,15})\.log$/.exec(name);
     if (m === null) continue;
@@ -661,13 +699,16 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
     const phase = m[2] as RoundLog["phase"];
     // the table lists every opus with a spec or review log, signature logs included
     if (phase !== "handoff") tabled.add(m[1]!);
-    // W-348: each kind's signer is a signature, not a review round. A historical fixture with no readable record keeps
-    // the design-magister fallback; reviewRounds did not previously require an opus record.
+    // W-348: each kind's signer is a signature, not a review round; W-699: the signer is the one `readSpecSeats` names, as next and verdict
+    // read it. A historical fixture with no readable record keeps the design-magister fallback; reviewRounds did not previously require an opus record.
     if (phase === "spec") {
       const record = readOpus(root, m[1]!);
-      const signer = designMagister(root, isRefusal(record) ? undefined : record["kind"]);
+      const signer = specSigner(root, m[1]!, record);
       if (isRefusal(signer)) return signer;
-      if (signer.design !== undefined && sameSella(rosterAt(root), h.get("sella"), signer.design)) continue;
+      if (signer.design !== undefined && sameSella(rosterAt(root), h.get("sella"), signer.design)) {
+        signed.push({ opus: m[1]!, n: Number(m[3]) });
+        continue;
+      }
     }
     logs.push({ opus: m[1]!, phase, n: Number(m[3]), outcome: h.get("outcome") ?? "", session: h.has("session"), reason: h.has("session_reason"), text });
   }
@@ -696,6 +737,9 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
     o.withdrawn += parsed.findings.filter((f) => f.withdrawn).length;
     o.reversed += parsed.earlier.filter((e) => e.status === "reversed").length;
   }
+  // W-699 (D-246): a signature past round 1 with no reviewer spec round after it stood with a review: a skipped review
+  const skipped = new Map<string, number>();
+  for (const s of signed) if (s.n > 1 && !logs.some((l) => l.opus === s.opus && l.phase === "spec" && l.n > s.n)) skipped.set(s.opus, (skipped.get(s.opus) ?? 0) + 1);
   for (const [id, o] of opus) o.sessions = !sessioned.has(id) ? "none" : replaced.has(id) ? `replaced ${replaced.get(id)!}` : "kept";
 
   // handoff runs: the logs of one opus in round order, a run ending at each passed log (a trailing failed run still counts)
@@ -736,7 +780,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
     `after (reviewer session): spec mean ${meanText(afterSpec)} over ${afterSpec.length} opera; build mean ${meanText(afterBuild)} over ${afterBuild.length} opera; handoff runs ${afterRuns.length}, over one round ${long}; rebuttals ${rebuttals}; withdrawn at ruling ${withdrawn}; reversed later ${reversed}`,
     `targets: spec mean <= 2 ${verdict(meanOf(afterSpec), 2)}; build mean <= 1.5 ${verdict(meanOf(afterBuild), 1.5)}; handoff one round per run ${afterRuns.length === 0 ? "n/a" : long === 0 ? "PASS" : "MISS"}; no finding reversed later ${after.size === 0 ? "n/a" : reversed === 0 ? "PASS" : "MISS"}`,
   );
-  return { lines, opus };
+  return { lines, opus, skipped };
 }
 
 const FRONT = (file: { bytes: Buffer }, label: string): Dict | Refusal => {
@@ -1385,6 +1429,97 @@ function causeFixes(root: string): Map<string, string> | Refusal {
   return fixes;
 }
 
+/** W-699 (D-246): the opus whose landing opens the comparison window, the window's size and its pass mark. */
+const MEASURE_AFTER = "W-699";
+const MEASURE_OPERA = 5;
+const ESCAPE_CLASS = "escape×delta-rule";
+const EVENTS_MAX_BYTES = 64 * 1024 * 1024;
+const medianOf = (xs: number[]): number | undefined => {
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length === 0 ? undefined : s.length % 2 === 1 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
+};
+const figure = (x: number | undefined): string => (x === undefined ? "n/a" : Number.isInteger(x) ? String(x) : oneDecimal(x));
+
+/** The first granted greenlight of each opus in the officina's event log; an absent or unreadable log, or a bad line, gives none (n/a). */
+function greenlitAt(root: string): Map<string, number> {
+  const out = new Map<string, number>();
+  // the contained reader (W-163); an absent, oversized or unreadable log gives no greenlight time
+  const file = readContainedRegularFile(root, EVENTS_LOG_REL, ".bisellium", EVENTS_MAX_BYTES);
+  if ("error" in file) return out;
+  for (const line of file.bytes.toString("utf8").split("\n")) {
+    try {
+      const e = JSON.parse(line) as { name?: unknown; ts?: unknown; attrs?: Record<string, unknown> };
+      const id = e.attrs?.[WF.ITEM_ID];
+      const at = typeof e.ts === "string" ? instant(e.ts)?.getTime() : undefined;
+      if (e.name === WF.GREENLIGHT && e.attrs?.[WF.GREENLIGHT] === "granted" && typeof id === "string" && at !== undefined && !out.has(id)) out.set(id, at);
+    } catch {
+      continue;
+    }
+  }
+  return out;
+}
+
+/** W-699 (D-246): spec review rounds (signatures excluded), skipped reviews, escapes and spec hours of the first 5 opera
+ *  whose first spec log is after MEASURE_AFTER's `end`, split ui and engineering, median and max, and the pass mark. */
+function specMeasure(root: string, operaNames: string[], daily: DailyRound[]): string[] | Refusal {
+  const head = [`#### Spec measure (D-246, the qa-lead's)`, ""];
+  const recorded = new Set(operaNames.map((n) => /^(W-[0-9]+)\.md$/.exec(n)?.[1]).filter((id): id is string => id !== undefined));
+  const after = recorded.has(MEASURE_AFTER) ? readOpus(root, MEASURE_AFTER) : undefined;
+  if (after !== undefined && isRefusal(after)) return after;
+  const landed = after?.["state"] === "done" ? instant(after["end"])?.getTime() : undefined;
+  if (landed === undefined) return [...head, `- ${MEASURE_AFTER} is not done: no opus is in the comparison window yet; D-246 measure: PENDING`];
+  const starts = daily.filter((r) => r.phase === "spec" && r.n === 1n && r.at > landed && r.opus !== MEASURE_AFTER && recorded.has(r.opus)).sort((a, b) => a.at - b.at || (a.opus < b.opus ? -1 : 1));
+  const cohort = starts.slice(0, MEASURE_OPERA).map((r) => r.opus);
+  const measured = reviewRounds(root);
+  if (isRefusal(measured)) return measured;
+  const lessonNames = dailyDir(root, "lessons");
+  if (isRefusal(lessonNames)) return lessonNames;
+  const escapes = new Map<string, number>();
+  for (const name of lessonNames) {
+    if (!name.endsWith(".md")) continue;
+    const file = readContainedRegularFile(root, `lessons/${name}`, "lessons");
+    if ("error" in file) return { error: `lessons/${name}: ${file.error}` };
+    const data = FRONT(file, `lessons/${name}`);
+    if (isRefusal(data)) return data;
+    if (data["class"] !== ESCAPE_CLASS) continue;
+    // r4b (class census): an escape the measure cannot attribute refuses it, never passes beside it
+    const op = data["opus"];
+    if (typeof op !== "string" || !/^W-[0-9]+$/.test(op)) return { error: `lessons/${name}: an ${ESCAPE_CLASS} lesson names no opus (opus: W-<n>), so the D-246 measure cannot count it` };
+    escapes.set(op, (escapes.get(op) ?? 0) + 1);
+  }
+  const green = greenlitAt(root);
+  const rows: { id: string; kind: "ui" | "engineering"; rounds: number; settled: boolean; skipped: number; escapes: number }[] = [];
+  const out = [...head, `Window: the first ${MEASURE_OPERA} opera whose spec starts after ${MEASURE_AFTER} was done (${new Date(landed).toISOString()}). Escapes: lessons of class ${ESCAPE_CLASS} naming the opus. Spec hours: greenlit to the spec gate passed, reported, not gated.`, "", "| Opus | Kind | Spec review rounds | Skipped reviews | Escapes | Spec hours |", "|---|---|---|---|---|---|"];
+  for (const id of cohort) {
+    const rec = readOpus(root, id);
+    if (isRefusal(rec)) return rec;
+    const spec = isDict(rec["probationes"]) && isDict(rec["probationes"]["spec"]) ? rec["probationes"]["spec"] : undefined;
+    const settled = spec?.["status"] === "passed";
+    const passedAt = settled ? instant(spec?.["at"])?.getTime() : undefined;
+    const g = green.get(id);
+    const hours = g === undefined || passedAt === undefined ? "n/a" : oneDecimal((passedAt - g) / 3_600_000);
+    const m = measured.opus.get(id);
+    const row = { id, kind: rec["kind"] === "ui" ? ("ui" as const) : ("engineering" as const), rounds: m?.spec ?? 0, settled, skipped: measured.skipped.get(id) ?? 0, escapes: escapes.get(id) ?? 0 };
+    rows.push(row);
+    out.push(`| ${id} | ${row.kind} | ${row.rounds}${settled ? "" : " (spec open)"} | ${row.skipped} | ${row.escapes} | ${hours} |`);
+  }
+  if (rows.length === 0) out.push("| none yet | | | | | |");
+  out.push("");
+  for (const kind of ["ui", "engineering"] as const) {
+    const xs = rows.filter((r) => r.kind === kind).map((r) => r.rounds);
+    out.push(`- ${kind}: ${xs.length} opera; median ${figure(medianOf(xs))}, max ${xs.length === 0 ? "n/a" : Math.max(...xs)}`);
+  }
+  const all = rows.map((r) => r.rounds);
+  const esc = rows.reduce((a, r) => a + r.escapes, 0);
+  const median = medianOf(all);
+  const max = all.length === 0 ? undefined : Math.max(...all);
+  const settled = rows.length === MEASURE_OPERA && rows.every((r) => r.settled);
+  const mark = esc > 0 || (max !== undefined && max > 4) ? "MISS" : !settled ? "PENDING" : median! <= 2 ? "PASS" : "MISS";
+  out.push(`D-246 measure: ${rows.length} of ${MEASURE_OPERA} opera; median ${figure(median)} (pass at most 2), max ${max ?? "n/a"} (pass at most 4), escapes ${esc} (pass 0): ${mark}`);
+  return out;
+}
+
 /** The daily retro of `day`: the section `retro --daily` appends, or the first record outside its domain. */
 export function draftDailyRetro(root: string, day: string): { section: string } | Refusal {
   const names = dailyDir(root, "ci");
@@ -1473,6 +1608,10 @@ export function draftDailyRetro(root: string, day: string): { section: string } 
   if (isRefusal(fixes)) return fixes;
   const owed = recurring.filter(([c]) => !fixes.has(c));
   out.push("", "#### Owed cause fixes", "", ...(owed.length > 0 ? owed.map(([c, v]) => `- OWED class ${c} (${[...v].sort().join(", ")}): no lesson of it names a greenlit cause-fix opus in addressed_by`) : ["- none owed"]));
+  // W-699 (D-246): the spec measure of D-245's process fix, the qa-lead's to report
+  const measure = specMeasure(root, operaNames, rounds);
+  if (isRefusal(measure)) return measure;
+  out.push("", ...measure);
   // W-530 (D-188): the qa-lead's to fill; `check` warns while the previous day's is empty
   out.push("", PROPOSALS_HEADING);
   return { section: out.join("\n") + "\n" };

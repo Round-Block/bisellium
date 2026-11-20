@@ -31,10 +31,11 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest, can
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
-import { admitLightGates, currentLightCommands, fullGateRuns, literal, officinaRel, runLightGates, type LightAdmission } from "@bisellium/commands/light-gates.js";
+import { admitLightGates, currentLightCommands, fullGateRuns, lightLogRel, literal, officinaRel, runLightGates, type LightAdmission } from "@bisellium/commands/light-gates.js";
 import { webBuild, webBuildReason } from "@bisellium/commands/web-build.js";
 import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, terminalHalt, tookLadder, uiReviewSuperseded, unliftableHalt, utcTimestampProblem, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
+import { contractHeader, isContractHeader, readDeltaReview } from "@bisellium/commands/brief-contract.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readDesignMagister, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { readSpecSeats } from "@bisellium/commands/spec-seats.js";
@@ -62,6 +63,7 @@ import { DAILY_TRACKER, dailyRetroOwed, dailyRetroStep, owedRetros } from "./ret
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
+import { readGateStatus } from "@bisellium/pipeline";
 import { FIGURES_SLOT, checkpointFigures, fillFigures, firstSpecSignature } from "./checkpoint.js";
 import { appendReading, codexBurnLine, costPhrase, readReadings, spanCost, readingLine, takeReading, windDown, type Reading } from "./usage-reading.js";
 
@@ -314,8 +316,8 @@ function signedAtReady(rec: Dict, seats: string[]): string | undefined {
 }
 
 /** The brief with the six design-lex sections AND a passing architect spec log; with a reviewer, that signature then awaits its review. */
-function specEvidence(src: Src | undefined, id: string, design: string, reviewer: SpecReviewer | undefined, admit: (brief: string) => string[], ui: boolean, roster: SeatRoster, bind = false): SpecEvidence {
-  return reviewer === undefined ? signedSpec(src, id, design, admit, bind, roster) : reviewedSpec(src, id, reviewer, admit, ui, roster);
+function specEvidence(src: Src | undefined, id: string, design: string, reviewer: SpecReviewer | undefined, admit: (brief: string) => string[], ui: boolean, roster: SeatRoster, delta: boolean, bind = false): SpecEvidence {
+  return reviewer === undefined ? signedSpec(src, id, design, admit, bind, roster) : reviewedSpec(src, id, reviewer, admit, ui, roster, delta);
 }
 
 const hasSections = (brief: string, names: string[]): boolean => names.every((s) => new RegExp(`^##\\s+${esc(s)}\\s*$`, "im").test(brief));
@@ -426,13 +428,14 @@ function ownBrief(text: string, id: string, rel: string): string {
  * the newest passed review and the newest signature that stood by the split: one with two failed reviews below it, followed by
  * another signature. The newest signature never ends the count. Each log is read by the strict readers against its own brief.
  */
-function failedSpecReviews(read: { n: number; rel: string; text: string | undefined }[], id: string, reviewer: SpecReviewer, roster: SeatRoster): string[] {
+function failedSpecReviews(read: { n: number; rel: string; text: string | undefined }[], id: string, reviewer: SpecReviewer, roster: SeatRoster, delta: boolean): string[] {
   const signed = read.map((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, ownBrief(l.text, id, l.rel), l.rel, roster)));
   let failed: string[] = [];
   read.forEach((l, i) => {
     if (l.text === undefined) return;
     if (signed[i]) {
-      if (failed.length >= 2 && signed[i + 1] === true) failed = [];
+      // W-699 (D-245 F3b): with the delta rule on, a re-signature of the same contract (equal `# contract:` headers) resets nothing
+      if (failed.length >= 2 && signed[i + 1] === true && !(delta && sameContract(l.text, read[i + 1]!.text!, id, l.rel, read[i + 1]!.rel))) failed = [];
       return;
     }
     const r = readSpecReview(l.text, id, l.n, reviewer, ownBrief(l.text, id, l.rel), l.rel, roster);
@@ -443,7 +446,48 @@ function failedSpecReviews(read: { n: number; rel: string; text: string | undefi
   return failed;
 }
 
-function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, admit: (brief: string) => string[], ui: boolean, roster: SeatRoster): SpecEvidence {
+/** W-699 (D-245 F3b): a spec log's one `# contract:` value in its grammar, or undefined (none, two, or out of grammar). */
+function contractOf(text: string, id: string, rel: string): string | undefined {
+  const p = parseVerdictLog(text, id, rel);
+  const v = "error" in p ? undefined : p.headers.get("contract");
+  return v?.length === 1 && isContractHeader(v[0]!) ? v[0] : undefined;
+}
+/** W-699: two signatures pin one contract: each carries a `# contract:` value and the two are equal. */
+function sameContract(a: string, b: string, id: string, relA: string, relB: string): boolean {
+  const x = contractOf(a, id, relA);
+  return x !== undefined && x === contractOf(b, id, relB);
+}
+
+/**
+ * W-699 (D-245 F3b): the review an anchor signature re-signs, or undefined. The anchor's `# contract:` must equal the digests
+ * `next` computes from the current brief (a claimed or stale value is no delta); the newest valid review R below the anchor
+ * (a kind: ui opus's ui-lead logs skipped) must have passed or failed only on blockers that keep the design; and the newest
+ * valid signature below R pinning R's brief must carry that same contract. Every log between R and the anchor is a valid
+ * signature (against its own brief): an unreadable log there, or one that is neither a valid signature nor a valid review, is
+ * never skipped (r4b, class census). Anything else, a log with no contract included, is unclassifiable: undefined, and the
+ * anchor awaits a review as before.
+ */
+function deltaReview(read: { n: number; rel: string; text: string | undefined }[], anchor: { n: number; rel: string; text: string | undefined }, id: string, reviewer: SpecReviewer, brief: string, ui: boolean, roster: SeatRoster): { round: number; log: string; outcome: "passed" | "failed"; keeps: string[] } | undefined {
+  const mine = contractOf(anchor.text ?? "", id, anchor.rel);
+  if (mine === undefined || mine !== contractHeader(brief)) return undefined;
+  const below = read.filter((l) => l.n < anchor.n && !(ui && l.text !== undefined && isUiLeadLog(l.text, roster)));
+  for (let i = below.length - 1; i >= 0; i--) {
+    const l = below[i]!;
+    if (l.text === undefined) return undefined;
+    const r = readSpecReview(l.text, id, l.n, reviewer, ownBrief(l.text, id, l.rel), l.rel, roster);
+    if ("error" in r) {
+      if ("error" in readSpecSignature(l.text, id, l.n, reviewer.design, ownBrief(l.text, id, l.rel), l.rel, roster)) return undefined;
+      continue;
+    }
+    if (r.outcome === "failed" && r.keeps.length === 0) return undefined;
+    const pin = ownBrief(l.text!, id, l.rel);
+    const signer = below.slice(0, i).reverse().find((s) => s.text !== undefined && !("error" in readSpecSignature(s.text, id, s.n, reviewer.design, pin, s.rel, roster)));
+    return signer !== undefined && contractOf(signer.text!, id, signer.rel) === mine ? r : undefined;
+  }
+  return undefined;
+}
+
+function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, admit: (brief: string) => string[], ui: boolean, roster: SeatRoster, delta: boolean): SpecEvidence {
   if (src === undefined) return { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false, gate: { kind: "signature" } };
   const names = src.list("ci").filter((name) => name.startsWith(`${id}-spec-`));
   const logs: { n: number; rel: string }[] = [];
@@ -473,8 +517,9 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, 
     reviews.push(r);
   }
   const signed = (gate: SpecGate, why: string): SpecEvidence => ({ ...result(why, gate), sella: reviewer.design, log: anchor.rel });
-  const review = reviews[0];
-  const failed = failedSpecReviews(read, id, reviewer, roster);
+  // W-699 (D-245 F3b): with spec.delta_review on, a re-signature of the contract a passed or keeps review read stands with it
+  const review = reviews[0] ?? (delta ? deltaReview(read, anchor, id, reviewer, brief, ui, roster) : undefined);
+  const failed = failedSpecReviews(read, id, reviewer, roster, delta);
   if (review === undefined && failed.length >= 2) return { ...signed({ kind: "split", failed }, `${briefRel(id)}, ${anchor.rel} stand without a third review (D-061 §4)`), ok: true };
   if (review === undefined) return signed({ kind: "review", signature: anchor.rel, brief }, `${anchor.rel} is signed and awaits the spec review`);
   if (reviews.length > 1) return result(`${reviews[1]!.log} is a second reviewer verdict after ${anchor.rel} with no signature between them; a newer signature must come first`, { kind: "invalid" });
@@ -1160,6 +1205,8 @@ export function deriveNext(f: Facts): Derived {
   const fast = gate.reviewer !== undefined && lane && (f.tip === undefined ? lightIn(f.work, id) : lightIn(f.branch, id) && lightIn(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id));
   const reviewer = fast ? undefined : gate.reviewer;
   const admit = lightAdmission(f);
+  // W-699 (D-246 item 2): the main checkout's switch, so an off merged to master holds every opus at once
+  const delta = readDeltaReview(f.manifest).on;
   // W-206: once opus/<id> exists the branch owns the spec (D-021): it is judged there, and every order names its worktree
   // ponytail: only with a reviewer; without one signedSpec pins no brief, so an amendment never un-passes the spec (today's rung)
   const onOpus = f.tip !== undefined && reviewer !== undefined;
@@ -1195,11 +1242,11 @@ export function deriveNext(f: Facts): Derived {
   // an unlistable worktree ci/ cannot carry the spec, so the committed branch is judged instead: once it has passed, the later rungs'
   // worktree handling is unchanged (the review rung holds on the same ci/); until then nothing can be ordered
   const ciProblem = onOpus && f.wt.usable ? f.wtCiProblem() : undefined;
-  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, signer, reviewer, admit, ownerUi, f.manifest);
+  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, signer, reviewer, admit, ownerUi, f.manifest, delta);
   if (ciProblem !== undefined && !committed!.ok) return hold("spec", ciProblem);
   // pending spec work (an edited brief or a new log) cannot be judged beside an unlistable ci/: only an unchanged worktree goes on
   if (ciProblem !== undefined && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return hold("spec", `${ciProblem}; the spec work pending in the worktree is not committed`);
-  const spec = committed ?? specEvidence(pending, id, signer, reviewer, admit, ownerUi, f.manifest, pre);
+  const spec = committed ?? specEvidence(pending, id, signer, reviewer, admit, ownerUi, f.manifest, delta, pre);
   // W-381 (D-070 C, D-076 D): the newest failed spec review (a revision's, a keeps-only branch's, or the two-review split's)
   // whose S1 blocker names a class seen before in another opus holds the spec until a title names the class
   const g = spec.gate;
@@ -1386,14 +1433,25 @@ export function deriveNext(f: Facts): Derived {
     // an officina that declares no light_gates keeps the W-312 order: the full gates before review (master's texts)
     const lightOn = (f.manifest as unknown as Record<string, unknown>)["light_gates"] !== undefined;
     const light = lightOn ? f.lightGates?.() : undefined;
-    const admitted = gates === undefined || gates.ok || light?.ok === true;
-    const lightError = light !== undefined && !light.ok ? light : undefined;
+    // W-699 (next-gate-meet-1119): gate evidence admits review only when the commit that last wrote it descends strictly from
+    // the commit that last wrote a red of this opus (git ancestry, never a log's time or a ticket); before a passed review at
+    // this tree a failed full-gate log at this tree refuses the light gates in any order, and a red committed at this tree
+    // admits only the full gates after it (design-lead, w699-b5-check-1119); unresolvable history refuses
+    const fresh: ReturnType<typeof freshGates> = gates === undefined ? { admitted: true } : freshGates(f, b, cur, gates.ok, light?.ok === true, gate?.status === "passed" && gate.tree === cur);
+    const admitted = fresh.admitted;
+    const lightError: LightAdmission | undefined = fresh.failed !== undefined ? { ok: false, error: fresh.failed.why, failed: fresh.failed.rel } : light !== undefined && !light.ok ? light : undefined;
     const lightOrder = (extra: [string, string][], fullCommand: string): Derived => {
-      if (!lightOn) return named("build", "producer", gates?.ok === false ? gates.error : "the gate evidence cannot be read", fullCommand, extra);
+      if (!lightOn || fresh.full === true) return named("build", "producer", fresh.stale ?? (gates?.ok === false ? gates.error : "the gate evidence cannot be read"), fullCommand, extra);
       const cmds = lightCommands(f, id);
       if ("error" in cmds) return hold("build", cmds.error);
-      return { ...named("build", "producer", lightError?.error ?? "the light gates are not passed at the current source tree", `from .worktrees/${id}: a ladder-runner runs bisellium next ${id} --perform --expect build (the light gates at this tree, logged and committed alone, chore(studio): ${id} light gates); a failing light gate is a builder's`, [["light-gates", cmds.join(" ; ")], ...extra]), act: "light-gates" };
+      return { ...named("build", "producer", fresh.stale ?? lightError?.error ?? "the light gates are not passed at the current source tree", `from .worktrees/${id}: a ladder-runner runs bisellium next ${id} --perform --expect build (the light gates at this tree, logged and committed alone, chore(studio): ${id} light gates); a failing light gate is a builder's`, [["light-gates", cmds.join(" ; ")], ...extra]), act: "light-gates" };
     };
+    // W-699: gate evidence older than the newest red is run again at this tree by the producer, never a builder's order
+    if (!admitted && fresh.stale !== undefined && !redo)
+      return lightOrder(
+        [["stale", fresh.stale]],
+        `from .worktrees/${id}: a ladder-runner runs bisellium run --sella producer --no-worktree --studio ${f.studioRel} -- npm run -s bisellium -- ci --opus ${id} --studio ${f.studioRel} --repo . (the full gates again, after the newest red; in the background); then it commits the record and its gate logs (chore(studio): ${id} gates)`,
+      );
     // W-326: with every red the replay's and no required fix standing, the light gates need no builder: the producer runs them
     if (!admitted && lightError?.failed === undefined && !redo && (fixCheck !== undefined || (fixes.length === 0 && replayed(f, bs, n))))
       return lightOrder(
@@ -1593,6 +1651,116 @@ function builderHandover(f: Facts, b: Dict): string | undefined {
   if (typeof at === "string" || at < f.evidenceAt()) return undefined;
   const sella = (t as Dict)["sella"];
   return sella === builderSella(f.manifest, f.id) ? `${sella} at ${new Date(at).toISOString()}, after the newest red or review log` : undefined;
+}
+
+/** W-699: whether the gate evidence at `cur` admits review after the newest red (`stale` says why not, `full` when only the
+ *  full gates can cure it: the newest red was committed at this source tree), and, before a passed review at `cur`, whether a
+ *  failed full-gate log at `cur` refuses the light gates in any commit order (`failed`). */
+function freshGates(f: Facts, b: Dict, cur: string, fullOk: boolean, lightOk: boolean, reviewedHere: boolean): { admitted: boolean; stale?: string; full?: boolean; failed?: { rel: string; why: string } } {
+  if (!fullOk && !lightOk) return { admitted: false };
+  const ref = `refs/heads/opus/${f.id}`;
+  const lastWrite = (path: string): string | undefined => {
+    const r = git(f.repo, ["log", "-1", "--format=%H", ref, "--", literal(path)]);
+    const oid = r.stdout.trim();
+    return r.status === 0 && r.error === undefined && /^[0-9a-f]{40}$/.test(oid) ? oid : undefined;
+  };
+  // ancestor strictly before descendant: 0 yes, 1 no, else unresolvable
+  const before = (a: string, d: string): boolean | undefined => {
+    if (a === d) return false;
+    const r = git(f.repo, ["merge-base", "--is-ancestor", a, d]);
+    return r.error !== undefined ? undefined : r.status === 0 ? true : r.status === 1 ? false : undefined;
+  };
+  const redsPath = officinaRel(f.studioRel, `ci/reds/${f.id}`);
+  const reds = git(f.repo, ["log", "-1", "--format=%H", ref, "--", literal(redsPath)]);
+  if (reds.status !== 0 || reds.error !== undefined || !/^([0-9a-f]{40})?$/.test(reds.stdout.trim()))
+    return { admitted: false, stale: `the commit of the newest red under ${redsPath}/ cannot be read, so no gate log is admitted; the gates run again` };
+  const red = reds.stdout.trim();
+  const afterRed = (path: string): string | undefined => {
+    const g = lastWrite(path);
+    if (g === undefined) return `the commit that last wrote ${path} cannot be read, so it is not admitted; the gates run again`;
+    if (red === "") return undefined;
+    const ok = before(red, g);
+    if (ok === undefined) return `the order of ${path} (${g.slice(0, 8)}) and the newest red (${red.slice(0, 8)}) cannot be read, so it is not admitted; the gates run again`;
+    return ok ? undefined : `${path} (${g.slice(0, 8)}) was not committed after the newest red under ${redsPath}/ (${red.slice(0, 8)}); the gates run again at this tree`;
+  };
+  // the exemption is marked, never inferred: a gate recorded `status: waived` has no log to compare; any other automated gate
+  // with no evidence log (an unmarked legacy record) is not admitted while a red exists
+  const probationes = isDict(b["probationes"]) ? b["probationes"] : {};
+  const fullWhys = automatedGates(f.manifest, b).flatMap((g) => {
+    const p = probationes[g];
+    if (isDict(p) && p["status"] === "waived") return [];
+    if (isDict(p) && typeof p["evidence"] === "string") return [afterRed(officinaRel(f.studioRel, p["evidence"]))];
+    return [red === "" ? undefined : `${g} records no gate log to compare with the newest red under ${redsPath}/ (only a gate recorded status: waived is exempt); the gates run again`];
+  });
+  const fullWhy = fullOk ? fullWhys.find((w) => w !== undefined) : "not passed";
+  if (fullOk && fullWhy === undefined) return { admitted: true };
+  // the newest red's own source tree: equal to `cur`, no source changed after it, so only the full gates can admit review
+  let redTree: string | undefined;
+  if (red !== "") {
+    try {
+      redTree = `tree:${sourceTreeHash(f.repo, f.excludes, red)}`;
+    } catch {
+      return { admitted: false, stale: `the source tree of the newest red (${red.slice(0, 8)}) cannot be read, so no gate log is admitted; the full gates run again`, full: true };
+    }
+  }
+  const sameTree = redTree === cur;
+  if (!lightOk) return { admitted: false, stale: fullWhy, ...(sameTree ? { full: true } : {}) };
+  // before a passed review, a failed full-gate log at this tree refuses the light gates whatever the commit order: a narrower
+  // light pass at the same tree never cures a full-suite failure (only a full pass here or a changed source tree does)
+  if (!reviewedHere) {
+    const logs = committedFullLogs(f, ref, cur);
+    if ("error" in logs) return { admitted: false, stale: logs.error, full: true };
+    if (logs.failed !== undefined) {
+      const path = officinaRel(f.studioRel, `ci/${logs.failed}`);
+      return { admitted: false, failed: { rel: `ci/${logs.failed}`, why: `${path} failed at this source tree; a light pass at the same tree does not cure it (a failing full gate is a builder's)` } };
+    }
+  }
+  if (sameTree)
+    return { admitted: false, stale: `the newest red under ${redsPath}/ (${red.slice(0, 8)}) was committed at this source tree, so no light run admits review: the full gates run again after it, or the source changes`, full: true };
+  const lightWhy = afterRed(officinaRel(f.studioRel, lightLogRel(f.id, cur)));
+  return lightWhy === undefined ? { admitted: true } : { admitted: false, stale: lightWhy };
+}
+
+/**
+ * W-699 r4 (spec review r2 #1): the full-gate logs at `cur` as the committed `opus/<id>` tree holds them, never the worktree's
+ * files: each `ci/<id>-<gate>-<tree8>.log` there (the light log excluded) is a regular blob that opens `certifies: <cur>` and
+ * carries `readGateStatus`'s one writer-form status on line 3. Returns the first failed one, or why the set cannot be read:
+ * unreadable history or a committed deletion (`fullGateRuns`, reused), an unlistable tree, a non-regular entry, an unreadable
+ * blob, another opening or status grammar, and a tracked modification or deletion of such a log in the worktree all refuse.
+ * An untracked or ignored worktree file is in no commit and never counts. Fail closed: the full gates run again.
+ */
+function committedFullLogs(f: Facts, ref: string, cur: string): { failed?: string } | { error: string } {
+  const dir = officinaRel(f.studioRel, "ci");
+  const tail = `-${cur.slice(5, 13)}.log`;
+  const isFull = (name: string): boolean => name.startsWith(`${f.id}-`) && name.endsWith(tail) && name !== `${f.id}-light${tail}`;
+  const again = "so no light log is admitted; the full gates run again";
+  const runs = fullGateRuns(f.wt.dir, f.studioRel, f.id, cur);
+  if ("error" in runs) return { error: `${runs.error}; ${again}` };
+  const ls = git(f.repo, ["ls-tree", "-z", "--full-name", ref, "--", `${dir}/`]);
+  if (ls.status !== 0 || ls.error !== undefined) return { error: `the committed ${dir}/ of opus/${f.id} cannot be listed, ${again}` };
+  let failed: string | undefined;
+  for (const entry of ls.stdout.split("\0").filter(Boolean)) {
+    const m = /^([0-7]{6}) ([a-z]+) ([0-9a-f]{40})\t(.+)$/s.exec(entry);
+    if (m === null) return { error: `the committed ${dir}/ of opus/${f.id} lists an unreadable entry, ${again}` };
+    const [, mode, type, oid, path] = m as unknown as [string, string, string, string, string];
+    const name = path.slice(dir.length + 1);
+    if (!path.startsWith(`${dir}/`) || name.includes("/") || !isFull(name)) continue;
+    if (type !== "blob" || (mode !== "100644" && mode !== "100755")) return { error: `${path} is not a regular file on opus/${f.id} (mode ${mode}), ${again}` };
+    const blob = git(f.repo, ["cat-file", "blob", oid]);
+    if (blob.status !== 0 || blob.error !== undefined) return { error: `${path} cannot be read from opus/${f.id}, ${again}` };
+    if (blob.stdout.split("\n")[0] !== `certifies: ${cur}`) return { error: `${path} on opus/${f.id} does not open with certifies: ${cur}, ${again}` };
+    const status = readGateStatus(blob.stdout);
+    if ("error" in status) return { error: `${path} on opus/${f.id} carries no readable status (${status.error}), ${again}` };
+    if (!status.passed) failed ??= name;
+  }
+  if (failed !== undefined) return { failed };
+  // a tracked full-gate log the worktree changed or deleted disagrees with the committed tree: neither copy is admitted
+  // --no-renames: a staged rename is its deletion and its addition, each one `XY <path>` record (r4b, class census)
+  const st = git(f.wt.dir, ["status", "--porcelain", "-z", "--no-renames", "--untracked-files=no", "--", literal(dir)]);
+  if (st.status !== 0 || st.error !== undefined) return { error: `git status of ${dir}/ in the worktree failed, ${again}` };
+  const changed = st.stdout.split("\0").filter((r) => r.length > 3).map((r) => r.slice(3)).filter((p) => p.startsWith(`${dir}/`) && isFull(p.slice(dir.length + 1)));
+  if (changed.length > 0) return { error: `${[...new Set(changed)].sort().join(", ")} differs in the worktree from opus/${f.id} (a tracked modification or deletion), ${again}` };
+  return {};
 }
 
 /** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */

@@ -36,7 +36,7 @@ interface Values {
 }
 const FULL: Values = { cw: 19, c5: 16, xw: 39, ctx: 208732 };
 /** The reading of FULL as the hook shows it. */
-const LINE = "Claude week 19%, 5h 16% | Codex week 39% | context 208k of 300k";
+const LINE = "Claude week 19%, 5h 16% | Codex week 39% | context 208k of 200k";
 const USAGE = (h: string): string => join(h, ".bisellium-evidence", "usage");
 /** A home whose status-line file and newest Codex log hold `v`, each only when it holds a value. */
 function home(v: Values): string {
@@ -106,7 +106,7 @@ test("W-508-b2 behaviour 2: a Stop shows the Patron the reading of the plans' ow
   const recent = home({ ...FULL, seenAgoMs: 29 * 60_000 });
   assert.equal(shown(await hook(recent, stop(words(20)))), LINE, "a status line 29 minutes old: no mark");
   const lacks = home({ cw: 19, xw: 39 });
-  assert.equal(shown(await hook(lacks, stop(words(20)))), "Claude week 19%, 5h ?% | Codex week 39% | context ?k of 300k", "a value the source lacks is ?");
+  assert.equal(shown(await hook(lacks, stop(words(20)))), "Claude week 19%, 5h ?% | Codex week 39% | context ?k of 200k", "a value the source lacks is ?");
   const none = home({});
   const silent = await hook(none, stop(words(20)));
   assert.equal(silent.code, 0, "no source at all: exits 0");
@@ -115,7 +115,7 @@ test("W-508-b2 behaviour 2: a Stop shows the Patron the reading of the plans' ow
   mkdirSync(join(USAGE(bad), "claude-latest.json"));
   const unread = await hook(bad, stop(words(20)));
   assert.equal(unread.code, 0, "an unreadable status-line file: not refused");
-  assert.equal(shown(unread), "Claude week ?%, 5h ?% | Codex week 39% | context ?k of 300k", "an unreadable status-line file: its values are ?");
+  assert.equal(shown(unread), "Claude week ?%, 5h ?% | Codex week 39% | context ?k of 200k", "an unreadable status-line file: its values are ?");
   assert.equal((await hook(h, stop(words(20), { stop_hook_active: true }))).out, "", "a continuation shows nothing");
   assert.equal((await hook(h, stop(words(20), { agent_id: "a1" }))).out, "", "a subagent's Stop shows nothing");
   assert.equal((await hook(h, stop(undefined))).out, "", "a Stop with no reply text shows nothing");
@@ -148,7 +148,7 @@ test("W-508-b3 behaviour 3: at the session's next prompt the model is handed the
   const h = home(FULL);
   const next = await hook(h, prompt());
   assert.equal(next.code, 0, "a prompt is not blocked");
-  assert.match(context(next), /context 208k of 300k/, "the model is named the count and the limit");
+  assert.match(context(next), /context 208k of 200k/, "the model is named the count and the limit");
   assert.ok(context(next).includes(LINE), "the reading reaches the model before it writes");
   assert.match(context(next), /need not carry it/, "the model is told a reply need not carry the reading");
   assert.ok(context(await hook(h, prompt())).includes(LINE), "the reading reaches every prompt");

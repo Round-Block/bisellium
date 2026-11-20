@@ -71,8 +71,9 @@ detection. The Aedile owns the road, not the work travelling on it.
   The guard holds it at the main thread's AskUserQuestion: each question cites
   the meet's collation by its path, or opens with a Patron-only tag, `[ui]`,
   `[architecture]`, `[code-owner]`, `[settings]` or `[veto]` (W-572) (check: hook.guard)
-- **Session hygiene.** Refresh before the context nears 350k (Patron 2026-10-13; subagent dispatches stay capped at 500k), at a clean
-  point. The restart loop (`~/projects/bisellium/scripts/cascade-loop.sh`)
+- **Session hygiene.** Hand off at 200k context, at a clean point (D-245 item 5; subagent dispatches stay capped at 500k):
+  at 200k on a fresh status line `next` holds every dispatch order and the UserPromptSubmit hook names the handoff
+  at each prompt (W-699). The restart loop (`~/projects/bisellium/scripts/cascade-loop.sh`)
   automates fresh sessions; never run it while a session is working.
 - **Usage.** At ~98% Claude usage (the Patron reports it) start no new Opus
   work unless the Patron says go; never kill a running agent. Prefer Codex
@@ -182,7 +183,13 @@ names each step and writes the step ticket the next record write consumes
    `verdict` refuses for its shape (an `## Earlier findings` line without `- `, or
    one naming a blocker that does not stand) is reissued by the same session,
    never edited by hand.
-   Any brief edit needs a new signature and review. On pass, `branch` commits it as the opus branch's first commit.
+   Any brief edit needs a new signature. The signature log pins one digest per contract section (Promise/Intent,
+   Behaviours, Input domain, Interfaces, Limits/Defaults, the Files owned path set, and every other section but
+   Acceptance, Out of scope, the title and Status lines), computed by the writer and recomputed by `next`, never
+   claimed. When every digest equals the signature a passed or design-keeping review read, or Files owned is
+   respelled to the same set, the re-signature stands with that review: no new review, no failed-round reset.
+   Anything else, a log with no digests included, needs a review (D-245 item 3, W-699). The rule runs only while
+   `studio/bisellium.yml` says `spec: { delta_review: on }`; on an escape it is switched off at once (D-246 item 2). On pass, `branch` commits it as the opus branch's first commit.
    Reused, unchanged code is one input judged by its exit, one row per
    unchanged job (D-050); an unchanged line inside a changed function is
    reused code too, unless a promise depends on it (D-054). Only a real
@@ -191,7 +198,10 @@ names each step and writes the step ticket the next record write consumes
    security gap, or missing or false evidence; wording findings (S2, S4) are
    advisories with replacement text the builder adopts, S3 is noted. A second
    spec review runs only after a design-changing S1 (D-076 B); two reviews are
-   the ceiling (D-061 §4). A blocker carries `[design: changes|keeps]`; a failed round whose blockers
+   the ceiling (D-061 §4). A blocker carries `[design: changes|keeps]`; one that only implements or tests an already-specified
+   invalid-value refusal of a config value, with no change to promise, interface, behaviour, input domain or Files
+   owned, keeps the design: a required build fix with a test row; a changed runtime reader must still reject, and a
+   wrong classification stays `changes` (D-245 item 2). A failed round whose blockers
    all keep the design goes to `branch` with them as required build fixes, and a blocker tagged S2-S4 is
    sent back to its reviewer session, never downgraded (D-086).
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
@@ -366,3 +376,4 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
 | 2026-11-07 | §9 step 7: a ladder-runner runs and lands the daily retro, the qa-lead writes its proposed improvements, `next` names the three steps, `check` warns rather than refuses, and a missing entry holds only an opus with no signed spec (D-188, W-530) | Patron |
 | 2026-11-07 | §7: a call that would wait on the Patron rests on a meet of the relevant leads, not the producer's recommendation alone (D-189) | Patron |
 | 2026-11-08 | §9 steps 3 to 5: a builder runs only the test files it touches and typecheck, never the full suite or `ci --opus`; after its handoff `next` names a ladder-runner's `ci --opus` in a run session, once per review round (W-541; the leads' speed meet, D-189) | Leads (D-189); Patron at merge |
+| 2026-11-19 | §7 session hygiene: hand off at 200k, held by `next` and named by the prompt hook; §9 step 2: the contract-digest delta rule, its `spec.delta_review` switch, and the keeps definition of a config-value refusal (D-245 items 2, 3, 5; W-699) | Patron (D-245) |

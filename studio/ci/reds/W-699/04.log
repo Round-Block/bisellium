@@ -1,0 +1,37 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-699-b4\s --import tsx packages/cli/src/w699.test.ts
+# exit: 1
+# at: 2026-11-20T03:26:45.790Z
+# sella: builder.W-699
+# tree: tree:1e6eac57d4018f23eb0dbe687a7fbdeef0432365
+# ticket: {"opus":"W-699","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-699/studio","head":"3611350d71105970e334d2fc4fc1051f361caab7","brief":"31b703ac0f73b20a95abb842ac4bf74cbe55ffe7","at":"2026-11-20T03:26:41.684Z"}
+
+TAP version 13
+# Subtest: W-699-b4 behaviour 4: at 200000 context tokens on a fresh status line the prompt hook names the handoff first, at every prompt
+not ok 1 - W-699-b4 behaviour 4: at 200000 context tokens on a fresh status line the prompt hook names the handoff first, at every prompt
+  ---
+  duration_ms: 12.657758
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/w699.test.ts:14:4286'
+  failureType: 'testCodeFailure'
+  error: 'at 200k the handoff opens the context'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'Usage now: Claude week 19%, 5h ?% | Codex week ?% | context 200k of 300k. The Stop hook shows the Patron the latest reading under each reply, so a reply need not carry it.'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/w699.test.ts:239:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 29.555056

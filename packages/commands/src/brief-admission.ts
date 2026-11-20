@@ -8,7 +8,7 @@
 /** The text with everything that is not real brief content blanked, line for line: fenced blocks (`^\s{0,3}`
  *  then three backticks toggles) and HTML comments (`<!-- … -->`, on one line or several). One rule for every
  *  reader below, so a decoy heading, numbered line or marker hidden in either cannot be selected or ended on. */
-function realLines(briefText: string): string[] {
+export function realLines(briefText: string): string[] {
   let fence = false;
   let comment = false;
   return briefText.split(/\r?\n/).map((line) => {
@@ -758,6 +758,22 @@ export function ownedFiles(briefText: string): string[] {
  *  none. A later span on the bullet (a command, prose, a file named in passing) is not a slot. */
 export function ownedPathSlots(briefText: string): string[] {
   return ownedBulletSpans(briefText).flatMap((spans) => spans.slice(0, 1));
+}
+
+/** W-699 (D-245 F3a): each Files owned bullet (as `ownedBullets` counts them) with its brief line, its path slot (the first
+ *  backticked span, a leading `./` dropped; none when the bullet has no span) and whether it is marked new: the text right
+ *  after the slot's closing backtick opens, after optional spaces, `(new)` or `(new,`. Text only. */
+export function ownedSlotMarks(briefText: string): { line: number; slot?: string; marked: boolean }[] {
+  let owned = false;
+  const out: { line: number; slot?: string; marked: boolean }[] = [];
+  realLines(briefText).forEach((line, i) => {
+    if (/^## /.test(line)) owned = line.trim() === "## Files owned";
+    else if (owned && /^ {0,3}[-*+] +\S/.test(line)) {
+      const m = /`([^`]+)`(.*)$/.exec(line);
+      out.push(m === null ? { line: i + 1, marked: false } : { line: i + 1, slot: m[1]!.replace(/^\.\//, ""), marked: /^ *\(new[),]/.test(m[2]!) });
+    }
+  });
+  return out;
 }
 
 /** The brief's form with its error, if any. An excluded light brief is `{ light: true, error }`: it is checked as light

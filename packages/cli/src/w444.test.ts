@@ -51,7 +51,7 @@ function home(lines: string[] | undefined): string {
 }
 const LATEST = { cw: 19, c5: 16, xw: 39, ctx: 208732 };
 /** The latest reading's four parts, as the reply carries them: 12 words. */
-const LINE = "Claude week 19%, 5h 16% | Codex week 39% | context 208k of 300k";
+const LINE = "Claude week 19%, 5h 16% | Codex week 39% | context 208k of 200k";
 const words = (n: number): string => Array.from({ length: n }, (_, i) => `w${i}`).join(" ");
 /** The guard on one Stop input, HOME set to `h`: its exit code and stderr; what the hook prints on stdout is W-508-b2's and stays out of the TAP stream. */
 async function stop(h: string, input: Record<string, unknown>): Promise<{ code: number; err: string }> {

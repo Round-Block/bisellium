@@ -1,0 +1,30 @@
+# opus: W-699
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-20T02:27:39.748Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# brief: briefs/W-699.md blob:31b703ac0f73b20a95abb842ac4bf74cbe55ffe7
+# ticket: {"opus":"W-699","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"7790913e0f956eca7e4d0333e3b6b413db06e6d7","brief":"31b703ac0f73b20a95abb842ac4bf74cbe55ffe7","at":"2026-11-20T02:27:38.801Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-699-spec/r4b/promise-ledger-r4b.md
+Gate log: /home/edckt/.bisellium-evidence/W-699-spec/r4b/gate-r4b.log
+
+## Findings
+
+1. advisory — revision 4b answers kit 725's dry run, where verdict refused signature r4 (e2c84d3c) because review×fail-open-on-malformed-records-patched-per-site (spec review r2's S1) is a repeated class and brief-r4 named no census; brief-r4b is brief-r4 plus the one Class census line and only the edits the census proves owed, no line added above the census line, so every brief:<n> of r4 stands; signature r4 is superseded — check: s8-records/kit-725/dry.log; r4b/brief-r4b.diff; r4b/scripts/brief-r4b.py
+2. advisory — the census reads every line the series adds to the Files owned sources that reads a record or takes a fallback (a git reply, a file, a listing, front matter, a log header, a manifest or record key, a ticket, a status line; a continue, a catch body, an empty return) and claims each for its Input domain row under brief:43's one rule; at master 88437871 with prototype-r4b applied it gives 91 closed sites and 8 stated limits, no open site and no gap; on the r4 series it finds 5 open lines at 4 sites (exit 1) — check: r4b/class-census.py; r4b/class-census.out; r4b/class-census-r4.out
+3. advisory — the four sites, each closed by the one rule rather than a patch of its own, each with one row: the delta walk skipped an unreadable log, or one neither a valid signature nor a valid review, between the review and the re-signature and stood with an older review (no delta now; brief:31, brief:48; b2 "a malformed review below the re-signature is unclassifiable: review"); committedFullLogs' git status parsed a staged rename's deletion as nothing (--no-renames now; brief:37, brief:51, brief:126; b5 "a tracked full-gate log renamed in the worktree does not admit review"); checkDeltaReview read an unlistable lessons/ as no escape (it blocks now; brief:31, brief:55, brief:106; b2 "an unlistable lessons/ blocks while the switch is on"); specMeasure did not count an escape naming no opus, so it could PASS beside one (it refuses now; brief:39, brief:52, brief:132; b6 "an escape naming no opus refuses the measure") — check: r4b/scripts/apply-r4b.py; r4b/open-r4-b2.out, open-r4-b5.out, open-r4-b6.out (the new rows failing on r4's source)
+4. advisory — kills k32-k35 restore r4's code at each site, one hunk of one source file each, and fail their rows at the new assertions; k1-k31 re-run at r4b's g2 all fail their pinned rows as in r4, k27 now first at the rename row that precedes its modified row in b5 — check: r4b/kills/kills.log; r4b/kills/k32.out .. k35.out; r4b/scripts/kills-r4b.py
+5. advisory — each red fails by assertion on t0 over master 05612725 at its declared assertion, as r4's, and each behaviour passes at g1 — check: r4b/r4b-red-b1-master.out .. r4b-red-b6-master.out; r4b/r4b-green-b1-g1.out .. r4b-green-b6-g1.out; r4b/reds.out
+6. advisory — the pre-sign gate ran in a fresh clone on the named branch w699-presign-r4b (base 05612725, a real npm ci with the kept cache, the mbox applied by git am): series sha256 858eb26e makes tree ab475aaf, 77 rows, all exit 0, none deferred, 15.4 minutes; check (0 blocking) and typecheck pass there; lint (0 errors; 17 warnings, as r4) and format:check pass — check: r4b/gate-r4b.log; r4b/presign-direct-r4b.out; r4b/presign-series-r4b.txt; r4b/lint-r4b.out; r4b/format-r4b.out
+7. advisory — the series keeps r4's base 05612725; on master 88437871 it conflicts with W-531's roster argument (package.json's runner line, five blocks of next.ts, one of retro.ts), resolved mechanically for the census by scripts that add W-531's argument and nothing else, where typecheck passes; the builder rebases the same way — check: r4b/scripts/rebase-r4.sh; r4b/scripts/resolve-src.py; r4b/rebase-r4b.out; r4b/tc-r4b-88437871.log
+8. advisory — the promise ledger is r4's with every code citation moved to r4b's g2 by git's line map (154 of 156 to the same code text; the 2 others are the status line r4b changes) and the census sites, pins and kills k32-k35 added on their lines — check: r4b/promise-ledger-r4b.md; r4b/scripts/ledger-r4b.py; r4b/ledger-lines-r4b.out
+9. advisory — stated limits, not promises (D-076 E): reused code the promises lean on is named, never promised: fullGateRuns, admitCurrentGates and admitLightGates (they check only the logs they read), failedSpecReviews' count below the walk (history, as on master), specSectionsProblem, requireTicket, takeReading, lesson.shape and lesson.addressed_by, dailyRounds and reviewRounds, the ready rung's builder_runtime hold, builderHandover, W-610's ci-runs rung, sourceTreeHash; the guard's VERDICT_VALUED is a second copy of verdict's valued flags, equal today; a hand-written log of the right shape is outside the threat model (D-045) — check: brief Promises' limits; r4b/class-census.out limit lines; r4b/promise-ledger-r4b.md scoped lines
+10. advisory — admission (0), the Files owned path check (0) and declared-reds-check (0) pass on brief-r4b; it is 35272 bytes (r4 32997), the growth being the census line and the four sites' text in their rows — check: r4b/admission-r4b.out; r4b/paths-r4b.out; r4b/declared-reds-check-r4b.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 4b at `studio/briefs/W-699.md` (copy: /home/edckt/.bisellium-evidence/W-699-spec/r4b/brief-r4b.md, sha256 25502604), prototype series sha256 858eb26e at master 05612725.

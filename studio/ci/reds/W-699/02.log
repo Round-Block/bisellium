@@ -1,0 +1,50 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-699-b2\s --import tsx packages/cli/src/w699.test.ts
+# exit: 1
+# at: 2026-11-20T03:18:29.838Z
+# sella: builder.W-699
+# tree: tree:d0a6750d6af2d8026ca712328d64c91d508cdcc6
+# ticket: {"opus":"W-699","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-699/studio","head":"7fb5327ebefc869f915cae62164a42e8be2aa861","brief":"31b703ac0f73b20a95abb842ac4bf74cbe55ffe7","at":"2026-11-20T03:18:24.619Z"}
+
+TAP version 13
+# Subtest: W-699-b2 behaviour 2: a re-signature whose contract digests equal the reviewed signature's stands with that review; an edited Behaviour line still orders the review
+not ok 1 - W-699-b2 behaviour 2: a re-signature whose contract digests equal the reviewed signature's stands with that review; an edited Behaviour line still orders the review
+  ---
+  duration_ms: 3222.241427
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/w699.test.ts:5:25'
+  failureType: 'testCodeFailure'
+  error: 'the signature pins the contract digests'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    # opus: W-900
+    # phase: spec
+    # round: 3
+    # sella: architect
+    # outcome: passed
+    # at: 2026-10-02T01:00:00.000Z
+    # tree: tree:ac304eae5cd892df8d2ba34d6b5526d1e2078233
+    # brief: briefs/W-900.md blob:77f35f8e292620e7f6d923a16db4161361f1efba
+    
+    ## Findings
+    No findings
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/w699.test.ts:70:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3247.09224

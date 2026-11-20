@@ -1,0 +1,67 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-699-b5\s --import tsx packages/cli/src/w699.test.ts
+# exit: 1
+# at: 2026-11-20T03:30:02.366Z
+# sella: builder.W-699
+# tree: tree:b801d1852881d9f6d514412db82240c378bee50c
+# ticket: {"opus":"W-699","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-699/studio","head":"f2107bde78261cea186161be2f9bf5a6980c2832","brief":"31b703ac0f73b20a95abb842ac4bf74cbe55ffe7","at":"2026-11-20T03:29:57.802Z"}
+
+TAP version 13
+# Subtest: W-699-b5 behaviour 5: gate evidence admits review only when committed after the newest red; a red at the review tree or a failed full-gate log there needs a full pass or a source change
+not ok 1 - W-699-b5 behaviour 5: gate evidence admits review only when committed after the newest red; a red at the review tree or a failed full-gate log there needs a full pass or a source change
+  ---
+  duration_ms: 3847.94039
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/w699.test.ts:24:17'
+  failureType: 'testCodeFailure'
+  error: |-
+    a light log committed before the newest red does not admit review
+    --- exit 0
+    --- stdout
+    next: W-900 review named
+    actor: censor
+    why: no review gate is recorded
+    head: opus/W-900 3918eb1c77d5
+    role: censor
+    sella: qa-lead
+    boot: bisellium context --sella qa-lead --studio studio
+    budget_tokens: 100000
+    phase: review
+    round: 1
+    inputs: briefs/W-900.md, ci/reds/W-900/, opera/W-900.md#traditio
+    command: dispatch qa-lead; Packet first: node --import tsx scripts/review-packet.mjs --phase build --opus W-900 --round 1 --sella qa-lead --studio studio --repo . --packets <packet dir>; If the author disputes a finding with evidence, send studio/prompts/rebuttal.md and the author's ## Rebuttal into the same session and record the reviewer's ## Ruling in the same verdict.; record the transcript with: bisellium verdict W-900 --round 1 --sella qa-lead --outcome <passed|failed> --studio studio --session <the session id the reviewer prints>; close out with: bisellium review W-900 --pass|--fail --evidence ci/W-900-review-1.log --round 1 --sella qa-lead --studio studio. Use the word class in a blocker that recurs across sites (L-069).
+    health: no step recorded
+    meanwhile: codex-review wait on a Codex review: records: file and land records from main: bisellium land <paths> --title <title> --sella producer --studio studio; no edit in the opus worktree or to its Files owned
+    meanwhile-locks: writer none · stash none · heavy 0 of 3 · ahead none
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 review named'
+    - 'next: W-900 build held'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 build held'
+  actual: 'next: W-900 review named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/next-world.test.ts:813:10)
+    builderHeld (/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/w699.test.ts:301:3)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-699/packages/cli/src/w699.test.ts:332:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3871.560147
