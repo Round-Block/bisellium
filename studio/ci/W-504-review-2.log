@@ -1,0 +1,44 @@
+# opus: W-504
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: claude-opus-5-5
+# session: 998674e1-8b96-4a63-beb4-46f9bfc7fcb3
+# session_reason: round-2 sessions 2ad36d68 and 9cbc4dd0 were refused for an Earlier findings section round 1 did not need and a sandboxed claude -p session cannot be resumed; a fresh Opus 5.5 session reissues round 2
+# outcome: passed
+# at: 2026-11-21T03:27:31.232Z
+# tree: tree:bffce34f9fea598e6d6616b6dbc587314cdd54e4
+# ui_input: ci/W-504-spec-8.log
+# design_digest: sha256:65a1302af108fcc2116fb8a96e949047325c7477ebe6bc73a9af3696a8e5bcad
+# ticket: {"opus":"W-504","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-504/studio","head":"9955f0e597890add737a5244b812a9d46a749795","brief":"e12f7dc2edf3c54b0376fb6174bbdad628a8a89c","at":"2026-11-21T03:27:27.336Z"}
+
+## Findings
+1. advisory — studio/decisions/D-254.md:9 [severity: S4] D-254 records the Patron's screen approval for tree `b4657420…`, and its `kill_when` says it ends "when W-504's served tree or design digest changes". The fix commit 543842a0 changes the tree but touches only the Node wrapper `apps/web/test/w504.test.ts`. No served source changed: `Home.tsx`, `home.ts`, `w025.css` and `w504.spec.ts` are the same as at round 1, and the attached captures match the approved set. So the approval still describes what is served, but its tree pin no longer names the head going to merge. Whether D-254 carries over or needs a fresh pin is a records call for the producer; it is not a defect in the opus. — check: none: a merge-gate rule that compares a `ui_rulings` decision's `certifies` tree with the served-source subtree (Files owned minus `test/`), not the whole tree [class: process×approval-pin-whole-tree]
+
+## UI input disposition
+The authoritative ui-lead input (ci/W-504-spec-8.log) passed with no findings, and I keep relying on it for the populated card's hierarchy and its 8px squares-then-count grouping. This round's change touches no served file, so nothing in that input is reopened. I looked at all ten attached images, and they match the round-1 served set:
+- **Home 1280:** the attention row (Needs you, then Stuck and Health in a column) has equal-height tiles. Work in progress follows, then the quiet line `No completion record is available.` outside any card (brief:15, brief:48). There is no Spend, Provider readings or Time heading.
+- **Home 390:** the cards stack Needs you → Stuck → Health → WIP, nothing is clipped, and the absence line sits just below the fold.
+- **Inbox, Board, Seats and Officina at both widths:** the diff does not touch these screens. Navigation, the reason input, the four record actions, the Board's sideways-scroll cue at 390 and the Seats controls all stay reachable, with no horizontal overflow.
+
+No image contradicts the brief, so the images do not change the verdict.
+
+## Verdict
+**Delta (the cwd fix):**
+- `w504.test.ts` now resolves `playwright.serve.config.ts` from `import.meta.url` and spawns from the repository root it derives the same way. The old path was relative to `process.cwd()`. The red from cwd `apps/web` fails on exactly that (`apps/web/apps/web/playwright.serve.config.ts does not exist`), and b1 and b2 are green from both cwds.
+- The dropped `mkdirSync(apps/web/node_modules)` is not needed: the config and harness use no cwd-relative `node_modules` path.
+- The other W-504-added paths are already cwd-independent:
+  - `w504.spec.ts` uses the harness's `REPO_ROOT`, which comes from `import.meta`.
+  - `tokens.test.ts` reads files relative to `HERE`, which also comes from `import.meta`.
+  - `test:policy` runs `test/w504.test.ts` relative to the `apps/web` workspace.
+- Older wrappers that still use `process.cwd()` (w300, w467, w675.test.ts) are not W-504's.
+
+**Rest of the opus, unchanged from round 1:**
+- The source diff is exactly the eight Files owned (brief:27-34).
+- The `w675.spec.ts` change moves only `READY_SELECTORS.home`.
+- `data-completion-settled` needs both the Completion read and the attention read to have settled, and b2 pins both orderings.
+- Reds 01 and 02 fail by assertion on their commits.
+
+**Gates:** the light-gates log `W-504-light-bffce34f.log` (head dc28d54) passes W-504-b1/b2 and the tokens census. The prompt named `W-504-light-b4657420.log`, but that log certifies round 1's tree, so I relied on the newer one. I could not confirm from files alone that tree bffce34f is the tree at the reviewed head 9955f0e. Only light gates have run; the full `ci --opus` runs after this review.
+
+VERDICT: PASS
