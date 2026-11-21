@@ -1,0 +1,25 @@
+# opus: W-504
+# phase: spec
+# round: 10
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 551bbb11-c4db-484d-a3be-cf72c1f40765
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed, so a fresh session of the same reviewer reviewed round 10
+# outcome: passed
+# at: 2026-11-21T06:20:17.068Z
+# tree: tree:307d65606738e06ac6484e00083044539c4a251f
+# brief: briefs/W-504.md blob:b1a385b8611b795fed129b8ccd67d5d12f215cd8
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":10,"actor":"spec-reviewer","studio":".worktrees/W-504/studio","head":"d49384ee792f357f46fe02d65b67ed0edd53200d","brief":"b1a385b8611b795fed129b8ccd67d5d12f215cd8","at":"2026-11-21T06:19:16.056Z"}
+
+I'm writing up the verdict: the amendment holds, with three advisory notes.
+
+## Findings
+1. advisory — brief:67 [severity: S2] The Milestone numbers row names "`homeCompletion` equality" as a rejecter. That equality sits only in the Node TAP row `apps/web/test/w504.test.ts` b1, which option (a) took out of `test:policy`. No CI step runs it now: `test:serve` runs only `tests-serve/*.spec.ts`, and `w504.spec.ts` has no projection assertion. In CI the served text and unit counts are the only rejecter. Replacement text: "| Milestone numbers | …as now… | runner: `web-e2e` `test:serve` runs the served text and unit-count expectations, which reject changed valid facts; the `homeCompletion` equality in `test/w504.test.ts` runs at red/green and locally only, not in CI (meet w504-ci-order-meet-1121 option a) |" [class: ci×gate-not-run-in-ci] — check: none: a policy row that asserts each fact named as a rejecter in the Input domain sits in a file some CI step runs
+
+2. advisory — brief:73 [severity: S4] `servedRow`'s `assert.equal(result.status, 0, …)` is now the rejecter only for the red/green and local wrapper runs. In CI, the `web-e2e` `test:serve` step's non-zero exit is the rejecter for the same served rows. Neither has `continue-on-error`, so both fail closed. Replacement text: append "; in CI the `web-e2e` step `npm run -s test:serve --workspace @bisellium/web` (no `continue-on-error`) runs both W-504 served specs after `npx playwright install --with-deps chromium`, and its non-zero exit fails the required job" [class: ci×gate-not-run-in-ci] — check: none: a check that the rejecter named for each served row matches the CI step that runs it
+
+3. advisory — brief:89 [severity: S4] The browser-free `test:policy` promise rests on fix eae93828, which changed `package.json` only. No row pins it, so re-adding a Playwright wrapper would surface again only in the merge queue (it fails closed there, not open). Replacement text: "`apps/web/package.json` leaves `test/w504.test.ts` out of browser-free `test:policy` (kept browser-free by convention; no automated check pins it, per the meet's question 2); both W-504 served rows remain gated by `test:serve`, and no new dependency or script family appears." [class: ci×browser-in-policy-suite] — check: none: a policy row that runs `PLAYWRIGHT_BROWSERS_PATH=<empty dir> npm run -s test:policy --workspace @bisellium/web` and expects exit 0
+
+## Verdict
+Passed: the amendment keeps every promise true and both served rows still gated. At `d49384ee`, `test:policy` is browser-free, and `test:serve` (testDir `./tests-serve`, after the Chromium install in `ci.yml` lines 185–187) runs both `W-504-b1` and `W-504-b2` served specs fail-closed. The only loss is that the pure-projection equality now runs at red/green and locally only, which is advisory. Nothing changed on screen since my round 7 and ui-lead round 8, so the sense check finds nothing new.
+VERDICT: PASS
