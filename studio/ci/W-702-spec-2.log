@@ -1,0 +1,24 @@
+# opus: W-702
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1f8db-a7a5-7130-9755-f4d1429a196e
+# outcome: passed
+# at: 2026-11-20T13:05:12.923Z
+# tree: tree:770c5ba906343d0a0e5ccc27d6ed57a145c63bc0
+# brief: briefs/W-702.md blob:dc6b0de58b4eb4846d134c57493b48f15813820a
+# ticket: {"opus":"W-702","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"e11fb1186fa95ad0b7f9f9d746a5f853c75a5e58","brief":"dc6b0de58b4eb4846d134c57493b48f15813820a","at":"2026-11-20T13:05:12.243Z"}
+
+## Findings
+1. advisory — brief:45 `reviewRequestOf` silently normalizes and truncates the GraphQL title and normalizes both `CheckRun.name` and `StatusContext.context`, although the brief promises the PR’s facts without naming those transformations. Replace brief:45’s title domain with “a string title whose C0/C1 runs become one space, cut to 1,024 UTF-16 code units”; add to brief:47 “C0/C1 runs in either check-name form become one space, while an empty or over-1,024-unit normalized name refuses”; and qualify “title” at brief:27 likewise. [severity: S2] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-queue.test.ts (W-702-b1)
+2. advisory — brief:46 A non-object review node or one without a string `author.login` is skipped as though proved non-owner, and an owner node with an unknown state is ignored; either can conceal the latest owner opinion in the promised complete page. Replace “PENDING and a non-owner’s review are skipped” with “PENDING and a node with a valid non-owner login are skipped; a non-object node, missing or malformed author login, or owner node with an unknown state refuses.” [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-queue.test.ts (W-702-b1)
+3. advisory — brief:50 `readBoundedRegular` decodes bytes with replacement characters, so invalid UTF-8 inside an otherwise parseable snapshot can pass `JSON.parse` and `reviewRequestShape`. Add “invalid UTF-8” to the refusing forms and name `readReviewRequests` as performing fatal UTF-8 validation before JSON parsing. [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: apps/server/test/branch-records.test.ts (W-702-b3)
+4. advisory — brief:50 Mode `000` is not necessarily unreadable to a privileged server, and brief:118’s test already skips that case as root. Replace “an unreadable file (mode 000)” with “a file the server process cannot read (including mode 000 when it lacks privilege),” and make the same qualification at brief:118. [severity: S4] [class: spec×promise-unattainable-under-accepted-domain] — check: apps/server/test/branch-records.test.ts (W-702-b3)
+5. advisory — brief:98 `screenDiff` can return an owner set whose rendered reason exceeds 1,024 units, while `reviewRequestOf` silently slices it, so the exact formula promised here is not guaranteed. Replace the reason sentence with “`reason` is the first 1,024 UTF-16 code units of `Changes <k> code-owned path(s) owned by <owners>`.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-queue.test.ts (W-702-b1)
+6. advisory — brief:37 The implementation counts only snapshot-named files and emits no `file` for `too-many`, as brief:101 and W-702-b3 already specify. Replace the opening with “one snapshot out of its domain or unreadable, or more than 256 snapshot-named files, makes the whole member absent and writes one diagnostic naming the status and, for a file-specific fault, the file.” [severity: S2] [class: spec×prose-contradiction-under-revision] — check: apps/server/test/branch-records.test.ts (W-702-b3)
+
+## Verdict
+The input and feasibility gaps are advisory under the stated severity rules; no S1, security, or evidence blocker prevents the build.
+
+VERDICT: PASS

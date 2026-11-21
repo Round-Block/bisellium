@@ -247,6 +247,8 @@ flowchart TD
   posts["POST /api/answer /greenlight /budget<br/>/handoff /talk /pause /resume<br/>X-Bisellium-Token + no-Origin"]
   runners["injected runners (@bisellium/commands)"]
   web["web screens — next: web I<br/>Inbox, Officina/Board"]
+  rr[("&lt;git common dir&gt;/bisellium/review-requests/&lt;n&gt;.json")]
+  rreq["bisellium review-request (holds the gh login)"] -- "atomic write" --> rr -- "read each poll" --> store
   files --> snap --> store
   store -- "diffSnapshots" --> log
   store --> snaps
@@ -284,7 +286,10 @@ then keeps the adapter's filename order for equal, missing or malformed instants
 `opened` is the only field this work adds to the existing Inbox response; the
 response does not expose the Store's absolute studio path. An older or fixture
 response therefore keeps rendering, with `Date unavailable` for an absent or
-malformed first-notified instant.
+malformed first-notified instant. W-702 adds the one edge that holds a forge
+login: `review-request` writes each waiting PR's snapshot under the common dir;
+the server reads them each poll into the optional `reviewRequests` (all whole
+or absent, `[]` when none waits) and never runs `gh` itself.
 
 ## 5. CI and the merge queue
 

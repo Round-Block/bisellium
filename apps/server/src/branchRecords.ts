@@ -54,13 +54,16 @@ const LIVE_KEYS = ["state", "traditio", "heartbeat"] as const;
 // ---------------------------------------------------------------------------
 // the shared opener: the only way this module opens a file the builder controls
 // ---------------------------------------------------------------------------
-export type Refusal = "not-regular" | "changed" | "escapes" | "too-large" | "timeout" | "unreadable";
+export type Refusal = "not-regular" | "changed" | "escapes" | "too-large" | "timeout" | "unreadable" | "malformed";
 export interface OpenerOptions {
   /** Test-only: called between the `lstat` and the `open`, so a row can swap the file exactly there. */
   afterLstat?: () => void | Promise<void>;
   /** Overrides the wall-clock timer (default {@link DEFAULT_GIT_TIMEOUT_MS}). */
   timeoutMs?: number;
 }
+
+/** W-702 fix f1: the one decode of a record's bytes, strict: bytes that are not UTF-8 are refused, never read with replacement characters. */
+const UTF8 = new TextDecoder("utf-8", { fatal: true });
 
 /**
  * `lstat` must say a regular file; `open` is `O_RDONLY | O_NOFOLLOW | O_NONBLOCK` (so a FIFO or a device cannot park
@@ -95,7 +98,11 @@ export async function readBoundedRegular(
         total += bytesRead;
       }
       if (total > maxBytes) return { refused: "too-large" };
-      return { text: buffer.subarray(0, total).toString("utf8") };
+      try {
+        return { text: UTF8.decode(buffer.subarray(0, total)) };
+      } catch {
+        return { refused: "malformed" };
+      }
     } catch (e) {
       return { refused: (e as NodeJS.ErrnoException).code === "ELOOP" ? "changed" : "unreadable" };
     } finally {
@@ -202,6 +209,11 @@ export class BranchRecordReader {
     private readonly studioDir: string,
     private readonly gitTimeoutMs: number = DEFAULT_GIT_TIMEOUT_MS,
   ) {}
+
+  /** W-702: the real Git common directory the first probe resolved, or undefined (no repository, or not probed yet). */
+  get commonDir(): string | undefined {
+    return this.repo?.commonDir;
+  }
 
   /** One refresh. Never throws: a failure keeps the last good overlay (stale) and is reported in the status. */
   async refresh(): Promise<{ overlay: Overlay; status: BranchRecordsStatus }> {

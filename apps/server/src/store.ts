@@ -37,6 +37,8 @@ import { instant, type GantryEvent, type SnapshotAdapter } from "@bisellium/sche
 import { computeMeter, EVENTS_LOG_REL, estimateFinish, readLog, Store as CoreStore } from "@bisellium/core";
 import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, readMilestones, resolveSeat, snapshotDir, type Manifest, aliasTable, canonicalSella } from "@bisellium/adapter-native";
 import { BranchRecordReader, type BranchRecordsStatus, type Overlay } from "./branchRecords.js";
+import { ReviewRequestReader } from "./reviewRequests.js";
+import type { ReviewRequest } from "@bisellium/schema";
 
 /** This server's own ingestion source id, stamped as `workflow.source` on
  *  every event it appends — distinct from "cli" (packages/commands/writes.ts's
@@ -287,12 +289,17 @@ export class Store extends CoreStore {
   private overlay: Overlay = new Map();
   private branchRecords: BranchRecordsStatus = { status: "ok", dropped: [] };
   private readonly branchReader: BranchRecordReader;
+  /** W-702: the review snapshots read once per poll (reviewRequests.ts); undefined is no projection. */
+  private reviewRequests: ReviewRequest[] | undefined;
+  private readonly reviewReader = new ReviewRequestReader();
+  private readonly gitTimeoutMs?: number;
 
   constructor(opts: StoreOptions) {
     super({ studioDir: opts.studioDir });
     this.live = opts.live ?? false;
     this.fixedNow = opts.now;
     this.branchReader = new BranchRecordReader(this.studioDir, opts.branchGitTimeoutMs);
+    this.gitTimeoutMs = opts.branchGitTimeoutMs;
     this.adapter = createBiselliumAdapter(this.studioDir, undefined, { live: this.live, overlay: (id) => this.overlay.get(id) });
     this.projectId = this.adapter.projectId;
   }
@@ -333,6 +340,7 @@ export class Store extends CoreStore {
     const refreshed = await this.branchReader.refresh();
     this.overlay = refreshed.overlay;
     this.branchRecords = refreshed.status;
+    this.reviewRequests = await this.reviewReader.refresh(this.branchReader.commonDir, this.gitTimeoutMs);
     const now = this.now();
     const manifest = this.manifest();
     const humanGates = new Set(manifest.probationes.filter((g) => g.kind === "human").map((g) => g.id));
@@ -450,7 +458,9 @@ export class Store extends CoreStore {
           return a.opened - b.opened || a.sourceOrder - b.sourceOrder;
         })
         .map(({ sourceOrder: _sourceOrder, ...petitio }) => petitio);
-      return { opera, petitiones };
+      // W-702: the optional review projection, absent unless every snapshot read whole
+      if (this.reviewRequests === undefined) return { opera, petitiones };
+      return { opera, petitiones, reviewRequests: this.reviewRequests };
     },
 
     acta: (days = 7) => {

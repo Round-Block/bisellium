@@ -3,12 +3,15 @@
  * code-owned screen, notice and review request (review-notice.ts) for any open PR into master, one opened by hand (a
  * records PR, `gh pr create`) included. It reads the PR from GitHub, fetches master and the PR's head
  * (`refs/pull/<pr>/head`) from origin, and screens `origin/master...<head>`. Exit 0 when every step ran, 1 at the
- * first refusal or hold, 2 on a usage error.
+ * first refusal or hold, 2 on a usage error. W-702: a PR whose head touches a code-owned path then gets its review
+ * snapshot (review-snapshot.ts), the facts the console's Inbox shows; a snapshot that cannot be read or written holds.
+ * A PR that is not open, not into master or touches no code-owned path loses its snapshot (retention).
  */
 import { resolve } from "node:path";
 import { parseFlags } from "@bisellium/commands/writes.js";
-import { clean, git, quoted, repoSlug, sh } from "./integrate.js";
+import { clean, git, quoted, repoSlug } from "./integrate.js";
 import { PR_NUMBER, reviewNotice } from "./review-notice.js";
+import { dropReviewSnapshot, ghUtf8, readReviewFacts, writeReviewSnapshot } from "./review-snapshot.js";
 
 export const REVIEW_REQUEST_USAGE = "usage: bisellium review-request <pr> [--repo <dir>]";
 const BASE = "refs/remotes/origin/master";
@@ -34,10 +37,16 @@ export function runReviewRequest(argv: string[]): { exitCode: number } {
     return { exitCode: code };
   };
   const refuse = (why: string): { exitCode: number } => say(1, [`why: ${why}`]);
+  // W-702 retention: a PR that no longer waits on review into master keeps no snapshot
+  const retire = (why: string): { exitCode: number } => {
+    const d = dropReviewSnapshot(repo, pr);
+    return say(1, [...("error" in d ? [`review-snapshot: not removed (${d.error})`] : d.removed ? ["review-snapshot: removed"] : []), `why: ${why}`]);
+  };
   const slug = repoSlug(repo);
   if (!slug.ok) return refuse(slug.reason);
-  const v = sh("gh", ["pr", "view", String(pr), "-R", slug.slug, "--json", "number,state,baseRefName,headRefOid"], repo, 1_048_576);
+  const v = ghUtf8(["pr", "view", String(pr), "-R", slug.slug, "--json", "number,state,baseRefName,headRefOid"], repo);
   if (v.error !== undefined || v.status !== 0) return refuse(`gh pr view failed (${clean(v.error?.message ?? v.stderr.trim().split("\n")[0] ?? "") || `exit ${v.status}`})`);
+  if (v.malformed === true) return refuse("gh pr view returned output that is not valid UTF-8");
   let view: Record<string, unknown>;
   try {
     const parsedView = JSON.parse(v.stdout) as unknown;
@@ -47,8 +56,8 @@ export function runReviewRequest(argv: string[]): { exitCode: number } {
     return refuse("gh pr view returned non-JSON output");
   }
   if (view["number"] !== pr) return refuse(`gh pr view returned PR ${show(view["number"])}, not #${pr}`);
-  if (view["state"] !== "OPEN") return refuse(`PR #${pr} is ${show(view["state"])}, not OPEN; only an open PR is screened`);
-  if (view["baseRefName"] !== "master") return refuse(`PR #${pr}'s base is ${show(view["baseRefName"])}, not master; the screen reads master's owners file`);
+  if (view["state"] !== "OPEN") return retire(`PR #${pr} is ${show(view["state"])}, not OPEN; only an open PR is screened`);
+  if (view["baseRefName"] !== "master") return retire(`PR #${pr}'s base is ${show(view["baseRefName"])}, not master; the screen reads master's owners file`);
   const head = view["headRefOid"];
   if (typeof head !== "string" || !OID.test(head)) return refuse("gh pr view returned no 40-hex headRefOid");
   const master = git(repo, ["fetch", "-q", "--no-tags", "origin", `+refs/heads/master:${BASE}`]);
@@ -57,6 +66,19 @@ export function runReviewRequest(argv: string[]): { exitCode: number } {
   if (fetched.error !== undefined || fetched.status !== 0) return refuse(`git fetch origin refs/pull/${pr}/head failed (${clean(fetched.stderr.trim().split("\n")[0] ?? "") || `exit ${fetched.status}`})`);
   const at = git(repo, ["rev-parse", "-q", "--verify", "FETCH_HEAD^{commit}"]).stdout.trim();
   if (at !== head) return refuse(`PR #${pr}'s head on origin is ${at.slice(0, 12) || "unreadable"}, not ${head.slice(0, 12)} as GitHub reported; rerun`);
-  const r = reviewNotice({ cwd: repo, slug: slug.slug, pr, base: BASE, head, resume: `bisellium review-request ${pr} --repo ${quoted(repo)}` });
-  return say(r.ok ? 0 : 1, r.lines);
+  const resume = `bisellium review-request ${pr} --repo ${quoted(repo)}`;
+  const r = reviewNotice({ cwd: repo, slug: slug.slug, pr, base: BASE, head, resume });
+  if (!r.ok || r.screen === undefined) return say(r.ok ? 0 : 1, r.lines);
+  // W-702: the snapshot of the PR's review facts, read once and written whole, or a hold that leaves the old one as it was
+  const hold = (why: string): { exitCode: number } => say(1, [...r.lines, `why: ${why}`, `run: ${resume}`]);
+  if (r.screen.paths.length === 0) {
+    const d = dropReviewSnapshot(repo, pr);
+    if ("error" in d) return hold(`PR #${pr} touches no code-owned path, but its review snapshot could not be removed (${d.error})`);
+    return say(0, [...r.lines, ...(d.removed ? ["review-snapshot: removed"] : [])]);
+  }
+  const facts = readReviewFacts({ cwd: repo, slug: slug.slug, pr, head, screen: r.screen, now: new Date() });
+  if ("error" in facts) return hold(`PR #${pr}'s review facts could not be read (${facts.error})`);
+  const written = writeReviewSnapshot(repo, facts.request);
+  if (written !== undefined) return hold(`PR #${pr}'s review snapshot could not be written (${written})`);
+  return say(0, [...r.lines, `review-snapshot: ${facts.request.state}`]);
 }

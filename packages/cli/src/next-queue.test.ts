@@ -4,12 +4,12 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { takeNotices } from "./review-notice.js";
-import { BRANCH, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SETUP_ENV, SLUG, SlotValue, T, World, advanceOrigin, cand, cli, commit, expectHeld, expectStep, ghCalls, ghMerges, git, gitq, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, scratch, sourceTree, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
+import { BIN, BRANCH, GH_STUB, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SETUP_ENV, SLUG, SlotValue, T, World, advanceOrigin, cand, cli, commit, expectHeld, expectStep, ghCalls, ghMerges, git, gitq, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, scratch, sourceTree, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
 
 /** W-199: the queue binding is a file under the Git common directory (read through the fixture `git`, which throws on a failed read). */
 const bindingPath = (w: World): string => join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "queue", encodeURIComponent(BRANCH));
@@ -647,8 +647,11 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   const title: Reply = { stdout: { title: W418_TITLE } };
   const notice = w418Notice(w, 901);
   const request = (args: string[], views: Reply[], edit: Reply = { stdout: "" }, env: Record<string, string> = {}): Out => {
-    scenario(w, { view: { replies: views }, edit });
+    // W-702: the PR's review facts, for the PR and head the first view names
+    const first = views[0]?.stdout as Json | undefined;
+    scenario(w, { view: { replies: views }, edit, queue: w702Facts(Number(first?.["number"] ?? 0), String(first?.["headRefOid"] ?? "")) });
     try {
+      rmSync(w702Dir(w), { recursive: true, force: true });
       rmSync(notice, { force: true });
     } catch {
       /* the notice directory is a file in the row that blocks it */
@@ -658,7 +661,7 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   const lines = (o: Out): string[] => o.out.split("\n").filter((l) => l !== "");
   const resume = `run: bisellium review-request 901 --repo ${w.repo}`;
   const one = (p: string): string => `PR #901 needs your review: ${W418_TITLE} (code-owned: ${p})`;
-  const whole = ["review-request: PR #901", ...W418_PATHS.map((p) => `code-owned: ${p}`), `notice: ${W418_TEXT}`, "review-requested: org/leads, patron, writer", "review-request: skipped someone@example.com (not an @login or @org/team)"];
+  const whole = ["review-request: PR #901", ...W418_PATHS.map((p) => `code-owned: ${p}`), `notice: ${W418_TEXT}`, "review-requested: org/leads, patron, writer", "review-request: skipped someone@example.com (not an @login or @org/team)", "review-snapshot: pending"];
 
   // the screen: every pattern form, a rename's old side, a newline in a name; the notice and the request
   const o = request(["901"], [view(), title]);
@@ -696,7 +699,7 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   const cut = request(["904"], [{ stdout: { number: 904, state: "OPEN", baseRefName: "master", headRefOid: git(side, ["rev-parse", "HEAD"]) } }, title]);
   assert.deepEqual(
     [cut.status, lines(cut), w418Read(w418Notice(w, 904)), longText.length],
-    [0, ["review-request: PR #904", ...long.map((p) => `code-owned: ${p}`), `notice: ${longText}`, "review-requested: writer"], `${longText}\n`, 500],
+    [0, ["review-request: PR #904", ...long.map((p) => `code-owned: ${p}`), `notice: ${longText}`, "review-requested: writer", "review-snapshot: pending"], `${longText}\n`, 500],
     ran("a long notice is cut to 500 characters", cut),
   );
 
@@ -770,10 +773,10 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   // the owners file GitHub reads: with no .github/CODEOWNERS, the root's before docs/'s, then docs/'s alone
   master({ ".github/CODEOWNERS": null, CODEOWNERS: "/src/ @patron\n", "docs/CODEOWNERS": "/vendor/ @writer\n" });
   const root = request(["901"], [view(), title]);
-  assert.deepEqual([root.status, lines(root)], [0, ["review-request: PR #901", "code-owned: src/plain.ts", `notice: ${one("src/plain.ts")}`, "review-requested: patron"]], ran("an owners file at the root is read before docs/'s", root));
+  assert.deepEqual([root.status, lines(root)], [0, ["review-request: PR #901", "code-owned: src/plain.ts", `notice: ${one("src/plain.ts")}`, "review-requested: patron", "review-snapshot: pending"]], ran("an owners file at the root is read before docs/'s", root));
   master({ CODEOWNERS: null });
   const docs = request(["901"], [view(), title]);
-  assert.deepEqual([docs.status, lines(docs)], [0, ["review-request: PR #901", "code-owned: vendor/lib.js", `notice: ${one("vendor/lib.js")}`, "review-requested: writer"]], ran("docs/CODEOWNERS is read when it is the only one", docs));
+  assert.deepEqual([docs.status, lines(docs)], [0, ["review-request: PR #901", "code-owned: vendor/lib.js", `notice: ${one("vendor/lib.js")}`, "review-requested: writer", "review-snapshot: pending"]], ran("docs/CODEOWNERS is read when it is the only one", docs));
 
   // an owners line the screen does not read holds before the title, the notice or the request: never a silent pass
   const unreadHold = (o: Out, why: string): void => {
@@ -1251,4 +1254,288 @@ test("W-462-b3 behaviour 3: after the Patron's leased push the rung rebinds the 
     [1, `why: master does not enforce the merge queue now; nothing rebound or requested: rerun bisellium next ${OPUS}`, [], [], `${reviewed}\n`],
     ran("a rebind in direct mode writes and requests nothing", dr),
   );
+});
+
+// ---------------------------------------------------------------------------
+// W-702 (studio/briefs/W-702.md): review-request leaves each waiting PR's review snapshot, the facts the console's Inbox
+// reads, at <git common dir>/bisellium/review-requests/<number>.json. Rows b1 (the write) and b2 (retention), on the
+// W-418 world: its opus branch touches code-owned paths (a space, a quote, a non-ASCII byte, a newline, a symlink).
+// ---------------------------------------------------------------------------
+function w702Dir(w: World): string {
+  return join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "review-requests");
+}
+function w702Read(w: World, pr: number): string | undefined {
+  const path = join(w702Dir(w), `${pr}.json`);
+  return existsSync(path) ? readFileSync(path, "utf8") : undefined;
+}
+function w702Run(name: string, status: string, conclusion: string | null, isRequired: unknown = true): Json {
+  return { __typename: "CheckRun", name, status, conclusion, isRequired };
+}
+function w702Status(context: string, state: string, isRequired: unknown = true): Json {
+  return { __typename: "StatusContext", context, state, isRequired };
+}
+function w702Review(login: string, state: string, oid: string | null, at: string): Json {
+  return { state, submittedAt: at, author: { login }, commit: oid === null ? null : { oid } };
+}
+/** The one GraphQL reply review-request reads a PR's facts from: required build passed, optional lint failed, required certify pending. */
+function w702Facts(pr: number, head: string, o: { reviews?: Json[]; contexts?: Json[]; rollup?: null; pull?: Json } = {}): Reply {
+  const contexts = o.contexts ?? [w702Run("build", "COMPLETED", "SUCCESS"), w702Run("lint", "COMPLETED", "FAILURE", false), w702Status("certify", "PENDING")];
+  const rollup = o.rollup === null ? null : { contexts: { pageInfo: { hasNextPage: false }, nodes: contexts } };
+  return {
+    stdout: {
+      data: {
+        repository: {
+          pullRequest: {
+            number: pr,
+            state: "OPEN",
+            baseRefName: "master",
+            headRefOid: head,
+            title: W418_TITLE,
+            url: `https://github.com/${SLUG}/pull/${pr}`,
+            createdAt: "2026-11-20T02:00:00Z",
+            reviews: { pageInfo: { hasPreviousPage: false }, nodes: o.reviews ?? [] },
+            commits: { nodes: [{ commit: { oid: head, statusCheckRollup: rollup } }] },
+            ...o.pull,
+          },
+        },
+      },
+    },
+  };
+}
+/** The W-418 world with PR #901 open on its head and master's owners file naming docs/ for @patron. */
+function w702World(tag: string): { w: World; head: string; request: (facts: Reply, view?: Json) => Out; owners: (text: string) => void } {
+  const w = reviewed(tag, { mainOnMaster: false, github: true }, w418Touch, true);
+  const master = w418Master(w);
+  master({ ".github/CODEOWNERS": "/docs/ @patron\n" });
+  const head = tipOf(w);
+  git(w.origin, ["update-ref", "refs/pull/901/head", head]);
+  const request = (facts: Reply, view: Json = {}): Out => {
+    scenario(w, { view: { replies: [{ stdout: { number: 901, state: "OPEN", baseRefName: "master", headRefOid: head, ...view } }, { stdout: { title: W418_TITLE } }] }, edit: { stdout: "" }, queue: facts });
+    return cli(w, ["review-request", "901"], w.repo);
+  };
+  return { w, head, request, owners: (text) => master({ ".github/CODEOWNERS": text }) };
+}
+const w702Lines = (o: Out): string[] => o.out.split("\n").filter((l) => l !== "");
+
+test("W-702-b1 behaviour 1: review-request writes the waiting PR's review snapshot whole, or holds and writes none", { timeout: 3_600_000 }, () => {
+  const { w, head, request, owners } = w702World("w702-b1");
+  const OLD = "1".repeat(40);
+  const AT = (m: number): string => `2026-11-20T0${m}:00:00Z`;
+  const resume = `run: bisellium review-request 901 --repo ${w.repo}`;
+  const snap = (): Json | undefined => (w702Read(w, 901) === undefined ? undefined : (JSON.parse(w702Read(w, 901)!) as Json));
+
+  // a PR waiting on its code owner: every fact, the required checks only, one GraphQL read
+  const before = Date.now();
+  const o = request(w702Facts(901, head));
+  const after = Date.now();
+  const paths = w702Lines(o).flatMap((l) => (l.startsWith("code-owned: ") ? [l.slice("code-owned: ".length)] : []));
+  assert.deepEqual([o.status, w702Lines(o).at(-1)], [0, "review-snapshot: pending"], ran("the snapshot is written: pending", o));
+  const s = snap();
+  const observed = Date.parse(String(s?.["observedAt"]));
+  assert.ok(observed >= before && observed <= after, `observedAt ${String(s?.["observedAt"])} lies in the run, ${new Date(before).toISOString()} to ${new Date(after).toISOString()}`);
+  assert.deepEqual(
+    s,
+    {
+      schema: "bisellium.review-request/1",
+      number: 901,
+      title: W418_TITLE,
+      url: `https://github.com/${SLUG}/pull/901`,
+      reason: `Changes ${paths.length} code-owned paths owned by @patron`,
+      protectedPaths: paths,
+      checks: [
+        { name: "build", status: "passed" },
+        { name: "certify", status: "pending" },
+      ],
+      openedAt: "2026-11-20T02:00:00Z",
+      observedAt: s?.["observedAt"],
+      head,
+      forge: "github",
+      state: "pending",
+    },
+    "the snapshot holds every fact of the PR and its required checks only",
+  );
+  assert.deepEqual([paths.includes("docs/new line.md"), paths.includes(`docs/a b'"é.md`), paths.includes("docs/link")], [true, true, true], "a newline is a space; a quote, a space, a non-ASCII byte and a symlink are kept");
+  const reads = ghCalls(w).filter((a) => a[0] === "api" && a[1] === "graphql");
+  const slash = SLUG.indexOf("/");
+  assert.deepEqual(
+    reads.map((a) => a.filter((x, i) => a[i - 1] === "-F")),
+    [[`owner=${SLUG.slice(0, slash)}`, `name=${SLUG.slice(slash + 1)}`, "number=901"]],
+    "one GraphQL read of this PR",
+  );
+  assert.deepEqual(readdirSync(w702Dir(w)), ["901.json"], "one file, nothing at a temporary name");
+  const none = request(w702Facts(901, head, { rollup: null }));
+  assert.deepEqual([none.status, w702Lines(none).at(-1), snap()?.["checks"]], [0, "review-snapshot: pending", []], ran("no check reported yet: pending, no checks", none));
+
+  // the state: approval on the head, then approval on an earlier head, then a failed required check, else pending
+  const failing = [w702Run("build", "COMPLETED", "FAILURE"), w702Status("certify", "SUCCESS")];
+  const state = (facts: Reply): unknown[] => {
+    const r = request(facts);
+    return [r.status, w702Lines(r).at(-1), snap()?.["state"], snap()?.["approvalHead"]];
+  };
+  assert.deepEqual(state(w702Facts(901, head, { contexts: failing })), [0, "review-snapshot: failed", "failed", undefined], "a failed required check: failed");
+  assert.deepEqual(state(w702Facts(901, head, { contexts: failing, reviews: [w702Review("patron", "APPROVED", head, AT(3))] })), [0, "review-snapshot: approved", "approved", head], "the owner's approval on the head: approved, whatever the checks");
+  assert.deepEqual(state(w702Facts(901, head, { contexts: failing, reviews: [w702Review("Patron", "APPROVED", OLD, AT(3))] })), [0, "review-snapshot: stale", "stale", OLD], "the owner's approval on an earlier head: stale");
+  assert.deepEqual(
+    state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3)), w702Review("patron", "CHANGES_REQUESTED", head, AT(4))] })),
+    [0, "review-snapshot: pending", "pending", undefined],
+    "changes requested after the approval: pending",
+  );
+  assert.deepEqual(
+    state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3)), w702Review("patron", "COMMENTED", head, AT(4)), w702Review("patron", "PENDING", null, AT(5))] })),
+    [0, "review-snapshot: approved", "approved", head],
+    "a comment and a pending review are no opinion",
+  );
+  assert.deepEqual(state(w702Facts(901, head, { reviews: [w702Review("someone", "APPROVED", head, AT(3))] })), [0, "review-snapshot: pending", "pending", undefined], "a reviewer who owns nothing approves nothing");
+  owners("/docs/ @patron @writer\n");
+  assert.deepEqual(state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3))] })), [0, "review-snapshot: pending", "pending", undefined], "one of two owners approving: pending");
+  assert.deepEqual(state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3)), w702Review("writer", "APPROVED", head, AT(4))] })), [0, "review-snapshot: approved", "approved", head], "both owners: approved");
+  owners("/docs/ @patron @org/leads\n");
+  assert.deepEqual(state(w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", head, AT(3))] })), [0, "review-snapshot: pending", "pending", undefined], "a team owner's approval is not read: pending");
+  owners("/docs/ @patron\n");
+
+  // fail closed: a fact out of its domain holds, names the resume, and leaves the last snapshot byte for byte
+  assert.equal(request(w702Facts(901, head)).status, 0, "a good snapshot first");
+  const kept = w702Read(w, 901);
+  const held = (label: string, facts: Reply, why: string): void => {
+    const r = request(facts);
+    assert.deepEqual([r.status, w702Lines(r).slice(-2)], [1, [`why: PR #901's review facts could not be read (${why})`, resume]], ran(label, r));
+    assert.deepEqual([w702Read(w, 901) === kept, readdirSync(w702Dir(w))], [true, ["901.json"]], `${label}: the last snapshot is kept, nothing else is left`);
+  };
+  const page = (oid: string, contexts: Json): Json => ({ commits: { nodes: [{ commit: { oid, statusCheckRollup: { contexts } } }] } });
+  held("a failing read", { exit: 1, stderr: "HTTP 502: Bad Gateway\n" }, "gh api graphql exited 1: HTTP 502: Bad Gateway");
+  held("a non-JSON read", { stdout: "not json" }, "gh api graphql returned non-JSON output");
+  held("no pull request", { stdout: { data: { repository: { pullRequest: null } } } }, "gh api graphql returned no data.repository.pullRequest");
+  held("another PR", w702Facts(901, head, { pull: { number: 902 } }), "gh api graphql returned PR 902, not #901");
+  held("a closed PR", w702Facts(901, head, { pull: { state: "CLOSED" } }), 'PR #901 is "CLOSED", not OPEN');
+  held("another base", w702Facts(901, head, { pull: { baseRefName: "develop" } }), "PR #901's base is not master");
+  held("a moved head", w702Facts(901, head, { pull: { headRefOid: OLD } }), `PR #901's head moved from ${head.slice(0, 12)} while its facts were read; rerun`);
+  held("another host's URL", w702Facts(901, head, { pull: { url: `https://evil.example/${SLUG}/pull/901` } }), `PR #901's URL is not https://github.com/${SLUG}/pull/901`);
+  held("a title of the wrong type", w702Facts(901, head, { pull: { title: 7 } }), "PR #901 has no string title");
+  held("older reviews unread", w702Facts(901, head, { pull: { reviews: { pageInfo: { hasPreviousPage: true }, nodes: [] } } }), "PR #901's reviews are not one complete page of at most 100");
+  held("an owner's review with no commit", w702Facts(901, head, { reviews: [w702Review("patron", "APPROVED", null, AT(3))] }), "PR #901 has a review by patron with no state, commit or time");
+  held("a last commit that is not the head", w702Facts(901, head, { pull: page(OLD, { pageInfo: { hasNextPage: false }, nodes: [] }) }), `PR #901's last commit is not its head ${head.slice(0, 12)}`);
+  held("more checks unread", w702Facts(901, head, { pull: page(head, { pageInfo: { hasNextPage: true }, nodes: [] }) }), "PR #901's checks are not one complete page of at most 100");
+  held("a check of another kind", w702Facts(901, head, { contexts: [{ __typename: "Annotation", isRequired: true }] }), "PR #901 has a check that is neither a check run nor a status with a required flag");
+  held("a required flag of the wrong type", w702Facts(901, head, { contexts: [w702Run("build", "COMPLETED", "SUCCESS", "yes")] }), "PR #901 has a check that is neither a check run nor a status with a required flag");
+  held("an unknown conclusion", w702Facts(901, head, { contexts: [w702Run("build", "COMPLETED", "WEIRD")] }), "PR #901 has a check with no name or an unknown status");
+  held("an opening time out of grammar", w702Facts(901, head, { pull: { createdAt: "yesterday" } }), "PR #901's facts make no snapshot (openedAt is not an ISO instant in UTC)");
+
+  // the write: a symlinked snapshot directory holds, and nothing lands through it
+  const dir = w702Dir(w);
+  const away = scratch("w702-b1-away");
+  rmSync(dir, { recursive: true, force: true });
+  symlinkSync(away, dir);
+  const linked = request(w702Facts(901, head));
+  assert.deepEqual(
+    [linked.status, w702Lines(linked).slice(-2)],
+    [1, [`why: PR #901's review snapshot could not be written (record directory must be a real directory, not a symbolic link: ${dir})`, resume]],
+    ran("a symlinked snapshot directory holds", linked),
+  );
+  assert.deepEqual(readdirSync(away), [], "nothing is written through the link");
+});
+
+test("W-702-b2 behaviour 2: a PR that no longer waits on its code owners into master loses its review snapshot", { timeout: 3_600_000 }, () => {
+  const { w, head, request, owners } = w702World("w702-b2");
+  const plant = (): void => {
+    const o = request(w702Facts(901, head));
+    assert.deepEqual([o.status, w702Read(w, 901) !== undefined], [0, true], ran("a snapshot to retire", o));
+  };
+  // another PR's snapshot is never touched by this one's retention
+  plant();
+  writeFileSync(join(w702Dir(w), "902.json"), "another PR's snapshot\n");
+  const retired = (label: string, view: Json, why: string): void => {
+    plant();
+    const r = request(w702Facts(901, head), view);
+    assert.deepEqual([r.status, w702Lines(r)], [1, ["review-request: PR #901", "review-snapshot: removed", `why: ${why}`]], ran(label, r));
+    assert.deepEqual(readdirSync(w702Dir(w)), ["902.json"], `${label}: its snapshot is removed, another PR's is kept`);
+  };
+  retired("a merged PR", { state: "MERGED" }, 'PR #901 is "MERGED", not OPEN; only an open PR is screened');
+  retired("a closed PR", { state: "CLOSED" }, 'PR #901 is "CLOSED", not OPEN; only an open PR is screened');
+  retired("a PR retargeted from master", { baseRefName: "develop" }, `PR #901's base is "develop", not master; the screen reads master's owners file`);
+  const again = request(w702Facts(901, head), { state: "MERGED" });
+  assert.deepEqual([again.status, w702Lines(again)], [1, ["review-request: PR #901", 'why: PR #901 is "MERGED", not OPEN; only an open PR is screened']], ran("no snapshot left: the refusal alone", again));
+
+  // a head that touches no code-owned path any more: the snapshot goes, exit 0
+  plant();
+  owners("/nothing/ @patron\n");
+  const unowned = request(w702Facts(901, head));
+  assert.deepEqual([unowned.status, w702Lines(unowned)], [0, ["review-request: PR #901", "code-owned: none", "review-snapshot: removed"]], ran("no code-owned path: removed", unowned));
+  assert.deepEqual(readdirSync(w702Dir(w)), ["902.json"], "no code-owned path: removed, another PR's is kept");
+
+  // a snapshot entry that is a symlink is unlinked, never followed
+  const outside = join(scratch("w702-b2-outside"), "kept.json");
+  writeFileSync(outside, "outside\n");
+  symlinkSync(outside, join(w702Dir(w), "901.json"));
+  const link = request(w702Facts(901, head), { state: "MERGED" });
+  assert.deepEqual([link.status, w702Lines(link)[1], readFileSync(outside, "utf8"), readdirSync(w702Dir(w))], [1, "review-snapshot: removed", "outside\n", ["902.json"]], ran("a symlinked entry is unlinked, its target kept", link));
+
+  // a symlinked level: nothing is removed through it, and the refusal says so
+  owners("/docs/ @patron\n");
+  const dir = w702Dir(w);
+  const away = scratch("w702-b2-away");
+  writeFileSync(join(away, "901.json"), "beyond the link\n");
+  rmSync(dir, { recursive: true, force: true });
+  symlinkSync(away, dir);
+  const linked = request(w702Facts(901, head), { state: "MERGED" });
+  assert.deepEqual(
+    [linked.status, w702Lines(linked)],
+    [1, ["review-request: PR #901", `review-snapshot: not removed (record directory must be a real directory, not a symbolic link: ${dir})`, 'why: PR #901 is "MERGED", not OPEN; only an open PR is screened']],
+    ran("a symlinked snapshot directory: not removed", linked),
+  );
+  assert.deepEqual(readdirSync(away), ["901.json"], "nothing is removed through the link");
+  owners("/nothing/ @patron\n");
+  const held = request(w702Facts(901, head));
+  assert.deepEqual(
+    [held.status, w702Lines(held)],
+    [1, ["review-request: PR #901", "code-owned: none", `why: PR #901 touches no code-owned path, but its review snapshot could not be removed (record directory must be a real directory, not a symbolic link: ${dir})`, `run: bisellium review-request 901 --repo ${w.repo}`]],
+    ran("no code-owned path, a symlinked directory: the hold", held),
+  );
+});
+
+// W-702 fix f1: a reply that is not UTF-8 is refused at the one decode every reader goes through, and a git common
+// directory whose path ends in a space is joined literally (studio/briefs/W-702.md: limits at lines 50 and 54).
+/** Runs `body` with the stub gh's output rewritten so that the text `XYBAD` is the two bytes C3 28, which no UTF-8 text holds. */
+function w702Malformed<T>(body: () => T): T {
+  const real = join(BIN, "gh");
+  writeFileSync(join(BIN, "gh.real"), GH_STUB, { mode: 0o755 });
+  writeFileSync(
+    real,
+    `#!/usr/bin/env node\nconst { spawnSync } = require("node:child_process");\nconst r = spawnSync(${JSON.stringify(join(BIN, "gh.real"))}, process.argv.slice(2), { maxBuffer: 1 << 26 });\nconst at = r.stdout.indexOf("XYBAD");\nconst out = at < 0 ? r.stdout : Buffer.concat([r.stdout.subarray(0, at), Buffer.from([0xc3, 0x28]), r.stdout.subarray(at + 5)]);\nprocess.stderr.write(r.stderr);\nprocess.stdout.write(out, () => process.exit(r.status ?? 1));\n`,
+    { mode: 0o755 },
+  );
+  try {
+    return body();
+  } finally {
+    writeFileSync(real, GH_STUB, { mode: 0o755 });
+  }
+}
+
+test("W-702-b1 fix f1 (1): malformed UTF-8 in a gh reply holds, in the GraphQL read and in the PR view alike", { timeout: 3_600_000 }, () => {
+  const { w, head, request } = w702World("w702-f1-utf8");
+  assert.equal(request(w702Facts(901, head)).status, 0, "a good snapshot first");
+  const kept = w702Read(w, 901);
+  w702Malformed(() => {
+    const read = request(w702Facts(901, head, { pull: { title: "aXYBADb" } }));
+    assert.deepEqual(
+      [read.status, w702Lines(read).slice(-2), w702Read(w, 901) === kept],
+      [1, ["why: PR #901's review facts could not be read (gh api graphql returned output that is not valid UTF-8)", `run: bisellium review-request 901 --repo ${w.repo}`], true],
+      ran("a GraphQL reply that is not UTF-8: held, the last snapshot kept", read),
+    );
+    const view = request(w702Facts(901, head), { note: "aXYBADb" });
+    assert.deepEqual([view.status, w702Lines(view).at(-1)], [1, "why: gh pr view returned output that is not valid UTF-8"], ran("a PR view that is not UTF-8: refused", view));
+  });
+});
+
+test("W-702-b2 fix f1 (2): a git common directory ending in a space is joined literally by the write and the removal", { timeout: 3_600_000 }, () => {
+  const { w, head, request } = w702World("w702-f1-space");
+  const gd = join(w.root, "gd ");
+  renameSync(join(w.repo, ".git"), gd);
+  writeFileSync(join(w.repo, ".git"), `gitdir: ${gd}\n`);
+  const common = (spawnSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd: w.repo, encoding: "utf8" }).stdout ?? "").replace(/\n$/, "");
+  assert.equal(common, `${gd}`, "git's common dir is the directory whose name ends in a space");
+  const file = join(common, "bisellium", "review-requests", "901.json");
+  const written = request(w702Facts(901, head));
+  assert.deepEqual([written.status, w702Lines(written).at(-1), existsSync(file)], [0, "review-snapshot: pending", true], ran("the snapshot is written under the literal path", written));
+  const retired = request(w702Facts(901, head), { state: "MERGED" });
+  assert.deepEqual([retired.status, w702Lines(retired)[1], existsSync(file)], [1, "review-snapshot: removed", false], ran("the snapshot is removed from the literal path", retired));
 });

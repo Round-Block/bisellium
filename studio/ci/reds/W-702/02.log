@@ -1,0 +1,67 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-702-b2\s --import tsx packages/cli/src/next-queue.test.ts
+# exit: 1
+# at: 2026-11-20T14:02:00.484Z
+# sella: builder.W-702
+# tree: tree:02b4618f13def7b6229993a5b0281d337091b040
+# ticket: {"opus":"W-702","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-702/studio","head":"4200c54a53b95c2a3be22b674361179f5b9f8dc2","brief":"dc6b0de58b4eb4846d134c57493b48f15813820a","at":"2026-11-20T14:01:55.355Z"}
+
+TAP version 13
+# Subtest: W-702-b2 behaviour 2: a PR that no longer waits on its code owners into master loses its review snapshot
+not ok 1 - W-702-b2 behaviour 2: a PR that no longer waits on its code owners into master loses its review snapshot
+  ---
+  duration_ms: 7322.068559
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-702/packages/cli/src/next-queue.test.ts:33:10109'
+  failureType: 'testCodeFailure'
+  error: |-
+    a merged PR
+    --- exit 1
+    --- stdout
+    review-request: PR #901
+    why: PR #901 is "MERGED", not OPEN; only an open PR is screened
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+        1,
+        [
+          'review-request: PR #901',
+    -     'review-snapshot: removed',
+          'why: PR #901 is "MERGED", not OPEN; only an open PR is screened'
+        ]
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 1
+    1:
+      0: 'review-request: PR #901'
+      1: 'review-snapshot: removed'
+      2: 'why: PR #901 is "MERGED", not OPEN; only an open PR is screened'
+  actual:
+    0: 1
+    1:
+      0: 'review-request: PR #901'
+      1: 'why: PR #901 is "MERGED", not OPEN; only an open PR is screened'
+  operator: 'deepStrictEqual'
+  stack: |-
+    retired (/home/edckt/agents/bisellium/.worktrees/W-702/packages/cli/src/next-queue.test.ts:1448:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-702/packages/cli/src/next-queue.test.ts:1451:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7362.200506

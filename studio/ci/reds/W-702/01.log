@@ -1,0 +1,65 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-702-b1\s --import tsx packages/cli/src/next-queue.test.ts
+# exit: 1
+# at: 2026-11-20T14:00:37.812Z
+# sella: builder.W-702
+# tree: tree:16e3322d2296aca4a80f715aa2dfabefe7442d2e
+# ticket: {"opus":"W-702","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-702/studio","head":"327555123e2d272aa82e8187e92fabb77c563ce8","brief":"dc6b0de58b4eb4846d134c57493b48f15813820a","at":"2026-11-20T14:00:30.267Z"}
+
+TAP version 13
+# Subtest: W-702-b1 behaviour 1: review-request writes the waiting PR's review snapshot whole, or holds and writes none
+not ok 1 - W-702-b1 behaviour 1: review-request writes the waiting PR's review snapshot whole, or holds and writes none
+  ---
+  duration_ms: 9332.57616
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-702/packages/cli/src/next-queue.test.ts:33:2157'
+  failureType: 'testCodeFailure'
+  error: |-
+    the snapshot is written: pending
+    --- exit 0
+    --- stdout
+    review-request: PR #901
+    code-owned: docs/ADOPTION.md
+    code-owned: docs/ADOPTION.md.bak
+    code-owned: docs/a b'"é.md
+    code-owned: docs/link
+    code-owned: docs/new line.md
+    code-owned: docs/public/index.md
+    notice: PR #901 needs your review: W-900: notify the Patron (code-owned: docs/ADOPTION.md, docs/ADOPTION.md.bak, docs/a b'"é.md, docs/link, docs/new line.md and 1 more)
+    review-requested: patron
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+        0,
+    +   'review-requested: patron'
+    -   'review-snapshot: pending'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 0
+    1: 'review-snapshot: pending'
+  actual:
+    0: 0
+    1: 'review-requested: patron'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-702/packages/cli/src/next-queue.test.ts:1329:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9735.234965

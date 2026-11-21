@@ -1,0 +1,31 @@
+# opus: W-702
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-20T11:24:50.823Z
+# tree: tree:770c5ba906343d0a0e5ccc27d6ed57a145c63bc0
+# brief: briefs/W-702.md blob:dc6b0de58b4eb4846d134c57493b48f15813820a
+# contract: intent:dafbf5d9234ed93b behaviours:5c7c32e0ba1b7d6c domain:614d133b8dfce887 interfaces:da55bcd1a8c5a447 limits:8543251f30d4a327 files:ab17fa516d8c8013 other:b8123a5de1c71ab3
+# ticket: {"opus":"W-702","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"922588eaf657b5a95c26252f68b5371b68430be8","brief":"dc6b0de58b4eb4846d134c57493b48f15813820a","at":"2026-11-20T11:24:50.182Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-702-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-702-spec/gate.log
+
+## Findings
+
+1. advisory — design: review-request alone writes the snapshot (D-250 ruling 1, "the credentialed review-request command"); the pr rung and land screen through review-notice and write none, so a ladder PR shows in the Inbox only once review-request has run for it, and a merged PR keeps its snapshot until review-request runs again; both are stated limits and Defaults 1, a follow-up for the pr and cleanup rungs, not promises (D-076 E) — check: brief:27, brief:33, Defaults 1
+2. advisory — one shape on both sides: ReviewRequest, the schema tag and reviewRequestShape live in @bisellium/schema, which the server already imports (it may not import the CLI); the writer checks its own file with the reader's check before the rename, so it never writes a file the server would refuse; the member type is W-667 brief-r2 lines 46-63 byte for byte — check: packages/schema/src/index.ts:463, packages/cli/src/review-snapshot.ts:150, brief Interfaces
+3. advisory — the server spawns nothing new: the Git common directory is BranchRecordReader's resolved probe, read through a getter; the read is per poll, all whole or absent, with a diagnostic on change; no snapshot directory is absent, not [] (Defaults 2) — check: reads.out (no spawn added under apps/server/src), apps/server/src/store.ts:343, W-702-b3
+4. advisory — the approval reading mirrors land's readOwnerReview (every @login owner's latest opinion APPROVED on the head; a team or e-mail owner never approves) in a second copy over GraphQL nodes rather than gh pr view's, because the snapshot must read reviews, head and checks in one moment; a later change to one reading must change both — check: packages/cli/src/review-snapshot.ts:100, packages/cli/src/integrate.ts:630
+5. advisory — each red fails by assertion on its stage, rerun by scripts/reds.sh with its "# command:" and "# tree:" header: b1 on master 922588ea at "the snapshot is written: pending", b2 on stage 1 at "a merged PR", b3 on stage 2 at "an empty snapshot directory: []"; each passes at its feature commit — check: red-b1-master.out, red-b2-t2.out, red-b3-t3.out, green-b1-f1.out, green-b2-f2.out, green-b3-f3.out
+6. advisory — ten one-hunk kills, each failing its pinned row at a pinned assertion that reads behaviour, not source text (kill-check.mts over killedPin and textKilledLine) — check: kills/kills.log, kills/kill-check.out, scripts/kills.py
+7. advisory — flips, fixture edits only: W-418-b1 (the facts reply and five snapshot lines at stage 1, the snapshot directory cleared at stage 2; unedited it fails at "the code-owned paths, the notice and the request") and W-163-b6 (four inventory D rows); the Codex fixture census lists exactly these two and no unnamed flip — check: w418-b1-unedited-tip.out, rows-tip.out, fixture-census.md
+8. advisory — the pre-sign gate passed in its scratch tree at the series' tree (12 rows, the next family with w558 in one shared run); the apps/server suites it does not gate (branch-records whole, server, w501, board, completion, health-due, the CLI server test), lint and prettier on every touched file pass; the census's other must-stay-green files (guard, doc-cap, usage, w300, w666, w509) pass — check: gate.log, server-green/summary.txt, census-green/summary.txt
+9. advisory — Files owned: no span meets W-700's or W-504's (laneOverlap's own test); containment.test.ts is also W-479's, which is halted and so not in flight; no new test file, so the root manifest is untouched; no Patron-owned path — check: overlap.out, inflight-owned.out
+10. advisory — admission (0 problems, no path or surface gap), declared-reds-check (0) and the docs caps (NEXT.md 450 of 450, ARCHITECTURE.md 446) pass — check: admission.out, declared-reds-check.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-702.md` (copy: /home/edckt/.bisellium-evidence/W-702-spec/brief.md), prototype series sha256 a037d602 at master 922588ea.
