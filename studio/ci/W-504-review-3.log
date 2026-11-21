@@ -1,0 +1,36 @@
+# opus: W-504
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: claude-opus-5-5
+# session: 378d007f-7fa2-4a20-bc70-6c11a3553e3e
+# session_reason: round 2's sandboxed claude -p session 998674e1 cannot be resumed; a fresh Opus 5.5 session reviews the delta
+# outcome: passed
+# at: 2026-11-21T06:52:37.487Z
+# tree: tree:307d65606738e06ac6484e00083044539c4a251f
+# ui_input: ci/W-504-spec-11.log
+# design_digest: sha256:0b6ceedc92ca27f36b63dea5a33759580db0382a815e8081ac3357f79f56cec6
+# ticket: {"opus":"W-504","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-504/studio","head":"3dd5c480eefeb903d3b94ba931de4bc50e6a446f","brief":"b1a385b8611b795fed129b8ccd67d5d12f215cd8","at":"2026-11-21T06:52:33.037Z"}
+
+## Findings
+1. advisory — `apps/web/src/screens/Home.tsx:114` [severity: S4] `data-completion-settled` needs `data !== undefined`. So if W-503's attention read is rejected, Home never reports ready: `failed` is set but `data` stays undefined. The old selector `.home-card--needs` already behaved this way, because the needs card does not render on that failure either. The brief's Completion read row (brief:68) and its unchanged-code limit (brief:56) both leave an attention-read failure outside the domain, so this is not a regression. A served row in W-504's b2 that answers `/api/officina` with 503 and expects a defined capture state would pin it, or the architect can rule it a limit. [class: ui×readiness-never-settles] — check: none: a b2 step that fails `/api/officina` and asserts the readiness outcome
+2. advisory — `studio/ci/shots/W-504/manifest.txt` [severity: S4] The served Home captures (`home-1280.png`, `home-390.png`) only show the null-meter state ("No completion record is available."), because the sample studio has no milestone record. The populated unit chart is evidenced only by the spec-time captures under `sign-r6/shots-r6f/` and by the b1/b2 assertions. The brief's Acceptance (brief:92) already places fresh populated captures in that spec evidence, so nothing is missing. [class: ui×capture-fixture-state] — check: none: a populated-meter fixture in the served capture set
+
+## UI input disposition
+The authoritative ui-lead input `W-504-spec-11.log` passed the amendment to brief lines 32 and 89, and it notes that nothing on screen has changed since its round-8 pass. I inspected all ten images and none overturns that input:
+- **Home, 1280 and 390:** Needs you sits first, with Stuck and Health in the right column at 1280. Work in progress follows, then the quiet Completion absence line outside any card. There is no empty card and no Spend, Provider readings or Time heading. At 390 the cards stack in the same order without clipping.
+- **Inbox, Board, Seats and Officina:** these are unchanged screens. Each keeps its navigation, its density and reachable controls at both widths. The Board's horizontal overflow at 1280 has its scroll cue, and at 390 the phase tabs and the "›" control keep it reachable.
+- **Effect on the verdict:** the images confirm the honest absence state and show no regression. I raise no blocking UI finding.
+
+## Verdict
+The round-3 delta is exactly the CI-order fix plus the re-signed brief.
+- **package.json:** the source diff no longer touches `apps/web/package.json`, so `test:policy` matches master (W-503 and older wrappers only). It stays browser-free.
+- **Served rows still gated:** `w504.spec.ts` lives under `tests-serve`, and `test:serve` runs it after Chromium is installed (`ci.yml:185-187`). Both W-504 served rows still gate there; the b4657420 and bffce34f served e2e logs show them passing (`ok 183`, `ok 184`).
+- **No browser in a browser-free script:** neither the root `npm test` list nor any other browser-free script names `w504.test.ts`.
+- **Source diff:** seven of the eight owned paths change. package.json nets to zero, which the brief at line 89 allows.
+- **W-675 readiness:** in `w675.spec.ts`, only the Home readiness target moves. The palette, alias, matrix, screenshot and overflow assertions are untouched.
+- **Joined readiness wiring:** `completion !== undefined && data !== undefined` cannot report ready before attention settles. b2 pins both orders: attention held while Completion settles, and Completion held.
+- **Reds:** 01 and 02 both fail by AssertionError inside `servedRow`, with no ENOENT or module-not-found.
+- **Light gates:** the light-gates log (307d6560) shows every step at exit 0 and every TAP summary at 0 failures.
+
+VERDICT: PASS
