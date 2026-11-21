@@ -459,7 +459,8 @@ export class Store extends CoreStore {
         })
         .map(({ sourceOrder: _sourceOrder, ...petitio }) => petitio);
       // W-702: the optional review projection, absent unless every snapshot read whole
-      return { opera, petitiones, ...(this.reviewRequests === undefined ? {} : { reviewRequests: this.reviewRequests }) };
+      if (this.reviewRequests === undefined) return { opera, petitiones };
+      return { opera, petitiones, reviewRequests: this.reviewRequests };
     },
 
     acta: (days = 7) => {
