@@ -55,12 +55,12 @@ Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, bri
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
 Lanes now:
-- Ops: W-701 filed s67, slot after W-697. W-546 brief-r3 (8fa3c492, unsigned): Patron answered Defaults 1-3 (agree; "code-owned" is renamed "patron-owned"; PR approval covers merge and local ff), D4 (Patron commits the `.claude/settings.json` matcher `|Agent|Task` on the branch at cut) explained; next: prototype, reds, timing, ops-lead signs.
-- E1 W-700: spec passed; next: branch (W-699 has landed), then W-702 (D-250, greenlit by kit 759).
-- E2: W-699 done (merged 6a35ffcb, landed 8ac9585b). Next in the slot: W-697.
-- UI1 W-503: merged 8d955423, cleaned up; done waits on a UI master verify (`next W-503` names `verify`; kept kit ui-verify-1104/run.sh, a full suite, runs alone).
-- UI2 W-504: W-699's sign path check refused brief-r6f (two new test files unmarked); Sol re-signed on brief-r6k (b197360a, signature 9c4d9751); fresh Opus spec review r7b and ui-lead input r8b run off main (kit 765 stage clone); next: kit 765 dry, real, branch.
-- Spec ahead W-667: brief-r2 per D-250, signs after W-504.
+- Ops: W-546 held; the ops-lead signs brief-r5 after W-700 is done. W-701 (verbs refuse studio paths from the wrong checkout) in the process slot after W-697.
+- E1 W-700 (lessons name their fix and reach master): merged with master, 30 lesson dispositions written by a kept script (restamp meet w700-restamp-meet-1121); next: gates, push, the Patron reviews PR #1345, merge, done.
+- E2 W-702 (review-request writes a PR snapshot the console reads): PR #1347 open; next: merge, done. Then W-697 (light-gates PR after a passed review).
+- UI1 W-709 (Home "Needs you" titles stay readable at 960): greenlit; next: spec draft by the design lead (Codex Sol).
+- UI2 W-504 (Home Completion row): the merge queue ejected PR #1344 (served rows resolved paths from the cwd); fixed in 543842a0; next: light gates, review delta, ci --opus, the Patron re-reviews, merge, ui master verify, a fresh Patron ruling, done.
+- Spec ahead W-667 (the console Inbox): brief-r2 per D-250, signs after W-504.
 - Research: none open.
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
@@ -71,5 +71,6 @@ Also, filed 11-14..11-16 (studio/queue.yml): W-646 W-649 W-650 W-651 W-652 W-653
 Also, 11-17 (greenlit by the Patron, session 39): W-683 W-684 W-685 W-686. W-687 (DR independence) filed session 40; D-226, D-227 (DR lane, workflow) land with it.
 Also, 11-17 (greenlit by the Patron, session 42): W-687 W-688 W-689 W-690 W-691 W-692 W-693 W-694 W-695.
 Also, 11-17 (greenlit by the Patron, sessions 43-44): W-696 W-697. W-698 is filed, held. W-700 (lessons name their fix, Patron s65).
+Also, 11-21 (greenlit by the Patron, session 75d): W-709 (Home "Needs you" titles stay readable at 960).
 
 Research is its own lane. Codex stays the one gate (D-066 C). Unruled notes: top NOW of ~/.bisellium-evidence/current-state.md; older gaps: current-state-until-1106.md there.
