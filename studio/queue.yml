@@ -22,7 +22,7 @@ queues:
       - { opus: W-157, says: "decide: the Patron records a ruling (D-181); v1 S4, rank 12 (D-234)" }
       - { opus: W-372, says: "an agent waits on its own background perform; ranked ahead of W-545 on the leads' simplify meet (D-189); v1 S5, rank 13 (D-234)" }
       - { opus: W-308, says: "opus timeline; E1 (next.ts) (D-192); v1 S6, rank 14 (D-234)", next_ts: true }
-      - { opus: W-557, says: "Merge, cleanup and done as one chain; split out of W-545's fold; v1 S5, rank 15 (D-234)" }
+      - { opus: W-557, says: "Merge, cleanup and done as one chain; split out of W-545's fold; v1 S5, rank 15 (D-234); absorbs W-711: every branch and worktree the workflow creates is removed by the step that finishes with it", folded: [W-711] }
       - { opus: W-051, says: "branch and merge respect the repo's default branch, never a hardcoded master; v1 S9, rank 18 (D-234)" }
       - { opus: W-705, says: "ops: context-stop guard ships first, file-set with W-706 (D-252 ruling item 2); after W-546 (file overlap, both edit guard.ts)" }
       - { opus: W-706, says: "ops: memory-write guard ships file-set with W-705 (D-252 ruling item 2); after W-705 and W-546 (file overlap, both edit guard.ts)" }

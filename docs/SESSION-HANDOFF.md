@@ -30,6 +30,7 @@ Current state only, after CLAUDE.md. Rules: lex `production.md`.
 - Standing: refresh runs all day (D-211, timer every 30 min, cap 4 per 6 h); a timer-started session never waits on the Patron: write the ask in current-state.md, push once per wait, go on with independent lanes; never decide a Patron-only call.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and daily retro.
+- D-256 (Patron 2026-11-21): a design task with no actual UI change needs no fresh Patron approval; filed as W-712 for next to enforce.
 - Records dates are UTC; Patron reads SGT (UTC+8).
 6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/rn-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w608.py (row 236); daily retro `npm run -s bisellium -- retro --daily --studio studio`; usage usage/usage-reading.sh <label>; UI Codex codex-passes/ui-run.sh.
 7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup on a sandbox-held empty folder names it for the Patron, still deletes the branches (W-227); never hand delete. After a stray `cd` into `.worktrees/`, start a new process, not `/clear`. Notes: `~/.bisellium-evidence/current-state.md`.
@@ -54,14 +55,15 @@ Process slot order (D-234, D-245, one at a time): W-699 (path check at sign, bri
 
 D-233: the interim rule stands (its rank part is superseded for W-183/W-529/W-250, which the keep list defers) — full-suite runs (ci --opus, verify, the host mint) wait on one host lock at a time; UI lanes never pause.
 
-Lanes now:
-- Ops: W-546 held; the ops-lead signs brief-r5 after W-700 is done. W-701 (verbs refuse studio paths from the wrong checkout) in the process slot after W-697.
-- E1 W-700 (lessons name their fix and reach master): merged with master, 30 lesson dispositions written by a kept script (restamp meet w700-restamp-meet-1121); next: gates, push, the Patron reviews PR #1345, merge, done.
-- E2 W-702 (review-request writes a PR snapshot the console reads): PR #1347 open; next: merge, done. Then W-697 (light-gates PR after a passed review).
-- UI1 W-709 (Home "Needs you" titles stay readable at 960): greenlit; next: spec draft by the design lead (Codex Sol).
-- UI2 W-504 (Home Completion row): the merge queue ejected PR #1344 (served rows resolved paths from the cwd); fixed in 543842a0; next: light gates, review delta, ci --opus, the Patron re-reviews, merge, ui master verify, a fresh Patron ruling, done.
-- Spec ahead W-667 (the console Inbox): brief-r2 per D-250, signs after W-504.
-- Research: none open.
+Lanes now (s80 LAST):
+
+| Lane | Opus | Now | Next |
+|---|---|---|---|
+| E1 | W-546 (CODEOWNERS/guard-import fence) | spec round 3 recorded (ops-lead signed r7, ci/W-546-spec-3.log) | held until the W-504 merge perform exits (W-547); then Codex Sol spec review of r7; then the builder fix |
+| E2 | W-697 (light-gates PR after a passed review) | ci passed (gates 77ed4858); Codex Sol build review round 1 running | if it passes: PR, merge, done |
+| UI1 | W-709 (Home "Needs you" titles stay readable at 960) | Sol signed r1j (signature draft); host-post-s.sh failed on an uncommitted queue.yml edit | after the records PR lands: host-post-t.sh, then record spec-1 on main |
+| UI2 | W-504 (Home Completion row) | merge perform running (kit-840) | ejection check, cleanup; ui master verify alone; done |
+| Records | records PR (lessons, queue.yml, opera, this handoff) | this handoff refresh (clerk kit-842) running | once the W-504 merge perform ends: land studio/lessons L-295..L-308, studio/queue.yml, studio/opera/W-711.md, W-712.md, docs/SESSION-HANDOFF.md (not studio/briefs) |
 
 Also, 11-17 (greenlit by the Patron, session 46, D-234): W-284 (init yields a studio that can run an opus). W-051 (branch/merge use the repo's default branch, not hardcoded master) lifted from halted.
 Greenlit (until `process.handoff.queue` reads queue.yml): W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-616 W-617 W-618 W-619 W-620 W-621 W-622 W-520 W-521 W-522 W-623 W-624 W-625 W-626 W-627 W-628 W-629 W-630 W-631 W-632 W-633.
