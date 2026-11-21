@@ -1,0 +1,28 @@
+# opus: W-504
+# phase: spec
+# round: 5
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1f6cd-d881-7652-9660-027f37e4a6dd
+# outcome: revise
+# at: 2026-11-20T02:40:56.607Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# dispatch_prompt: ci/W-504-ui-prompt-5.md
+# design_digest: sha256:d1fb7d75f334062ecd70508bc8dae69e3cd2f8dcfb3bed886136c08b20329596
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":5,"actor":"ui-lead","studio":"studio","head":"7790913e0f956eca7e4d0333e3b6b413db06e6d7","brief":"f6ea6766f49d7b69d68dbbcd180a97a524ccab9d","at":"2026-11-20T02:40:54.209Z"}
+
+## Findings
+
+1. blocking — brief:111 — The prototype’s agent-written `justify-content: space-between` placement separates each count from its squares at 1280, especially with the sidebar collapsed; the 640 capture repeats this separation. The first column’s counts sit close to the next column’s titles, weakening their association with their own chart. Advisory 6 identifies a real grouping defect, not a Patron ruling — replace with: “Keep each milestone title above its chart. On the next line, place the squares followed immediately by `N of M done`, separated by an 8px gap. Keep the two desktop columns and single narrow column.” — check: apps/web/tests-serve/w504.spec.ts; after-home-completion-1280-expanded.png, after-home-completion-1280-collapsed.png, after-home-completion-640-row.png and after-home-completion-390-row.png in /home/edckt/.bisellium-evidence/W-504-spec/shots/
+
+## Recommendation
+
+This is my first ui-lead input on W-504; I have no earlier findings to reassess.
+Completion sits correctly beneath W-503’s Work in progress card, preserving its alignment, surface and heading hierarchy.
+At 1280 and 640, the count placement needs the change above; at 390, the tighter width makes the existing association readable, but squares followed by their count would give all widths the same clear reading order.
+The overall percentage, milestone titles, filled versus outlined squares and exact counts remain legible; the narrow captures show Completion after scrolling, without displacing the higher-priority Home content.
+The absence state reads clearly at all three widths as a quiet sentence beneath Work in progress, consistent with the Patron’s no-empty-card ruling.
+Round 4 finding 1 changes capture timing only: waiting for both settled Completion and W-503’s Needs-you card leaves the settled screen unchanged and prevents an incomplete Home capture.
+The far-edge count placement is the agent-written visual rule that fails on these screens; the full-width card, upper-right percentage and responsive column choices are sensible proposals, while the Patron’s Completion-only cut remains intact.
+The architect can correct the count grouping and incorporate the readiness fix without a new design.
+Verdict: revise

@@ -1,0 +1,32 @@
+# opus: W-504
+# phase: spec
+# round: 8
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1f81b-5b4a-76e0-ad30-5370c97a0a96
+# session_reason: a fresh ui-lead session gave round 8 input on the round 6 signed brief: the round 5 session was not resumed
+# outcome: passed
+# at: 2026-11-20T08:53:31.064Z
+# tree: tree:770c5ba906343d0a0e5ccc27d6ed57a145c63bc0
+# dispatch_prompt: ci/W-504-ui-prompt-8.md
+# design_digest: sha256:65a1302af108fcc2116fb8a96e949047325c7477ebe6bc73a9af3696a8e5bcad
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":8,"actor":"ui-lead","studio":"studio","head":"9ad540a2bf53a84414445b678fa06ef2df75e8f9","brief":"e12f7dc2edf3c54b0376fb6174bbdad628a8a89c","at":"2026-11-20T08:53:28.943Z"}
+
+## Findings
+
+No findings
+
+## Earlier findings
+
+- ci/W-504-spec-5.log #1: closed — The round-six captures in `sign-r6/shots-r6f/` show each title above squares followed immediately by `N of M done` at 1280 with either sidebar state, 640 and 390; the prototype and served geometry assertion specify the 8px gap, retained in the brief text re-read this turn.
+
+## Recommendation
+
+My sole earlier finding, round 5 finding 1, is closed: at 1280 with either sidebar state, 640 and 390, each title sits above squares followed immediately by `N of M done`; the prototype and served geometry assertion specify the 8px gap.
+Completion reads clearly beneath W-503’s Work in progress card: the overall percentage is distinct, milestone titles identify their groups, and exact counts make the small filled and outlined squares understandable.
+The narrow layout preserves that hierarchy in one column; scrolling to Completion preserves the priority of Home’s attention and work content.
+The absence sentence reads clearly beneath Work in progress at all three widths in the earlier `W-504-spec/shots/after-home-absence-*` captures; the listings re-checked this turn confirm that `sign-r6/shots-r6f/` contains only populated captures, so absence has no fresh round-six visual confirmation.
+The full-width card, upper-right percentage, desktop two-column layout, narrow single column, square sizing and count spacing are agent-written design choices, and each makes sense on these captures.
+The former far-edge count placement was the agent-written rule that failed visually; its replacement restores clear grouping, and I find no remaining revised visual rule requiring replacement.
+The Patron’s Completion-only and no-empty-card rulings remain respected, and the proposed row fits the accepted W-503 Home composition.
+Verdict: passed

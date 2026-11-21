@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { fetchHealth, fetchInbox, fetchOfficina, fetchOpera, type HealthResponse, type InboxResponse, type OfficinaResponse, type OpusEntry } from "../api.js";
+import { fetchCompletion, fetchHealth, fetchInbox, fetchOfficina, fetchOpera, type CompletionResponse, type HealthResponse, type InboxResponse, type OfficinaResponse, type OpusEntry } from "../api.js";
 import { attentionCollection, attentionTotal, type AttentionRow } from "../lib/board.js";
-import { homeAskText, homeNeeds, homeSummary } from "../lib/home.js";
+import { homeAskText, homeCompletion, homeNeeds, homeSummary } from "../lib/home.js";
 import { READY, type ScreenStatus } from "../lib/screenState.js";
 
 interface HomeAttentionData {
@@ -27,6 +27,7 @@ function Cue({ severity }: { severity: "blocking" | "high" | "normal" }) {
 
 export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps = {}) {
   const [data, setData] = useState<HomeAttentionData>();
+  const [completion, setCompletion] = useState<CompletionResponse | "failed">();
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let active = true;
@@ -46,12 +47,18 @@ export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps
     });
     return () => { active = false; };
   }, [onStatus, onNeedsYouCount, onAttentionLoaded]);
+  useEffect(() => {
+    let active = true;
+    fetchCompletion().then((value) => { if (active) setCompletion(value); }).catch(() => { if (active) setCompletion("failed"); });
+    return () => { active = false; };
+  }, []);
   const attention = data ? attentionCollection(data.officina, data.opera, data.inbox) : [];
   const groups = homeNeeds(attention);
   const summary = data ? homeSummary(data.officina, data.opera, data.health) : undefined;
   const wipTotal = summary?.wip.reduce((total, row) => total + row.count, 0) ?? 0;
+  const completionModel = typeof completion === "object" && completion.meter ? homeCompletion(completion.meter) : undefined;
   return (
-    <div className="home">
+    <div className="home" data-completion-settled={completion !== undefined && data !== undefined}>
       <header className="home__header">
         <h1 className="home__title">Home</h1>
         <p className="home__lede">What needs you and what is moving.</p>
@@ -96,6 +103,25 @@ export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps
               <span className="home-wip__bar" aria-hidden="true"><span style={{ width: `${row.count / wipTotal * 100}%` }} /></span>
               <strong>{row.count}</strong>
             </div>)}
+          </div>
+        </article>
+      </section>}
+      {completion === undefined && <p className="home-completion-status">Loading completion…</p>}
+      {completion === "failed" && <p className="home-completion-status">Could not load completion.</p>}
+      {typeof completion === "object" && completion.meter === null && <p className="home-completion-status">No completion record is available.</p>}
+      {completionModel && <section className="home__row home__row--outcome">
+        <article className="home-card home-card--completion">
+          <header className="home-card__head"><div><h2>Completion</h2><p>Planned work completed by milestone</p></div><strong className="home-completion__overall">{completionModel.overall}%</strong></header>
+          <div className="home-completion">
+            {completionModel.rows.map((row) => <section className="home-completion__group" key={row.id}>
+              <h3>{row.title}</h3>
+              <div className="home-completion__measure">
+                <div className="home-completion__units" aria-label={`${row.title}: ${row.done} of ${row.planned} done`}>
+                  {Array.from({ length: row.planned }, (_, index) => <span className={`home-completion__unit${index < row.done ? " home-completion__unit--done" : ""}`} aria-hidden="true" key={index} />)}
+                </div>
+                <span className="home-completion__count">{row.done} of {row.planned} done</span>
+              </div>
+            </section>)}
           </div>
         </article>
       </section>}

@@ -3324,10 +3324,38 @@ details.officina__row > summary {
 .home-wip__bar { height: 8px; overflow: hidden; border-radius: 4px; background: var(--wash); }
 .home-wip__bar > span { display: block; height: 100%; background: var(--accent-purple); }
 
+/* W-504: D-234 keeps Completion and drops the former Spend half. */
+.home-completion__overall {
+  color: var(--ink);
+  font: 700 30px/32px var(--font-display);
+}
+
+.home-completion-status {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink-3);
+  font: 400 13px/18px var(--font-body);
+}
+
+.home-completion {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+
+.home-completion__group { min-width: 0; }
+.home-completion__group > h3 { margin: 0; color: var(--ink-2); font: 500 13px/18px var(--font-body); }
+.home-completion__measure { display: flex; align-items: center; gap: 8px; margin-top: var(--sp-2); }
+.home-completion__count { flex: none; color: var(--ink-3); font: 400 12px/16px var(--font-mono); }
+.home-completion__units { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.home-completion__unit { box-sizing: border-box; width: 6px; height: 6px; border: 1px solid var(--ink-3); }
+.home-completion__unit--done { border-color: var(--accent-purple); background: var(--accent-purple); }
+
 @media (max-width: 959px) {
   .home__row--attention,
   .home-needs,
-  .home-wip { grid-template-columns: 1fr; }
+  .home-wip,
+  .home-completion { grid-template-columns: 1fr; }
 
   .home__tiles { margin-top: var(--sp-3); }
 }

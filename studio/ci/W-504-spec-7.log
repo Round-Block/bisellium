@@ -1,0 +1,25 @@
+# opus: W-504
+# phase: spec
+# round: 7
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 52a1072d-4d9f-4e6e-9e60-4409e1e913fa
+# session_reason: a claude -p reviewer in the sandbox cannot be resumed, so a fresh session of the same reviewer reviewed round 7
+# outcome: passed
+# at: 2026-11-20T08:53:28.327Z
+# tree: tree:770c5ba906343d0a0e5ccc27d6ed57a145c63bc0
+# brief: briefs/W-504.md blob:e12f7dc2edf3c54b0376fb6174bbdad628a8a89c
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":"studio","head":"9ad540a2bf53a84414445b678fa06ef2df75e8f9","brief":"e12f7dc2edf3c54b0376fb6174bbdad628a8a89c","at":"2026-11-20T08:53:27.361Z"}
+
+I'm reviewing W-504 round 7: the prototype's Home.tsx matches what my earlier unrecorded r6f review found, and r6k only adds two `(new)` marks, so here is the verdict.
+
+## Findings
+1. advisory — brief:54 [severity: S2] The clause "settles true after W-503's joined attention read also settles" promises more than the code does. In the prototype, readiness is `completion !== undefined && data !== undefined` (Home.tsx:61), and `data` is set only when the attention read succeeds. A failed attention read also "settles", but readiness then stays false for good and W-675's Home row times out instead of capturing. W-503's `.home-card--needs` target already does the same, so nothing regresses, but the sentence is wrong. Replacement for the clause: "…settles true only after W-503's joined attention read succeeds; a failed attention read keeps readiness false (W-675 then fails by timeout, as it does today), and a held attention read keeps readiness false even after Completion is released…" (reached by ci/W-504-spec-4.log #1's class) [class: ui×readiness-ignores-sibling-read] — check: none: a b2 step that answers `/api/officina` with 503 and asserts `data-completion-settled="false"`
+2. advisory — brief:3 [severity: S4] Brief:3 and brief:73 call `fa12aea6` the "current master", but this clone of main is at `6a35ffcb`, and spec-6 was signed at head `8ac9585b`. The prototype replay base `d4521e24` is correct. Replacement for brief:73's pin: "…master at signing (`8ac9585b`); prototype replay base is W-503 code head `d4521e24`…", with brief:3 to match. [class: spec×stale-pin] — check: none: a brief-admission rule that compares the Status master pin with the signing ticket's head
+
+## Earlier findings
+- ci/W-504-spec-4.log #1: closed — brief:44, brief:54 and brief:88 now tie readiness to W-503's attention read, with the target `.home[data-completion-settled="true"] .home-card--needs`. The prototype's Home.tsx:61 waits for both `completion !== undefined` and `data !== undefined`. b2 holds `/api/officina` while Completion settles, asserts readiness is false and the W-675 selector matches nothing, then releases the read and asserts the selector is visible. The round-six red log (sign-r6/host-r6f/b2-round6-red.log) fails on that assertion before the fix commit, and the final W-675 run is green.
+
+## Verdict
+Passed: the round-4 readiness blocker is closed with a recorded red and green. Squares-then-count with an 8px gap and the single grid track at 640 and 390 are now asserted, and the ui-lead's round-5 count placement reads well on the captures. The two findings left are advisory wording fixes for the build to adopt.
+VERDICT: PASS

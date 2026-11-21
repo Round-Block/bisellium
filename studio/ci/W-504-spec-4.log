@@ -1,0 +1,30 @@
+# opus: W-504
+# phase: spec
+# round: 4
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 3b344a01-28ee-4aa7-b70d-227426b24fdb
+# outcome: failed
+# at: 2026-11-20T02:32:50.955Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# brief: briefs/W-504.md blob:f6ea6766f49d7b69d68dbbcd180a97a524ccab9d
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"7790913e0f956eca7e4d0333e3b6b413db06e6d7","brief":"f6ea6766f49d7b69d68dbbcd180a97a524ccab9d","at":"2026-11-20T02:32:50.032Z"}
+
+## Findings
+1. blocking — brief:54 [severity: S1] Home's new W-675 readiness, `data-completion-settled={completion !== undefined}` in the prototype's Home.tsx:61, never waits for W-503's joined attention read. When the completion read settles first, which is plausible because it is one fetch against W-503's four, the W-675 caller (w675.spec.ts:76) runs its overflow and screenshot checks on a Home without `.home-card--needs`. W-675's Home overflow check then silently stops covering the W-503 card, and brief:44's "never the loading shell" is false. b2's hold case only holds the completion read, so nothing catches this. Replacement for brief:54 and brief:88: "Home's W-675 readiness selector is `.home[data-completion-settled="true"] .home-card--needs`; pending Completion remains false, success, null or explicit failure settles true, and capture still waits for W-503's card." Also add a b2 assertion: with the attention reads held and completion settled, the W-675 selector does not match. [design: keeps] [class: ui×readiness-ignores-sibling-read] — check: none: a served row that holds `/api/officina` while `/api/completion` settles and asserts the W-675 Home selector is absent
+
+2. advisory — brief:50 [severity: S2] "below 960 its milestone groups use one column" is not tested. b2 checks only `scrollWidth` and card bounds at 640 and 390, so a two-column grid that still fits would pass. Replacement: "…below 960 its milestone groups use one column, as pinned by b2's computed `grid-template-columns` single-track assertion at 640 and 390…" and add that assertion to w504.spec.ts. [class: ui×promise-unpinned-geometry] — check: none: computed grid-track count at 640/390 in apps/web/tests-serve/w504.spec.ts
+
+3. advisory — brief:54 [severity: S4] "null … settles true" is promised, but b2's `mode = "none"` block only checks the card count and the status text, not `data-completion-settled="true"`. Replacement: add "`mode = "none"` asserts `data-completion-settled="true"`" to b2's step list. [class: test×promise-branch-unasserted] — check: apps/web/tests-serve/w504.spec.ts
+
+4. advisory — brief:73 [severity: S4] The Commands/environment row pins master `5a47dd19` and W-503 stage `8c0f6aa8`, but brief:3, brief:42 and brief:90 pin master `f24e6084` and W-503 head `d4521e24`. Its rejecting cell, "kept stage, mbox, build and gate scripts", is not a function. Replacement: "recognises the two Genuine red commands at W-503 head `d4521e24`; the spawned `npx playwright test` is rejected by `servedRow`'s `assert.equal(result.status, 0, …)`; a spawn error or timeout leaves status null and fails closed." [class: spec×stale-pin] — check: apps/web/test/w504.test.ts
+
+5. advisory — brief:72 [severity: S4] "`readFileSync` … reject unavailable files", but no owned file calls `readFileSync`; w504.test.ts reads nothing from disk. Replacement: "Fixed paths: none read by the opus; evidence paths are drafting artifacts only." [class: spec×phantom-rejector] — check: none
+
+6. advisory — brief:111 [severity: S4] Sense, judged on after-home-completion-1280-expanded.png. `justify-content: space-between` puts "8 of 13 done" about 350px to the right of its 13 squares in a 480px column, so the count reads as detached from its units. This is agent-written, not a Patron ruling. Defaults item 2 puts the two-column layout to the Patron, but not where the count sits. Replacement: "Each group's count sits on the same line right after its squares (units then `N of M done`), with the title above." The 390 capture reads fine. [class: ui×label-detached-from-mark] — check: none: Patron capture review
+
+## Earlier findings
+
+## Verdict
+Failed: Home's new capture readiness ignores W-503's read, so W-675 can capture and overflow-check Home before the W-503 card renders; the fix keeps the design and goes to the build as a required fix.
+VERDICT: FAIL

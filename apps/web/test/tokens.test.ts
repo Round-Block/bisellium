@@ -185,6 +185,7 @@ test("W-366-b2 behaviour 2: each accent has one non-status selector role", () =>
       ".board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan",
       ".board-drawer__waiting-evidence, .board-drawer__waiting-evidence:visited => accent-cyan",
       ".home-card__head a, .home-tile a => accent-cyan",
+      ".home-completion__unit--done => accent-purple",
       ".home-needs__group h3 => accent-pink",
       ".home-needs__id => accent-cyan",
       ".home-needs__open => accent-cyan",

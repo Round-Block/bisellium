@@ -1,0 +1,26 @@
+# opus: W-504
+# phase: spec
+# round: 11
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1f81b-5b4a-76e0-ad30-5370c97a0a96
+# outcome: passed
+# at: 2026-11-21T06:43:58.180Z
+# tree: tree:307d65606738e06ac6484e00083044539c4a251f
+# dispatch_prompt: ci/W-504-ui-prompt-11.md
+# design_digest: sha256:0b6ceedc92ca27f36b63dea5a33759580db0382a815e8081ac3357f79f56cec6
+# ticket: {"opus":"W-504","step":"spec","action":"verdict-spec","round":11,"actor":"ui-lead","studio":".worktrees/W-504/studio","head":"48189878f84c90f204ba053c468d470511a05bad","brief":"b1a385b8611b795fed129b8ccd67d5d12f215cd8","at":"2026-11-21T06:43:46.883Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+The r7 amendments at brief:32 and brief:89 change test wiring only; the requested diff alters no visual rule approved in round 8.
+The populated prototype remains clear: milestone titles identify each group, adjacent exact counts explain the squares, and the upper-right percentage distinguishes overall completion.
+The built captures cannot directly confirm populated-card equivalence: `home-1280.png` shows the absence sentence, and `home-390.png` ends above that sentence; neither displays the squares, counts or percentage.
+The current markup and styles retain the approved populated treatment, while the desktop absence sentence reads clearly beneath Work in progress.
+The detailed column layout, square sizing, percentage placement and count spacing originated as agent-written choices and remain sensible on the prototype captures; I find no current visual rule requiring replacement.
+The amendment introduces no demonstrated UI defect and preserves the Patron’s Completion-only cut and the Home composition approved in D-255.
+Verdict: passed

@@ -1,0 +1,32 @@
+# opus: W-504
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-opus-5-5
+# session: 50635ac3-46e7-46f6-bb16-381accf44279
+# outcome: passed
+# at: 2026-11-20T15:05:54.882Z
+# tree: tree:b46574200009b3fc6af706f41f65ba30e5859c8f
+# ui_input: ci/W-504-spec-8.log
+# design_digest: sha256:65a1302af108fcc2116fb8a96e949047325c7477ebe6bc73a9af3696a8e5bcad
+# ticket: {"opus":"W-504","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-504/studio","head":"d8a3bc7c3a8b6e30565eaa8e081352a3a06c88fa","brief":"e12f7dc2edf3c54b0376fb6174bbdad628a8a89c","at":"2026-11-20T15:05:45.597Z"}
+
+## Findings
+1. advisory — studio/ci/reds/W-504/01.log:42 The behaviour 1 red does fail by assertion after serve starts, so Acceptance brief:86 is met. But it fails at the earlier precondition `b1 reaches Home before checking Completion` (the `Home` heading is missing at tree 0a8d8177), not at the missing `Completion` heading that brief:77 predicts. So this red does not show the Completion assertions themselves going red. Red 02 (02.log:42-55) does fail on its own target, the absent `data-completion-settled` attribute. — check: none: a red-record check that the first failing `expect` message is one of the behaviour's own assertions, not a route or mount precondition [class: evidence×red-fails-at-precondition]
+2. advisory — studio/ci/shots/W-504/home-1280.png, home-390.png The served review set is the sample studio, which has no milestone record. So the attached Home captures show only the absence line, not the populated Completion card. At 390 the absence line is also below the 900px fold. The populated geometry is shown only in the spec-phase `sign-r6/shots-r6f/` captures and is pinned by w504.spec.ts:336-361. The review capture fixture never shows the feature the opus adds. — check: none: a W-504 capture row that intercepts `/api/completion` with the MANY fixture before the Home screenshot [class: ui×capture-fixture-omits-feature]
+3. advisory — apps/web/src/screens/Home.tsx:61 The attribute `data-completion-settled` is true only when `completion !== undefined && data !== undefined`. If the W-503 attention read fails, `data` stays undefined, so Home is never capture-ready. This is not a regression: before this change, `.home-card--needs` also never rendered on attention failure, so the old selector could not match either. A failed attention read is outside the brief's Completion read domain (brief:68), and brief:56 states W-503's joined read is reused, not promised. — check: none: a W-675 row with `/api/officina` returning 503 that pins the intended readiness (fail-fast or never-ready) [class: ui×readiness-on-sibling-failure]
+
+## UI input disposition
+The authoritative ui-lead input (ci/W-504-spec-8.log) passed with no findings. It closes the round-5 count-placement finding using the round-six populated captures, and it notes that the absence state had no fresh round-six capture. I accepted that input for the populated card's hierarchy and spacing. I checked it against the code: the CSS uses an 8px measure gap, wraps the squares, and switches to one column below 960px. The served assertions in w504.spec.ts:248-265 and :346-349 pin those rules.
+
+I looked at all ten attached images:
+- **Home, 1280 and 390:** W-503's attention row (Needs you, Stuck and Health) is intact, with equal-height tiles. Work in progress comes next, then the quiet `No completion record is available.` line outside any card, as brief:15 and brief:48 require. At 390 the cards stack Needs you → Stuck → Health → WIP with nothing clipped, and the absence line sits below the fold.
+- **Inbox, Board, Seats and Officina:** these screens are not touched by the diff, and their desktop and phone pairs keep their navigation and controls reachable. At 390 the Board's sideways-scrolling strips have visible overflow cues.
+
+No image contradicts the brief, so the UI evidence does not change the verdict. Finding 2 records the gap: this review set does not include a populated capture.
+
+## Verdict
+The source diff is exactly the eight Files owned (brief:27-34). Both behaviours are pinned by served rows that passed in the light gates (pass 2, fail 0), and both reds fail by assertion. The tokens census adds only `.home-completion__unit--done => accent-purple`.
+
+The w675.spec.ts change moves only `READY_SELECTORS.home` to `.home[data-completion-settled="true"] .home-card--needs`. Its palette, alias, matrix, screenshot and overflow assertions are untouched. The Home.tsx wiring stays unready until both the Completion and attention reads settle, and b2 pins both orderings. Only light gates have run on this tree; the full `ci --opus` follows this review. All three findings are advisory.
+VERDICT: PASS
