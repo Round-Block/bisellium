@@ -1,19 +1,19 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
-import { resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import * as home from "../src/lib/home.js";
 
 function servedRow(behaviour: number): void {
-  mkdirSync(resolve(process.cwd(), "apps/web/node_modules"), { recursive: true });
+  const config = fileURLToPath(new URL("../playwright.serve.config.ts", import.meta.url));
+  const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
   const result = spawnSync("npx", [
     "playwright",
     "test",
-    "--config=apps/web/playwright.serve.config.ts",
+    `--config=${config}`,
     "--grep",
     `W-504-b${behaviour}\\s`,
-  ], { cwd: process.cwd(), encoding: "utf8", timeout: 280_000 });
+  ], { cwd: repositoryRoot, encoding: "utf8", timeout: 280_000 });
   assert.equal(result.status, 0, `served Completion behavior ${behaviour} holds:\n${result.stdout}${result.stderr}`);
 }
 
