@@ -174,9 +174,9 @@ opus — its current state, under the retro's "## Addressed" section.
 
 Two further optional lesson keys are written by `bisellium retro --opus`
 (W-137): `opus` (the opus whose verdicts the lesson came from) and `severity`
-(`high`, `medium` or `low`, by rule: see "bisellium retro"). A lesson carrying
-no `addressed_by` raises the advisory `lesson.unfixed` (`<id> names no fix
-(addressed_by)`); every lesson `retro --opus` files names its fix.
+(`high`, `medium` or `low`, by rule: see "bisellium retro"). A lesson carrying no `addressed_by` raises `lesson.unfixed` (`<id> names no fix
+(addressed_by)`): a block for a lesson whose `at` is on or after `defaults.lesson_fix_required_from` (`YYYY-MM-DD`; absent or malformed, every lesson), advisory before it (W-700).
+`addressed_by` also takes `prose:<reason>` (it stays prose) and `closed:<sha>` (a commit in HEAD's history; it closes the class); every lesson `retro --opus` files names its fix.
 
 **Open lessons (W-085).** A class is *open* until some lesson of it carries an
 `addressed_by` that names a rule id, a decision on disk, or an opus whose

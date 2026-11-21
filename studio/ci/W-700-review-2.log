@@ -1,0 +1,21 @@
+# opus: W-700
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1f90e-db36-7642-b76a-809cb334da63
+# outcome: passed
+# at: 2026-11-20T14:00:51.836Z
+# tree: tree:f6d151c0b4543b2c6c0531d5b2cafaa7777518c6
+# brief: briefs/W-700.md blob:df50fdff63fc91064bcfdf892c57756a6163d3eb
+# ticket: {"opus":"W-700","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-700/studio","head":"3e6f76058c057f1651409657d892487ce19ab20a","brief":"df50fdff63fc91064bcfdf892c57756a6163d3eb","at":"2026-11-20T14:00:36.726Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-700-review-1.log #1: closed — packages/commands/src/lessons.ts:115 checks `declined` before the done-state close, and packages/cli/src/w700.test.ts:242 asserts that a done target carrying `declined` leaves its class open with no fix in flight.
+
+## Verdict
+The delta closes the blocker and advisory coverage gap without introducing another defect.
+VERDICT: PASS

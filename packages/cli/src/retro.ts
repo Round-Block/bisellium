@@ -317,16 +317,23 @@ function usageSection(studioRoot: string, cascade: number, usage: RetroUsage | u
   ];
 }
 
+/** W-700: a finding's `where` as its lesson line: each run of control characters read as one space, trimmed. */
+const findingText = (where: string): string => where.replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ").trim();
+
 /**
- * Validates `input`, then writes the retro's acta entry, one lesson stub
- * per distinct finding class, and a petitio per class serious enough to
- * need the Patron. Throws (nothing written) if any finding's evidence is
+ * Validates `input`, then writes the retro's acta entry, one lesson per
+ * distinct finding class carrying each finding's text (W-700), and a petitio per class serious enough to
+ * need the Patron. Throws (nothing written) if any finding's `where` is
+ * absent, not a string or blank (W-700), or its evidence is
  * empty or points at a href that doesn't exist under `studioRoot` — naming
  * the offending class, exactly the shape `lesson.evidence` itself blocks.
  */
 export function draftRetro(studioRoot: string, cascade: number, input: RetroInput, now: Date): RetroDraft {
   // ---- validate first: nothing is written until every finding passes -----
   for (const f of input.reviewFindings) {
+    // W-700: the finding's text is what its lesson carries, so an absent, non-string or blank `where` refuses the draft
+    if (typeof f.where !== "string" || findingText(f.where) === "")
+      throw new Error(`retro: finding class "${f.class}" has no where text — refusing to file a lesson with no finding in it`);
     if (!Array.isArray(f.evidence) || f.evidence.length === 0)
       throw new Error(`retro: finding class "${f.class}" has empty evidence — refusing to file a lesson with no evidence`);
     for (const href of f.evidence) {
@@ -368,6 +375,9 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
         `cascade: ${cascade}`,
         "---",
         `Filed by \`bisellium retro --cascade ${cascade}\`. ${findings.length} finding(s) in this cascade.`,
+        "",
+        // W-700: the finding text itself, one line each, control characters as spaces
+        ...findings.map((f) => `- ${findingText(f.where)}`),
         "",
       ].join("\n");
       return markdown;

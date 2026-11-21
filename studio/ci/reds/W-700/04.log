@@ -1,0 +1,48 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-700-b4\s --import tsx packages/cli/src/w700.test.ts
+# exit: 1
+# at: 2026-11-20T10:41:04.068Z
+# sella: builder.W-700
+# tree: tree:a5f982557322d6e0029c82783ba4ca85eb4926aa
+# ticket: {"opus":"W-700","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-700/studio","head":"69a61eacd988a1c5577c1bcb44c0587c4691210e","brief":"df50fdff63fc91064bcfdf892c57756a6163d3eb","at":"2026-11-20T10:41:00.443Z"}
+
+TAP version 13
+# Subtest: W-700-b4 retro writes the finding's text into the lesson and refuses a finding with none
+not ok 1 - W-700-b4 retro writes the finding's text into the lesson and refuses a finding with none
+  ---
+  duration_ms: 144.477073
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:1:869'
+  failureType: 'testCodeFailure'
+  error: "retro writes the finding's text into the lesson and refuses a finding with none: the filed lesson carries the finding's text"
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    ---
+    id: "L-001"
+    at: 2026-11-21T00:00:00.000Z
+    class: "tests×one-sided"
+    evidence: ["bisellium.yml"]
+    cascade: 3
+    ---
+    Filed by `bisellium retro --cascade 3`. 2 finding(s) in this cascade.
+    
+  operator: 'match'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:37:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 162.837407

@@ -1,0 +1,20 @@
+# opus: W-700
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1f6c8-f413-71c3-a894-fa29990c6ca2
+# outcome: failed
+# at: 2026-11-20T02:38:15.260Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# brief: briefs/W-700.md blob:8a697622589484a109fc614f1a544be43576aee4
+# ticket: {"opus":"W-700","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"7790913e0f956eca7e4d0333e3b6b413db06e6d7","brief":"8a697622589484a109fc614f1a544be43576aee4","at":"2026-11-20T02:38:14.407Z"}
+
+## Earlier findings
+
+## Findings
+1. blocking — brief:59 `reviewFindings[].where` is declared a string, but `runRetro` casts arbitrary JSON and the changed `draftRetro` applies `String`, so a plausible omitted, blank, or wrong-type value from cascade triage lets `bisellium retro --cascade --from` succeed and write `- undefined`, `- `, or object text instead of the finding; no existing test catches it. All sites are the external `--from` JSON (no repository writer), `runRetro`’s JSON reader, direct `draftRetro` callers, and the resulting `lessons/<id>.md` writer. Replacement text: `| A retro finding's where (the JSON input) | a string whose control-normalized, trimmed form is non-empty | draftRetro validates every reviewFindings[].where before createNextRecord and refuses the whole draft without writes when it is absent, non-string or blank after normalization |` [severity: S1] [design: changes] [class: spec×input-without-named-rejector] — check: packages/cli/src/w700.test.ts
+
+## Verdict
+The changed retro reader lacks the required fail-closed boundary for the text it newly writes into lessons.
+VERDICT: FAIL

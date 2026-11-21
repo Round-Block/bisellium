@@ -45,6 +45,8 @@ function fixture(retro: string | undefined = "{ since: 2026-10-06T00:00:00Z }"):
       "probationes:",
       "  - { id: patron, name: Patron call, kind: human }",
       "wip_limit: 9",
+      // W-700: the switch after this fixture's lessons, so a lesson with no fix still only advises here
+      'defaults: { lesson_fix_required_from: "2026-11-20" }',
       ...(retro === undefined ? [] : [`retro: ${retro}`]),
       "",
     ].join("\n"),

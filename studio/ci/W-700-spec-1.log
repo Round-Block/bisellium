@@ -1,0 +1,30 @@
+# opus: W-700
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-20T02:27:57.148Z
+# tree: tree:ab240b95b7c77d63a17fee917ff081233927046b
+# brief: briefs/W-700.md blob:8a697622589484a109fc614f1a544be43576aee4
+# ticket: {"opus":"W-700","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"7790913e0f956eca7e4d0333e3b6b413db06e6d7","brief":"8a697622589484a109fc614f1a544be43576aee4","at":"2026-11-20T02:27:56.373Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-700-spec/promise-ledger.md
+Gate log: /home/edckt/.bisellium-evidence/W-700-spec/gate.log
+
+## Findings
+
+1. advisory — revision 1 is drafted from the lessons-actionable collation (Q2, Q3, Q6) and the brief's six items; each item is one behaviour, the meet's must-nots are out of scope, and one cut is stated (no disposition on a retro --cascade lesson: it blocks until the clerk writes one) — check: brief.md Intent, Out of scope; lessons-actionable-meet-1120/collated.md
+2. advisory — design choices: an absent or malformed switch blocks every lesson with no fix, naming the key, so no officina is special-cased and studio/ fails loud; prose: names a fix for lesson.unfixed but never closes a class or quiets lesson.recurrent; closed: is checked against HEAD's history with --repo; ci and check share one reader, unlandedRecords, and spec-phase logs ride their branch — check: brief.md Promises; prototype.mbox
+3. advisory — each red fails by assertion (ERR_ASSERTION) on master and on the stage before its own at its declared assertion, passes at its own stage, and all six pass at g6 — check: reds.out; red-b1-master.out .. red-b6-g5.out; green-b1-g1.out .. green-b6-g6.out
+4. advisory — all 17 kills, one hunk of one non-test file each, fail their pinned row; the clone is restored clean — check: kills/kills.log; scripts/kills.py
+5. advisory — flips: W-137-b5 (retro-check.test.ts:84) and retro 10h (retro.test.ts:107) are edited in t0 and pass at every stage; check.test.ts W-089 b1 and b7 fail at g6 and pass with the series' records commit (L-217 and L-219 to L-224 name their fix, the meet's Q4 calls); the Codex fixture census names no other — check: fixture-census.md; neighbours/status.out; neighbours/standin.out
+6. advisory — 17 neighbouring test files pass whole at g6 (check.test.ts aside, above); typecheck, lint and format:check pass there; docs/ADOPTION.md and docs/VERBS.md keep their line counts under their doc caps — check: neighbours/status.out; lintfmt.out
+7. advisory — stated limits, not promises (D-076 E): recordOnly and the rest of land, instant, resolveAddressedBy, RULE_SHAPE, the CI steps and runVerify, createNextRecord, retro's classifyAddressedTarget and causeFixes, the boot header text — check: brief.md Limits, stated; promise-ledger.md scoped lines
+8. advisory — code-owned paths the Patron merges: studio/bisellium.yml, studio/leges/production.md, docs/ADOPTION.md — check: .github/CODEOWNERS; brief.md Files owned
+9. advisory — the pre-sign gate ran in a fresh clone on branch w700-presign (base acbb1965, a real npm ci, the mbox applied by git am): 54 rows, all exit 0, none deferred, 2.2 minutes; check on studio/ there is 0 blocking and typecheck passes — check: gate.log; presign-direct.out; presign-series.txt
+10. advisory — admission 0 problems and declared-reds-check 0 problems on this brief — check: scripts/admission.mts; declared-reds-check.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-700.md` (copy: /home/edckt/.bisellium-evidence/W-700-spec/brief.md), prototype series sha256 532e45f9 at master acbb1965.

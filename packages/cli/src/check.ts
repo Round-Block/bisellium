@@ -24,7 +24,7 @@ import { admissionLimit, readBriefLimit } from "@bisellium/commands/brief-admiss
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
 import { owedRetros } from "./retro.js";
-import { checkPipeExit, checkProcess, checkSessionHandoff } from "./rules/process.js";
+import { checkPipeExit, checkProcess, checkSessionHandoff, LESSON_FIX_KEY, readLessonFixFrom } from "./rules/process.js";
 import { checkLex } from "./rules/lex.js";
 import { checkInstructions } from "./rules/instructions.js";
 import { checkDocs } from "./rules/docs.js";
@@ -341,7 +341,11 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     if (!isDict(m["defaults"])) add("manifest.defaults", "block", "bisellium.yml#defaults", "defaults must be a mapping");
     else
       for (const [k, v] of Object.entries(m["defaults"])) {
-        if (!(k in DEFAULTS)) add("manifest.defaults", "advise", "bisellium.yml#defaults", `unknown default "${k}"`);
+        if (k === LESSON_FIX_KEY) {
+          // W-700: a date, not a number; rules/process.ts reads it for lesson.unfixed
+          const fix = readLessonFixFrom(v);
+          if ("problem" in fix) add("manifest.defaults", "block", "bisellium.yml#defaults", fix.problem);
+        } else if (!(k in DEFAULTS)) add("manifest.defaults", "advise", "bisellium.yml#defaults", `unknown default "${k}"`);
         else if (num(v) === undefined) add("manifest.defaults", "block", "bisellium.yml#defaults", `"${k}" must be a number`);
         else (defaults as Record<string, number>)[k] = v as number;
       }

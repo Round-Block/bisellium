@@ -264,7 +264,7 @@ not listed in the log's `# converted:` header); otherwise `low`.
 one, before `checkpoint`, and holds at `branch` for any new opus while a retro
 is owed (`retro owed: <ids>; file them before a new opus starts`). `check`
 advises `retro.overdue` (`<id> is done (<end>) and its retro is not filed`) and
-`lesson.unfixed` (`<id> names no fix (addressed_by)`).
+`lesson.unfixed` (`<id> names no fix (addressed_by)`; a block from `defaults.lesson_fix_required_from` on, W-700).
 
 ## bisellium amend
 

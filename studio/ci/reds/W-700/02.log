@@ -1,0 +1,46 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-700-b2\s --import tsx packages/cli/src/w700.test.ts
+# exit: 1
+# at: 2026-11-20T10:39:58.058Z
+# sella: builder.W-700
+# tree: tree:fc01123927085f04dec8f6337f2bd4b056eabf81
+# ticket: {"opus":"W-700","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-700/studio","head":"5592808060af01cc6213763003342b14de4367b7","brief":"df50fdff63fc91064bcfdf892c57756a6163d3eb","at":"2026-11-20T10:39:54.337Z"}
+
+TAP version 13
+# Subtest: W-700-b2 a lesson names its fix from the switch's day on
+not ok 1 - W-700-b2 a lesson names its fix from the switch's day on
+  ---
+  duration_ms: 245.186095
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:1:771'
+  failureType: 'testCodeFailure'
+  error: |-
+    a lesson names its fix from the switch's day on: a lesson at the switch day with no fix blocks
+    
+    'advise' !== 'block'
+    
+    
+    'advise' !== 'block'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'block'
+  actual: 'advise'
+  operator: 'strictEqual'
+  stack: |-
+    new AssertionError (node:internal/assert/assertion_error:380:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-700/packages/cli/src/w700.test.ts:37:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 266.804596
