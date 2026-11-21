@@ -1669,3 +1669,76 @@ Classes in more than one opus, 2026-11-06..2026-11-19:
 - prose-restamp-at-w700: Change: W-700's switch (`lesson_fix_required_from: 2026-11-20`) will block the 12 prose lessons L-225, L-229, L-230, L-232, L-233, L-235, L-236, L-238, L-240, L-241, L-243 and L-245. W-700's builder restamps each one by script from its body's `Fix: prose:` line, on the same branch. Evidence: those lessons (no addressed_by today, because check accepts only an opus, a rule or a decision: rules/process.ts:338-343). Owner: eng-lead. Route: W-700 (E1).
 - wrong-checkout-paths×own-opus: Change: file one ops opus for a rule that refuses CLI path arguments aimed at the wrong checkout. D-234's 3+ recurrence admits it, and the lessons-actionable meet Q4 already called for it. Evidence: L-245 (z, aa) is the 4th case after L-208, L-210 and L-212; no such opus is in queue.yml. Owner: ops-lead. Route: producer files and ranks it.
 - kit-preflight: Change: one kept kit preflight script run before every kit dispatch. It runs `bash -n`, uses a `bash <path>` call, stops the kit on any step's non-zero exit, and checks that each guard tests the kind it names. It takes in L-215's `node --check` call. Evidence: L-225, L-229, L-232 (five kit-script points in s54-s57). Owner: ops-lead. Route: scripts/ (ops, no opus).
+
+### 2026-11-20
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-503 | 21827 | 3 | S1 2, S2 1 |
+| W-699 | 1062 | 3 | S1 3 |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-503 | review | 3 | passed | 276 |  |
+| W-503 | review | 4 | passed | 108 |  |
+| W-503 | spec | 24 | passed | 1022 |  |
+| W-503 | spec | 25 | passed | 4 |  |
+| W-503 | spec | 26 | passed | 55 |  |
+| W-699 | review | 1 | failed | - | mechanism×identity-normalization-not-centralized S1 |
+| W-699 | review | 2 | passed | 52 |  |
+| W-699 | spec | 3 | passed | 689 |  |
+| W-699 | spec | 4 | failed | 10 | design×indirection-duplicates-source-of-truth S1 |
+
+- no loop
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| W-503 | ci/W-503-tests-52077a7a.log | gate×W-361, gate×W-366 | W-361-b2, W-366-b2 |
+
+Classes in more than one opus, 2026-11-07..2026-11-20:
+- class gate×tests seen in 5 opera: W-531, W-558, W-563, W-572, W-648
+- class interface×validation-order-masks-errors seen in 3 opera: W-543, W-547, W-648
+- class mechanism×red-certifies-wrong-tree seen in 2 opera: W-503, W-645
+- class review×census-misses-ordinary-direct-binding-forms seen in 2 opera: W-531, W-563
+- class review×evidence-backfilled-or-absent seen in 4 opera: W-488, W-541, W-669, W-675
+- class review×fail-open-on-malformed-records-patched-per-site seen in 5 opera: W-525, W-547, W-558, W-563, W-699
+- class review×fix-round-census-misses-reachable-paths seen in 2 opera: W-531, W-675
+- class security×symlink-parent-write-escape seen in 2 opera: W-542, W-543
+- class spec×input-domain-missing-or-unenforceable seen in 10 opera: W-227, W-525, W-530, W-531, W-547, W-558, W-573, W-610, W-665, W-666
+- class spec×promise-unattainable-under-accepted-domain seen in 8 opera: W-227, W-488, W-512, W-525, W-531, W-543, W-547, W-604
+- class tests×one-sided-bound-assertion seen in 2 opera: W-604, W-645
+- class tests×ruled-case-uncovered seen in 4 opera: W-525, W-542, W-547, W-608
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-227, W-666
+
+#### Owed cause fixes
+
+- OWED class gate×tests (W-531, W-558, W-563, W-572, W-648): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class review×fix-round-census-misses-reachable-paths (W-531, W-675): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class tests×one-sided-bound-assertion (W-604, W-645): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Spec measure (D-246, the qa-lead's)
+
+Window: the first 5 opera whose spec starts after W-699 was done (2026-11-20T08:31:05.055Z). Escapes: lessons of class escape×delta-rule naming the opus. Spec hours: greenlit to the spec gate passed, reported, not gated.
+
+| Opus | Kind | Spec review rounds | Skipped reviews | Escapes | Spec hours |
+|---|---|---|---|---|---|
+| none yet | | | | | |
+
+- ui: 0 opera; median n/a, max n/a
+- engineering: 0 opera; median n/a, max n/a
+D-246 measure: 0 of 5 opera; median n/a (pass at most 2), max n/a (pass at most 4), escapes 0 (pass 0): PENDING
+
+#### Proposed improvements
+
+- retro-input-open-points: Change: none, because no open point remains. acta/2026-11-19-retro-input.md closed (a)-(bb) as L-225..L-245 and acta/2026-11-20-retro-input.md closed (hhhh)-(oooo) and both audits' items as L-246..L-265. Nothing needs filing or folding per D-234 today. Evidence: the `## Closed` section of each file. Owner: qa-lead. Route: none.
+- owed-restamps-unrun×records-pr: Change: none new, because 2026-11-18's gate×tests×owed and tests×one-sided-bound-assertion×owed and 2026-11-19's census×owed are all still unrun. The producer puts all three in the records PR now landing the lessons being filed in main, so the three OWED lines clear. Evidence: this entry's three OWED lines. No lesson of class gate×tests exists in L-001..L-269. lessons/L-115.md:8 still reads `"W-201"` (halted), not W-659. No review×fix-round-census-misses-reachable-paths lesson names W-680 (L-091, L-129, L-146, L-153 name W-184; L-175, L-180 name W-260). Owner: producer. Route: lesson (the next records PR; W-596, W-659, W-680 stay deferred).
+- w699-repeat-classes×lessons: Change: a clerk files two lessons with `addressed_by: "W-699"` (done). One is for W-699 spec r4, design×indirection-duplicates-source-of-truth S1. The other is for W-699 review r1, mechanism×identity-normalization-not-centralized S1. W-699 fixed both in-opus (title amendments 2026-11-20T02:40Z and 04:38Z). With the first lesson, lesson.recurrent stops pointing that class at W-117 and W-138, which are both halted. The second records that the class recurred after its earlier fix W-089 was done (L-046). Evidence: ci/W-699-spec-4.log:15; ci/W-699-review-1.log:14, closed in ci/W-699-review-2.log:17. The `lesson.recurrent` line in ci/W-699-light-453d1789.log:1545. Owner: design-lead (design×), eng-lead (mechanism×). Route: lesson.
+- fail-open-records×w185-rank: Change: the producer reweighs W-185 (greenlit, high, "records checked once, at load"; deferred by D-234) against the queue. The class review×fail-open-on-malformed-records-patched-per-site gained its 5th opus in this window with W-699 spec r2's S1. Its latest lessons name W-252 (halted) and W-185 (not done). Evidence: this entry's class line (W-525, W-547, W-558, W-563, W-699); ci/W-699-spec-2.log:14; queue.yml:71. Owner: eng-lead. Route: fold into W-185 (producer ranks).
+- prose-restamp-at-w700×grown: Change: none new, because 2026-11-19's prose-restamp-at-w700 still stands. Its set has grown: `check` in this clone lists 61 lesson.unfixed advisories. That includes L-246..L-260 and L-262..L-269 (every new lesson except L-261), so W-700's restamp script must read the full unfixed set at its branch head, not the 12 named on 2026-11-19. Evidence: `npm run -s check -- studio --repo .` in this clone (PASS, 0 blocking, 61 lesson.unfixed). Owner: eng-lead. Route: fold into W-700.
+- w503-gate×palette-rows: Change: none, because the W-361-b2 and W-366-b2 failures happened on one W-503 tree only (52077a7a, exit 1). W-503's later test trees (5d9b14af, 740ac136, cbae336f, 19462921) exit 0. The gate caught a palette regression in-round, which is its job. Evidence: ci/W-503-tests-52077a7a.log:147-152; the other ci/W-503-tests-*.log headers. Owner: qa-lead. Route: none.
+- red-tree×w503: Change: none, because W-503's sighting of mechanism×red-certifies-wrong-tree (spec r13, 2026-11-14T06:57Z) predates the done cause fix W-645 (end 2026-11-16T15:55Z). No sighting has followed it. Evidence: ci/W-503-spec-13.log:15; opera/W-645.md. Owner: eng-lead. Route: none.
+- d246-measure: Change: none, because the window has 0 of 5 opera so far (PENDING). Evidence: this entry's Spec measure table. Owner: qa-lead. Route: none.
